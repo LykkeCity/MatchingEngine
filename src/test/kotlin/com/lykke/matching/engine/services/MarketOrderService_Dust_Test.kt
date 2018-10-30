@@ -15,7 +15,6 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
-import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -77,10 +76,6 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         initServices()
     }
 
-    @After
-    fun tearDown() {
-    }
-
     @Test
     fun testDustMatchOneToOne() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", price = 1000.0, volume = 1000.0, clientId = "Client3"))
@@ -110,10 +105,10 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         assertEquals("Client4", eventMarketOrder.walletId)
         assertEquals("1000", eventMarketOrder.price)
         assertEquals(1, eventMarketOrder.trades?.size)
-        assertEquals("0.02000000", eventMarketOrder.trades!!.first().volume)
-        assertEquals("BTC", eventMarketOrder.trades!!.first().assetId)
-        assertEquals("20.00", eventMarketOrder.trades!!.first().oppositeVolume)
-        assertEquals("USD", eventMarketOrder.trades!!.first().oppositeAssetId)
+        assertEquals("-0.02", eventMarketOrder.trades!!.first().baseVolume)
+        assertEquals("BTC", eventMarketOrder.trades!!.first().baseAssetId)
+        assertEquals("20", eventMarketOrder.trades!!.first().quotingVolume)
+        assertEquals("USD", eventMarketOrder.trades!!.first().quotingAssetId)
         assertEquals("Client3", eventMarketOrder.trades!!.first().oppositeWalletId)
 
         assertEquals(BigDecimal.valueOf(0.02), testWalletDatabaseAccessor.getBalance("Client3", "BTC"))
@@ -151,10 +146,10 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         assertEquals("Client4", eventMarketOrder.walletId)
         assertEquals("610.96", eventMarketOrder.price)
         assertEquals(1, eventMarketOrder.trades?.size)
-        assertEquals("0.14441208", eventMarketOrder.trades!!.first().volume)
-        assertEquals("BTC1", eventMarketOrder.trades!!.first().assetId)
-        assertEquals("88.23", eventMarketOrder.trades!!.first().oppositeVolume)
-        assertEquals("USD", eventMarketOrder.trades!!.first().oppositeAssetId)
+        assertEquals("-0.14441208", eventMarketOrder.trades!!.first().baseVolume)
+        assertEquals("BTC1", eventMarketOrder.trades!!.first().baseAssetId)
+        assertEquals("88.23", eventMarketOrder.trades!!.first().quotingVolume)
+        assertEquals("USD", eventMarketOrder.trades!!.first().quotingAssetId)
         assertEquals("Client3", eventMarketOrder.trades!!.first().oppositeWalletId)
 
         assertEquals(BigDecimal.valueOf(0.14441208), testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
@@ -195,10 +190,10 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         assertEquals("20", eventMarketOrder.volume)
         assertFalse(eventMarketOrder.straight!!)
         assertEquals(1, eventMarketOrder.trades?.size)
-        assertEquals("0.03339367", eventMarketOrder.trades!!.first().volume)
-        assertEquals("BTC1", eventMarketOrder.trades!!.first().assetId)
-        assertEquals("20.00", eventMarketOrder.trades!!.first().oppositeVolume)
-        assertEquals("USD", eventMarketOrder.trades!!.first().oppositeAssetId)
+        assertEquals("-0.03339367", eventMarketOrder.trades!!.first().baseVolume)
+        assertEquals("BTC1", eventMarketOrder.trades!!.first().baseAssetId)
+        assertEquals("20", eventMarketOrder.trades!!.first().quotingVolume)
+        assertEquals("USD", eventMarketOrder.trades!!.first().quotingAssetId)
         assertEquals("Client3", eventMarketOrder.trades!!.first().oppositeWalletId)
 
         assertEquals(BigDecimal.valueOf(0.03339367), testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
@@ -239,10 +234,10 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         assertEquals("0.54", eventMarketOrder.volume)
         assertFalse(eventMarketOrder.straight!!)
         assertEquals(1, eventMarketOrder.trades?.size)
-        assertEquals("0.00090964", eventMarketOrder.trades!!.first().volume)
-        assertEquals("BTC1", eventMarketOrder.trades!!.first().assetId)
-        assertEquals("0.54", eventMarketOrder.trades!!.first().oppositeVolume)
-        assertEquals("USD", eventMarketOrder.trades!!.first().oppositeAssetId)
+        assertEquals("-0.00090964", eventMarketOrder.trades!!.first().baseVolume)
+        assertEquals("BTC1", eventMarketOrder.trades!!.first().baseAssetId)
+        assertEquals("0.54", eventMarketOrder.trades!!.first().quotingVolume)
+        assertEquals("USD", eventMarketOrder.trades!!.first().quotingAssetId)
         assertEquals("Client3", eventMarketOrder.trades!!.first().oppositeWalletId)
 
         assertEquals(BigDecimal.valueOf(0.00090964), testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
@@ -280,10 +275,10 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         assertEquals("Client4", eventMarketOrder.walletId)
         assertEquals("1000", eventMarketOrder.price)
         assertEquals(1, eventMarketOrder.trades?.size)
-        assertEquals("0.02000000", eventMarketOrder.trades!!.first().volume)
-        assertEquals("BTC", eventMarketOrder.trades!!.first().assetId)
-        assertEquals("20.00", eventMarketOrder.trades!!.first().oppositeVolume)
-        assertEquals("USD", eventMarketOrder.trades!!.first().oppositeAssetId)
+        assertEquals("-0.02", eventMarketOrder.trades!!.first().baseVolume)
+        assertEquals("BTC", eventMarketOrder.trades!!.first().baseAssetId)
+        assertEquals("20", eventMarketOrder.trades!!.first().quotingVolume)
+        assertEquals("USD", eventMarketOrder.trades!!.first().quotingAssetId)
         assertEquals("Client3", eventMarketOrder.trades!!.first().oppositeWalletId)
 
         assertEquals(BigDecimal.valueOf(0.02), testWalletDatabaseAccessor.getBalance("Client3", "BTC"))
@@ -341,10 +336,10 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         assertEquals("Client4", eventMarketOrder.walletId)
         assertEquals("127.87", eventMarketOrder.volume)
         assertEquals(1, eventMarketOrder.trades?.size)
-        assertEquals("0.00999944", eventMarketOrder.trades!!.first().volume)
-        assertEquals("BTC1", eventMarketOrder.trades!!.first().assetId)
-        assertEquals("127.87", eventMarketOrder.trades!!.first().oppositeVolume)
-        assertEquals("SLR", eventMarketOrder.trades!!.first().oppositeAssetId)
+        assertEquals("127.87", eventMarketOrder.trades!!.first().baseVolume)
+        assertEquals("SLR", eventMarketOrder.trades!!.first().baseAssetId)
+        assertEquals("-0.00999944", eventMarketOrder.trades!!.first().quotingVolume)
+        assertEquals("BTC1", eventMarketOrder.trades!!.first().quotingAssetId)
         assertEquals("Client3", eventMarketOrder.trades!!.first().oppositeWalletId)
     }
 
@@ -377,10 +372,10 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         assertEquals("Client4", eventMarketOrder.walletId)
         assertEquals("-0.01", eventMarketOrder.volume)
         assertEquals(1, eventMarketOrder.trades?.size)
-        assertEquals("0.01000000", eventMarketOrder.trades!!.first().volume)
-        assertEquals("BTC1", eventMarketOrder.trades!!.first().assetId)
-        assertEquals("127.87", eventMarketOrder.trades!!.first().oppositeVolume)
-        assertEquals("SLR", eventMarketOrder.trades!!.first().oppositeAssetId)
+        assertEquals("127.87", eventMarketOrder.trades!!.first().baseVolume)
+        assertEquals("SLR", eventMarketOrder.trades!!.first().baseAssetId)
+        assertEquals("-0.01", eventMarketOrder.trades!!.first().quotingVolume)
+        assertEquals("BTC1", eventMarketOrder.trades!!.first().quotingAssetId)
         assertEquals("Client3", eventMarketOrder.trades!!.first().oppositeWalletId)
     }
 

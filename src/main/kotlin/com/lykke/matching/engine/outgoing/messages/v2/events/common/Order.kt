@@ -63,7 +63,7 @@ class Order(val orderType: OrderType,
             builder.lowerLimitPrice = it
         }
         lowerPrice?.let {
-            builder.lowerLimitPrice = it
+            builder.lowerPrice = it
         }
         upperLimitPrice?.let {
             builder.upperLimitPrice = it

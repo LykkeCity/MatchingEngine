@@ -1,5 +1,5 @@
 package com.lykke.matching.engine.utils.monitoring
 
 enum class MonitoredComponent {
-    REDIS
+    REDIS, INPUT_QUEUE
 }

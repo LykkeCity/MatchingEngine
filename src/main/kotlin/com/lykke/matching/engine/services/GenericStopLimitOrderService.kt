@@ -1,9 +1,14 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
+import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
+import com.lykke.matching.engine.database.common.entity.PersistenceData
+import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.ArrayList
@@ -13,17 +18,32 @@ import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
 
 @Component
-class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
+class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
                                    private val genericLimitOrderService: GenericLimitOrderService,
-                                   private val expiryOrdersQueue: ExpiryOrdersQueue): AbstractGenericLimitOrderService<AssetStopOrderBook> {
+                                   private val persistenceManager: PersistenceManager,
+                                   private val expiryOrdersQueue: ExpiryOrdersQueue) : AbstractGenericLimitOrderService<AssetStopOrderBook> {
 
-    val initialStopOrdersCount: Int
+    companion object {
+        private val LOGGER = ThrottlingLogger.getLogger(GenericLimitOrderService::class.java.name)
+    }
+
+    var initialStopOrdersCount = 0
     private val stopLimitOrdersQueues = ConcurrentHashMap<String, AssetStopOrderBook>()
     private val stopLimitOrdersMap = HashMap<String, LimitOrder>()
     private val clientStopLimitOrdersMap = HashMap<String, MutableList<LimitOrder>>()
 
     init {
-        val stopOrders = stopOrderBookDatabaseAccessor.loadStopLimitOrders()
+        update()
+    }
+
+    fun update() {
+        stopLimitOrdersQueues.clear()
+        stopLimitOrdersMap.clear()
+        clientStopLimitOrdersMap.clear()
+
+        // todo clear expiryOrdersQueue ?
+
+        val stopOrders = stopOrdersDatabaseAccessorsHolder.primaryAccessor.loadStopLimitOrders()
         stopOrders.forEach { order ->
             getOrderBook(order.assetPairId).addOrder(order)
             addOrder(order)
@@ -55,7 +75,7 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
         return result
     }
 
-    fun cancelStopLimitOrders(assetPairId: String, isBuy: Boolean, orders: Collection<LimitOrder>, date: Date) {
+    fun cancelStopLimitOrders(assetPairId: String, orders: Collection<LimitOrder>, date: Date) {
         val orderBook = getOrderBook(assetPairId)
         orders.forEach { order ->
             val uid = order.externalId
@@ -65,7 +85,6 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
             orderBook.removeOrder(order)
             order.updateStatus(OrderStatus.Cancelled, date)
         }
-        updateOrderBook(assetPairId, isBuy)
     }
 
     override fun cancelLimitOrders(orders: Collection<LimitOrder>, date: Date) {
@@ -83,18 +102,13 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
 
     fun getOrder(uid: String) = stopLimitOrdersMap[uid]
 
-    override fun updateOrderBook(assetPairId: String, isBuy: Boolean) {
-        stopOrderBookDatabaseAccessor.updateStopOrderBook(assetPairId, isBuy, getOrderBook(assetPairId).getOrderBook(isBuy))
-    }
-
-    override fun setOrderBook(assetPairId: String, assetOrderBook: AssetStopOrderBook){
+    override fun setOrderBook(assetPairId: String, assetOrderBook: AssetStopOrderBook) {
         stopLimitOrdersQueues[assetPairId] = assetOrderBook
     }
 
     fun addStopOrder(order: LimitOrder) {
         getOrderBook(order.assetPairId).addOrder(order)
         addOrder(order)
-        updateOrderBook(order.assetPairId, order.isBuySide())
     }
 
     fun getStopOrderForProcess(assetPairId: String, date: Date): LimitOrder? {
@@ -120,11 +134,25 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
             }
         }
         if (order != null) {
+            val newStopOrderBook = stopOrderBook.getOrderBook(order.isBuySide()).toMutableList()
+            newStopOrderBook.remove(order)
+            val updated = persistenceManager.persist(PersistenceData(null,
+                    null,
+                    null,
+                    OrderBooksPersistenceData(listOf(OrderBookPersistenceData(order.assetPairId,
+                            order.isBuySide(),
+                            newStopOrderBook)),
+                            emptyList(),
+                            listOf(order)),
+                    null))
+            if (!updated) {
+                LOGGER.error("Unable to save stop order book")
+                return null
+            }
             stopLimitOrdersMap.remove(order.externalId)
             expiryOrdersQueue.removeOrder(order)
             removeFromClientMap(order.externalId, clientStopLimitOrdersMap)
             stopOrderBook.removeOrder(order)
-            updateOrderBook(order.assetPairId, order.isBuySide())
             order.price = orderPrice!!
             order.updateStatus(OrderStatus.InOrderBook, date)
         }

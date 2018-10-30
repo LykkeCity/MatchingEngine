@@ -8,10 +8,10 @@ import org.springframework.stereotype.Component
 @Component
 class AssetsHolder @Autowired constructor (private val assetsCache: AssetsCache) {
     fun getAsset(assetId: String): Asset {
-        val asset = assetsCache.getAsset(assetId)
-        if (asset == null) {
-            throw Exception("Unable to find asset $assetId")
-        }
-        return asset
+        return getAssetAllowNulls(assetId) ?: throw Exception("Unable to find asset $assetId")
+    }
+
+    fun getAssetAllowNulls(assetId: String): Asset? {
+        return assetsCache.getAsset(assetId)
     }
 }

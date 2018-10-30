@@ -19,6 +19,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.TradeInfo
+import com.lykke.matching.engine.outgoing.messages.v2.builders.bigDecimalToString
 import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.NumberUtils
@@ -43,6 +44,7 @@ class MatchingEngine(private val LOGGER: Logger,
     }
 
     private var tradeIndex: Long = 0
+    private val changedOrders = HashMap<LimitOrder, CopyWrapper<LimitOrder>>()
 
     fun initTransaction(): MatchingEngine {
         tradeIndex = 0
@@ -56,7 +58,19 @@ class MatchingEngine(private val LOGGER: Logger,
         copyWrappers.forEach { it.applyToOrigin() }
     }
 
-    private val changedOrders = HashMap<LimitOrder, CopyWrapper<LimitOrder>>()
+    fun updatedOrders(orderBook: PriorityBlockingQueue<LimitOrder>): UpdatedOrders {
+        val updatedOrderBook = ArrayList<LimitOrder>(orderBook)
+
+        val bestOrder = orderBook.peek()
+                ?: return UpdatedOrders(updatedOrderBook, null)
+
+        val updatedBestOrder = changedOrders[bestOrder]?.copy
+                ?: return UpdatedOrders(updatedOrderBook, null)
+
+        updatedOrderBook.remove(bestOrder)
+        updatedOrderBook.add(0, updatedBestOrder)
+        return UpdatedOrders(updatedOrderBook, updatedBestOrder)
+    }
 
     fun match(originOrder: Order,
               orderBook: PriorityBlockingQueue<LimitOrder>,
@@ -170,10 +184,10 @@ class MatchingEngine(private val LOGGER: Logger,
                     continue
                 }
 
-                val baseAssetOperation = WalletOperation(UUID.randomUUID().toString(), null, order.clientId, assetPair.baseAssetId, now, marketRoundedVolume, BigDecimal.ZERO)
-                val quotingAssetOperation = WalletOperation(UUID.randomUUID().toString(), null, order.clientId, assetPair.quotingAssetId, now, oppositeRoundedVolume, BigDecimal.ZERO)
-                val limitBaseAssetOperation = WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, assetPair.baseAssetId, now, -marketRoundedVolume, if (-marketRoundedVolume < BigDecimal.ZERO) -marketRoundedVolume else BigDecimal.ZERO)
-                val limitQuotingAssetOperation = WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, assetPair.quotingAssetId, now, -oppositeRoundedVolume, if (-oppositeRoundedVolume < BigDecimal.ZERO) -oppositeRoundedVolume else BigDecimal.ZERO)
+                val baseAssetOperation = WalletOperation(order.clientId, assetPair.baseAssetId, marketRoundedVolume, BigDecimal.ZERO)
+                val quotingAssetOperation = WalletOperation(order.clientId, assetPair.quotingAssetId, oppositeRoundedVolume, BigDecimal.ZERO)
+                val limitBaseAssetOperation = WalletOperation(limitOrder.clientId, assetPair.baseAssetId, -marketRoundedVolume, if (-marketRoundedVolume < BigDecimal.ZERO) -marketRoundedVolume else BigDecimal.ZERO)
+                val limitQuotingAssetOperation = WalletOperation(limitOrder.clientId, assetPair.quotingAssetId, -oppositeRoundedVolume, if (-oppositeRoundedVolume < BigDecimal.ZERO) -oppositeRoundedVolume else BigDecimal.ZERO)
 
                 val ownCashMovements = mutableListOf(baseAssetOperation, quotingAssetOperation)
                 val oppositeCashMovements = mutableListOf(limitBaseAssetOperation, limitQuotingAssetOperation)
@@ -234,7 +248,7 @@ class MatchingEngine(private val LOGGER: Logger,
                     limitOrderCopy.updateStatus(OrderStatus.Matched, now)
                     completedLimitOrders.add(limitOrderCopyWrapper)
                     if (limitOrderCopy.reservedLimitVolume != null && limitOrderCopy.reservedLimitVolume!! > BigDecimal.ZERO) {
-                        oppositeCashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, if (-marketRoundedVolume < BigDecimal.ZERO) assetPair.baseAssetId else assetPair.quotingAssetId, now, BigDecimal.ZERO, -limitOrderCopy.reservedLimitVolume!!))
+                        oppositeCashMovements.add(WalletOperation(limitOrder.clientId, if (-marketRoundedVolume < BigDecimal.ZERO) assetPair.baseAssetId else assetPair.quotingAssetId, BigDecimal.ZERO, -limitOrderCopy.reservedLimitVolume!!))
                         limitOrderCopy.reservedLimitVolume =  BigDecimal.ZERO
                     }
                 } else {
@@ -258,6 +272,28 @@ class MatchingEngine(private val LOGGER: Logger,
                 val roundedAbsoluteSpread = if (absoluteSpread != null) NumberUtils.setScaleRoundHalfUp(absoluteSpread, assetPair.accuracy) else null
                 val roundedRelativeSpread = if (relativeSpread != null) NumberUtils.setScaleRoundHalfUp(relativeSpread, RELATIVE_SPREAD_ACCURACY) else null
 
+                val baseAsset: Asset
+                val quotingAsset: Asset
+                val baseMarketVolume: String
+                val baseLimitVolume: String
+                val quotingMarketVolume: String
+                val quotingLimitVolume: String
+                if (isBuy) {
+                    baseAsset = limitAsset
+                    quotingAsset = asset
+                    baseMarketVolume = bigDecimalToString(marketRoundedVolume.abs())!!
+                    quotingMarketVolume = bigDecimalToString(-oppositeRoundedVolume.abs())!!
+                    baseLimitVolume = bigDecimalToString(-marketRoundedVolume.abs())!!
+                    quotingLimitVolume = bigDecimalToString(oppositeRoundedVolume.abs())!!
+                } else {
+                    baseAsset = asset
+                    quotingAsset = limitAsset
+                    baseMarketVolume = bigDecimalToString(-marketRoundedVolume.abs())!!
+                    quotingMarketVolume = bigDecimalToString(oppositeRoundedVolume.abs())!!
+                    baseLimitVolume = bigDecimalToString(marketRoundedVolume.abs())!!
+                    quotingLimitVolume = bigDecimalToString(-oppositeRoundedVolume.abs())!!
+                }
+
                 marketOrderTrades.add(TradeInfo(traderId,
                         order.clientId,
                         NumberUtils.setScaleRoundHalfUp((if (isBuy) oppositeRoundedVolume else marketRoundedVolume).abs(), asset.accuracy).toPlainString(),
@@ -274,7 +310,11 @@ class MatchingEngine(private val LOGGER: Logger,
                         singleFeeTransfer(order.fee, takerFees),
                         takerFees,
                         roundedAbsoluteSpread,
-                        roundedRelativeSpread))
+                        roundedRelativeSpread,
+                        baseAsset.assetId,
+                        baseMarketVolume,
+                        quotingAsset.assetId,
+                        quotingMarketVolume))
 
                 limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder,
                         mutableListOf(LimitTradeInfo(traderId,
@@ -294,7 +334,11 @@ class MatchingEngine(private val LOGGER: Logger,
                                 makerFees,
                                 roundedAbsoluteSpread,
                                 roundedRelativeSpread,
-                                TradeRole.MAKER))))
+                                TradeRole.MAKER,
+                                baseAsset.assetId,
+                                baseLimitVolume,
+                                quotingAsset.assetId,
+                                quotingLimitVolume))))
                 tradeIndex++
 
                 totalVolume += volume
