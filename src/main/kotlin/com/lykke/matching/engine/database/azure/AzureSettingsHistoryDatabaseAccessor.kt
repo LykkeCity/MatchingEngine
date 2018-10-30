@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.database.azure
 
 import com.lykke.matching.engine.daos.azure.settings.AzureAppSettingHistory
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.SettingHistoryRecord
 import com.lykke.matching.engine.database.SettingsHistoryDatabaseAccessor
 import com.microsoft.azure.storage.table.CloudTable
@@ -15,17 +16,18 @@ class AzureSettingsHistoryDatabaseAccessor(connectionString: String, configTable
 
     private val historyTable: CloudTable = getOrCreateTable(connectionString, configTableName)
 
-    override fun save(settingGroupName: String, settingHistoryRecord: SettingHistoryRecord) {
+    override fun save(settingHistoryRecord: SettingHistoryRecord) {
         try {
-            historyTable.execute(TableOperation.insertOrMerge(toAzureSettingHistoryRecord(settingGroupName, settingHistoryRecord)))
+            historyTable.execute(TableOperation.insertOrMerge(toAzureSettingHistoryRecord(settingHistoryRecord)))
         } catch (e: Exception) {
-            throw RuntimeException("Not able to persist setting to the history, group: $settingGroupName, name: ${settingHistoryRecord.name}")
+            throw RuntimeException("Not able to persist setting to the history, group: ${settingHistoryRecord.settingGroup.settingGroupName}, " +
+                    "name: ${settingHistoryRecord.name}")
         }
     }
 
-    override fun get(settingGroupName: String, settingName: String): List<SettingHistoryRecord> {
+    override fun get(settingGroupName: AvailableSettingGroup, settingName: String): List<SettingHistoryRecord> {
         try {
-            val partitionFilter = TableQuery.generateFilterCondition(PARTITION_KEY, TableQuery.QueryComparisons.EQUAL, settingGroupName)
+            val partitionFilter = TableQuery.generateFilterCondition(PARTITION_KEY, TableQuery.QueryComparisons.EQUAL, settingGroupName.settingGroupName)
             val nameFilter = TableQuery.generateFilterCondition(NAME_COLUMN, TableQuery.QueryComparisons.EQUAL, settingName)
 
             val query = TableQuery.from(AzureAppSettingHistory::class.java)
@@ -39,12 +41,18 @@ class AzureSettingsHistoryDatabaseAccessor(connectionString: String, configTable
 
     private fun toSettingHistoryRecord(azureAppSettingHistory: AzureAppSettingHistory): SettingHistoryRecord {
         return azureAppSettingHistory.let {
-            SettingHistoryRecord(it.settingName, it.value, it.enabled, it.comment, it.user, it.timestamp)
+            SettingHistoryRecord(AvailableSettingGroup.getBySettingsGroupName(it.partitionKey),
+                    it.settingName,
+                    it.value,
+                    it.enabled,
+                    it.comment,
+                    it.user,
+                    it.timestamp)
         }
     }
 
-    private fun toAzureSettingHistoryRecord(settingGroupName: String, settingHistoryRecord: SettingHistoryRecord): AzureAppSettingHistory {
-        return AzureAppSettingHistory(settingGroupName,
+    private fun toAzureSettingHistoryRecord(settingHistoryRecord: SettingHistoryRecord): AzureAppSettingHistory {
+        return AzureAppSettingHistory(settingHistoryRecord.settingGroup.settingGroupName,
                 settingHistoryRecord.name,
                 settingHistoryRecord.value,
                 settingHistoryRecord.comment,

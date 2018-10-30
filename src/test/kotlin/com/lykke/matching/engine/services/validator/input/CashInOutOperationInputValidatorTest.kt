@@ -4,7 +4,6 @@ import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.FeeType
-import com.lykke.matching.engine.daos.context.CashInOutContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
@@ -16,9 +15,8 @@ import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.services.validator.CashOperationValidatorTest
-import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
+import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
 import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
 import org.junit.Test
@@ -78,7 +76,7 @@ class CashInOutOperationInputValidatorTest {
     @Test(expected = ValidationException::class)
     fun assetDoesNotExist() {
         //given
-        val cashInOutOperationBuilder = getDefaultCashInOutOperationBuilder()
+    val cashInOutOperationBuilder = getDefaultCashInOutOperationBuilder()
         cashInOutOperationBuilder.setAssetId("UNKNOWN")
 
         try {
@@ -117,7 +115,7 @@ class CashInOutOperationInputValidatorTest {
     @Test(expected = ValidationException::class)
     fun testAssetEnabled() {
         //given
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS.settingGroupName, getSetting(ASSET_ID))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS, getSetting(ASSET_ID))
         applicationSettingsCache.update()
 
         //when

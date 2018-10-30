@@ -65,7 +65,7 @@ class MarketOrderValidatorTest {
         @Primary
         open fun test(): TestSettingsDatabaseAccessor {
             val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS.settingGroupName, getSetting("BTC"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS, getSetting("BTC"))
             return testSettingsDatabaseAccessor
         }
     }
@@ -212,7 +212,8 @@ class MarketOrderValidatorTest {
         assetOrderBook.addOrder(LimitOrder("test", "test",
                 ASSET_PAIR_ID, CLIENT_NAME, BigDecimal.valueOf(1.0), BigDecimal.valueOf(1.0),
                 OrderStatus.InOrderBook.name, now, now, now, BigDecimal.valueOf(1.0), now, BigDecimal.valueOf(1.0),
-                null, null, null, null, null, null, null, null))
+                null, null, null, null, null, null, null, null,
+                null, null))
 
         return assetOrderBook.getOrderBook(isBuy)
      }

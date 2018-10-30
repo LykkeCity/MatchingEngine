@@ -4,14 +4,11 @@ import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
-import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
-import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
-import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
@@ -22,7 +19,6 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.NumberUtils
-import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.getSetting
@@ -37,7 +33,6 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
-import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
@@ -46,6 +41,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as Outgo
 @SpringBootTest(classes = [(TestApplicationContext::class), (MultiLimitOrderServiceTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MultiLimitOrderServiceTest: AbstractTest() {
+
     @TestConfiguration
     open class Config {
         @Bean
@@ -69,15 +65,11 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         @Primary
         open fun testConfig(): TestSettingsDatabaseAccessor {
             val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client1"))
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client5"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client1"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client5"))
             return testSettingsDatabaseAccessor
         }
     }
-
-
-    @Autowired
-    private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @Autowired
     private lateinit var messageBuilder: MessageBuilder
@@ -85,6 +77,8 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     @Autowired
     private lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
 
+    @Autowired
+    private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @Before
     fun setUp() {
@@ -621,7 +615,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Test
     fun testAddAndMatchAndCancel() {
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client3"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client3"))
 
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.26170853)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC",  0.001)
@@ -1350,7 +1344,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     fun testCancelAllOrdersOfExTrustedClient() {
         testBalanceHolderWrapper.updateBalance("Client1", "LKK", 1.0)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.name, getSetting("Client1"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client1"))
         applicationSettingsCache.update()
 
         // OrderBook orders with reservedLimitVolume=null
@@ -1372,6 +1366,74 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         assertOrderBookSize("LKK1YLKK", true, 0)
         assertBalance("Client1", "LKK", 1.0, 0.0)
+    }
+
+    @Test
+    fun testImmediateOrCancelOrders() {
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2",
+                assetId = "EURUSD",
+                volume = -10.0,
+                price = 10.0))
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(clientId = "Client1",
+                pair = "EURUSD",
+                orders = listOf(IncomingLimitOrder(6.0, 11.0, uid = "Matched", timeInForce = OrderTimeInForce.IOC),
+                        IncomingLimitOrder(6.0, 10.0, uid = "PartiallyMatched", timeInForce = OrderTimeInForce.IOC),
+                        IncomingLimitOrder(6.0, 9.0, uid = "WithoutTrades", timeInForce = OrderTimeInForce.IOC),
+                        IncomingLimitOrder(6.0, 8.0, timeInForce = OrderTimeInForce.GTC))))
+
+        assertOrderBookSize("EURUSD", false, 0)
+        assertOrderBookSize("EURUSD", true, 1)
+        assertEquals(BigDecimal.valueOf(8.0), genericLimitOrderService.getOrderBook("EURUSD").getBidPrice())
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.externalId == "Matched" }.status)
+
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "PartiallyMatched" }.status)
+        assertEquals(1, event.orders.single { it.externalId == "PartiallyMatched" }.trades?.size)
+
+        assertEquals(1, trustedClientsEventsQueue.size)
+        val trustedEvent = trustedClientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(OutgoingOrderStatus.CANCELLED, trustedEvent.orders.single { it.externalId == "WithoutTrades" }.status)
+        assertEquals(0, trustedEvent.orders.single { it.externalId == "WithoutTrades" }.trades?.size)
+
+        assertBalance("Client1", "EUR", 1010.0, 0.0)
+        assertBalance("Client1", "USD", 900.0, 0.0)
+    }
+
+    @Test
+    fun testFillOrKillOrders() {
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2",
+                assetId = "EURUSD",
+                volume = -10.0,
+                price = 10.0))
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(clientId = "Client1",
+                pair = "EURUSD",
+                orders = listOf(IncomingLimitOrder(6.0, 11.0, uid = "Matched", timeInForce = OrderTimeInForce.FOK),
+                        IncomingLimitOrder(6.0, 10.0, uid = "PartiallyMatched", timeInForce = OrderTimeInForce.FOK),
+                        IncomingLimitOrder(6.0, 9.0, uid = "WithoutTrades", timeInForce = OrderTimeInForce.FOK),
+                        IncomingLimitOrder(6.0, 8.0, timeInForce = OrderTimeInForce.GTC))))
+
+        assertOrderBookSize("EURUSD", false, 1)
+        assertOrderBookSize("EURUSD", true, 1)
+        assertEquals(BigDecimal.valueOf(8.0), genericLimitOrderService.getOrderBook("EURUSD").getBidPrice())
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(2, event.orders.size)
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.externalId == "Matched" }.status)
+
+        assertEquals(1, trustedClientsEventsQueue.size)
+        val trustedEvent = trustedClientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(OutgoingOrderStatus.CANCELLED, trustedEvent.orders.single { it.externalId == "PartiallyMatched" }.status)
+        assertEquals(0, trustedEvent.orders.single { it.externalId == "PartiallyMatched" }.trades?.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, trustedEvent.orders.single { it.externalId == "WithoutTrades" }.status)
+        assertEquals(0, trustedEvent.orders.single { it.externalId == "WithoutTrades" }.trades?.size)
+
+        assertBalance("Client1", "EUR", 1006.0, 0.0)
+        assertBalance("Client1", "USD", 940.0, 0.0)
     }
 
 }

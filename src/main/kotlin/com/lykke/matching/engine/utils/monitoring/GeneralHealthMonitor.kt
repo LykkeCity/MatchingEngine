@@ -5,10 +5,8 @@ import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import org.springframework.util.CollectionUtils
-import java.util.concurrent.ConcurrentHashMap
 
-@Component("GeneralHealthMonitor")
+@Component
 class GeneralHealthMonitor: HealthMonitor {
 
     companion object {
@@ -16,24 +14,33 @@ class GeneralHealthMonitor: HealthMonitor {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
+    private val monitoredComponentsToQualifiers = HashMap<MonitoredComponent, MutableSet<String>>()
     private var previousMaintenanceModeStatus = false
 
-    private val brokenComponents = ConcurrentHashMap.newKeySet<MonitoredComponent>()
+    @Volatile
+    private var ok: Boolean = true
 
-    override fun ok() = brokenComponents.isEmpty()
+    override fun ok() = ok
 
     @EventListener
+    @Synchronized
     fun processHealthMonitorEvent(event: HealthMonitorEvent) {
         if (event.ok) {
-            brokenComponents.remove(event.component)
+            val qualifiers = monitoredComponentsToQualifiers[event.component] ?: return
+            qualifiers.remove(getQualifier(event))
+            if (qualifiers.isEmpty()) {
+                monitoredComponentsToQualifiers.remove(event.component)
+            }
         } else {
-            brokenComponents.add(event.component)
+            val qualifiers = monitoredComponentsToQualifiers.getOrPut(event.component) { HashSet() }
+            qualifiers.add(getQualifier(event))
         }
+        ok = monitoredComponentsToQualifiers.isEmpty()
     }
 
     @Scheduled(fixedRateString = "\${health.check.update.interval}")
-    fun checkBrokenComponents() {
-        if (!CollectionUtils.isEmpty(brokenComponents)) {
+    open fun checkBrokenComponents() {
+        if (!ok) {
             processMaintenanceModeOn()
         } else if (previousMaintenanceModeStatus) {
             processMaintenanceModeOff()
@@ -42,7 +49,7 @@ class GeneralHealthMonitor: HealthMonitor {
 
     fun processMaintenanceModeOn() {
         previousMaintenanceModeStatus = true
-        val message = "Maintenance mode is on, broken component are: $brokenComponents"
+        val message = "Maintenance mode is on, broken component are: ${monitoredComponentsToQualifiers.keys}"
         LOGGER.error(message)
         METRICS_LOGGER.logError(message)
     }
@@ -53,5 +60,9 @@ class GeneralHealthMonitor: HealthMonitor {
         val message = "Maintenance mode is off"
         LOGGER.info(message)
         METRICS_LOGGER.logWarning(message)
+    }
+
+    private fun getQualifier(event: HealthMonitorEvent): String {
+        return "${event.component.name}  ${if(event.qualifier != null) "_" + event.qualifier else  ""}"
     }
 }

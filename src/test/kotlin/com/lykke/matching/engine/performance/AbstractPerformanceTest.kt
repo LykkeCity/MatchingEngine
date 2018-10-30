@@ -22,8 +22,7 @@ import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperation
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
-import com.lykke.matching.engine.notification.QuotesUpdate
+import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.ExecutionConfirmationService
 import com.lykke.matching.engine.order.ExecutionEventSender
 import com.lykke.matching.engine.order.ExecutionPersistenceService
@@ -40,7 +39,6 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
-import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.business.impl.LimitOrderBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.business.impl.StopOrderBusinessValidatorImpl
@@ -88,7 +86,7 @@ abstract class AbstractPerformanceTest {
     protected lateinit var persistenceManager: PersistenceManager
 
     protected var rabbitEventsQueue = LinkedBlockingQueue<Event<*>>()
-    protected var rabbitTrustedClientsEventsQueue = LinkedBlockingQueue<ExecutionEvent>()
+    protected var rabbitTrustedClientsEventsQueue = LinkedBlockingQueue<Event<*>>()
 
     protected lateinit var singleLimitOrderContextParser: SingleLimitOrderContextParser
     protected lateinit var cashInOutContextParser: CashInOutContextParser
@@ -97,12 +95,11 @@ abstract class AbstractPerformanceTest {
     protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
     private lateinit var feeProcessor: FeeProcessor
+    private lateinit var expiryOrdersQueue: ExpiryOrdersQueue
 
     protected lateinit var messageBuilder: MessageBuilder
 
     val balanceUpdateQueue = LinkedBlockingQueue<BalanceUpdate>()
-
-    val balanceUpdateNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
 
     val clientLimitOrdersQueue  = LinkedBlockingQueue<LimitOrdersReport>()
 
@@ -115,8 +112,6 @@ abstract class AbstractPerformanceTest {
     val rabbitSwapQueue  = LinkedBlockingQueue<MarketOrderWithTrades>()
 
     val trustedClientsLimitOrdersQueue  = LinkedBlockingQueue<LimitOrdersReport>()
-
-    val quotesUpdateQueue = LinkedBlockingQueue<QuotesUpdate>()
 
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
@@ -147,21 +142,21 @@ abstract class AbstractPerformanceTest {
                 ordersDatabaseAccessorsHolder,
                 stopOrdersDatabaseAccessorsHolder)
         balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder,
-                persistenceManager,
-                assetsHolder,
-                balanceUpdateNotificationQueue, balanceUpdateQueue,
-                applicationSettingsCache)
+                persistenceManager, assetsHolder,
+                balanceUpdateQueue, applicationSettingsCache)
 
-        testBalanceHolderWrapper = TestBalanceHolderWrapper(BalanceUpdateHandlerTest(balanceUpdateQueue, balanceUpdateNotificationQueue), balancesHolder)
+        testBalanceHolderWrapper = TestBalanceHolderWrapper(BalanceUpdateHandlerTest(balanceUpdateQueue), balancesHolder)
         assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
         assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
 
+        expiryOrdersQueue = ExpiryOrdersQueue()
         genericLimitOrderService = GenericLimitOrderService(ordersDatabaseAccessorsHolder,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
                 quotesUpdateQueue,
-                tradeInfoQueue)
+                tradeInfoQueue,
+                expiryOrdersQueue)
 
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
@@ -178,7 +173,8 @@ abstract class AbstractPerformanceTest {
                 LimitOrderCancelOperationContextParser(),
                 LimitOrderMassCancelOperationContextParser())
 
-        genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder)
+        genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder,
+                expiryOrdersQueue)
 
         val executionPersistenceService = ExecutionPersistenceService(persistenceManager)
         val executionEventSender = ExecutionEventSender(messageSequenceNumberHolder,

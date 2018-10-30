@@ -7,7 +7,7 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
-import com.lykke.matching.engine.notification.QuotesUpdate
+import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
 import com.lykke.matching.engine.order.transaction.CurrentTransactionOrderBooksHolder
@@ -29,8 +29,8 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
                                                       private val assetsHolder: AssetsHolder,
                                                       private val assetsPairsHolder: AssetsPairsHolder,
                                                       private val balancesHolder: BalancesHolder,
-                                                      private val quotesUpdateQueue: BlockingQueue<QuotesUpdate>,
-                                                      private val tradeInfoQueue: BlockingQueue<TradeInfo>) : AbstractGenericLimitOrderService<AssetOrderBook> {
+                                                      private val tradeInfoQueue: BlockingQueue<TradeInfo>,
+                                                      private val expiryOrdersQueue: ExpiryOrdersQueue) : AbstractGenericLimitOrderService<AssetOrderBook> {
 
     companion object {
         private val LOGGER = Logger.getLogger(GenericLimitOrderService::class.java.name)
@@ -47,6 +47,9 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     }
 
     fun update() {
+        limitOrdersMap.values.forEach {
+            expiryOrdersQueue.removeOrder(it)
+        }
         limitOrdersQueues.clear()
         limitOrdersMap.clear()
         clientLimitOrdersMap.clear()
@@ -66,7 +69,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     fun addOrder(order: LimitOrder) {
         limitOrdersMap[order.externalId] = order
         clientLimitOrdersMap.getOrPut(order.clientId) { ArrayList() }.add(order)
-        quotesUpdateQueue.put(QuotesUpdate(order.assetPairId, order.price, order.volume))
+        expiryOrdersQueue.addOrder(order)
     }
 
     override fun addOrders(orders: Collection<LimitOrder>) {
@@ -114,6 +117,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
 
     fun cancelLimitOrder(date: Date, uid: String, removeFromClientMap: Boolean = false): LimitOrder? {
         val order = limitOrdersMap.remove(uid) ?: return null
+        expiryOrdersQueue.removeOrder(order)
 
         if (removeFromClientMap) {
             removeFromClientMap(uid)
@@ -132,6 +136,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     override fun cancelLimitOrders(orders: Collection<LimitOrder>, date: Date) {
         orders.forEach { order ->
             val ord = limitOrdersMap.remove(order.externalId)
+            expiryOrdersQueue.removeOrder(order)
             clientLimitOrdersMap[order.clientId]?.remove(order)
             if (ord != null) {
                 ord.updateStatus(Cancelled, date)
@@ -142,9 +147,12 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     override fun removeOrderFromMapsWithStatus(orders: Collection<LimitOrder>, status: OrderStatus?, date: Date?) {
         orders.forEach { order ->
             val removedOrder = limitOrdersMap.remove(order.externalId)
-            clientLimitOrdersMap[order.clientId]?.remove(removedOrder)
-            if (removedOrder != null && status != null) {
-                removedOrder.updateStatus(status, date!!)
+            if (removedOrder != null) {
+                clientLimitOrdersMap[order.clientId]?.remove(removedOrder)
+                expiryOrdersQueue.removeOrder(order)
+                if (status != null) {
+                    removedOrder.updateStatus(status, date!!)
+                }
             }
         }
     }

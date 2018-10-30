@@ -16,7 +16,6 @@ import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
-import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.order.ExecutionConfirmationService
@@ -28,7 +27,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import java.math.BigDecimal
 import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
@@ -64,16 +62,10 @@ abstract class AbstractTest {
     protected lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
     @Autowired
-    protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
-
-    @Autowired
     protected lateinit var testDictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor
 
     @Autowired
     protected lateinit var assetPairsCache: AssetPairsCache
-
-    @Autowired
-    protected lateinit var balanceUpdateService: BalanceUpdateService
 
     @Autowired
     protected lateinit var persistenceManager: TestPersistenceManager
@@ -136,9 +128,7 @@ abstract class AbstractTest {
     protected lateinit var clientsEventsQueue: BlockingQueue<Event<*>>
 
     @Autowired
-    protected lateinit var trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>
-
-    protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
+    protected lateinit var trustedClientsEventsQueue: BlockingQueue<Event<*>>
 
     @Autowired
     @Qualifier("rabbitCashInOutQueue")
@@ -164,7 +154,6 @@ abstract class AbstractTest {
 
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
-    protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
 
     private var initialized = false
     protected open fun initServices() {
@@ -176,7 +165,6 @@ abstract class AbstractTest {
         assetPairsCache.update()
         applicationSettingsCache.update()
 
-        reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
         singleLimitOrderService = SingleLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
@@ -187,8 +175,6 @@ abstract class AbstractTest {
     }
 
     protected fun clearMessageQueues() {
-        quotesNotificationQueue.clear()
-
         balanceUpdateHandlerTest.clear()
         tradesInfoListener.clear()
 
