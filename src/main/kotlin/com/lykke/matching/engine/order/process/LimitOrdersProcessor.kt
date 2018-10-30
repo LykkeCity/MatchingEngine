@@ -7,6 +7,7 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
@@ -259,6 +260,14 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             return
         }
 
+        if (order.timeInForce == OrderTimeInForce.IOC) {
+            order.updateStatus(OrderStatus.Cancelled, date)
+            LOGGER.info("$orderInfo: cancelled due to IOC")
+            addToReport(order)
+            processedOrders.add(ProcessedOrder(order, true))
+            return
+        }
+
         order.reservedLimitVolume = limitVolume
         orderBook.addOrder(order)
         ordersToAdd.add(order)
@@ -308,17 +317,25 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
 
         val ownWalletOperations = LinkedList<WalletOperation>(matchingResult.ownCashMovements)
         if (OrderStatus.Processing.name == orderCopy.status || OrderStatus.InOrderBook.name == orderCopy.status) {
-            if (assetPair.minVolume != null && orderCopy.getAbsRemainingVolume() < assetPair.minVolume) {
-                LOGGER.info("$orderInfo: Cancelled due to min remaining volume (${NumberUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
-                orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
-            } else if (matchingResult.matchedWithZeroLatestTrade) {
-                LOGGER.info("$orderInfo: Cancelled due to zero latest trade")
-                orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
-            } else {
-                orderCopy.reservedLimitVolume = if (order.isBuySide()) NumberUtils.setScaleRoundDown(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy) else orderCopy.getAbsRemainingVolume()
-                if (!isTrustedClient) {
-                    val newReservedBalance = NumberUtils.setScaleRoundHalfUp(orderCopy.reservedLimitVolume!!, limitAsset.accuracy)
-                    ownWalletOperations.add(WalletOperation(orderCopy.clientId, limitAsset.assetId, BigDecimal.ZERO, newReservedBalance))
+            when {
+                assetPair.minVolume != null && orderCopy.getAbsRemainingVolume() < assetPair.minVolume -> {
+                    LOGGER.info("$orderInfo: cancelled due to min remaining volume (${NumberUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
+                    orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
+                }
+                matchingResult.matchedWithZeroLatestTrade -> {
+                    LOGGER.info("$orderInfo: cancelled due to zero latest trade")
+                    orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
+                }
+                order.timeInForce == OrderTimeInForce.IOC -> {
+                    LOGGER.info("$orderInfo: cancelled after matching due to IOC")
+                    orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
+                }
+                else -> {
+                    orderCopy.reservedLimitVolume = if (order.isBuySide()) NumberUtils.setScaleRoundDown(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy) else orderCopy.getAbsRemainingVolume()
+                    if (!isTrustedClient) {
+                        val newReservedBalance = NumberUtils.setScaleRoundHalfUp(orderCopy.reservedLimitVolume!!, limitAsset.accuracy)
+                        ownWalletOperations.add(WalletOperation(orderCopy.clientId, limitAsset.assetId, BigDecimal.ZERO, newReservedBalance))
+                    }
                 }
             }
         }
