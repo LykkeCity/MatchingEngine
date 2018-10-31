@@ -1,33 +1,29 @@
 package com.lykke.matching.engine.matching
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
-import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.CopyWrapper
-import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.MarketOrder
-import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.Order
-import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.daos.*
+import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
+import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
-import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
-import org.junit.After
-import org.junit.Assert.assertEquals
+import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
+import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.assertEquals
 import org.apache.log4j.Logger
+import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import java.math.BigDecimal
-import java.util.Date
+import java.util.*
 import java.util.concurrent.PriorityBlockingQueue
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -110,11 +106,13 @@ abstract class MatchingEngineTest {
 
     protected fun match(order: Order,
                         orderBook: PriorityBlockingQueue<LimitOrder>,
-                        priceDeviationThreshold: BigDecimal? = null): MatchingResult {
+                        lowerBound: BigDecimal? = null,
+                        upperBound: BigDecimal? = null): MatchingResult {
         return matchingEngine.match(order,
                 orderBook,
                 "test",
-                priceDeviationThreshold = priceDeviationThreshold,
+                lowerMidPriceBound = lowerBound,
+                upperMidPriceBound = upperBound,
                 executionContext = executionContext)
     }
 

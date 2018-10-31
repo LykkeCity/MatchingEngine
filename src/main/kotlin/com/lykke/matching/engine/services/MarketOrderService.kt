@@ -1,48 +1,41 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.daos.*
+import com.lykke.matching.engine.daos.MarketOrder
+import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
+import com.lykke.matching.engine.daos.v2.FeeInstruction
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.holders.MidPriceHolder
+import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.order.ExecutionConfirmationService
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.OrderStatus.InvalidFee
-import com.lykke.matching.engine.order.OrderStatus.InvalidValue
-import com.lykke.matching.engine.order.OrderStatus.InvalidVolume
-import com.lykke.matching.engine.order.OrderStatus.InvalidVolumeAccuracy
-import com.lykke.matching.engine.order.OrderStatus.Matched
-import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
-import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
-import com.lykke.matching.engine.order.OrderStatus.Processing
-import com.lykke.matching.engine.order.OrderStatus.ReservedVolumeGreaterThanBalance
-import com.lykke.matching.engine.order.OrderStatus.TooHighPriceDeviation
-import com.lykke.matching.engine.services.validators.impl.OrderValidationException
-import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
-import com.lykke.matching.engine.services.validators.MarketOrderValidator
-import com.lykke.matching.engine.utils.PrintUtils
-import com.lykke.matching.engine.utils.NumberUtils
-import com.lykke.matching.engine.utils.order.MessageStatusUtils
-import com.lykke.matching.engine.daos.v2.FeeInstruction
-import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.order.OrderStatus.*
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.process.context.MarketOrderExecutionContext
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
-import com.lykke.matching.engine.order.ExecutionConfirmationService
+import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
+import com.lykke.matching.engine.services.validators.MarketOrderValidator
+import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
+import com.lykke.matching.engine.services.validators.impl.OrderValidationException
+import com.lykke.matching.engine.utils.NumberUtils
+import com.lykke.matching.engine.utils.PrintUtils
+import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
-import java.util.Date
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.BlockingQueue
 
 @Service
@@ -56,8 +49,9 @@ class MarketOrderService @Autowired constructor(
         private val assetsPairsHolder: AssetsPairsHolder,
         private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
         private val marketOrderValidator: MarketOrderValidator,
-        private val settings: ApplicationSettingsCache,
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
+        private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
+        private val midPriceHolder: MidPriceHolder,
         private val messageSender: MessageSender): AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
@@ -114,12 +108,24 @@ class MarketOrderService @Autowired constructor(
                 now,
                 LOGGER)
 
-        val marketOrderExecutionContext = MarketOrderExecutionContext(order, executionContext)
+        val marketOrderPriceDeviationThreshold = priceDeviationThresholdHolder.getMarketOrderPriceDeviationThreshold(assetPair.assetPairId)
+
+        var lowerMidPriceBound: BigDecimal? = null
+        var upperMidPriceBound: BigDecimal? = null
+        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, now)
+
+        if (marketOrderPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
+            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * marketOrderPriceDeviationThreshold)
+            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * marketOrderPriceDeviationThreshold)
+        }
+
+        val marketOrderExecutionContext = MarketOrderExecutionContext(order, lowerMidPriceBound, upperMidPriceBound, executionContext)
 
         val matchingResult = matchingEngine.match(order,
                 getOrderBook(order),
                 messageWrapper.messageId!!,
-                priceDeviationThreshold = assetPair.marketOrderPriceDeviationThreshold ?: settings.marketOrderPriceDeviationThreshold(assetPair.assetPairId),
+                lowerMidPriceBound = lowerMidPriceBound,
+                upperMidPriceBound = upperMidPriceBound,
                 executionContext = executionContext)
         marketOrderExecutionContext.matchingResult = matchingResult
 
@@ -135,44 +141,7 @@ class MarketOrderService @Autowired constructor(
                 marketOrderExecutionContext.executionContext.marketOrderWithTrades = MarketOrderWithTrades(executionContext.messageId, order)
             }
             Matched -> {
-                if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
-                    matchingResultHandlingHelper.preProcessCancelledOppositeOrders(marketOrderExecutionContext)
-                }
-                if (matchingResult.uncompletedLimitOrderCopy != null) {
-                    matchingResultHandlingHelper.preProcessUncompletedOppositeOrder(marketOrderExecutionContext)
-                }
-                marketOrderExecutionContext.ownWalletOperations = matchingResult.ownCashMovements
-                val preProcessResult = try {
-                    matchingResultHandlingHelper.processWalletOperations(marketOrderExecutionContext)
-                    true
-                } catch (e: BalanceException) {
-                    order.updateStatus(OrderStatus.NotEnoughFunds, now)
-                    marketOrderExecutionContext.executionContext.marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
-                    LOGGER.error("$order: Unable to process wallet operations after matching: ${e.message}")
-                    false
-                }
-
-                if (preProcessResult) {
-                    matchingResult.apply()
-                    executionContext.orderBooksHolder.addCompletedOrders(matchingResult.completedLimitOrders.map { it.origin!! })
-
-                    if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
-                        matchingResultHandlingHelper.processCancelledOppositeOrders(marketOrderExecutionContext)
-                    }
-                    if (matchingResult.uncompletedLimitOrderCopy != null) {
-                        matchingResultHandlingHelper.processUncompletedOppositeOrder(marketOrderExecutionContext)
-                    }
-
-                    matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
-
-                    marketOrderExecutionContext.executionContext.orderBooksHolder
-                            .getChangedOrderBookCopy(order.assetPairId)
-                            .setOrderBook(!order.isBuySide(), matchingResult.orderBook)
-                    marketOrderExecutionContext.executionContext.lkkTrades.addAll(matchingResult.lkkTrades)
-
-                    marketOrderExecutionContext.executionContext.marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order, matchingResult.marketOrderTrades)
-                    matchingResult.limitOrdersReport?.orders?.let { marketOrderExecutionContext.executionContext.addClientsLimitOrdersWithTrades(it) }
-                }
+                processMatchedStatus(marketOrderExecutionContext, messageWrapper.messageId!!)
             }
             else -> {
                 executionContext.error("Not handled order status: ${matchingResult.order.status}")
@@ -196,6 +165,67 @@ class MarketOrderService @Autowired constructor(
         if (messagesCount % logCount == 0L) {
             STATS_LOGGER.info("Total: ${PrintUtils.convertToString(totalTime)}. ")
             totalTime = 0.0
+        }
+    }
+
+    private fun processMatchedStatus(marketOrderExecutionContext: MarketOrderExecutionContext,
+                                     messageId: String) {
+        val matchingResult = marketOrderExecutionContext.matchingResult!!
+        val executionContext = marketOrderExecutionContext.executionContext
+
+        val order = marketOrderExecutionContext.order
+        if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
+            matchingResultHandlingHelper.preProcessCancelledOppositeOrders(marketOrderExecutionContext)
+        }
+        if (matchingResult.uncompletedLimitOrderCopy != null) {
+            matchingResultHandlingHelper.preProcessUncompletedOppositeOrder(marketOrderExecutionContext)
+        }
+        marketOrderExecutionContext.ownWalletOperations = matchingResult.ownCashMovements
+        val preProcessResult = try {
+            matchingResultHandlingHelper.processWalletOperations(marketOrderExecutionContext)
+            true
+        } catch (e: BalanceException) {
+            order.updateStatus(OrderStatus.NotEnoughFunds, executionContext.date)
+            marketOrderExecutionContext.executionContext.marketOrderWithTrades = MarketOrderWithTrades(messageId, order)
+            LOGGER.error("$order: Unable to process wallet operations after matching: ${e.message}")
+            false
+        }
+
+        if (preProcessResult) {
+            executionContext.orderBooksHolder.addCompletedOrders(matchingResult.completedLimitOrders.map { it.origin!! })
+
+            if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
+                matchingResultHandlingHelper.processCancelledOppositeOrders(marketOrderExecutionContext)
+            }
+            if (matchingResult.uncompletedLimitOrderCopy != null) {
+                matchingResultHandlingHelper.processUncompletedOppositeOrder(marketOrderExecutionContext)
+            }
+
+            matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
+
+            val newMidPrice = getMidPrice(genericLimitOrderService.getOrderBook(order.assetPairId).getBestPrice(order.isBuySide()),
+                    matchingResult.orderBook.peek()?.price ?: BigDecimal.ZERO)
+
+            if (!OrderValidationUtils.isMidPriceValid(newMidPrice, marketOrderExecutionContext.lowerMidPriceBound, marketOrderExecutionContext.upperMidPriceBound)) {
+                LOGGER.info("Market order (id: ${order.externalId}) is rejected: too high price deviation")
+                order.updateStatus(TooHighPriceDeviation, executionContext.date)
+                marketOrderExecutionContext.executionContext.marketOrderWithTrades = MarketOrderWithTrades(executionContext.messageId, order)
+                return
+            }
+
+            if (newMidPrice != null) {
+                executionContext.setMidPrice(MidPrice(order.assetPairId, newMidPrice, executionContext.date.time))
+            }
+
+            matchingResult.apply()
+
+            marketOrderExecutionContext.executionContext.orderBooksHolder
+                    .getChangedOrderBookCopy(order.assetPairId)
+                    .setOrderBook(!order.isBuySide(), matchingResult.orderBook)
+            marketOrderExecutionContext.executionContext.lkkTrades.addAll(matchingResult.lkkTrades)
+
+            marketOrderExecutionContext.executionContext.marketOrderWithTrades = MarketOrderWithTrades(messageId, order, matchingResult.marketOrderTrades)
+            matchingResult.limitOrdersReport?.orders?.let { marketOrderExecutionContext.executionContext.addClientsLimitOrdersWithTrades(it) }
         }
     }
 
@@ -224,6 +254,14 @@ class MarketOrderService @Autowired constructor(
             marketOrderResponse.statusReason = reason
         }
         messageWrapper.writeMarketOrderResponse(marketOrderResponse)
+    }
+
+    private fun getMidPrice(orderSideBestPrice: BigDecimal, oppositeSideBestPrice: BigDecimal): BigDecimal? {
+        if (orderSideBestPrice == BigDecimal.ZERO || oppositeSideBestPrice == BigDecimal.ZERO) {
+            return null
+        }
+
+        return NumberUtils.divideWithMaxScale(orderSideBestPrice + oppositeSideBestPrice, BigDecimal.valueOf(2))
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {

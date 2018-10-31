@@ -8,7 +8,9 @@ import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 
 class LimitOrderExecutionContext(order: LimitOrder,
-                                 executionContext: ExecutionContext) : OrderExecutionContext<LimitOrder>(order, executionContext) {
+                                 lowerMidPriceBound: BigDecimal?,
+                                 upperMidPriceBound: BigDecimal?,
+                                 executionContext: ExecutionContext) : OrderExecutionContext<LimitOrder>(order, lowerMidPriceBound, upperMidPriceBound, executionContext) {
     val limitAsset: Asset? = if (order.isBuySide()) {
         executionContext.assetPairsById[order.assetPairId]?.let { executionContext.assetsById[it.quotingAssetId] }
     } else {

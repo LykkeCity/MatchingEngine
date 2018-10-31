@@ -4,19 +4,13 @@ import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.FeeProcessor
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.order.ExecutionConfirmationService
 import com.lykke.matching.engine.order.ExecutionEventSender
 import com.lykke.matching.engine.order.ExecutionPersistenceService
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
-import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
-import com.lykke.matching.engine.order.process.LimitOrderProcessor
-import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
-import com.lykke.matching.engine.order.process.StopLimitOrderProcessor
-import com.lykke.matching.engine.order.process.StopOrderBookProcessor
+import com.lykke.matching.engine.order.process.*
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -47,10 +41,12 @@ open class TestExecutionContext {
     open fun executionContextFactory(balancesHolder: BalancesHolder,
                                      genericLimitOrderService: GenericLimitOrderService,
                                      genericStopLimitOrderService: GenericStopLimitOrderService,
-                                     assetsHolder: AssetsHolder): ExecutionContextFactory {
+                                     assetsHolder: AssetsHolder,
+                                     midPriceHolder: MidPriceHolder): ExecutionContextFactory {
         return ExecutionContextFactory(balancesHolder,
                 genericLimitOrderService,
                 genericStopLimitOrderService,
+                midPriceHolder,
                 assetsHolder)
     }
 
@@ -91,11 +87,15 @@ open class TestExecutionContext {
                                  limitOrderBusinessValidator: LimitOrderBusinessValidator,
                                  applicationSettingsCache: ApplicationSettingsCache,
                                  matchingEngine: MatchingEngine,
-                                 matchingResultHandlingHelper: MatchingResultHandlingHelper): LimitOrderProcessor {
+                                 matchingResultHandlingHelper: MatchingResultHandlingHelper,
+                                 midPriceDeviationThresholdHolder: PriceDeviationThresholdHolder,
+                                 midPriceHolder: MidPriceHolder): LimitOrderProcessor {
         return LimitOrderProcessor(limitOrderInputValidator,
                 limitOrderBusinessValidator,
                 applicationSettingsCache,
                 matchingEngine,
+                midPriceHolder,
+                midPriceDeviationThresholdHolder,
                 matchingResultHandlingHelper)
     }
 

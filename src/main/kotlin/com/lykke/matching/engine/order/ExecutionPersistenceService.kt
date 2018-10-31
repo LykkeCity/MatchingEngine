@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.order
 
 import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.order.transaction.ExecutionContext
@@ -18,13 +19,20 @@ class ExecutionPersistenceService(private val persistenceManager: PersistenceMan
             return messageWrapper.persisted
         }
 
+        val midPrice = executionContext.getMidPrice()
+
+        val midPricePersistenceData =  midPrice?.let {
+            MidPricePersistenceData(listOf(it))
+        }
+
         val persisted = persistenceManager.persist(PersistenceData(executionContext.walletOperationsProcessor.persistenceData(),
                 executionContext.processedMessage,
                 executionContext.orderBooksHolder.getPersistenceData(),
                 executionContext.stopOrderBooksHolder.getPersistenceData(),
-                sequenceNumber))
+                sequenceNumber, midPricePersistenceData))
         messageWrapper?.triedToPersist = true
         messageWrapper?.persisted = persisted
+
         if (persisted) {
             executionContext.apply()
         }

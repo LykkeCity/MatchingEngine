@@ -4,13 +4,22 @@ import com.lykke.matching.engine.balance.WalletOperationsProcessor
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LkkTrade
+import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import org.apache.log4j.Logger
 import java.util.Date
+import kotlin.collections.Collection
+import kotlin.collections.LinkedHashMap
+import kotlin.collections.Map
+import kotlin.collections.MutableMap
+import kotlin.collections.forEach
+import kotlin.collections.mutableListOf
+import kotlin.collections.set
 
 class ExecutionContext(val messageId: String,
                        val requestId: String,
@@ -22,17 +31,21 @@ class ExecutionContext(val messageId: String,
                        val walletOperationsProcessor: WalletOperationsProcessor,
                        val orderBooksHolder: CurrentTransactionOrderBooksHolder,
                        val stopOrderBooksHolder: CurrentTransactionStopOrderBooksHolder,
+                       val midPriceHolder: MidPriceHolder,
                        val date: Date,
                        val logger: Logger) {
 
     companion object {
-        private val DEBUGGER = Logger.getLogger(ExecutionContext::class.java.name)
+        private val LOGGER = Logger.getLogger(ExecutionContext::class.java.name)
     }
 
     var tradeIndex: Long = 0
 
     private val clientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
     private val trustedClientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
+
+    private var midPrice: MidPrice? = null
+
     var marketOrderWithTrades: MarketOrderWithTrades? = null
 
     val lkkTrades = mutableListOf<LkkTrade>()
@@ -72,6 +85,14 @@ class ExecutionContext(val messageId: String,
     fun getClientsLimitOrdersWithTrades() = clientLimitOrdersWithTradesByInternalId.values
     fun getTrustedClientsLimitOrdersWithTrades() = trustedClientLimitOrdersWithTradesByInternalId.values
 
+    fun setMidPrice(midPrice: MidPrice) {
+        this.midPrice = midPrice
+    }
+
+    fun getMidPrice(): MidPrice? {
+        return midPrice
+    }
+
     fun info(message: String) {
         logger.info("[$messageId] $message")
     }
@@ -81,9 +102,13 @@ class ExecutionContext(val messageId: String,
     }
 
     fun apply() {
-        DEBUGGER.info("[$messageId] Changes are applied to cache")
+        LOGGER.info("[$messageId] Changes are applied to cache")
         walletOperationsProcessor.apply()
         orderBooksHolder.apply(date)
         stopOrderBooksHolder.apply(date)
+
+        this.midPrice?.let {
+            midPriceHolder.addMidPrice(this.assetPairsById[it.assetPairId]!!, it.midPrice, Date(it.timestamp))
+        }
     }
 }

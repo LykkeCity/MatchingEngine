@@ -1,18 +1,13 @@
 package com.lykke.matching.engine.matching
 
 import com.lykke.matching.engine.balance.BalancesGetter
-import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.CopyWrapper
-import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.Order
-import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.NotEnoughFundsFeeException
 import com.lykke.matching.engine.fee.singleFeeTransfer
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
@@ -20,7 +15,6 @@ import com.lykke.matching.engine.outgoing.messages.TradeInfo
 import com.lykke.matching.engine.outgoing.messages.v2.builders.bigDecimalToString
 import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import com.lykke.matching.engine.services.GenericLimitOrderService
-import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.utils.NumberUtils
 import org.springframework.stereotype.Component
@@ -53,7 +47,6 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
         val assetPair = executionContext.assetPairsById[order.assetPairId]!!
         val availableBalance = balance ?: getBalance(order, assetPair, executionContext.walletOperationsProcessor)
         val workingOrderBook = PriorityBlockingQueue(orderBook)
-        val bestPrice = if (workingOrderBook.isNotEmpty()) workingOrderBook.peek().takePrice() else null
         val now = executionContext.date
 
         var remainingVolume = order.getAbsVolume()
@@ -184,7 +177,7 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
                 if (!checkMidPrice(lowerMidPriceBound, upperMidPriceBound, midPrice)) {
                     executionContext.info("Invalid mid price order(${order.externalId}), lowerMidPriceBound=$lowerMidPriceBound, upperMidPriceBound=$upperMidPriceBound, midPrice=$midPrice")
                     order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
-                    return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+                    return MatchingResult(orderWrapper, cancelledLimitOrders)
                 }
 
                 val takerFees = try {

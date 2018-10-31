@@ -871,7 +871,7 @@ class MarketOrderServiceTest: AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 2000.0, volume = 0.2)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = 0.3)))
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting (AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD") )
+        testSettingsDatabaseAccessor.createOrUpdateSetting (AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD") )
         applicationSettingsCache.update()
 
         clientsEventsQueue.clear()
@@ -905,7 +905,7 @@ class MarketOrderServiceTest: AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 2000.0, volume = 0.2)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 5000.0, volume = 0.3)))
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting (AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD") )
+        testSettingsDatabaseAccessor.createOrUpdateSetting (AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD") )
         applicationSettingsCache.update()
 
         clientsEventsQueue.clear()

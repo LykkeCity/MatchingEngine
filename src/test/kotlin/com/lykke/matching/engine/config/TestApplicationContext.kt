@@ -11,7 +11,6 @@ import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
-import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
@@ -24,8 +23,8 @@ import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPrep
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.notification.*
-import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.ExecutionConfirmationService
+import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
@@ -38,9 +37,11 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
-import com.lykke.matching.engine.services.validators.business.*
+import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
+import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
+import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
+import com.lykke.matching.engine.services.validators.business.LimitOrderCancelOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.business.impl.*
-import com.lykke.matching.engine.services.validators.impl.*
 import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.ReservedCashInOutOperationValidatorImpl
 import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
@@ -330,6 +331,8 @@ open class TestApplicationContext {
                                 marketOrderValidator: MarketOrderValidator,
                                 messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                 messageSender: MessageSender,
+                                priceDeviationThreshold: PriceDeviationThresholdHolder,
+                                midPriceHolder: MidPriceHolder,
                                 applicationSettingsCache: ApplicationSettingsCache): MarketOrderService {
         return MarketOrderService(matchingEngine,
                 executionContextFactory,
@@ -340,9 +343,15 @@ open class TestApplicationContext {
                 assetsPairsHolder,
                 rabbitSwapQueue,
                 marketOrderValidator,
-                applicationSettingsCache,
                 messageSequenceNumberHolder,
+                priceDeviationThreshold,
+                midPriceHolder,
                 messageSender)
+    }
+
+    @Bean
+    open fun priceDeviationThreshold(assetPairsCache: AssetPairsCache, settingsCache: ApplicationSettingsCache): PriceDeviationThresholdHolder {
+        return PriceDeviationThresholdHolder(assetPairsCache, settingsCache)
     }
 
     @Bean

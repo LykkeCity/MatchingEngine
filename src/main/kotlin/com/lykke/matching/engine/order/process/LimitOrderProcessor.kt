@@ -2,18 +2,23 @@ package com.lykke.matching.engine.order.process
 
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.order.transaction.ExecutionContext
+import com.lykke.matching.engine.holders.MidPriceHolder
+import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.process.context.LimitOrderExecutionContext
+import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
+import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
+import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.impl.OrderFatalValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
@@ -27,10 +32,23 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
                           private val limitOrderBusinessValidator: LimitOrderBusinessValidator,
                           private val applicationSettingsCache: ApplicationSettingsCache,
                           private val matchingEngine: MatchingEngine,
+                          private val midPriceHolder: MidPriceHolder,
+                          private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
                           private val matchingResultHandlingHelper: MatchingResultHandlingHelper) : OrderProcessor<LimitOrder> {
 
     override fun processOrder(order: LimitOrder, executionContext: ExecutionContext): ProcessedOrder {
-        val orderContext = LimitOrderExecutionContext(order, executionContext)
+
+        var lowerMidPriceBound: BigDecimal? = null
+        var upperMidPriceBound: BigDecimal? = null
+        val marketOrderPriceDeviationThreshold = priceDeviationThresholdHolder.getLimitOrderPriceDeviationThreshold(order.assetPairId)
+        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(executionContext.assetPairsById[order.assetPairId]!!, executionContext.date)
+
+        if (marketOrderPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
+            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * marketOrderPriceDeviationThreshold)
+            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * marketOrderPriceDeviationThreshold)
+        }
+
+        val orderContext = LimitOrderExecutionContext(order, lowerMidPriceBound, upperMidPriceBound, executionContext)
         val validationResult = validateOrder(orderContext)
         return if (validationResult.isValid) {
             processValidOrder(orderContext)
@@ -93,6 +111,12 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         return ProcessedOrder(order, false, validationResult.message)
     }
 
+    private fun processInvalidMatchedOrder(orderContext: LimitOrderExecutionContext, orderStatus: OrderStatus, message: String) {
+        orderContext.executionContext.info(message)
+        orderContext.order.updateStatus(orderStatus, orderContext.executionContext.date)
+        addOrderToReportIfNotTrusted(orderContext.order, orderContext.executionContext)
+    }
+
     private fun rejectOrder(orderContext: LimitOrderExecutionContext, status: OrderStatus) {
         orderContext.order.updateStatus(status, orderContext.executionContext.date)
         addOrderToReportIfNotTrusted(orderContext.order, orderContext.executionContext)
@@ -124,6 +148,13 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
             orderContext.executionContext.info("${getOrderInfo(order)} cancelled due to IOC")
             addOrderToReport(order, orderContext.executionContext)
             return ProcessedOrder(order, true)
+        }
+
+        if (checkMidPriceWithoutMatching(orderContext)) {
+            order.updateStatus(OrderStatus.TooHighPriceDeviation, orderContext.executionContext.date)
+            orderContext.executionContext.info("${getOrderInfo(order)}: too high price deviation")
+            addOrderToReport(order, orderContext.executionContext)
+            return ProcessedOrder(order, false)
         }
 
         return addOrderToOrderBook(orderContext)
@@ -190,20 +221,27 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
             }
         }
 
+        matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
+
         val order = orderContext.order
-        try {
-            matchingResultHandlingHelper.processWalletOperations(orderContext)
-        } catch (e: BalanceException) {
-            val message = "${getOrderInfo(orderCopy)}: Unable to process wallet operations after matching: ${e.message}"
-            orderContext.executionContext.error(message)
-            order.updateStatus(OrderStatus.NotEnoughFunds, orderContext.executionContext.date)
-            addOrderToReportIfNotTrusted(orderContext.order, orderContext.executionContext)
+
+        if (!checkMidPriceAfterMatching(orderContext)) {
+            val message = "${getOrderInfo(orderContext.matchingResult!!.order as LimitOrder)}: too high price deviation"
+            processInvalidMatchedOrder(orderContext, OrderStatus.TooHighPriceDeviation, message)
             return ProcessedOrder(order, false, message)
         }
 
-        matchingResult.apply()
 
+        try {
+            matchingResultHandlingHelper.processWalletOperations(orderContext)
+        } catch (e: BalanceException) {
+            val message = "${getOrderInfo(orderContext.matchingResult!!.order as LimitOrder)}: Unable to process wallet operations after matching: ${e.message}"
+            processInvalidMatchedOrder(orderContext, OrderStatus.NotEnoughFunds, message)
+        }
+
+        matchingResult.apply()
         processOppositeOrders(orderContext)
+        updateCurrentTransactionOrderBookAfterMatching(orderContext)
         addMatchedResultToEventData(orderContext)
 
         if (orderCopy.status == OrderStatus.Processing.name || orderCopy.status == OrderStatus.InOrderBook.name) {
@@ -211,6 +249,63 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         }
 
         return ProcessedOrder(order, true)
+    }
+
+    private fun checkMidPriceWithoutMatching(orderContext: LimitOrderExecutionContext): Boolean {
+        val order = orderContext.order
+        val orderSideBestPrice = getOrderSideBestPriceWithoutMatching(orderContext)
+        val oppositeSideBestPrice = orderContext.executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId).getBestPrice(!order.isBuySide())
+        val midPrice = getMidPrice(orderSideBestPrice, oppositeSideBestPrice)
+
+        if (OrderValidationUtils.isMidPriceValid(midPrice, orderContext.lowerMidPriceBound, orderContext.upperMidPriceBound)) {
+            midPrice?.let {
+                orderContext.executionContext.setMidPrice(MidPrice(orderContext.order.assetPairId, midPrice, orderContext.executionContext.date.time))
+            }
+            return true
+        }
+
+        return false
+    }
+
+    private fun checkMidPriceAfterMatching(orderContext: LimitOrderExecutionContext): Boolean {
+        val orderSideBestPrice = getOrderSideBestPriceAfterMatching(orderContext)
+        val oppositeSideBestPrice = orderContext.matchingResult!!.orderBook.peek()?.price ?: BigDecimal.ZERO
+        val midPrice = getMidPrice(orderSideBestPrice, oppositeSideBestPrice)
+
+        if (OrderValidationUtils.isMidPriceValid(midPrice, orderContext.lowerMidPriceBound, orderContext.upperMidPriceBound)) {
+            midPrice?.let {
+                orderContext.executionContext.setMidPrice(MidPrice(orderContext.order.assetPairId, midPrice, orderContext.executionContext.date.time))
+            }
+            return true
+        }
+
+        return false
+    }
+
+    private fun getOrderSideBestPriceWithoutMatching(orderContext: LimitOrderExecutionContext): BigDecimal {
+        val order = orderContext.order
+        val orderBook = orderContext.executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId)
+        return getOrderSideBestPrice(orderContext.order, orderBook)
+    }
+
+    private fun getOrderSideBestPriceAfterMatching(orderContext: LimitOrderExecutionContext): BigDecimal {
+        val orderCopy = orderContext.matchingResult!!.order as LimitOrder
+        val orderBook = orderContext.executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(orderCopy.assetPairId)
+        return getOrderSideBestPrice(orderCopy, orderBook)
+    }
+
+    fun getOrderSideBestPrice(order: LimitOrder, assetOrderBook: AssetOrderBook): BigDecimal {
+         val bestPrice = assetOrderBook.getBestPrice(order.isBuySide())
+
+        if (order.status == OrderStatus.Processing.name || order.status == OrderStatus.InOrderBook.name) {
+            if (order.isBuySide()) {
+                return if (order.price > bestPrice) order.price else bestPrice
+            }
+
+            return if (order.price < bestPrice) order.price else bestPrice
+        }
+
+        return bestPrice
     }
 
     private fun preProcessPartiallyMatchedIncomingOrder(orderContext: LimitOrderExecutionContext): ProcessedOrder? {
@@ -251,6 +346,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         return null
     }
 
+
     private fun processOppositeOrders(orderContext: LimitOrderExecutionContext) {
         val matchingResult = orderContext.matchingResult!!
         orderContext.executionContext.orderBooksHolder.addCompletedOrders(matchingResult.completedLimitOrders.map { it.origin!! })
@@ -261,7 +357,10 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         if (matchingResult.uncompletedLimitOrderCopy != null) {
             matchingResultHandlingHelper.processUncompletedOppositeOrder(orderContext)
         }
-        matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
+    }
+
+    private fun updateCurrentTransactionOrderBookAfterMatching(orderContext: LimitOrderExecutionContext) {
+        val matchingResult = orderContext.matchingResult!!
 
         val orderCopy = matchingResult.order as LimitOrder
         orderContext.executionContext.orderBooksHolder
@@ -340,4 +439,12 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
     }
 
     private fun getOrderInfo(order: LimitOrder) = "Limit order (id: ${order.externalId})"
+
+    private fun getMidPrice(orderSideBestPrice: BigDecimal, oppositeBestPrice: BigDecimal): BigDecimal? {
+        if (orderSideBestPrice == BigDecimal.ZERO || oppositeBestPrice == BigDecimal.ZERO) {
+            return null
+        }
+
+        return NumberUtils.divideWithMaxScale((orderSideBestPrice + oppositeBestPrice), BigDecimal.valueOf(2))
+    }
 }

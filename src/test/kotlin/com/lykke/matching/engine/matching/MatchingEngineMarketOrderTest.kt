@@ -14,7 +14,6 @@ import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (MatchingEngineTest.Config::class)])
@@ -614,7 +613,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
 
         //when
         val marketOrder = buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = -1.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true), "test", BigDecimal("1.5"), BigDecimal("1.6"))
+        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true), BigDecimal("1.5"), BigDecimal("1.6"))
 
         //then
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.TooHighPriceDeviation)
@@ -637,7 +636,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
 
         //when
         val marketOrder = buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = 1.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false), "test", BigDecimal("1.5"), BigDecimal("1.57"))
+        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false), BigDecimal("1.5"), BigDecimal("1.57"))
 
         //then
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.TooHighPriceDeviation)
