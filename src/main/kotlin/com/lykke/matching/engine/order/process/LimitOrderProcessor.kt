@@ -237,6 +237,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         } catch (e: BalanceException) {
             val message = "${getOrderInfo(orderContext.matchingResult!!.order as LimitOrder)}: Unable to process wallet operations after matching: ${e.message}"
             processInvalidMatchedOrder(orderContext, OrderStatus.NotEnoughFunds, message)
+            return ProcessedOrder(order, false, message)
         }
 
         matchingResult.apply()
