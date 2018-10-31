@@ -54,7 +54,7 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
         validateStopOrder(limitOrder,
                 assetPair,
                 singleLimitOrderParsedData.inputAssetPairId,
-                singleLimitContext.baseAsset!!)
+                singleLimitContext.baseAsset)
     }
 
     override fun validateStopOrder(stopLimitOrderContext: StopLimitOrderContext) {
