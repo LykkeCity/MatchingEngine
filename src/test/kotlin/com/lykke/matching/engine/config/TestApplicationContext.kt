@@ -618,4 +618,14 @@ open class TestApplicationContext {
                 limitOrderMassCancelInputQueue,
                 preProcessedMessageQueue)
     }
+
+    @Bean
+    open fun singleLimitOrderPreprocessor(limitOrderInputQueue: BlockingQueue<MessageWrapper>,
+                                          preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                                          @Qualifier("singleLimitOrderContextPreprocessorLogger")
+                                          logger: ThrottlingLogger): SingleLimitOrderPreprocessor {
+        return SingleLimitOrderPreprocessor(limitOrderInputQueue,
+                preProcessedMessageQueue,
+                logger)
+    }
 }
