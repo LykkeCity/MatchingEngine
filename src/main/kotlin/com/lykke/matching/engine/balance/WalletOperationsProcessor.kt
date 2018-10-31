@@ -39,7 +39,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
     }
 
     private val clientIds = HashSet<String>()
-    private val updates = HashMap<String, ClientBalanceUpdate>()
+    private val rabbitClientBalanceUpdatesByClientIdAndAssetId = HashMap<String, ClientBalanceUpdate>()
 
     fun preProcess(operations: Collection<WalletOperation>, forceApply: Boolean = false): WalletOperationsProcessor {
         if (operations.isEmpty()) {
@@ -83,7 +83,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
             changedAssetBalance.apply()
             clientIds.add(changedAssetBalance.clientId)
             val key = generateKey(changedAssetBalance)
-            val update = updates.getOrPut(key) {
+            val update = rabbitClientBalanceUpdatesByClientIdAndAssetId.getOrPut(key) {
                 ClientBalanceUpdate(changedAssetBalance.clientId,
                         changedAssetBalance.assetId,
                         changedAssetBalance.originBalance,
@@ -96,7 +96,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
             if (NumberUtils.equalsIgnoreScale(update.oldBalance, update.newBalance) &&
                     NumberUtils.equalsIgnoreScale(update.oldReserved, update.newReserved)) {
                 clientIds.remove(changedAssetBalance.clientId)
-                updates.remove(key)
+                rabbitClientBalanceUpdatesByClientIdAndAssetId.remove(key)
             }
         }
         return this
@@ -124,13 +124,13 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
 
     fun sendNotification(id: String, type: String, messageId: String) {
         clientIds.forEach { balanceUpdateNotificationQueue.put(BalanceUpdateNotification(it)) }
-        if (updates.isNotEmpty()) {
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList(), messageId))
+        if (rabbitClientBalanceUpdatesByClientIdAndAssetId.isNotEmpty()) {
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), rabbitClientBalanceUpdatesByClientIdAndAssetId.values.toList(), messageId))
         }
     }
 
     fun getClientBalanceUpdates(): List<ClientBalanceUpdate> {
-        return updates.values.toList()
+        return rabbitClientBalanceUpdatesByClientIdAndAssetId.values.toList()
     }
 
     override fun getAvailableBalance(clientId: String, assetId: String): BigDecimal {

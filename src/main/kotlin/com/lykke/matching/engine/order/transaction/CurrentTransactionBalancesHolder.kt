@@ -8,8 +8,8 @@ import java.math.BigDecimal
 
 class CurrentTransactionBalancesHolder(private val balancesHolder: BalancesHolder) {
 
-    private val changedBalances = mutableMapOf<String, MutableMap<String, AssetBalance>>()
-    private val changedWallets = mutableMapOf<String, Wallet>()
+    private val changedBalancesByClientIdAndAssetId = mutableMapOf<String, MutableMap<String, AssetBalance>>()
+    private val changedWalletsByClientId = mutableMapOf<String, Wallet>()
 
     fun updateBalance(clientId: String, assetId: String, balance: BigDecimal) {
         val walletAssetBalance = getWalletAssetBalance(clientId, assetId)
@@ -22,18 +22,18 @@ class CurrentTransactionBalancesHolder(private val balancesHolder: BalancesHolde
     }
 
     fun persistenceData(): BalancesData {
-        return BalancesData(changedWallets.values, changedBalances.flatMap { it.value.values })
+        return BalancesData(changedWalletsByClientId.values, changedBalancesByClientIdAndAssetId.flatMap { it.value.values })
     }
 
     fun apply() {
-        balancesHolder.setWallets(changedWallets.values)
+        balancesHolder.setWallets(changedWalletsByClientId.values)
     }
 
     fun getWalletAssetBalance(clientId: String, assetId: String): WalletAssetBalance {
-        val wallet = changedWallets.getOrPut(clientId) {
+        val wallet = changedWalletsByClientId.getOrPut(clientId) {
             copyWallet(balancesHolder.wallets[clientId]) ?: Wallet(clientId)
         }
-        val assetBalance = changedBalances
+        val assetBalance = changedBalancesByClientIdAndAssetId
                 .getOrPut(clientId) {
                     mutableMapOf()
                 }
@@ -44,7 +44,7 @@ class CurrentTransactionBalancesHolder(private val balancesHolder: BalancesHolde
     }
 
     fun getChangedCopyOrOriginalAssetBalance(clientId: String, assetId: String): AssetBalance {
-        return (changedWallets[clientId] ?: balancesHolder.wallets[clientId] ?: Wallet(clientId)).balances[assetId]
+        return (changedWalletsByClientId[clientId] ?: balancesHolder.wallets[clientId] ?: Wallet(clientId)).balances[assetId]
                 ?: AssetBalance(clientId, assetId)
     }
 
