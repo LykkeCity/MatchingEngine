@@ -40,7 +40,7 @@ class MatchingResultHandlingHelper(private val applicationSettingsCache: Applica
         val assetPair = orderExecutionContext.executionContext.assetPairsById[uncompletedLimitOrderCopy.assetPairId]!!
         if (assetPair.minVolume == null || uncompletedLimitOrderCopy.getAbsRemainingVolume() >= assetPair.minVolume) {
             orderExecutionContext.isUncompletedOrderCancelled = false
-            orderExecutionContext.matchingResult!!.orderBook.put(uncompletedLimitOrderCopy)
+            orderExecutionContext.matchingResult!!.orderBook.put(matchingResult.uncompletedLimitOrder)
             return
         }
         uncompletedLimitOrderCopy.updateStatus(OrderStatus.Cancelled, orderExecutionContext.executionContext.date)
