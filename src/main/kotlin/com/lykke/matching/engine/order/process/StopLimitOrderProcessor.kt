@@ -9,7 +9,6 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.process.context.StopLimitOrderContext
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.services.validators.business.StopOrderBusinessValidator
-import com.lykke.matching.engine.services.validators.impl.OrderFatalValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
@@ -49,8 +48,6 @@ class StopLimitOrderProcessor(private val limitOrderInputValidator: LimitOrderIn
             limitOrderInputValidator.validateStopOrder(orderContext)
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, false, e.message, e.orderStatus)
-        } catch (e: OrderFatalValidationException) {
-            return OrderValidationResult(false, true, e.message)
         }
         return OrderValidationResult(true)
     }
