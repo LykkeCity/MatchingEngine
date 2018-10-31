@@ -310,7 +310,12 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
     fun getOrderSideBestPrice(order: LimitOrder, assetOrderBook: AssetOrderBook): BigDecimal {
          val bestPrice = assetOrderBook.getBestPrice(order.isBuySide())
 
+
+
         if (order.status == OrderStatus.Processing.name || order.status == OrderStatus.InOrderBook.name) {
+            if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, bestPrice)) {
+                return order.price
+            }
             if (order.isBuySide()) {
                 return if (order.price > bestPrice) order.price else bestPrice
             }

@@ -13,13 +13,8 @@ import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import org.apache.log4j.Logger
 import java.util.Date
-import kotlin.collections.Collection
 import kotlin.collections.HashMap
 import kotlin.collections.LinkedHashMap
-import kotlin.collections.Map
-import kotlin.collections.MutableMap
-import kotlin.collections.forEach
-import kotlin.collections.mutableListOf
 import kotlin.collections.set
 
 class ExecutionContext(val messageId: String,
@@ -108,6 +103,10 @@ class ExecutionContext(val messageId: String,
         walletOperationsProcessor.apply()
         orderBooksHolder.apply(date)
         stopOrderBooksHolder.apply(date)
+
+        if (removeAllMidPrices) {
+            midPriceHolder.clear()
+        }
 
         getMidPrices().forEach { it ->
             midPriceHolder.addMidPrice(this.assetPairsById[it.assetPairId]!!, it.midPrice, Date(it.timestamp))
