@@ -3,16 +3,11 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.BestPrice
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
 import com.lykke.matching.engine.order.transaction.CurrentTransactionOrderBooksHolder
-import com.lykke.matching.engine.utils.NumberUtils
-import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
@@ -26,15 +21,8 @@ import java.util.concurrent.PriorityBlockingQueue
 
 @Component
 class GenericLimitOrderService @Autowired constructor(private val orderBookDatabaseAccessorHolder: OrdersDatabaseAccessorsHolder,
-                                                      private val assetsHolder: AssetsHolder,
-                                                      private val assetsPairsHolder: AssetsPairsHolder,
-                                                      private val balancesHolder: BalancesHolder,
                                                       private val tradeInfoQueue: BlockingQueue<TradeInfo>,
                                                       private val expiryOrdersQueue: ExpiryOrdersQueue) : AbstractGenericLimitOrderService<AssetOrderBook> {
-
-    companion object {
-        private val LOGGER = Logger.getLogger(GenericLimitOrderService::class.java.name)
-    }
 
     //asset -> orderBook
     private val limitOrdersQueues = ConcurrentHashMap<String, AssetOrderBook>()
@@ -88,19 +76,6 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
 
     fun setOrderBook(assetPair: String, isBuy: Boolean, book: PriorityBlockingQueue<LimitOrder>) {
         limitOrdersQueues.getOrPut(assetPair) { AssetOrderBook(assetPair) }.setOrderBook(isBuy, book)
-    }
-
-    fun checkAndReduceBalance(order: LimitOrder, volume: BigDecimal, limitBalances: MutableMap<String, BigDecimal>): Boolean {
-        val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
-        val limitAssetId = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
-        val availableBalance = limitBalances[order.clientId] ?: balancesHolder.getAvailableReservedBalance(order.clientId, limitAssetId)
-        val accuracy = assetsHolder.getAsset(limitAssetId).accuracy
-        val result = availableBalance >= volume
-        LOGGER.debug("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${NumberUtils.roundForPrint(availableBalance)} >= ${NumberUtils.roundForPrint(volume)} = $result")
-        if (result) {
-            limitBalances[order.clientId] = NumberUtils.setScaleRoundHalfUp(availableBalance - volume, accuracy)
-        }
-        return result
     }
 
     fun getOrder(uid: String) = limitOrdersMap[uid]

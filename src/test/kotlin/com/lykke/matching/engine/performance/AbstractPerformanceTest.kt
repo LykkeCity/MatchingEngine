@@ -149,13 +149,10 @@ abstract class AbstractPerformanceTest {
 
         expiryOrdersQueue = ExpiryOrdersQueue()
         genericLimitOrderService = GenericLimitOrderService(ordersDatabaseAccessorsHolder,
-                assetsHolder,
-                assetsPairsHolder,
-                balancesHolder,
                 tradeInfoQueue,
                 expiryOrdersQueue)
 
-        feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
+        feeProcessor = FeeProcessor(assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
