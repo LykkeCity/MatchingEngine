@@ -150,7 +150,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
             return ProcessedOrder(order, true)
         }
 
-        if (checkMidPriceWithoutMatching(orderContext)) {
+        if (!checkMidPriceWithoutMatching(orderContext)) {
             order.updateStatus(OrderStatus.TooHighPriceDeviation, orderContext.executionContext.date)
             orderContext.executionContext.info("${getOrderInfo(order)}: too high price deviation")
             addOrderToReport(order, orderContext.executionContext)
