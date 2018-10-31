@@ -86,15 +86,8 @@ class MarketOrderService @Autowired constructor(
             marketOrderValidator.performValidation(order, getOrderBook(order), feeInstruction, feeInstructions)
         } catch (e: OrderValidationException) {
             order.updateStatus(e.orderStatus, now)
-            val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
-            rabbitSwapQueue.put(marketOrderWithTrades)
-            val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
-                    messageWrapper.messageId!!,
-                    messageWrapper.id!!,
-                    now,
-                    MessageType.MARKET_ORDER, marketOrderWithTrades)
-            messageSender.sendMessage(outgoingMessage)
-            writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(e.orderStatus), e.message)
+            sendErrorNotification(messageWrapper, order, now)
+            writeErrorResponse(messageWrapper, order, e.message)
             return
         }
 
@@ -138,6 +131,16 @@ class MarketOrderService @Autowired constructor(
             InvalidVolume,
             InvalidValue,
             TooHighPriceDeviation -> {
+                if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
+                    matchingResultHandlingHelper.preProcessCancelledOppositeOrders(marketOrderExecutionContext)
+                    matchingResultHandlingHelper.preProcessCancelledOrdersWalletOperations(marketOrderExecutionContext)
+                    matchingResultHandlingHelper.processCancelledOppositeOrders(marketOrderExecutionContext)
+                    val orderBook = marketOrderExecutionContext.executionContext.orderBooksHolder
+                            .getChangedOrderBookCopy(marketOrderExecutionContext.order.assetPairId)
+                    matchingResult.cancelledLimitOrders.forEach {
+                        orderBook.removeOrder(it.origin!!)
+                    }
+                }
                 marketOrderExecutionContext.executionContext.marketOrderWithTrades = MarketOrderWithTrades(executionContext.messageId, order)
             }
             Matched -> {
@@ -254,6 +257,26 @@ class MarketOrderService @Autowired constructor(
             marketOrderResponse.statusReason = reason
         }
         messageWrapper.writeMarketOrderResponse(marketOrderResponse)
+    }
+
+    private fun writeErrorResponse(messageWrapper: MessageWrapper,
+                                   order: MarketOrder,
+                                   statusReason: String? = null) {
+        writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), statusReason)
+    }
+
+    private fun sendErrorNotification(messageWrapper: MessageWrapper,
+                                      order: MarketOrder,
+                                      now: Date) {
+        val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
+        rabbitSwapQueue.put(marketOrderWithTrades)
+        val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
+                messageWrapper.messageId!!,
+                messageWrapper.id!!,
+                now,
+                MessageType.MARKET_ORDER,
+                marketOrderWithTrades)
+        messageSender.sendMessage(outgoingMessage)
     }
 
     private fun getMidPrice(orderSideBestPrice: BigDecimal, oppositeSideBestPrice: BigDecimal): BigDecimal? {

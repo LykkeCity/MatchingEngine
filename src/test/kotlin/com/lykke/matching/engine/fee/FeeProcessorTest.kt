@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.fee
 
+import com.lykke.matching.engine.balance.BalancesGetter
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
@@ -77,75 +78,66 @@ class FeeProcessorTest {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
 
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
         operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-10.0)))
         operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(10.0)))
         val originalOperations = LinkedList(operations)
         val receiptOperation = operations[1]
 
         var feeInstructions = buildFeeInstructions()
-        var fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
+        var fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter())
         assertEquals(0, fees.size)
         assertEquals(originalOperations, operations)
 
         feeInstructions = buildFeeInstructions(type = FeeType.NO_FEE)
-        fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
+        fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter())
         assertEquals(1, fees.size)
         assertNull(fees.first().transfer)
         assertEquals(originalOperations, operations)
 
-//        feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE)
-//        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
-//        assertEquals(originalOperations, operations)
-
         feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.05)
-        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
+        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter()) }
         assertEquals(originalOperations, operations)
 
         feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 1.01, targetClientId = "Client3")
-        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
+        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter()) }
         assertEquals(originalOperations, operations)
 
-//        feeInstructions = buildFeeInstructions(type = FeeType.EXTERNAL_FEE)
-//        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
-//        assertEquals(originalOperations, operations)
-
         feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, sizeType = null, size = 0.01, targetClientId = "Client3")
-        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
+        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter()) }
         assertEquals(originalOperations, operations)
 
         feeInstructions = buildFeeInstructions(type = FeeType.EXTERNAL_FEE, size = 0.05, sourceClientId = "Client3")
-        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
+        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter()) }
         assertEquals(originalOperations, operations)
 
         feeInstructions = buildFeeInstructions(type = FeeType.EXTERNAL_FEE, size = 0.05, targetClientId = "Client4")
-        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
+        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter()) }
         assertEquals(originalOperations, operations)
 
         feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.01, targetClientId = "Client3")
-        assertFails { feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations) }
+        assertFails { feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter()) }
         assertEquals(originalOperations, operations)
 
         feeInstructions = buildLimitOrderFeeInstructions(type = FeeType.CLIENT_FEE, makerSize = 0.02, targetClientId = "Client3", makerFeeModificator = 0.0)
-        assertFails { feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations, BigDecimal.valueOf(0.01)) }
+        assertFails { feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations, BigDecimal.valueOf(0.01), balancesGetter = createBalancesGetter()) }
         assertEquals(originalOperations, operations)
 
         feeInstructions = buildLimitOrderFeeInstructions(type = FeeType.CLIENT_FEE, makerSize = 0.02, targetClientId = "Client3", makerFeeModificator = -10.0)
-        assertFails { feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations, BigDecimal.valueOf(0.01)) }
+        assertFails { feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations, BigDecimal.valueOf(0.01), balancesGetter = createBalancesGetter()) }
         assertEquals(originalOperations, operations)
 
         feeInstructions = buildLimitOrderFeeInstructions(type = FeeType.CLIENT_FEE, makerSize = 0.02, targetClientId = "Client3", makerFeeModificator = 50.0)
-        assertFails { feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations, BigDecimal.valueOf(-0.01)) }
+        assertFails { feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations, BigDecimal.valueOf(-0.01), balancesGetter = createBalancesGetter()) }
         assertEquals(originalOperations, operations)
 
         // Negative fee size
         feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = -0.01, targetClientId = "Client3")
-        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
+        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter()) }
         assertEquals(originalOperations, operations)
 
         // Empty order book for asset pair to convert to fee asset
         feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.1, targetClientId = "Client3", assetIds = listOf("EUR"))
-        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
+        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter()) }
         assertEquals(originalOperations, operations)
     }
 
@@ -163,17 +155,17 @@ class FeeProcessorTest {
         val receiptOperation = operations[1]
 
         var feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.6, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3")
-        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
+        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter()) }
         assertEquals(originalOperations, operations)
 
         // test not enough funds for another asset fee
         feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.1, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3", assetIds = listOf("EUR"))
-        assertFailsWith(NotEnoughFundsFeeException::class) { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
+        assertFailsWith(NotEnoughFundsFeeException::class) { feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter()) }
         assertEquals(originalOperations, operations)
 
         // Negative fee size
         feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = -0.1, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3")
-        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
+        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter()) }
         assertEquals(originalOperations, operations)
     }
 
@@ -188,7 +180,7 @@ class FeeProcessorTest {
 
         val feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.4, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3")
 
-        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
+        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter())
         assertEquals(1, fees.size)
         assertEquals(BigDecimal.valueOf(0.4), fees.first().transfer!!.volume)
         assertEquals("USD", fees.first().transfer!!.asset)
@@ -207,7 +199,7 @@ class FeeProcessorTest {
 
         val feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.4, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3")
 
-        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
+        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter())
         assertEquals(1, fees.size)
         assertEquals(BigDecimal.valueOf(0.2), fees.first().transfer!!.volume)
         assertEquals("USD", fees.first().transfer!!.asset)
@@ -226,7 +218,7 @@ class FeeProcessorTest {
         val receiptOperation = operations[1]
 
         val feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.6543, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3", assetIds = listOf("EUR"))
-        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
+        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter())
         assertEquals(1, fees.size)
         assertEquals(BigDecimal.valueOf(0.6543), fees.first().transfer!!.volume)
         assertEquals("EUR", fees.first().transfer!!.asset)
@@ -242,7 +234,7 @@ class FeeProcessorTest {
         val originalOperations = LinkedList(operations)
 
         val feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.01, targetClientId = "Client3")
-        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
+        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter())
 
         assertEquals(1, fees.size)
         val fee = fees.first()
@@ -267,7 +259,7 @@ class FeeProcessorTest {
         val originalOperations = LinkedList(operations)
 
         val feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, sizeType = FeeSizeType.ABSOLUTE, size = 1.1, targetClientId = "Client3")
-        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
+        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter())
 
         assertEquals(1, fees.size)
         val fee = fees.first()
@@ -292,7 +284,7 @@ class FeeProcessorTest {
         val originalOperations = LinkedList(operations)
 
         val feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.0001, targetClientId = "Client3")
-        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
+        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter())
 
         assertEquals(1, fees.size)
         val fee = fees.first()
@@ -319,7 +311,7 @@ class FeeProcessorTest {
         val originalOperations = LinkedList(operations)
 
         val feeInstructions = buildFeeInstructions(type = FeeType.EXTERNAL_FEE, size = 0.01, sourceClientId = "Client3", targetClientId = "Client4")
-        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
+        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter())
 
         assertEquals(1, fees.size)
         val fee = fees.first()
@@ -347,7 +339,7 @@ class FeeProcessorTest {
         val originalOperations = LinkedList(operations)
 
         val feeInstructions = buildFeeInstructions(type = FeeType.EXTERNAL_FEE, size = 0.01, sourceClientId = "Client3", targetClientId = "Client4")
-        assertFailsWith(NotEnoughFundsFeeException::class) { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
+        assertFailsWith(NotEnoughFundsFeeException::class) { feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter()) }
         assertEquals(originalOperations, operations)
     }
 
@@ -360,7 +352,7 @@ class FeeProcessorTest {
         val originalOperations = LinkedList(operations)
 
         val feeInstructions = buildLimitOrderFeeInstructions(type = FeeType.CLIENT_FEE, takerSize = 0.01, makerSize = 0.02, targetClientId = "Client3")
-        val fees = feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations)
+        val fees = feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter())
 
         assertEquals(1, fees.size)
         val fee = fees.first()
@@ -390,7 +382,7 @@ class FeeProcessorTest {
                 makerSize = 0.2,
                 targetClientId = "Client3")
 
-        val fees = feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations)
+        val fees = feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter())
 
         assertEquals(1, fees.size)
         val fee = fees.first()
@@ -421,7 +413,7 @@ class FeeProcessorTest {
                 buildLimitOrderFeeInstruction(type = FeeType.CLIENT_FEE, takerSize = 0.01, makerSize = 0.04, targetClientId = "Client5")!!,
                 buildLimitOrderFeeInstruction(type = FeeType.EXTERNAL_FEE, takerSize = 0.01, makerSize = 0.03, sourceClientId = "Client4", targetClientId = "Client3")!!
         )
-        val fees = feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations)
+        val fees = feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter())
 
         assertEquals(3, fees.size)
         var fee = fees[0]
@@ -478,7 +470,7 @@ class FeeProcessorTest {
                 buildFeeInstruction(type = FeeType.EXTERNAL_FEE, size = 0.03, sourceClientId = "Client3", targetClientId = "Client5")!!,
                 buildFeeInstruction(type = FeeType.EXTERNAL_FEE, size = 0.05, sourceClientId = "Client3", targetClientId = "Client6")!!
         )
-        assertFailsWith(NotEnoughFundsFeeException::class) { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
+        assertFailsWith(NotEnoughFundsFeeException::class) { feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter()) }
         assertEquals(originalOperations, operations)
     }
 
@@ -496,7 +488,7 @@ class FeeProcessorTest {
                 buildFeeInstruction(type = FeeType.CLIENT_FEE, sizeType = FeeSizeType.ABSOLUTE, size = 3.0, targetClientId = "Client5")!!,
                 buildFeeInstruction(type = FeeType.CLIENT_FEE, size = 0.5, targetClientId = "Client6")!!
         )
-        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
+        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter()) }
         assertEquals(originalOperations, operations)
     }
 
@@ -513,7 +505,7 @@ class FeeProcessorTest {
                 buildLimitOrderFeeInstruction(type = FeeType.CLIENT_FEE, makerSizeType = FeeSizeType.ABSOLUTE, makerSize = 3.0, targetClientId = "Client5")!!,
                 buildLimitOrderFeeInstruction(type = FeeType.CLIENT_FEE, makerSize = 0.5, targetClientId = "Client6")!!
         )
-        assertFails { feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations) }
+        assertFails { feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter()) }
         assertEquals(originalOperations, operations)
     }
 
@@ -530,7 +522,7 @@ class FeeProcessorTest {
 
         val feeInstructions = listOf(buildFeeInstruction(type = FeeType.EXTERNAL_FEE, size = 1.01, sourceClientId = "Client3", targetClientId = "Client4")!!)
 
-        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
+        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter())
 
         assertEquals(1, fees.size)
         val fee = fees.first()
@@ -554,7 +546,7 @@ class FeeProcessorTest {
         val receiptOperation = operations.first()
 
         val feeInstructions = listOf(buildFeeInstruction(type = FeeType.CLIENT_FEE, sizeType = FeeSizeType.ABSOLUTE, size = 100.0, targetClientId = "Client4")!!)
-        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
+        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter())
         assertEquals(1, fees.size)
         val fee = fees.first()
         assertEquals(BigDecimal.valueOf(100.0), fee.transfer!!.volume)
@@ -571,7 +563,7 @@ class FeeProcessorTest {
 
         val feeInstructions = listOf(buildFeeInstruction(type = FeeType.CLIENT_FEE, sizeType = FeeSizeType.ABSOLUTE, size = 50.0, targetClientId = "Client4")!!,
                 buildFeeInstruction(type = FeeType.CLIENT_FEE, sizeType = FeeSizeType.ABSOLUTE, size = 50.0, targetClientId = "Client4")!!)
-        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
+        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter())
         assertEquals(2, fees.size)
         assertEquals(BigDecimal.valueOf(50.0), fees[0].transfer!!.volume)
         assertEquals(BigDecimal.valueOf(50.0), fees[1].transfer!!.volume)
@@ -594,7 +586,7 @@ class FeeProcessorTest {
         val originalOperations = LinkedList(operations)
 
         val feeInstructions = buildLimitOrderFeeInstructions(type = FeeType.CLIENT_FEE, takerSize = 0.01, makerSize = 0.02, targetClientId = "Client3", makerFeeModificator = 50.0)
-        val fees = feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations, BigDecimal.valueOf(0.01))
+        val fees = feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations, BigDecimal.valueOf(0.01), balancesGetter = createBalancesGetter())
 
         assertEquals(1, fees.size)
         val fee = fees.first()
@@ -609,6 +601,10 @@ class FeeProcessorTest {
         assertEquals(BigDecimal.valueOf(10.02), operations[1].amount)
         assertEquals(BigDecimal.valueOf(0.08), operations[2].amount)
         assertEquals("Client3", operations[2].clientId)
+    }
+
+    private fun createBalancesGetter(): BalancesGetter {
+        return balancesHolder.createWalletProcessor(null, true)
     }
 }
 

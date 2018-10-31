@@ -42,10 +42,11 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
               lowerMidPriceBound: BigDecimal? = null,
               upperMidPriceBound: BigDecimal? = null,
               executionContext: ExecutionContext): MatchingResult {
+        val balancesGetter = executionContext.walletOperationsProcessor
         val orderWrapper = CopyWrapper(originOrder)
         val order = orderWrapper.copy
         val assetPair = executionContext.assetPairsById[order.assetPairId]!!
-        val availableBalance = balance ?: getBalance(order, assetPair, executionContext.walletOperationsProcessor)
+        val availableBalance = balance ?: getBalance(order, assetPair, balancesGetter)
         val workingOrderBook = PriorityBlockingQueue(orderBook)
         val now = executionContext.date
 
@@ -124,10 +125,10 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
 
                 val limitOrderInfo = "id: ${limitOrder.externalId}, client: ${limitOrder.clientId}, asset: ${limitOrder.assetPairId}"
 
-                if (!genericLimitOrderService.checkAndReduceBalance(
-                        limitOrder,
-                        if (isBuy) marketRoundedVolume else oppositeRoundedVolume,
-                        limitReservedBalances)) {
+                if (!checkAndReduceBalance(limitOrder,
+                                if (isBuy) marketRoundedVolume else oppositeRoundedVolume,
+                                limitReservedBalances,
+                                executionContext)) {
                     executionContext.info("Added order ($limitOrderInfo) to cancelled limit orders")
                     cancelledLimitOrders.add(limitOrderCopyWrapper)
                     continue
@@ -165,7 +166,8 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
                             oppositeCashMovements,
                             relativeSpread,
                             mapOf(Pair(assetPair.assetPairId, limitOrder.price)),
-                            availableBalances)
+                            availableBalances,
+                            balancesGetter)
                 } catch (e: FeeException) {
                     executionContext.info("Added order ($limitOrderInfo) to cancelled limit orders: ${e.message}")
                     cancelledLimitOrders.add(limitOrderCopyWrapper)
@@ -181,7 +183,12 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
                 }
 
                 val takerFees = try {
-                    feeProcessor.processFee(order.fees ?: emptyList(), if (isBuy) baseAssetOperation else quotingAssetOperation, ownCashMovements, mapOf(Pair(assetPair.assetPairId, limitOrder.price)), availableBalances)
+                    feeProcessor.processFee(order.fees ?: emptyList(),
+                            if (isBuy) baseAssetOperation else quotingAssetOperation,
+                            ownCashMovements,
+                            mapOf(Pair(assetPair.assetPairId, limitOrder.price)),
+                            availableBalances,
+                            balancesGetter)
                 } catch (e: NotEnoughFundsFeeException) {
                     order.updateStatus(OrderStatus.NotEnoughFunds, now)
                     executionContext.info("Not enough funds for fee for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}, marketBalance: ${getMarketBalance(availableBalances, order, asset)} : ${e.message}")
@@ -463,4 +470,20 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
         return NumberUtils.divideWithMaxScale(resultBestOppositePrice!! + orderSideBestPrice, BigDecimal.valueOf(2))
     }
 
+    private fun checkAndReduceBalance(order: LimitOrder,
+                                      volume: BigDecimal,
+                                      limitBalances: MutableMap<String, BigDecimal>,
+                                      executionContext: ExecutionContext): Boolean {
+        val balancesGetter = executionContext.walletOperationsProcessor
+        val assetPair = executionContext.assetPairsById[order.assetPairId]!!
+        val limitAssetId = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
+        val availableBalance = limitBalances[order.clientId] ?: balancesGetter.getAvailableReservedBalance(order.clientId, limitAssetId)
+        val accuracy = executionContext.assetsById[limitAssetId]!!.accuracy
+        val result = availableBalance >= volume
+        executionContext.info("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${NumberUtils.roundForPrint(availableBalance)} >= ${NumberUtils.roundForPrint(volume)} = $result")
+        if (result) {
+            limitBalances[order.clientId] = NumberUtils.setScaleRoundHalfUp(availableBalance - volume, accuracy)
+        }
+        return result
+    }
 }

@@ -285,15 +285,9 @@ open class TestApplicationContext {
 
     @Bean
     open fun genericLimitOrderService(testOrderDatabaseAccessor: OrdersDatabaseAccessorsHolder,
-                                      assetsHolder: AssetsHolder,
-                                      assetsPairsHolder: AssetsPairsHolder,
-                                      balancesHolder: BalancesHolder,
                                       tradeInfoQueue: BlockingQueue<TradeInfo>,
                                       expiryOrdersQueue: ExpiryOrdersQueue): GenericLimitOrderService {
         return GenericLimitOrderService(testOrderDatabaseAccessor,
-                assetsHolder,
-                assetsPairsHolder,
-                balancesHolder,
                 tradeInfoQueue,
                 expiryOrdersQueue)
     }
@@ -452,8 +446,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun feeProcessor(balancesHolder: BalancesHolder, assetsHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder, genericLimitOrderService: GenericLimitOrderService): FeeProcessor {
-        return FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
+    open fun feeProcessor(assetsHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder, genericLimitOrderService: GenericLimitOrderService): FeeProcessor {
+        return FeeProcessor(assetsHolder, assetsPairsHolder, genericLimitOrderService)
     }
 
     @Bean
@@ -646,5 +640,15 @@ open class TestApplicationContext {
                             applicationSettingsCache: ApplicationSettingsCache,
                             assetsPairsHolder: AssetsPairsHolder): MidPriceHolder {
         return MidPriceHolder(1000, readOnlyMidPriceDatabaseAccessor, assetsPairsHolder)
+    }
+
+    @Bean
+    open fun singleLimitOrderPreprocessor(limitOrderInputQueue: BlockingQueue<MessageWrapper>,
+                                          preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                                          @Qualifier("singleLimitOrderContextPreprocessorLogger")
+                                          logger: ThrottlingLogger): SingleLimitOrderPreprocessor {
+        return SingleLimitOrderPreprocessor(limitOrderInputQueue,
+                preProcessedMessageQueue,
+                logger)
     }
 }
