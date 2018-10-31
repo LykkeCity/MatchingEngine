@@ -299,15 +299,9 @@ open class TestApplicationContext {
 
     @Bean
     open fun genericLimitOrderService(testOrderDatabaseAccessor: OrdersDatabaseAccessorsHolder,
-                                      assetsHolder: AssetsHolder,
-                                      assetsPairsHolder: AssetsPairsHolder,
-                                      balancesHolder: BalancesHolder,
                                       quotesUpdateQueue: BlockingQueue<QuotesUpdate>,
                                       tradeInfoQueue: BlockingQueue<TradeInfo>): GenericLimitOrderService {
         return GenericLimitOrderService(testOrderDatabaseAccessor,
-                assetsHolder,
-                assetsPairsHolder,
-                balancesHolder,
                 quotesUpdateQueue,
                 tradeInfoQueue)
     }
@@ -457,8 +451,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun feeProcessor(balancesHolder: BalancesHolder, assetsHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder, genericLimitOrderService: GenericLimitOrderService): FeeProcessor {
-        return FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
+    open fun feeProcessor(assetsHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder, genericLimitOrderService: GenericLimitOrderService): FeeProcessor {
+        return FeeProcessor(assetsHolder, assetsPairsHolder, genericLimitOrderService)
     }
 
 
