@@ -12,16 +12,13 @@ import com.lykke.matching.engine.fee.singleFeeTransfer
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
-import com.lykke.matching.engine.messages.MessageStatus.INVALID_FEE
-import com.lykke.matching.engine.messages.MessageStatus.LOW_BALANCE
-import com.lykke.matching.engine.messages.MessageStatus.OK
-import com.lykke.matching.engine.messages.MessageStatus.RUNTIME
+import com.lykke.matching.engine.messages.MessageStatus.*
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
-import com.lykke.matching.engine.outgoing.messages.v2.events.CashTransferEvent
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
+import com.lykke.matching.engine.outgoing.messages.v2.events.CashTransferEvent
 import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -121,7 +118,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         walletProcessor.preProcess(operations)
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
-        val updated = walletProcessor.persistBalances(cashTransferContext.processedMessage, null, null, sequenceNumber)
+        val updated = walletProcessor.persistBalances(cashTransferContext.processedMessage, null, null, sequenceNumber, null)
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {

@@ -93,7 +93,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         val currentTransactionBalancesHolder = createCurrentTransactionBalancesHolder()
         currentTransactionBalancesHolder.updateBalance(clientId, assetId, balance)
         val balancesData = currentTransactionBalancesHolder.persistenceData()
-        val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage, null, null, messageSequenceNumber))
+        val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage, null, null, messageSequenceNumber, null))
         if (!persisted) {
             return false
         }
@@ -110,7 +110,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         val currentTransactionBalancesHolder = createCurrentTransactionBalancesHolder()
         currentTransactionBalancesHolder.updateReservedBalance(clientId, assetId, balance)
         val balancesData = currentTransactionBalancesHolder.persistenceData()
-        val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage, null, null, messageSequenceNumber))
+        val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage, null, null, messageSequenceNumber, null))
         if (!persisted) {
             return false
         }
@@ -119,7 +119,11 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
     }
 
     fun insertOrUpdateWallets(wallets: Collection<Wallet>, messageSequenceNumber: Long?) {
-        persistenceManager.persist(PersistenceData(BalancesData(wallets, wallets.flatMap { it.balances.values }), null, null, null,
+        persistenceManager.persist(PersistenceData(BalancesData(wallets, wallets.flatMap { it.balances.values }),
+                null,
+                null,
+                null,
+                midPricePersistenceData = null,
                 messageSequenceNumber = messageSequenceNumber))
         update()
     }

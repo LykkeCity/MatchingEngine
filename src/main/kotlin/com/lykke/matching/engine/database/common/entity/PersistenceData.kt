@@ -7,10 +7,11 @@ class PersistenceData(val balancesData: BalancesData?,
                       val processedMessage: ProcessedMessage? = null,
                       val orderBooksData: OrderBooksPersistenceData?,
                       val stopOrderBooksData: OrderBooksPersistenceData?,
-                      val messageSequenceNumber: Long?) {
+                      val messageSequenceNumber: Long?,
+                      val midPricePersistenceData: MidPricePersistenceData?) {
 
-    constructor(processedMessage: ProcessedMessage?, messageSequenceNumber: Long?) : this(null, processedMessage, null, null, messageSequenceNumber)
-    constructor(processedMessage: ProcessedMessage?) : this(null, processedMessage, null, null, null)
+    constructor(processedMessage: ProcessedMessage?, messageSequenceNumber: Long?) : this(null, processedMessage, null, null, messageSequenceNumber, null)
+    constructor(processedMessage: ProcessedMessage?) : this(null, processedMessage, null, null, null, null)
 
     fun details(): String {
         val result = StringBuilder()
@@ -20,6 +21,7 @@ class PersistenceData(val balancesData: BalancesData?,
         append(result, "o: ", orderBooksData?.orderBooks?.size)
         append(result, "so: ", stopOrderBooksData?.orderBooks?.size)
         append(result, "sn: ", messageSequenceNumber)
+        append(result, "md: ", midPricePersistenceData?.midPrices?.size)
         return result.toString()
     }
 
@@ -37,7 +39,8 @@ class PersistenceData(val balancesData: BalancesData?,
         return CollectionUtils.isEmpty(balancesData?.balances) &&
                 CollectionUtils.isEmpty(balancesData?.wallets) &&
                 processedMessage == null &&
-                messageSequenceNumber == null
+                messageSequenceNumber == null &&
+                midPricePersistenceData == null
     }
 
     private fun append(builder: StringBuilder, prefix: String, obj: Any?) {

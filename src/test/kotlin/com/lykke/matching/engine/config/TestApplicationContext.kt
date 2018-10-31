@@ -578,8 +578,10 @@ open class TestApplicationContext {
                                      cancellerFactory: GenericLimitOrdersCancellerFactory,
                                      validator: LimitOrderCancelOperationBusinessValidator,
                                      limitOrdersCancelHelper: LimitOrdersCancelHelper,
+                                     midPriceHolder: MidPriceHolder,
+                                     assetsPairsHolder: AssetsPairsHolder,
                                      persistenceManager: PersistenceManager): LimitOrderCancelService {
-        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelHelper, persistenceManager)
+        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelHelper, midPriceHolder, assetsPairsHolder, persistenceManager)
     }
 
     @Bean
@@ -623,5 +625,17 @@ open class TestApplicationContext {
                 limitOrderCancelInputQueue,
                 limitOrderMassCancelInputQueue,
                 preProcessedMessageQueue)
+    }
+
+    @Bean
+    open fun testReadOnlyMidPriceDatabaseAccessor(): TestReadOnlyMidPriceDatabaseAccessor {
+        return TestReadOnlyMidPriceDatabaseAccessor()
+    }
+
+    @Bean
+    open fun midPriceHolder(readOnlyMidPriceDatabaseAccessor: TestReadOnlyMidPriceDatabaseAccessor,
+                            applicationSettingsCache: ApplicationSettingsCache,
+                            assetsPairsHolder: AssetsPairsHolder): MidPriceHolder {
+        return MidPriceHolder(1000, readOnlyMidPriceDatabaseAccessor, assetsPairsHolder)
     }
 }

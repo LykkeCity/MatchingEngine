@@ -73,7 +73,9 @@ class OrdersMigrationService(private val config: Config,
                 OrderBooksPersistenceData(mapOrdersToOrderBookPersistenceDataList(stopOrders, LOGGER),
                         stopOrders,
                         emptyList()),
+                null,
                 null))
+
         genericLimitOrderService.update()
         genericStopLimitOrderService.update()
         val saveTime = Date().time

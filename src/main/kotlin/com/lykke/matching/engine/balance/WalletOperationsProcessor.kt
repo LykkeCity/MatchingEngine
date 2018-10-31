@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.BalancesData
+import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
@@ -25,7 +26,6 @@ import kotlin.collections.List
 import kotlin.collections.forEach
 import kotlin.collections.getOrPut
 import kotlin.collections.isNotEmpty
-import kotlin.collections.mapValues
 import kotlin.collections.toList
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate as OutgoingBalanceUpdate
 
@@ -115,12 +115,14 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
     fun persistBalances(processedMessage: ProcessedMessage?,
                         orderBooksData: OrderBooksPersistenceData?,
                         stopOrderBooksData: OrderBooksPersistenceData?,
-                        messageSequenceNumber: Long?): Boolean {
+                        messageSequenceNumber: Long?,
+                        midPricePersistenceData: MidPricePersistenceData?): Boolean {
         return persistenceManager.persist(PersistenceData(persistenceData(),
                 processedMessage,
                 orderBooksData,
                 stopOrderBooksData,
-                messageSequenceNumber))
+                messageSequenceNumber,
+                midPricePersistenceData))
     }
 
     fun sendNotification(id: String, type: String, messageId: String) {

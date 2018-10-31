@@ -7,6 +7,7 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import java.math.BigDecimal
 import java.util.Date
+import kotlin.math.sign
 
 class OrderValidationUtils {
     companion object {
@@ -20,6 +21,23 @@ class OrderValidationUtils {
             if (availableBalance < limitVolume) {
                 throw OrderValidationException(OrderStatus.NotEnoughFunds, "not enough funds to reserve")
             }
+        }
+
+        fun isMidPriceValid(midPrice: BigDecimal?, lowerAcceptableMidPrice: BigDecimal?, upperAcceptableMidPrice: BigDecimal?): Boolean {
+            if (lowerAcceptableMidPrice != null && lowerAcceptableMidPrice != BigDecimal.ZERO && upperAcceptableMidPrice != null
+                    && upperAcceptableMidPrice != BigDecimal.ZERO && lowerAcceptableMidPrice.compareTo(upperAcceptableMidPrice).sign != -1) {
+                throw IllegalArgumentException("Invalid data supplied for mid price validation, mid price $midPrice," +
+                        " lower bound: $lowerAcceptableMidPrice, upper bound: $upperAcceptableMidPrice")
+            }
+
+            if (midPrice == null || midPrice == BigDecimal.ZERO ||
+                    lowerAcceptableMidPrice == null  || lowerAcceptableMidPrice == BigDecimal.ZERO ||
+                    upperAcceptableMidPrice == null  || upperAcceptableMidPrice == BigDecimal.ZERO ||
+                    midPrice in lowerAcceptableMidPrice..upperAcceptableMidPrice) {
+                return true
+            }
+
+            return false
         }
 
         fun validateExpiration(order: LimitOrder, orderProcessingTime: Date) {
