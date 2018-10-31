@@ -5,5 +5,5 @@ import redis.clients.jedis.Transaction
 
 interface MidPriceDatabaseAccessor {
     fun removeAll(transaction: Transaction)
-    fun save(transaction: Transaction, midPrices: List<MidPrice>)
+    fun save(transaction: Transaction, midPrices: Collection<MidPrice>)
 }

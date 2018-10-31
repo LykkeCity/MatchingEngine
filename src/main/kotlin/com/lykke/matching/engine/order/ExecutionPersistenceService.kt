@@ -19,11 +19,7 @@ class ExecutionPersistenceService(private val persistenceManager: PersistenceMan
             return messageWrapper.persisted
         }
 
-        val midPrice = executionContext.getMidPrice()
-
-        val midPricePersistenceData =  midPrice?.let {
-            MidPricePersistenceData(listOf(it))
-        }
+        val midPricePersistenceData =  MidPricePersistenceData(executionContext.getMidPrices(), executionContext.removeAllMidPrices)
 
         val persisted = persistenceManager.persist(PersistenceData(executionContext.walletOperationsProcessor.persistenceData(),
                 executionContext.processedMessage,

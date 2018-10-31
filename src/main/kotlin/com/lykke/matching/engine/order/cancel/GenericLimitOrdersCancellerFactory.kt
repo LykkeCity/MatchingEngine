@@ -37,6 +37,7 @@ class GenericLimitOrdersCancellerFactory @Autowired constructor(private val exec
                 genericLimitOrderService,
                 genericStopLimitOrderService,
                 date,
+                cancelAll,
                 logger)
     }
 }

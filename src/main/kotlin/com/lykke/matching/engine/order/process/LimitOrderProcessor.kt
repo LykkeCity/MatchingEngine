@@ -272,7 +272,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
 
         if (OrderValidationUtils.isMidPriceValid(midPrice, orderContext.lowerMidPriceBound, orderContext.upperMidPriceBound)) {
             midPrice?.let {
-                orderContext.executionContext.setMidPrice(MidPrice(orderContext.order.assetPairId, midPrice, orderContext.executionContext.date.time))
+                orderContext.executionContext.updateMidPrice(MidPrice(orderContext.order.assetPairId, midPrice, orderContext.executionContext.date.time))
             }
             return true
         }
@@ -287,7 +287,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
 
         if (OrderValidationUtils.isMidPriceValid(midPrice, orderContext.lowerMidPriceBound, orderContext.upperMidPriceBound)) {
             midPrice?.let {
-                orderContext.executionContext.setMidPrice(MidPrice(orderContext.order.assetPairId, midPrice, orderContext.executionContext.date.time))
+                orderContext.executionContext.updateMidPrice(MidPrice(orderContext.order.assetPairId, midPrice, orderContext.executionContext.date.time))
             }
             return true
         }

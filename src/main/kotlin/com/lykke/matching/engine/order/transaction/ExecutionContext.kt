@@ -14,6 +14,7 @@ import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import org.apache.log4j.Logger
 import java.util.Date
 import kotlin.collections.Collection
+import kotlin.collections.HashMap
 import kotlin.collections.LinkedHashMap
 import kotlin.collections.Map
 import kotlin.collections.MutableMap
@@ -40,11 +41,12 @@ class ExecutionContext(val messageId: String,
     }
 
     var tradeIndex: Long = 0
+    var removeAllMidPrices = false
 
     private val clientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
     private val trustedClientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
 
-    private var midPrice: MidPrice? = null
+    private var midPricesByAssetPairId = HashMap<String, MidPrice>()
 
     var marketOrderWithTrades: MarketOrderWithTrades? = null
 
@@ -85,12 +87,12 @@ class ExecutionContext(val messageId: String,
     fun getClientsLimitOrdersWithTrades() = clientLimitOrdersWithTradesByInternalId.values
     fun getTrustedClientsLimitOrdersWithTrades() = trustedClientLimitOrdersWithTradesByInternalId.values
 
-    fun setMidPrice(midPrice: MidPrice) {
-        this.midPrice = midPrice
+    fun updateMidPrice(midPrice: MidPrice) {
+        this.midPricesByAssetPairId.put(midPrice.assetPairId, midPrice)
     }
 
-    fun getMidPrice(): MidPrice? {
-        return midPrice
+    fun getMidPrices(): Collection<MidPrice> {
+        return midPricesByAssetPairId.values
     }
 
     fun info(message: String) {
@@ -107,7 +109,7 @@ class ExecutionContext(val messageId: String,
         orderBooksHolder.apply(date)
         stopOrderBooksHolder.apply(date)
 
-        this.midPrice?.let {
+        getMidPrices().forEach { it ->
             midPriceHolder.addMidPrice(this.assetPairsById[it.assetPairId]!!, it.midPrice, Date(it.timestamp))
         }
     }

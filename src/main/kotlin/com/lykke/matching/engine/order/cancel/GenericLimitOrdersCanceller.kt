@@ -2,20 +2,32 @@ package com.lykke.matching.engine.order.cancel
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
+import com.lykke.matching.engine.order.ExecutionConfirmationService
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
+import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
+import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
-import com.lykke.matching.engine.order.ExecutionConfirmationService
 import org.apache.log4j.Logger
 import java.util.Date
+import kotlin.collections.ArrayList
+import kotlin.collections.Collection
+import kotlin.collections.List
+import kotlin.collections.Map
+import kotlin.collections.asSequence
+import kotlin.collections.emptyList
+import kotlin.collections.forEach
+import kotlin.collections.mapValues
+import kotlin.collections.plus
+import kotlin.collections.single
 
 class GenericLimitOrdersCanceller(private val executionContextFactory: ExecutionContextFactory,
                                   private val stopOrderBookProcessor: StopOrderBookProcessor,
@@ -27,6 +39,7 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
                                   genericLimitOrderService: GenericLimitOrderService,
                                   genericStopLimitOrderService: GenericStopLimitOrderService,
                                   private val date: Date,
+                                  private val cancelAll: Boolean = false,
                                   private val LOGGER: Logger) {
 
     private val limitOrdersCanceller = LimitOrdersCanceller(dictionariesDatabaseAccessor,
@@ -111,8 +124,12 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
         executionContext.addTrustedClientsLimitOrdersWithTrades(limitOrdersCancelResult.trustedClientsOrdersWithTrades)
         executionContext.addTrustedClientsLimitOrdersWithTrades(stopLimitOrdersResult.trustedClientsOrdersWithTrades)
 
-        stopOrderBookProcessor.checkAndExecuteStopLimitOrders(executionContext)
+        getMidPrices(limitOrdersCancelResult.assetOrderBooks).forEach {
+            executionContext.updateMidPrice(it)
+        }
+        executionContext.removeAllMidPrices = cancelAll
 
+        stopOrderBookProcessor.checkAndExecuteStopLimitOrders(executionContext)
         return executionConfirmationService.persistAndSendEvents(messageWrapper, executionContext)
     }
 
@@ -121,5 +138,21 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
                 .mapNotNull { assetsPairsHolder.getAssetPairAllowNulls(it) }
                 .groupBy { it.assetPairId }
                 .mapValues { it.value.single() }
+    }
+
+    private fun getMidPrices(assetPairIdToAssetOrderBook: Map<String, AssetOrderBook>): List<MidPrice> {
+        if (cancelAll) {
+            return emptyList()
+        }
+
+        val result = ArrayList<MidPrice>()
+        assetPairIdToAssetOrderBook.forEach { assetPairId, orderBook ->
+            val midPrice = orderBook.getMidPrice()
+            if (midPrice != null) {
+                result.add(MidPrice(assetPairId, midPrice, date.time))
+            }
+        }
+
+        return result
     }
 }

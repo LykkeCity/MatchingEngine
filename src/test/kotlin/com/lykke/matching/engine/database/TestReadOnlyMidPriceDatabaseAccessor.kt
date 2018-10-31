@@ -19,7 +19,7 @@ class TestReadOnlyMidPriceDatabaseAccessor : MidPriceDatabaseAccessor, ReadOnlyM
         throw NotImplementedException()
     }
 
-    override fun save(transaction: Transaction, midPrice: List<MidPrice>) {
+    override fun save(transaction: Transaction, midPrices: Collection<MidPrice>) {
         throw NotImplementedException()
     }
 

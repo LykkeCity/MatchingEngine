@@ -28,7 +28,7 @@ class RedisMidPriceDatabaseAccessor(private val dbIndex: Int,
 
     private var conf = FSTConfiguration.createDefaultConfiguration()
 
-    override fun save(transaction: Transaction, midPrices: List<MidPrice>) {
+    override fun save(transaction: Transaction, midPrices: Collection<MidPrice>) {
         transaction.select(dbIndex)
         midPrices.forEach { midPrice ->
             val key = getKey(midPrice.assetPairId, midPrice.timestamp)

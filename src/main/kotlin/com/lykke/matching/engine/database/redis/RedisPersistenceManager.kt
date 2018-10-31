@@ -6,10 +6,10 @@ import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
-import com.lykke.matching.engine.database.redis.accessor.impl.*
 import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
+import com.lykke.matching.engine.database.redis.accessor.impl.*
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.messages.MessageType
@@ -111,8 +111,8 @@ class RedisPersistenceManager(
             return
         }
 
-        if (midPricePersistenceData.midPrices != null) {
-            redisMidPriceDatabaseAccessor.save(transaction, midPricePersistenceData.midPrices)
+        if (!CollectionUtils.isEmpty(midPricePersistenceData.midPrices)) {
+            redisMidPriceDatabaseAccessor.save(transaction, midPricePersistenceData.midPrices!!)
         }
 
     }

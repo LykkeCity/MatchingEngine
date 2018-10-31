@@ -217,7 +217,7 @@ class MarketOrderService @Autowired constructor(
             }
 
             if (newMidPrice != null) {
-                executionContext.setMidPrice(MidPrice(order.assetPairId, newMidPrice, executionContext.date.time))
+                executionContext.updateMidPrice(MidPrice(order.assetPairId, newMidPrice, executionContext.date.time))
             }
 
             matchingResult.apply()
