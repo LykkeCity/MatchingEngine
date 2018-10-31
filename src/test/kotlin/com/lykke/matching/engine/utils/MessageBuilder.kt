@@ -19,6 +19,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
+import com.lykke.matching.engine.socket.TestClientHandler
 import java.math.BigDecimal
 import java.util.*
 
@@ -369,7 +370,7 @@ companion object {
         order.upperLimitPrice?.let { builder.setUpperLimitPrice(it.toDouble()) }
         order.upperPrice?.let { builder.setUpperPrice(it.toDouble()) }
         val messageWrapper = singleLimitOrderContextParser
-                .parse(MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null, messageId = "test", id = "test"))
+                .parse(MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), TestClientHandler(), messageId = "test", id = "test"))
                 .messageWrapper
 
         val singleLimitContext = messageWrapper.context as SingleLimitOrderContext
