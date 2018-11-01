@@ -39,12 +39,12 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
 
         var lowerMidPriceBound: BigDecimal? = null
         var upperMidPriceBound: BigDecimal? = null
-        val limitOrderPriceDeviationThreshold = priceDeviationThresholdHolder.getLimitOrderPriceDeviationThreshold(order.assetPairId)
+        val midPriceDeviationThreshold = priceDeviationThresholdHolder.getMidPriceDeviationThreshold(order.assetPairId)
         val referenceMidPrice = midPriceHolder.getReferenceMidPrice(executionContext.assetPairsById[order.assetPairId]!!, executionContext.date)
 
-        if (limitOrderPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
-            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * limitOrderPriceDeviationThreshold)
-            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * limitOrderPriceDeviationThreshold)
+        if (midPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
+            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * midPriceDeviationThreshold)
+            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * midPriceDeviationThreshold)
         }
 
         val orderContext = LimitOrderExecutionContext(order, lowerMidPriceBound, upperMidPriceBound, executionContext)
@@ -148,8 +148,8 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         }
 
         if (!checkMidPriceWithoutMatching(orderContext)) {
-            order.updateStatus(OrderStatus.TooHighPriceDeviation, orderContext.executionContext.date)
-            orderContext.executionContext.info("${getOrderInfo(order)}: too high price deviation")
+            order.updateStatus(OrderStatus.TooHighMidPriceDeviation, orderContext.executionContext.date)
+            orderContext.executionContext.info("${getOrderInfo(order)}: too high mid price deviation")
             addOrderToReport(order, orderContext.executionContext)
             return ProcessedOrder(order, false)
         }
@@ -161,13 +161,12 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         val executionContext = orderContext.executionContext
         val order = orderContext.order
         val orderBook = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId)
-        val assetPair = orderContext.executionContext.assetPairsById[order.assetPairId]!!
         val matchingResult = matchingEngine.match(order,
                 orderBook.getOrderBook(!order.isBuySide()),
                 executionContext.messageId,
                 orderContext.availableLimitAssetBalance!!,
-                assetPair.limitOrderPriceDeviationThreshold
-                        ?: applicationSettingsCache.limitOrderPriceDeviationThreshold(assetPair.assetPairId),
+                lowerMidPriceBound = orderContext.lowerMidPriceBound,
+                upperMidPriceBound = orderContext.upperMidPriceBound,
                 executionContext = executionContext)
         orderContext.matchingResult = matchingResult
         val orderCopy = matchingResult.order as LimitOrder
@@ -178,6 +177,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
             OrderStatus.ReservedVolumeGreaterThanBalance,
             OrderStatus.NotEnoughFunds,
             OrderStatus.InvalidFee,
+            OrderStatus.TooHighMidPriceDeviation,
             OrderStatus.TooHighPriceDeviation -> {
                 return processRejectedMatchingResult(orderContext)
             }
@@ -238,8 +238,8 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         val order = orderContext.order
 
         if (!checkMidPriceAfterMatching(orderContext)) {
-            val message = "${getOrderInfo(orderContext.matchingResult!!.order as LimitOrder)}: too high price deviation"
-            processInvalidMatchedOrder(orderContext, OrderStatus.TooHighPriceDeviation, message)
+            val message = "${getOrderInfo(orderContext.matchingResult!!.order as LimitOrder)}: too high mid price deviation"
+            processInvalidMatchedOrder(orderContext, OrderStatus.TooHighMidPriceDeviation, message)
             return ProcessedOrder(order, false, message)
         }
 
@@ -308,7 +308,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
     }
 
     fun getOrderSideBestPrice(order: LimitOrder, assetOrderBook: AssetOrderBook): BigDecimal {
-         val bestPrice = assetOrderBook.getBestPrice(order.isBuySide())
+        val bestPrice = assetOrderBook.getBestPrice(order.isBuySide())
 
 
 

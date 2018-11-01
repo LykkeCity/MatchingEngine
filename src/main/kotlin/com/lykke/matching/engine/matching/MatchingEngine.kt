@@ -181,7 +181,7 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
 
                 if (!checkMidPrice(lowerMidPriceBound, upperMidPriceBound, midPrice)) {
                     executionContext.info("Invalid mid price order(${order.externalId}), lowerMidPriceBound=$lowerMidPriceBound, upperMidPriceBound=$upperMidPriceBound, midPrice=$midPrice")
-                    order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
+                    order.updateStatus(OrderStatus.TooHighMidPriceDeviation, now)
                     return MatchingResult(orderWrapper, cancelledLimitOrders)
                 }
 

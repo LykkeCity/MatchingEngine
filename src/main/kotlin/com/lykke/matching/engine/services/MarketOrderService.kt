@@ -101,7 +101,7 @@ class MarketOrderService @Autowired constructor(
                 now,
                 LOGGER)
 
-        val midPriceDeviationThreshold = priceDeviationThresholdHolder.getLimitOrderPriceDeviationThreshold(assetPair.assetPairId)
+        val midPriceDeviationThreshold = priceDeviationThresholdHolder.getMidPriceDeviationThreshold(assetPair.assetPairId)
         val marketOrderPriceDeviationThreshold = priceDeviationThresholdHolder.getMarketOrderPriceDeviationThreshold(assetPair.assetPairId)
 
         var lowerMidPriceBound: BigDecimal? = null
