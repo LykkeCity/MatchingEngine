@@ -34,15 +34,30 @@ class MatchingResultHandlingHelper(private val applicationSettingsCache: Applica
         orderExecutionContext.cancelledOppositeOrdersWalletOperations = walletOperations
     }
 
+    fun formOppositeOrderBookAfterMatching(orderExecutionContext: OrderExecutionContext<*>) {
+        val matchingResult = orderExecutionContext.matchingResult!!
+        if (matchingResult.uncompletedLimitOrderCopy != null) {
+            val uncompletedLimitOrderCopy = matchingResult.uncompletedLimitOrderCopy
+
+            val assetPair = orderExecutionContext.executionContext.assetPairsById[uncompletedLimitOrderCopy.assetPairId]!!
+            if (assetPair.minVolume == null || uncompletedLimitOrderCopy.getAbsRemainingVolume() >= assetPair.minVolume) {
+                orderExecutionContext.isUncompletedOrderCancelled = false
+                orderExecutionContext.matchingResult!!.orderBook.put(matchingResult.uncompletedLimitOrder)
+            } else {
+                orderExecutionContext.isUncompletedOrderCancelled = true
+            }
+        }
+
+        matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
+    }
+
     fun preProcessUncompletedOppositeOrder(orderExecutionContext: OrderExecutionContext<*>) {
+        if (!orderExecutionContext.isUncompletedOrderCancelled) {
+            return
+        }
         val matchingResult = orderExecutionContext.matchingResult!!
         val uncompletedLimitOrderCopy = matchingResult.uncompletedLimitOrderCopy!!
         val assetPair = orderExecutionContext.executionContext.assetPairsById[uncompletedLimitOrderCopy.assetPairId]!!
-        if (assetPair.minVolume == null || uncompletedLimitOrderCopy.getAbsRemainingVolume() >= assetPair.minVolume) {
-            orderExecutionContext.isUncompletedOrderCancelled = false
-            orderExecutionContext.matchingResult!!.orderBook.put(matchingResult.uncompletedLimitOrder)
-            return
-        }
         uncompletedLimitOrderCopy.updateStatus(OrderStatus.Cancelled, orderExecutionContext.executionContext.date)
         if (orderExecutionContext.cancelledOppositeOrdersWalletOperations == null) {
             orderExecutionContext.cancelledOppositeOrdersWalletOperations = mutableListOf()
@@ -50,7 +65,6 @@ class MatchingResultHandlingHelper(private val applicationSettingsCache: Applica
         orderExecutionContext.cancelledOppositeOrdersWalletOperations!!.add(createCancelledOppositeOrderWalletOperation(orderExecutionContext, uncompletedLimitOrderCopy))
         orderExecutionContext.executionContext.info("Opposite limit order (${uncompletedLimitOrderCopy.externalId} is cancelled due to min remaining volume" +
                 "(${NumberUtils.roundForPrint(uncompletedLimitOrderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
-        orderExecutionContext.isUncompletedOrderCancelled = true
     }
 
     private fun createCancelledOppositeOrderWalletOperation(orderExecutionContext: OrderExecutionContext<*>, oppositeOrder: LimitOrder): WalletOperation {
