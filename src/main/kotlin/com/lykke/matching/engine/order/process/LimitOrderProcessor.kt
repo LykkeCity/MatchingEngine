@@ -171,8 +171,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
             OrderStatus.ReservedVolumeGreaterThanBalance,
             OrderStatus.NotEnoughFunds,
             OrderStatus.InvalidFee,
-            OrderStatus.TooHighMidPriceDeviation,
-            OrderStatus.TooHighPriceDeviation -> {
+            OrderStatus.TooHighMidPriceDeviation -> {
                 return processRejectedMatchingResult(orderContext)
             }
             OrderStatus.InOrderBook,
