@@ -52,7 +52,7 @@ class MarketOrderService @Autowired constructor(
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
         private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
         private val midPriceHolder: MidPriceHolder,
-        private val messageSender: MessageSender): AbstractService {
+        private val messageSender: MessageSender) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
         private val STATS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.stats")
@@ -101,15 +101,16 @@ class MarketOrderService @Autowired constructor(
                 now,
                 LOGGER)
 
+        val midPriceDeviationThreshold = priceDeviationThresholdHolder.getLimitOrderPriceDeviationThreshold(assetPair.assetPairId)
         val marketOrderPriceDeviationThreshold = priceDeviationThresholdHolder.getMarketOrderPriceDeviationThreshold(assetPair.assetPairId)
 
         var lowerMidPriceBound: BigDecimal? = null
         var upperMidPriceBound: BigDecimal? = null
         val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, now)
 
-        if (marketOrderPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
-            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * marketOrderPriceDeviationThreshold)
-            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * marketOrderPriceDeviationThreshold)
+        if (midPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
+            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * midPriceDeviationThreshold)
+            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * midPriceDeviationThreshold)
         }
 
         val marketOrderExecutionContext = MarketOrderExecutionContext(order, lowerMidPriceBound, upperMidPriceBound, executionContext)
@@ -119,6 +120,7 @@ class MarketOrderService @Autowired constructor(
                 messageWrapper.messageId!!,
                 lowerMidPriceBound = lowerMidPriceBound,
                 upperMidPriceBound = upperMidPriceBound,
+                priceDeviationThreshold = marketOrderPriceDeviationThreshold,
                 executionContext = executionContext)
         marketOrderExecutionContext.matchingResult = matchingResult
 
@@ -130,7 +132,8 @@ class MarketOrderService @Autowired constructor(
             InvalidVolumeAccuracy,
             InvalidVolume,
             InvalidValue,
-            TooHighPriceDeviation -> {
+            TooHighPriceDeviation,
+            TooHighMidPriceDeviation -> {
                 if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
                     matchingResultHandlingHelper.preProcessCancelledOppositeOrders(marketOrderExecutionContext)
                     matchingResultHandlingHelper.preProcessCancelledOrdersWalletOperations(marketOrderExecutionContext)
@@ -210,8 +213,8 @@ class MarketOrderService @Autowired constructor(
                     matchingResult.orderBook.peek()?.price ?: BigDecimal.ZERO)
 
             if (!OrderValidationUtils.isMidPriceValid(newMidPrice, marketOrderExecutionContext.lowerMidPriceBound, marketOrderExecutionContext.upperMidPriceBound)) {
-                LOGGER.info("Market order (id: ${order.externalId}) is rejected: too high price deviation")
-                order.updateStatus(TooHighPriceDeviation, executionContext.date)
+                LOGGER.info("Market order (id: ${order.externalId}) is rejected: too high mid price deviation")
+                order.updateStatus(TooHighMidPriceDeviation, executionContext.date)
                 marketOrderExecutionContext.executionContext.marketOrderWithTrades = MarketOrderWithTrades(executionContext.messageId, order)
                 return
             }

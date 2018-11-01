@@ -16,6 +16,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.builders.bigDecimalToStrin
 import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
+import com.lykke.matching.engine.services.validators.common.OrderValidationUtils.Companion.checkExecutionPriceDeviation
 import com.lykke.matching.engine.utils.NumberUtils
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
@@ -41,6 +42,7 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
               balance: BigDecimal? = null,
               lowerMidPriceBound: BigDecimal? = null,
               upperMidPriceBound: BigDecimal? = null,
+              priceDeviationThreshold: BigDecimal? = null,
               executionContext: ExecutionContext): MatchingResult {
         val balancesGetter = executionContext.walletOperationsProcessor
         val orderWrapper = CopyWrapper(originOrder)
@@ -48,6 +50,7 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
         val assetPair = executionContext.assetPairsById[order.assetPairId]!!
         val availableBalance = balance ?: getBalance(order, assetPair, balancesGetter)
         val workingOrderBook = PriorityBlockingQueue(orderBook)
+        val bestPrice = if (workingOrderBook.isNotEmpty()) workingOrderBook.peek().takePrice() else null
         val now = executionContext.date
 
         var remainingVolume = order.getAbsVolume()
@@ -355,6 +358,12 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
         if (!checkMaxValue(order, assetPair, executionPrice)) {
             order.updateStatus(OrderStatus.InvalidValue, now)
             executionContext.info("Too large value of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxValue=${assetPair.maxValue}, straight=${order.isStraight()}")
+            return MatchingResult(orderWrapper, cancelledLimitOrders)
+        }
+
+        if (order.takePrice() == null && !checkExecutionPriceDeviation(order.isBuySide(), executionPrice, bestPrice, priceDeviationThreshold)) {
+            order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
+            executionContext.info("Too high price deviation (order id: ${order.externalId}): threshold: $priceDeviationThreshold, bestPrice: $bestPrice, executionPrice: $executionPrice)")
             return MatchingResult(orderWrapper, cancelledLimitOrders)
         }
 
