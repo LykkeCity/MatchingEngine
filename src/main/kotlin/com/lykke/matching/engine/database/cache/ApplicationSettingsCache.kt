@@ -21,7 +21,7 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
     private var moPriceDeviationThresholds: MutableMap<String, String> = ConcurrentHashMap()
 
     @Volatile
-    private var loPriceDeviationThresholds: MutableMap<String, String> = ConcurrentHashMap()
+    private var midPriceDeviationThresholds: MutableMap<String, String> = ConcurrentHashMap()
 
     @PostConstruct
     override fun update() {
@@ -30,7 +30,7 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
         disabledAssets = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroup.DISABLED_ASSETS)
 
         moPriceDeviationThresholds = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD)
-        loPriceDeviationThresholds = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD)
+        midPriceDeviationThresholds = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD)
     }
 
     fun isTrustedClient(client: String): Boolean {
@@ -45,8 +45,8 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
         return moPriceDeviationThresholds[assetPairId]?.toBigDecimal()
     }
 
-    fun limitOrderPriceDeviationThreshold(assetPairId: String): BigDecimal? {
-        return loPriceDeviationThresholds[assetPairId]?.toBigDecimal()
+    fun midPriceDeviationThreshold(assetPairId: String): BigDecimal? {
+        return midPriceDeviationThresholds[assetPairId]?.toBigDecimal()
     }
 
     fun createOrUpdateSettingValue(settingGroup: AvailableSettingGroup, settingName: String, value: String) {
@@ -75,7 +75,7 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
             AvailableSettingGroup.TRUSTED_CLIENTS -> trustedClients
             AvailableSettingGroup.DISABLED_ASSETS -> disabledAssets
             AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD -> moPriceDeviationThresholds
-            AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD -> loPriceDeviationThresholds
+            AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD -> midPriceDeviationThresholds
         }
     }
 }

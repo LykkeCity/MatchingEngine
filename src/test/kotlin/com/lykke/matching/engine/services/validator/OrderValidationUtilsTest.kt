@@ -17,7 +17,7 @@ class OrderValidationUtilsTest {
                 BigDecimal.valueOf(0.1), BigDecimal.valueOf(0.2))
         val BTC_USD_ASSET_PAIR = AssetPair("BTCUSD", "BTC", "USD", 8)
     }
-    
+
     @Test
     fun testCheckVolume() {
         assertTrue { OrderValidationUtils.checkMinVolume(MessageBuilder.buildLimitOrder(assetId = "BTCUSD", volume = 1.0), BTC_USD_ASSET_PAIR) }
@@ -101,6 +101,19 @@ class OrderValidationUtilsTest {
 
     @Test(expected = IllegalArgumentException::class)
     fun testMidPriceSuppliedInvalidBounds() {
-       OrderValidationUtils.isMidPriceValid(BigDecimal.valueOf(11), BigDecimal.valueOf(15), BigDecimal.valueOf(10))
+        OrderValidationUtils.isMidPriceValid(BigDecimal.valueOf(11), BigDecimal.valueOf(15), BigDecimal.valueOf(10))
+    }
+
+    @Test
+    fun testPriceDeviation() {
+        assertTrue(OrderValidationUtils.checkExecutionPriceDeviation(true, BigDecimal.valueOf(1.2), BigDecimal.valueOf(1.3), null))
+        assertTrue(OrderValidationUtils.checkExecutionPriceDeviation(true, BigDecimal.valueOf(1.2), null, BigDecimal.valueOf(0.1)))
+
+        assertTrue(OrderValidationUtils.checkExecutionPriceDeviation(true, BigDecimal.valueOf(1.1), BigDecimal.valueOf(1.2), BigDecimal.valueOf(0.1)))
+        assertTrue(OrderValidationUtils.checkExecutionPriceDeviation(false, BigDecimal.valueOf(1.2), BigDecimal.valueOf(1.1), BigDecimal.valueOf(0.1)))
+
+        assertFalse(OrderValidationUtils.checkExecutionPriceDeviation(true, BigDecimal.valueOf(1.2), BigDecimal.ZERO, BigDecimal.valueOf(0.1)))
+        assertFalse(OrderValidationUtils.checkExecutionPriceDeviation(true, BigDecimal.valueOf(1.2), BigDecimal.valueOf(0.6), BigDecimal.valueOf(0.1)))
+        assertFalse(OrderValidationUtils.checkExecutionPriceDeviation(false, BigDecimal.valueOf(0.6), BigDecimal.valueOf(1.3), BigDecimal.valueOf(0.1)))
     }
 }

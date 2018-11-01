@@ -107,15 +107,15 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
     }
 
     fun preProcess(messageId: String, orders: Collection<LimitOrder>): LimitOrdersProcessor {
-        val limitOrderPriceDeviationThreshold = applicationSettingsCache.limitOrderPriceDeviationThreshold(assetPair.assetPairId)
+        val midPriceDeviationThreshold = applicationSettingsCache.midPriceDeviationThreshold(assetPair.assetPairId)
 
         var lowerMidPriceBound: BigDecimal? = null
         var upperMidPriceBound: BigDecimal? = null
         val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, date)
 
-        if (limitOrderPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
-            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * limitOrderPriceDeviationThreshold)
-            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * limitOrderPriceDeviationThreshold)
+        if (midPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
+            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * midPriceDeviationThreshold)
+            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * midPriceDeviationThreshold)
         }
 
         orders.forEach { preProcess(messageId, it, lowerMidPriceBound, upperMidPriceBound) }
@@ -241,12 +241,13 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             return
         }
 
+
         if (orderBook.leadToNegativeSpread(order)) {
             val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()),
                     messageId,
-                    lowerAcceptableMidPrice,
-                    upperAcceptableMidPrice,
-                    availableBalance)
+                    lowerMidPriceBound =  lowerAcceptableMidPrice,
+                    upperMidPriceBound =  upperAcceptableMidPrice,
+                    balance = availableBalance)
             val orderCopy = matchingResult.order as LimitOrder
             val orderStatus = orderCopy.status
             when (OrderStatus.valueOf(orderStatus)) {
@@ -263,6 +264,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                     processedOrders.add(ProcessedOrder(order, false))
                 }
                 OrderStatus.TooHighPriceDeviation,
+                OrderStatus.TooHighMidPriceDeviation,
                 OrderStatus.InvalidFee -> {
                     addToReportIfNotTrusted(order)
                     processedOrders.add(ProcessedOrder(order, false))
@@ -290,7 +292,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         val oppositeBestPrice = if (order.isBuySide()) orderBook.getAskPrice() else orderBook.getBidPrice()
 
         if (!OrderValidationUtils.isMidPriceValid(getMidPrice(orderSideBestPrice, oppositeBestPrice), lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
-            processInvalidOrder(order, OrderStatus.TooHighPriceDeviation, "too high price deviation")
+            processInvalidOrder(order, OrderStatus.TooHighMidPriceDeviation, "too high mid price deviation")
             return
         }
 
@@ -368,7 +370,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         val newMidPriceAfterMatching = getMidPrice(orderSideBestPrice, oppositeSideBestPrice)
 
         if (!OrderValidationUtils.isMidPriceValid(newMidPriceAfterMatching, lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
-            processInvalidOrder(order, OrderStatus.TooHighPriceDeviation, "too high price deviation")
+            processInvalidOrder(order, OrderStatus.TooHighMidPriceDeviation, "too high mid price deviation")
             return false
         }
 

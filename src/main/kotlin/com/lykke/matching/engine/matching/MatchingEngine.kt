@@ -17,6 +17,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.builders.bigDecimalToStrin
 import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
+import com.lykke.matching.engine.services.validators.common.OrderValidationUtils.Companion.checkExecutionPriceDeviation
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.math.BigDecimal
@@ -74,11 +75,13 @@ class MatchingEngine(private val LOGGER: Logger,
               messageId: String,
               lowerMidPriceBound: BigDecimal? = null,
               upperMidPriceBound: BigDecimal? = null,
+              priceDeviationThreshold: BigDecimal? = null,
               balance: BigDecimal? = null): MatchingResult {
         val orderWrapper = CopyWrapper(originOrder)
         val order = orderWrapper.copy
         val availableBalance = balance ?: getBalance(order)
         val workingOrderBook = PriorityBlockingQueue(orderBook)
+        val bestPrice = if (workingOrderBook.isNotEmpty()) workingOrderBook.peek().takePrice() else null
         val now = Date()
 
         var remainingVolume = order.getAbsVolume()
@@ -202,7 +205,7 @@ class MatchingEngine(private val LOGGER: Logger,
 
                 if (!checkMidPrice(lowerMidPriceBound, upperMidPriceBound, midPrice)) {
                     LOGGER.info("Invalid mid price order(${order.externalId}), lowerMidPriceBound=$lowerMidPriceBound, upperMidPriceBound=$upperMidPriceBound, midPrice=$midPrice")
-                    order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
+                    order.updateStatus(OrderStatus.TooHighMidPriceDeviation, now)
                     return MatchingResult(orderWrapper, now, cancelledLimitOrders)
                 }
 
@@ -385,7 +388,11 @@ class MatchingEngine(private val LOGGER: Logger,
             return MatchingResult(orderWrapper, now, cancelledLimitOrders)
         }
 
-
+        if (order.takePrice() == null && !checkExecutionPriceDeviation(order.isBuySide(), executionPrice, bestPrice, priceDeviationThreshold)) {
+            order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
+            LOGGER.info("Too high price deviation (order id: ${order.externalId}): threshold: $priceDeviationThreshold, bestPrice: $bestPrice, executionPrice: $executionPrice)")
+            return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+        }
 
         if (order.takePrice() != null && remainingVolume > BigDecimal.ZERO) {
             val newRemainingVolume = if (order.isBuySide() || NumberUtils.equalsIgnoreScale(remainingVolume, BigDecimal.ZERO)) remainingVolume else -remainingVolume

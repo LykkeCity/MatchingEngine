@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.Order
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
+import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 import kotlin.math.sign
 
@@ -29,13 +30,30 @@ class OrderValidationUtils {
             }
 
             if (midPrice == null || midPrice == BigDecimal.ZERO ||
-                    lowerAcceptableMidPrice == null  || lowerAcceptableMidPrice == BigDecimal.ZERO ||
-                    upperAcceptableMidPrice == null  || upperAcceptableMidPrice == BigDecimal.ZERO ||
+                    lowerAcceptableMidPrice == null || lowerAcceptableMidPrice == BigDecimal.ZERO ||
+                    upperAcceptableMidPrice == null || upperAcceptableMidPrice == BigDecimal.ZERO ||
                     midPrice in lowerAcceptableMidPrice..upperAcceptableMidPrice) {
                 return true
             }
 
             return false
+        }
+
+        fun checkExecutionPriceDeviation(isBuySide: Boolean,
+                                         price: BigDecimal,
+                                         expectedPrice: BigDecimal?,
+                                         threshold: BigDecimal?): Boolean {
+            if (threshold == null || expectedPrice == null) {
+                return true
+            }
+            if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, expectedPrice)) {
+                return false
+            }
+            return if (isBuySide) {
+                NumberUtils.divideWithMaxScale(price - expectedPrice, expectedPrice) <= threshold
+            } else {
+                NumberUtils.divideWithMaxScale(expectedPrice - price, expectedPrice) <= threshold
+            }
         }
     }
 }

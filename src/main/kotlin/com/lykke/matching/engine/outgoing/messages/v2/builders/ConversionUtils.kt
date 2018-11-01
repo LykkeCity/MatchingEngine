@@ -3,26 +3,13 @@ package com.lykke.matching.engine.outgoing.messages.v2.builders
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
-import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
-import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
-import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
-import com.lykke.matching.engine.outgoing.messages.TradeInfo
+import com.lykke.matching.engine.outgoing.messages.*
+import com.lykke.matching.engine.outgoing.messages.v2.enums.*
+import com.lykke.matching.engine.outgoing.messages.v2.events.common.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.v2.events.common.Fee
-import com.lykke.matching.engine.outgoing.messages.v2.events.common.FeeInstruction
-import com.lykke.matching.engine.outgoing.messages.v2.enums.FeeSizeType
-import com.lykke.matching.engine.outgoing.messages.v2.events.common.FeeTransfer
-import com.lykke.matching.engine.outgoing.messages.v2.enums.FeeType
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.Order
-import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
-import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderSide
-import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus
-import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderType
-import com.lykke.matching.engine.outgoing.messages.v2.events.common.Trade
-import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import java.math.BigDecimal
-import java.util.Date
+import java.util.*
 
 
 fun convertFees(fees: List<com.lykke.matching.engine.daos.fee.v2.Fee>): List<Fee> {
@@ -149,6 +136,7 @@ private fun orderStatusInfo(order: com.lykke.matching.engine.daos.Order): OrderS
         com.lykke.matching.engine.order.OrderStatus.InvalidVolume.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.INVALID_VOLUME)
         com.lykke.matching.engine.order.OrderStatus.InvalidValue.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.INVALID_VALUE)
         com.lykke.matching.engine.order.OrderStatus.TooHighPriceDeviation.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.TOO_HIGH_PRICE_DEVIATION)
+        com.lykke.matching.engine.order.OrderStatus.TooHighMidPriceDeviation.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.TOO_HIGH_MID_PRICE_DEVIATION)
         else -> OrderStatusInfo(OrderStatus.UNKNOWN_STATUS)
     }
 }

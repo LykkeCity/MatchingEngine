@@ -109,21 +109,23 @@ class MarketOrderService @Autowired constructor(
         val assetPair = getAssetPair(order)
         val orderBook = genericLimitOrderService.getOrderBook(order.assetPairId)
         val marketOrderPriceDeviationThreshold = applicationSettingsCache.marketOrderPriceDeviationThreshold(assetPair.assetPairId)
+        val midPriceDeviationThreshold = applicationSettingsCache.midPriceDeviationThreshold(assetPair.assetPairId)
 
         var lowerMidPriceBound: BigDecimal? = null
         var upperMidPriceBound: BigDecimal? = null
         val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, now)
 
-        if (marketOrderPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
-            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * marketOrderPriceDeviationThreshold)
-            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * marketOrderPriceDeviationThreshold)
+        if (midPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
+            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * midPriceDeviationThreshold)
+            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * midPriceDeviationThreshold)
         }
 
         val matchingResult = matchingEngine.initTransaction().match(order,
                 getOrderBook(order),
                 messageWrapper.messageId!!,
-                lowerMidPriceBound,
-                upperMidPriceBound
+                lowerMidPriceBound = lowerMidPriceBound,
+                upperMidPriceBound = upperMidPriceBound,
+                priceDeviationThreshold = marketOrderPriceDeviationThreshold
         )
 
         when (OrderStatus.valueOf(matchingResult.order.status)) {
@@ -136,7 +138,8 @@ class MarketOrderService @Autowired constructor(
             InvalidVolumeAccuracy,
             InvalidVolume,
             InvalidValue,
-            TooHighPriceDeviation -> {
+            TooHighPriceDeviation,
+            TooHighMidPriceDeviation -> {
                 writeErrorNotification(messageWrapper, order, now)
             }
             Matched -> {
@@ -192,8 +195,8 @@ class MarketOrderService @Autowired constructor(
                             matchingResult.orderBook.peek()?.price ?: BigDecimal.ZERO)
 
                     if (!OrderValidationUtils.isMidPriceValid(newMidPrice, lowerMidPriceBound, upperMidPriceBound)) {
-                        LOGGER.info("Market order (id: ${order.externalId}) is rejected: too high price deviation")
-                        order.updateStatus(TooHighPriceDeviation, matchingResult.timestamp)
+                        LOGGER.info("Market order (id: ${order.externalId}) is rejected: too high mid price deviation")
+                        order.updateStatus(TooHighMidPriceDeviation, matchingResult.timestamp)
                         writeErrorNotification(messageWrapper, order, now)
                         return
                     }

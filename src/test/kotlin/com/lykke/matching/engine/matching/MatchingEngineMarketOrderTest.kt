@@ -633,7 +633,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     }
 
     @Test
-    fun testMatchingSellOrderPriceDeviation() {
+    fun testMatchingSellOrderMidPriceDeviation() {
         //given
         testBalanceHolderWrapper.updateBalance("Client1", "EUR", 100.0)
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 100.0)
@@ -653,11 +653,11 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         val matchingResult = matchingEngine.match(marketOrder, getOrderBook("EURUSD", true), "test", BigDecimal("1.5"), BigDecimal("1.6"))
 
         //then
-        assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.TooHighPriceDeviation)
+        assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.TooHighMidPriceDeviation)
     }
 
     @Test
-    fun testMatchingBuyOrderPriceDeviation() {
+    fun testMatchingBuyOrderMidPriceDeviation() {
         //given
         testBalanceHolderWrapper.updateBalance("Client1", "EUR", 100.0)
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 100.0)
@@ -676,6 +676,6 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         val matchingResult = matchingEngine.match(marketOrder, getOrderBook("EURUSD", false), "test", BigDecimal("1.5"), BigDecimal("1.57"))
 
         //then
-        assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.TooHighPriceDeviation)
+        assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.TooHighMidPriceDeviation)
     }
 }
