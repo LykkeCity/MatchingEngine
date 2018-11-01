@@ -155,9 +155,8 @@ class RedisWithoutOrdersPersistenceManager(
             return
         }
 
-        if (midPricePersistenceData.midPrices != null) {
-            redisMidPriceDatabaseAccessor.save(transaction, midPricePersistenceData.midPrices)
+        if (!CollectionUtils.isEmpty(midPricePersistenceData.midPrices)) {
+            redisMidPriceDatabaseAccessor.save(transaction, midPricePersistenceData.midPrices!!)
         }
-
     }
 }

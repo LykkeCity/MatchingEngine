@@ -39,12 +39,12 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
 
         var lowerMidPriceBound: BigDecimal? = null
         var upperMidPriceBound: BigDecimal? = null
-        val marketOrderPriceDeviationThreshold = priceDeviationThresholdHolder.getLimitOrderPriceDeviationThreshold(order.assetPairId)
+        val limitOrderPriceDeviationThreshold = priceDeviationThresholdHolder.getLimitOrderPriceDeviationThreshold(order.assetPairId)
         val referenceMidPrice = midPriceHolder.getReferenceMidPrice(executionContext.assetPairsById[order.assetPairId]!!, executionContext.date)
 
-        if (marketOrderPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
-            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * marketOrderPriceDeviationThreshold)
-            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * marketOrderPriceDeviationThreshold)
+        if (limitOrderPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
+            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * limitOrderPriceDeviationThreshold)
+            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * limitOrderPriceDeviationThreshold)
         }
 
         val orderContext = LimitOrderExecutionContext(order, lowerMidPriceBound, upperMidPriceBound, executionContext)
