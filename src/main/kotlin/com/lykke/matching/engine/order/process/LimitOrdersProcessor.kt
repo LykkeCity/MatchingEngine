@@ -263,7 +263,6 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                     addToReportIfNotTrusted(order)
                     processedOrders.add(ProcessedOrder(order, false))
                 }
-                OrderStatus.TooHighPriceDeviation,
                 OrderStatus.TooHighMidPriceDeviation,
                 OrderStatus.InvalidFee -> {
                     addToReportIfNotTrusted(order)
