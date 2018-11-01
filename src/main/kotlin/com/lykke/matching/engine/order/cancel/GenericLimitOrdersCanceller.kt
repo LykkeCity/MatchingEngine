@@ -18,16 +18,6 @@ import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import org.apache.log4j.Logger
 import java.util.Date
-import kotlin.collections.ArrayList
-import kotlin.collections.Collection
-import kotlin.collections.List
-import kotlin.collections.Map
-import kotlin.collections.asSequence
-import kotlin.collections.emptyList
-import kotlin.collections.forEach
-import kotlin.collections.mapValues
-import kotlin.collections.plus
-import kotlin.collections.single
 
 class GenericLimitOrdersCanceller(private val executionContextFactory: ExecutionContextFactory,
                                   private val stopOrderBookProcessor: StopOrderBookProcessor,
