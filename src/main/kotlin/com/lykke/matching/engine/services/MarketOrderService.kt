@@ -134,17 +134,7 @@ class MarketOrderService @Autowired constructor(
             InvalidValue,
             TooHighPriceDeviation,
             TooHighMidPriceDeviation -> {
-                if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
-                    matchingResultHandlingHelper.preProcessCancelledOppositeOrders(marketOrderExecutionContext)
-                    matchingResultHandlingHelper.preProcessCancelledOrdersWalletOperations(marketOrderExecutionContext)
-                    matchingResultHandlingHelper.processCancelledOppositeOrders(marketOrderExecutionContext)
-                    val orderBook = marketOrderExecutionContext.executionContext.orderBooksHolder
-                            .getChangedOrderBookCopy(marketOrderExecutionContext.order.assetPairId)
-                    matchingResult.cancelledLimitOrders.forEach {
-                        orderBook.removeOrder(it.origin!!)
-                    }
-                }
-                marketOrderExecutionContext.executionContext.marketOrderWithTrades = MarketOrderWithTrades(executionContext.messageId, order)
+                processRejectedMatchingResult(marketOrderExecutionContext)
             }
             Matched -> {
                 processMatchedStatus(marketOrderExecutionContext, messageWrapper.messageId!!)
@@ -174,12 +164,41 @@ class MarketOrderService @Autowired constructor(
         }
     }
 
+    fun processRejectedMatchingResult(marketOrderExecutionContext: MarketOrderExecutionContext) {
+        val order = marketOrderExecutionContext.order
+        val matchingResult = marketOrderExecutionContext.matchingResult!!
+
+        if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
+            matchingResultHandlingHelper.preProcessCancelledOppositeOrders(marketOrderExecutionContext)
+            matchingResultHandlingHelper.preProcessCancelledOrdersWalletOperations(marketOrderExecutionContext)
+            matchingResultHandlingHelper.processCancelledOppositeOrders(marketOrderExecutionContext)
+            val orderBook = marketOrderExecutionContext.executionContext.orderBooksHolder
+                    .getChangedOrderBookCopy(marketOrderExecutionContext.order.assetPairId)
+            matchingResult.cancelledLimitOrders.forEach {
+                orderBook.removeOrder(it.origin!!)
+            }
+        }
+        marketOrderExecutionContext.executionContext.marketOrderWithTrades = MarketOrderWithTrades(marketOrderExecutionContext.executionContext.messageId, order)
+    }
+
     private fun processMatchedStatus(marketOrderExecutionContext: MarketOrderExecutionContext,
                                      messageId: String) {
         val matchingResult = marketOrderExecutionContext.matchingResult!!
         val executionContext = marketOrderExecutionContext.executionContext
-
         val order = marketOrderExecutionContext.order
+
+        matchingResultHandlingHelper.formOppositeOrderBookAfterMatching(marketOrderExecutionContext)
+
+        val newMidPrice = getMidPrice(genericLimitOrderService.getOrderBook(order.assetPairId).getBestPrice(order.isBuySide()),
+                matchingResult.orderBook.peek()?.price ?: BigDecimal.ZERO)
+
+        if (!OrderValidationUtils.isMidPriceValid(newMidPrice, marketOrderExecutionContext.lowerMidPriceBound, marketOrderExecutionContext.upperMidPriceBound)) {
+            LOGGER.info("Market order (id: ${order.externalId}) is rejected: too high mid price deviation")
+            order.updateStatus(TooHighMidPriceDeviation, executionContext.date)
+            processRejectedMatchingResult(marketOrderExecutionContext)
+            return
+        }
+
         if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
             matchingResultHandlingHelper.preProcessCancelledOppositeOrders(marketOrderExecutionContext)
         }
@@ -205,18 +224,6 @@ class MarketOrderService @Autowired constructor(
             }
             if (matchingResult.uncompletedLimitOrderCopy != null) {
                 matchingResultHandlingHelper.processUncompletedOppositeOrder(marketOrderExecutionContext)
-            }
-
-            matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
-
-            val newMidPrice = getMidPrice(genericLimitOrderService.getOrderBook(order.assetPairId).getBestPrice(order.isBuySide()),
-                    matchingResult.orderBook.peek()?.price ?: BigDecimal.ZERO)
-
-            if (!OrderValidationUtils.isMidPriceValid(newMidPrice, marketOrderExecutionContext.lowerMidPriceBound, marketOrderExecutionContext.upperMidPriceBound)) {
-                LOGGER.info("Market order (id: ${order.externalId}) is rejected: too high mid price deviation")
-                order.updateStatus(TooHighMidPriceDeviation, executionContext.date)
-                marketOrderExecutionContext.executionContext.marketOrderWithTrades = MarketOrderWithTrades(executionContext.messageId, order)
-                return
             }
 
             if (newMidPrice != null) {
