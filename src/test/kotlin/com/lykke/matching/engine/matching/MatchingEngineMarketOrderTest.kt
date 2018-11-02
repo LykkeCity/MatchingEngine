@@ -310,6 +310,28 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     }
 
     @Test
+    fun testMatchMarketOrderPriceDeviation() {
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 1.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.1, volume = 1.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.0, volume = 1.0))
+
+        val marketOrder = buildMarketOrder(clientId = "Client2", volume = -3.0)
+        val matchingResult = matchingEngine.match(marketOrder, getOrderBook("EURUSD", true),"test", priceDeviationThreshold = BigDecimal.valueOf(0.08))
+        assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.TooHighPriceDeviation, marketBalance = null)
+    }
+
+    @Test
+    fun testMatchNotStraightMarketOrderPriceDeviation() {
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 1.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.1, volume = 1.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.0, volume = 1.0))
+
+        val marketOrder = buildMarketOrder(clientId = "Client2", volume = 3.3, straight = false)
+        val matchingResult = matchingEngine.match(marketOrder, getOrderBook("EURUSD", true),"test", priceDeviationThreshold = BigDecimal.valueOf(0.08))
+        assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.TooHighPriceDeviation, marketBalance = null)
+    }
+
+    @Test
     fun testMatchMarketOrderBuyOneToOne() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR", 100.0)

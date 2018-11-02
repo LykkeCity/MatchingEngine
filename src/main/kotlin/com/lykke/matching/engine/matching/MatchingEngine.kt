@@ -492,7 +492,7 @@ class MatchingEngine(private val LOGGER: Logger,
         val bestOppositePrice = if (isBuy) bestAsk else bestBid
 
         if (orderSideBestPrice == null
-                || orderSideBestPrice == BigDecimal.ZERO
+                || NumberUtils.equalsIgnoreScale(orderSideBestPrice, BigDecimal.ZERO)
                 || (skipLimitOrders.isEmpty()
                         && (bestOppositePrice == null || bestOppositePrice == BigDecimal.ZERO))) {
             return null
