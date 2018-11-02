@@ -26,8 +26,7 @@ import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Service
-import java.util.Date
-import java.util.LinkedList
+import java.util.*
 import java.util.concurrent.BlockingQueue
 
 @Service
@@ -118,7 +117,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         walletProcessor.preProcess(operations)
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
-        val updated = walletProcessor.persistBalances(cashTransferContext.processedMessage, null, null, sequenceNumber, null)
+        val updated = walletProcessor.persistBalances(cashTransferContext.processedMessage, null, null, sequenceNumber)
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {

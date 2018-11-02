@@ -41,7 +41,7 @@ class ExecutionContext(val messageId: String,
     private val clientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
     private val trustedClientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
 
-    private var midPricesByAssetPairId = HashMap<String, MidPrice>()
+    private val midPricesByAssetPairId = HashMap<String, MidPrice>()
 
     var marketOrderWithTrades: MarketOrderWithTrades? = null
 

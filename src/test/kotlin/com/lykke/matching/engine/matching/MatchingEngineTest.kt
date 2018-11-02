@@ -107,12 +107,14 @@ abstract class MatchingEngineTest {
     protected fun match(order: Order,
                         orderBook: PriorityBlockingQueue<LimitOrder>,
                         lowerBound: BigDecimal? = null,
-                        upperBound: BigDecimal? = null): MatchingResult {
+                        upperBound: BigDecimal? = null,
+                        priceDeviationThreshold: BigDecimal? = null): MatchingResult {
         return matchingEngine.match(order,
                 orderBook,
                 "test",
                 lowerMidPriceBound = lowerBound,
                 upperMidPriceBound = upperBound,
+                priceDeviationThreshold = priceDeviationThreshold,
                 executionContext = executionContext)
     }
 

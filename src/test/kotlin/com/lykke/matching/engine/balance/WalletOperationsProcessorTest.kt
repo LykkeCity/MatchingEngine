@@ -10,8 +10,10 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.utils.assertEquals
+import com.lykke.matching.engine.utils.getSetting
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -19,16 +21,7 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
-import java.util.*
 import kotlin.test.*
-import kotlin.test.assertEquals
-import com.lykke.matching.engine.utils.assertEquals
-import com.lykke.matching.engine.utils.getSetting
-import org.springframework.beans.factory.annotation.Autowired
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (WalletOperationsProcessorTest.Config::class)])
@@ -79,7 +72,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
                     )
             )
         }
-        assertTrue(walletOperationsProcessor.persistBalances(null, null, null, null, null))
+        assertTrue(walletOperationsProcessor.persistBalances(null, null, null, null))
         walletOperationsProcessor.apply().sendNotification("id", "type", "test")
 
         assertBalance("Client1", "BTC", 0.5, 0.0)
@@ -120,7 +113,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
                         WalletOperation("Client1", "BTC", BigDecimal.ZERO, BigDecimal.valueOf(-0.1))
                 ), true)
 
-        assertTrue(walletOperationsProcessor.persistBalances(null, null, null, null, null))
+        assertTrue(walletOperationsProcessor.persistBalances(null, null, null, null))
         walletOperationsProcessor.apply().sendNotification("id", "type","test")
 
         assertBalance("Client1", "BTC", 0.0, -0.1)
