@@ -179,7 +179,7 @@ abstract class AbstractPerformanceTest {
         val matchingResultHandlingHelper = MatchingResultHandlingHelper(applicationSettingsCache)
 
         val matchingEngine = MatchingEngine(genericLimitOrderService, feeProcessor)
-        val priceDeviationThresholdHolder = PriceDeviationThresholdHolder(assetPairsCache, applicationSettingsCache)
+        val priceDeviationThresholdHolder = PriceDeviationThresholdHolder(applicationSettingsCache)
 
         val limitOrderProcessor = LimitOrderProcessor(limitOrderInputValidator,
                 LimitOrderBusinessValidatorImpl(),

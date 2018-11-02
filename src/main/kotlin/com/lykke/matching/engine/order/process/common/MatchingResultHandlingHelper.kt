@@ -45,6 +45,8 @@ class MatchingResultHandlingHelper(private val applicationSettingsCache: Applica
                 orderExecutionContext.matchingResult!!.orderBook.put(matchingResult.uncompletedLimitOrder)
             } else {
                 orderExecutionContext.isUncompletedOrderCancelled = true
+                orderExecutionContext.executionContext.info("Opposite limit order (${uncompletedLimitOrderCopy.externalId} is cancelled due to min remaining volume" +
+                        "(${NumberUtils.roundForPrint(uncompletedLimitOrderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
             }
         }
 
@@ -63,8 +65,7 @@ class MatchingResultHandlingHelper(private val applicationSettingsCache: Applica
             orderExecutionContext.cancelledOppositeOrdersWalletOperations = mutableListOf()
         }
         orderExecutionContext.cancelledOppositeOrdersWalletOperations!!.add(createCancelledOppositeOrderWalletOperation(orderExecutionContext, uncompletedLimitOrderCopy))
-        orderExecutionContext.executionContext.info("Opposite limit order (${uncompletedLimitOrderCopy.externalId} is cancelled due to min remaining volume" +
-                "(${NumberUtils.roundForPrint(uncompletedLimitOrderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
+
     }
 
     private fun createCancelledOppositeOrderWalletOperation(orderExecutionContext: OrderExecutionContext<*>, oppositeOrder: LimitOrder): WalletOperation {

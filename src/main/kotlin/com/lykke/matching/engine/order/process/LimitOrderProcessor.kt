@@ -37,17 +37,8 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
 
     override fun processOrder(order: LimitOrder, executionContext: ExecutionContext): ProcessedOrder {
 
-        var lowerMidPriceBound: BigDecimal? = null
-        var upperMidPriceBound: BigDecimal? = null
-        val midPriceDeviationThreshold = priceDeviationThresholdHolder.getMidPriceDeviationThreshold(order.assetPairId)
-        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(executionContext.assetPairsById[order.assetPairId]!!, executionContext.date)
 
-        if (midPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
-            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * midPriceDeviationThreshold)
-            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * midPriceDeviationThreshold)
-        }
-
-        val orderContext = LimitOrderExecutionContext(order, lowerMidPriceBound, upperMidPriceBound, executionContext)
+        val orderContext = LimitOrderExecutionContext(order, executionContext)
         val validationResult = validateOrder(orderContext)
         return if (validationResult.isValid) {
             processValidOrder(orderContext)
@@ -128,6 +119,10 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
     }
 
     private fun processValidOrder(orderContext: LimitOrderExecutionContext): ProcessedOrder {
+        val (lowerMidPriceBound, upperMidPriceBound) = getMidPricesInterval(orderContext)
+        orderContext.lowerMidPriceBound = lowerMidPriceBound
+        orderContext.upperMidPriceBound = upperMidPriceBound
+
         val order = orderContext.order
         val orderBook = orderContext.executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId)
         if (orderBook.leadToNegativeSpread(order)) {
@@ -471,5 +466,25 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
                 orderCopy.timeInForce == OrderTimeInForce.FOK ||
                 orderCopy.timeInForce == OrderTimeInForce.IOC
     }
+
+    private fun getMidPricesInterval(orderContext: LimitOrderExecutionContext): Pair<BigDecimal?, BigDecimal?> {
+        var lowerMidPriceBound: BigDecimal? = null
+        var upperMidPriceBound: BigDecimal? = null
+
+        val order = orderContext.order
+        val executionContext = orderContext.executionContext
+
+        val midPriceDeviationThreshold = priceDeviationThresholdHolder.getMidPriceDeviationThreshold(order.assetPairId, executionContext)
+        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(executionContext.assetPairsById[order.assetPairId]!!, executionContext.date)
+
+        if (midPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
+            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * midPriceDeviationThreshold)
+            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * midPriceDeviationThreshold)
+        }
+
+
+        return lowerMidPriceBound to upperMidPriceBound
+    }
+
 
 }

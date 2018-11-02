@@ -97,12 +97,12 @@ class MarketOrderService @Autowired constructor(
                 messageWrapper.id!!,
                 MessageType.MARKET_ORDER,
                 messageWrapper.processedMessage,
-                mapOf(Pair(assetPair.assetPairId, assetPair)),
+                mapOf(assetPair.assetPairId to assetPair),
                 now,
                 LOGGER)
 
-        val midPriceDeviationThreshold = priceDeviationThresholdHolder.getMidPriceDeviationThreshold(assetPair.assetPairId)
-        val marketOrderPriceDeviationThreshold = priceDeviationThresholdHolder.getMarketOrderPriceDeviationThreshold(assetPair.assetPairId)
+        val midPriceDeviationThreshold = priceDeviationThresholdHolder.getMidPriceDeviationThreshold(assetPair.assetPairId, executionContext)
+        val marketOrderPriceDeviationThreshold = priceDeviationThresholdHolder.getMarketOrderPriceDeviationThreshold(assetPair.assetPairId, executionContext)
 
         var lowerMidPriceBound: BigDecimal? = null
         var upperMidPriceBound: BigDecimal? = null
@@ -113,14 +113,14 @@ class MarketOrderService @Autowired constructor(
             upperMidPriceBound = referenceMidPrice + (referenceMidPrice * midPriceDeviationThreshold)
         }
 
-        val marketOrderExecutionContext = MarketOrderExecutionContext(order, lowerMidPriceBound, upperMidPriceBound, executionContext)
+        val marketOrderExecutionContext = MarketOrderExecutionContext(order, executionContext)
 
         val matchingResult = matchingEngine.match(order,
                 getOrderBook(order),
                 messageWrapper.messageId!!,
                 lowerMidPriceBound = lowerMidPriceBound,
                 upperMidPriceBound = upperMidPriceBound,
-                priceDeviationThreshold = marketOrderPriceDeviationThreshold,
+                moPriceDeviationThreshold = marketOrderPriceDeviationThreshold,
                 executionContext = executionContext)
         marketOrderExecutionContext.matchingResult = matchingResult
 

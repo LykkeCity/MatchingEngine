@@ -1,19 +1,18 @@
 package com.lykke.matching.engine.holders
 
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.database.cache.AssetPairsCache
+import com.lykke.matching.engine.order.transaction.ExecutionContext
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
-class PriceDeviationThresholdHolder(private val assetsPairsCache: AssetPairsCache,
-                                    private val settingsCache: ApplicationSettingsCache) {
+class PriceDeviationThresholdHolder(private val settingsCache: ApplicationSettingsCache) {
 
-    fun getMidPriceDeviationThreshold(assetPairId: String): BigDecimal? {
-        return assetsPairsCache.getAssetPair(assetPairId)?.limitOrderPriceDeviationThreshold ?: settingsCache.midPriceDeviationThreshold(assetPairId)
+    fun getMidPriceDeviationThreshold(assetPairId: String, executionContext: ExecutionContext): BigDecimal? {
+        return executionContext.assetPairsById[assetPairId]!!.limitOrderPriceDeviationThreshold ?: settingsCache.midPriceDeviationThreshold(assetPairId)
     }
 
-    fun getMarketOrderPriceDeviationThreshold(assetPairId: String): BigDecimal? {
-        return assetsPairsCache.getAssetPair(assetPairId)?.marketOrderPriceDeviationThreshold ?: settingsCache.marketOrderPriceDeviationThreshold(assetPairId)
+    fun getMarketOrderPriceDeviationThreshold(assetPairId: String, executionContext: ExecutionContext): BigDecimal? {
+        return executionContext.assetPairsById[assetPairId]!!.marketOrderPriceDeviationThreshold ?: settingsCache.marketOrderPriceDeviationThreshold(assetPairId)
     }
 }
