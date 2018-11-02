@@ -9,7 +9,7 @@ import kotlin.math.sign
 class TestReadOnlyMidPriceDatabaseAccessor : MidPriceDatabaseAccessor, ReadOnlyMidPriceDatabaseAccessor {
     private val assetPairIdToMidPrices = HashMap<String, LinkedList<MidPrice>>()
 
-    override fun getAssetPairToMidPrices(): Map<String, List<MidPrice>> {
+    override fun getMidPricesByAssetPairMap(): Map<String, List<MidPrice>> {
         return assetPairIdToMidPrices
                 .mapValues { entry -> entry.value.sortWith(Comparator { midPrice1, midPrice2 -> (midPrice1.timestamp - midPrice2.timestamp).sign })
                     entry.value}
