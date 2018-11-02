@@ -37,7 +37,7 @@ class RedisMidPriceDatabaseAccessor(private val dbIndex: Int,
         }
     }
 
-    override fun all(): Map<String, List<MidPrice>> {
+    override fun getAssetPairToMidPrices(): Map<String, List<MidPrice>> {
         val assetPairIdToMidPrices = HashMap<String, List<MidPrice>>()
         redisConnection.resource { jedis ->
             jedis.select(dbIndex)

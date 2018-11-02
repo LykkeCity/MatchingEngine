@@ -88,6 +88,42 @@ class AllOrdersCancellerTest : AbstractTest() {
     @Test
     fun testCancelAllOrders() {
         //given
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 3500.0, volume = 0.5)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 6500.0, volume = 0.5)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 6000.0, volume = -0.25)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(
+                clientId = "Client1", assetId = "EURUSD", volume = 10.0,
+                type = LimitOrderType.STOP_LIMIT, lowerLimitPrice = 10.0, lowerPrice = 10.5
+        )))
+
+        testClientLimitOrderListener.clear()
+        balanceUpdateHandlerTest.clear()
+
+        //when
+        allOrdersCanceller.cancelAllOrders()
+
+        //then
+        assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
+        assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
+
+        assertEquals(BigDecimal.valueOf(0.25), testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.valueOf(8375.0), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
+        assertEquals(BigDecimal.valueOf(1625.0), testWalletDatabaseAccessor.getBalance("Client2", "USD"))
+        assertEquals(BigDecimal.valueOf(0.25), testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
+
+        assertEquals(0, testOrderDatabaseAccessor.getOrders("EURUSD", true).size)
+        assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", true).size)
+        assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
+
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        assertEquals(3, (testClientLimitOrderListener.getQueue().first() as LimitOrdersReport).orders.size)
+
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
+    }
+
+    @Test
+    fun testCancelAllOrdersCheckMidPricesAreRemoved() {
+        //given
         val assetPair = assetPairsCache.getAssetPair("BTCUSD")
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 3500.0, volume = 0.5)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 6500.0, volume = 0.5)))

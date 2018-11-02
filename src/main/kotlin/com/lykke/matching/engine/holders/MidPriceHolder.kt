@@ -22,7 +22,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
 
     init {
         readOnlyMidPriceDatabaseAccessor
-                .all()
+                .getAssetPairToMidPrices()
                 .forEach { assetPairId, midPrices -> assetPairIdToMidPrices[assetPairId] = LinkedList(midPrices) }
 
         assetPairIdToMidPrices.keys.forEach { key ->

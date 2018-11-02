@@ -4,7 +4,7 @@ import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.database.ReadOnlyMidPriceDatabaseAccessor
 
 class AzureReadOnlyMidPriceDatabaseAccessor: ReadOnlyMidPriceDatabaseAccessor {
-    override fun all(): Map<String, List<MidPrice>> {
+    override fun getAssetPairToMidPrices(): Map<String, List<MidPrice>> {
         return emptyMap()
     }
 }
