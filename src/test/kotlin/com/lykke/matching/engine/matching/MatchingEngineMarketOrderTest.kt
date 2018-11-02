@@ -294,7 +294,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.0, volume = 1.0))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -3.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true),  priceDeviationThreshold = BigDecimal.valueOf(0.08))
+        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true),  moPriceDeviationThreshold = BigDecimal.valueOf(0.08))
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.TooHighPriceDeviation, marketBalance = null)
     }
 
@@ -305,7 +305,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.0, volume = 1.0))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = 3.3, straight = false)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true), priceDeviationThreshold = BigDecimal.valueOf(0.08))
+        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true), moPriceDeviationThreshold = BigDecimal.valueOf(0.08))
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.TooHighPriceDeviation, marketBalance = null)
     }
 

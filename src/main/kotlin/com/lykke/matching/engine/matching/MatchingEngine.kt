@@ -52,7 +52,7 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
               balance: BigDecimal? = null,
               lowerMidPriceBound: BigDecimal? = null,
               upperMidPriceBound: BigDecimal? = null,
-              priceDeviationThreshold: BigDecimal? = null,
+              moPriceDeviationThreshold: BigDecimal? = null,
               executionContext: ExecutionContext): MatchingResult {
         val balancesGetter = executionContext.walletOperationsProcessor
         val orderWrapper = CopyWrapper(originOrder)
@@ -371,9 +371,9 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
             return MatchingResult(orderWrapper, cancelledLimitOrders)
         }
 
-        if (order.takePrice() == null && !checkExecutionPriceDeviation(order.isBuySide(), executionPrice, bestPrice, priceDeviationThreshold)) {
+        if (order.takePrice() == null && !checkExecutionPriceDeviation(order.isBuySide(), executionPrice, bestPrice, moPriceDeviationThreshold)) {
             order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
-            executionContext.info("Too high price deviation (order id: ${order.externalId}): threshold: $priceDeviationThreshold, bestPrice: $bestPrice, executionPrice: $executionPrice)")
+            executionContext.info("Too high price deviation (order id: ${order.externalId}): threshold: $moPriceDeviationThreshold, bestPrice: $bestPrice, executionPrice: $executionPrice)")
             return MatchingResult(orderWrapper, cancelledLimitOrders)
         }
 

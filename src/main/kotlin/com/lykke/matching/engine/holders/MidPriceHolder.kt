@@ -82,13 +82,13 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
     }
 
     private fun recalculateReferenceMidPriceAfterRemoval(removedMidPricesSum: BigDecimal,
-                                                         midSizesInitialSize: Int,
+                                                         midPricesInitialSize: Int,
                                                          currentSize: Int,
                                                          assetPair: AssetPair) {
-        val removedMidPricesCount = midSizesInitialSize - currentSize
+        val removedMidPricesCount = midPricesInitialSize - currentSize
 
         //we are using previous mid price if no mid prices were removed or new mid price can not be calculated due to no new data
-        if (midSizesInitialSize == 0 || removedMidPricesCount == 0 || removedMidPricesCount == midSizesInitialSize) {
+        if (midPricesInitialSize == 0 || removedMidPricesCount == 0 || currentSize == 0) {
             return
         }
 
@@ -101,9 +101,9 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
             return
         }
 
-        val midPricesInitialSize = BigDecimal.valueOf(midSizesInitialSize.toLong())
+        val midPricesInitialSize = BigDecimal.valueOf(midPricesInitialSize.toLong())
         val referencePriceWithoutObsolete = referencePrice - NumberUtils.divideWithMaxScale(removedMidPricesSum, midPricesInitialSize)
-        val newMidPriceCoef = NumberUtils.divideWithMaxScale(midPricesInitialSize - BigDecimal.valueOf(removedMidPricesCount.toLong()), midPricesInitialSize)
+        val newMidPriceCoef = NumberUtils.divideWithMaxScale(BigDecimal.valueOf(currentSize.toLong()), midPricesInitialSize)
 
         val result = NumberUtils.divideWithMaxScale(referencePriceWithoutObsolete, newMidPriceCoef)
         assetPairIdToReferencePrice[assetPair.assetPairId] = result
