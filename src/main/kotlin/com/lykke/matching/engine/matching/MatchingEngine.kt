@@ -75,7 +75,7 @@ class MatchingEngine(private val LOGGER: Logger,
               messageId: String,
               lowerMidPriceBound: BigDecimal? = null,
               upperMidPriceBound: BigDecimal? = null,
-              priceDeviationThreshold: BigDecimal? = null,
+              moPriceDeviationThreshold: BigDecimal? = null,
               balance: BigDecimal? = null): MatchingResult {
         val orderWrapper = CopyWrapper(originOrder)
         val order = orderWrapper.copy
@@ -388,9 +388,9 @@ class MatchingEngine(private val LOGGER: Logger,
             return MatchingResult(orderWrapper, now, cancelledLimitOrders)
         }
 
-        if (order.takePrice() == null && !checkExecutionPriceDeviation(order.isBuySide(), executionPrice, bestPrice, priceDeviationThreshold)) {
+        if (order.takePrice() == null && !checkExecutionPriceDeviation(order.isBuySide(), executionPrice, bestPrice, moPriceDeviationThreshold)) {
             order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
-            LOGGER.info("Too high price deviation (order id: ${order.externalId}): threshold: $priceDeviationThreshold, bestPrice: $bestPrice, executionPrice: $executionPrice)")
+            LOGGER.info("Too high price deviation (order id: ${order.externalId}): threshold: $moPriceDeviationThreshold, bestPrice: $bestPrice, executionPrice: $executionPrice)")
             return MatchingResult(orderWrapper, now, cancelledLimitOrders)
         }
 

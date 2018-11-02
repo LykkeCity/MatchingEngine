@@ -125,7 +125,7 @@ class MarketOrderService @Autowired constructor(
                 messageWrapper.messageId!!,
                 lowerMidPriceBound = lowerMidPriceBound,
                 upperMidPriceBound = upperMidPriceBound,
-                priceDeviationThreshold = marketOrderPriceDeviationThreshold
+                moPriceDeviationThreshold = marketOrderPriceDeviationThreshold
         )
 
         when (OrderStatus.valueOf(matchingResult.order.status)) {
