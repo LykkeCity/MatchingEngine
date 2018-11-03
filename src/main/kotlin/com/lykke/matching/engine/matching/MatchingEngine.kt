@@ -481,7 +481,7 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
         if (orderSideBestPrice == null
                 || NumberUtils.equalsIgnoreScale(orderSideBestPrice, BigDecimal.ZERO)
                 || (skipLimitOrders.isEmpty()
-                        && (bestOppositePrice == null || bestOppositePrice == BigDecimal.ZERO))) {
+                        && (bestOppositePrice == null || NumberUtils.equalsIgnoreScale(bestOppositePrice, BigDecimal.ZERO)))) {
             return null
         }
 
