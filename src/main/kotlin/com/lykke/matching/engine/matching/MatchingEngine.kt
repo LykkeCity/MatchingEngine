@@ -1,7 +1,13 @@
 package com.lykke.matching.engine.matching
 
 import com.lykke.matching.engine.balance.BalancesGetter
-import com.lykke.matching.engine.daos.*
+import com.lykke.matching.engine.daos.Asset
+import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.daos.CopyWrapper
+import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.LkkTrade
+import com.lykke.matching.engine.daos.Order
+import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.NotEnoughFundsFeeException
