@@ -290,7 +290,7 @@ class MarketOrderService @Autowired constructor(
     }
 
     private fun getMidPrice(orderSideBestPrice: BigDecimal, oppositeSideBestPrice: BigDecimal): BigDecimal? {
-        if (orderSideBestPrice == BigDecimal.ZERO || oppositeSideBestPrice == BigDecimal.ZERO) {
+        if (NumberUtils.equalsIgnoreScale(orderSideBestPrice, BigDecimal.ZERO) || NumberUtils.equalsIgnoreScale(oppositeSideBestPrice, BigDecimal.ZERO)) {
             return null
         }
 
