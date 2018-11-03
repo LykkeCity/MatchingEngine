@@ -18,7 +18,17 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.ExecutionConfirmationService
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.OrderStatus.*
+import com.lykke.matching.engine.order.OrderStatus.InvalidFee
+import com.lykke.matching.engine.order.OrderStatus.InvalidValue
+import com.lykke.matching.engine.order.OrderStatus.InvalidVolume
+import com.lykke.matching.engine.order.OrderStatus.InvalidVolumeAccuracy
+import com.lykke.matching.engine.order.OrderStatus.Matched
+import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
+import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
+import com.lykke.matching.engine.order.OrderStatus.Processing
+import com.lykke.matching.engine.order.OrderStatus.ReservedVolumeGreaterThanBalance
+import com.lykke.matching.engine.order.OrderStatus.TooHighMidPriceDeviation
+import com.lykke.matching.engine.order.OrderStatus.TooHighPriceDeviation
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.process.context.MarketOrderExecutionContext
@@ -113,7 +123,10 @@ class MarketOrderService @Autowired constructor(
             upperMidPriceBound = referenceMidPrice + (referenceMidPrice * midPriceDeviationThreshold)
         }
 
+
         val marketOrderExecutionContext = MarketOrderExecutionContext(order, executionContext)
+        marketOrderExecutionContext.lowerMidPriceBound = lowerMidPriceBound
+        marketOrderExecutionContext.upperMidPriceBound = upperMidPriceBound
 
         val matchingResult = matchingEngine.match(order,
                 getOrderBook(order),
