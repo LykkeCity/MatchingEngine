@@ -862,18 +862,20 @@ class MarketOrderServiceTest: AbstractTest() {
 
 
     @Test
-    fun testSellOrderMidDeviation() {
+    fun testOrderMidPriceDeviationAfterMatching() {
         //given
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
 
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 2000.0, volume = 0.2)))
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = 0.3)))
-
-        testSettingsDatabaseAccessor.createOrUpdateSetting (AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD") )
+        testSettingsDatabaseAccessor.createOrUpdateSetting (AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting(BigDecimal.valueOf(0.01).toString(), "BTCUSD") )
         applicationSettingsCache.update()
 
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9200.0, volume = 0.3)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = 0.2)))
+
+
+        midPriceHolder.getReferenceMidPrice(assetPairsCache.getAssetPair("BTCUSD")!!, Date())
         clientsEventsQueue.clear()
 
         //when
@@ -894,19 +896,53 @@ class MarketOrderServiceTest: AbstractTest() {
     }
 
     @Test
-    fun testBuyOrderMidDeviation() {
+    fun testSellOrderMidPriceDeviation() {
         //given
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
 
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 7000.0, volume = -0.3)))
-
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 2000.0, volume = 0.2)))
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 5000.0, volume = 0.3)))
-
-        testSettingsDatabaseAccessor.createOrUpdateSetting (AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD") )
+        testSettingsDatabaseAccessor.createOrUpdateSetting (AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting(BigDecimal.valueOf(0.01).toString(), "BTCUSD") )
         applicationSettingsCache.update()
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9200.0, volume = 0.2)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = 0.2)))
+
+
+        midPriceHolder.getReferenceMidPrice(assetPairsCache.getAssetPair("BTCUSD")!!, Date())
+        clientsEventsQueue.clear()
+
+        //when
+        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.3)))
+
+
+        //then
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, event.orders.size)
+        val eventOrder = event.orders.single()
+        assertNull(eventOrder.price)
+        assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
+        assertEquals(OrderRejectReason.TOO_HIGH_MID_PRICE_DEVIATION, eventOrder.rejectReason)
+
+        assertOrderBookSize("BTCUSD", false, 1)
+        assertOrderBookSize("BTCUSD", true, 2)
+    }
+
+    @Test
+    fun testBuyOrderMidPriceDeviation() {
+        //given
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
+
+        testSettingsDatabaseAccessor.createOrUpdateSetting (AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting(BigDecimal.valueOf(0.01).toString(), "BTCUSD") )
+        applicationSettingsCache.update()
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 7000.0, volume = -0.2)))
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 6900.0, volume = 0.2)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 6800.0, volume = 0.3)))
 
         clientsEventsQueue.clear()
 
