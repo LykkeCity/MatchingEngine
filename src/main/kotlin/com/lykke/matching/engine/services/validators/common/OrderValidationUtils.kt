@@ -29,9 +29,9 @@ class OrderValidationUtils {
                         " lower bound: $lowerAcceptableMidPrice, upper bound: $upperAcceptableMidPrice")
             }
 
-            if (midPrice == null || midPrice == BigDecimal.ZERO ||
-                    lowerAcceptableMidPrice == null || lowerAcceptableMidPrice == BigDecimal.ZERO ||
-                    upperAcceptableMidPrice == null || upperAcceptableMidPrice == BigDecimal.ZERO ||
+            if (midPrice == null || NumberUtils.equalsIgnoreScale(midPrice, BigDecimal.ZERO) ||
+                    lowerAcceptableMidPrice == null || NumberUtils.equalsIgnoreScale(lowerAcceptableMidPrice, BigDecimal.ZERO) ||
+                    upperAcceptableMidPrice == null || NumberUtils.equalsIgnoreScale(upperAcceptableMidPrice, BigDecimal.ZERO) ||
                     midPrice in lowerAcceptableMidPrice..upperAcceptableMidPrice) {
                 return true
             }

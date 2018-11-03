@@ -70,7 +70,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
                                                                 midPrice: BigDecimal) {
         var prevReferencePrice = assetPairIdToReferencePrice.getOrPut(assetPair.assetPairId) { BigDecimal.ZERO }
 
-        val result = if (prevReferencePrice == BigDecimal.ZERO || midPrices.size == 0) {
+        val result = if ( NumberUtils.equalsIgnoreScale(prevReferencePrice, BigDecimal.ZERO) || midPrices.size == 0) {
             midPrice
         } else {
             prevReferencePrice += NumberUtils.divideWithMaxScale(midPrice, BigDecimal.valueOf(midPrices.size.toLong()))
@@ -96,7 +96,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
 
         //perform full reference mid price recalculation if we exceeded max mid price recalculations count - to
         // prevent accumulation of calculation error
-        if (referencePrice == BigDecimal.ZERO || MAX_MID_PRICE_RECALCULATION_COUNT == midPriceRecalculationCount) {
+        if (NumberUtils.equalsIgnoreScale(referencePrice, BigDecimal.ZERO) || MAX_MID_PRICE_RECALCULATION_COUNT == midPriceRecalculationCount) {
             performFullRecalculationOfReferenceMidPrice(assetPair)
             return
         }
@@ -117,7 +117,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
         var sum = BigDecimal.ZERO
         val midPricesCount = BigDecimal.valueOf(midPrices.size.toLong())
 
-        if (midPricesCount == BigDecimal.ZERO) {
+        if (NumberUtils.equalsIgnoreScale(midPricesCount, BigDecimal.ZERO)) {
             return
         }
 
