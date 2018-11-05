@@ -18,14 +18,6 @@ class LimitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOper
     }
 
     private fun parseContext(messageWrapper: MessageWrapper): LimitOrderCancelOperationContext {
-        return if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
-            parserOldMessage(messageWrapper)
-        } else {
-            parseMessage(messageWrapper)
-        }
-    }
-
-    private fun parseMessage(messageWrapper: MessageWrapper): LimitOrderCancelOperationContext {
         val message = ProtocolMessages.LimitOrderCancel.parseFrom(messageWrapper.byteArray)
         messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid.toString()
         messageWrapper.timestamp = Date().time
@@ -36,19 +28,6 @@ class LimitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOper
                 messageWrapper.messageId!!,
                 messageWrapper.processedMessage!!,
                 message.limitOrderIdList.toSet(), getMessageType(messageWrapper.type))
-    }
-
-    private fun parserOldMessage(messageWrapper: MessageWrapper): LimitOrderCancelOperationContext {
-        val message = ProtocolMessages.OldLimitOrderCancel.parseFrom(messageWrapper.byteArray)
-        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid.toString()
-        messageWrapper.timestamp = Date().time
-        messageWrapper.id = message.uid.toString()
-
-        return LimitOrderCancelOperationContext(message.uid.toString(),
-                messageWrapper.messageId!!,
-                ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
-                setOf(message.limitOrderId.toString()),
-                getMessageType(messageWrapper.type))
     }
 
     private fun getMessageType(type: Byte): MessageType {
