@@ -10,7 +10,7 @@ import com.lykke.matching.engine.utils.PrintUtils
 import org.apache.log4j.Logger
 import java.util.*
 
-class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory): AbstractService {
+class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(SingleLimitOrderService::class.java.name)
         private val STATS_LOGGER = Logger.getLogger("${SingleLimitOrderService::class.java.name}.stats")
@@ -48,12 +48,8 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
-        } else {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setStatus(status.type))
-        }
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setStatus(status.type))
     }
 }
 
