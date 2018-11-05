@@ -62,10 +62,23 @@ class MidPriceHolderTest {
     }
 
     @Test
+    fun noReferenceMidPriceIfDataIsNotYetCollected() {
+        //given
+        val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
+        val midPriceHolder = MidPriceHolder(40, testReadOnlyMidPriceDatabaseAccessor, assetsPairsHolder)
+        midPriceHolder.addMidPrice(assetPair, BigDecimal.valueOf(10), Date())
+        midPriceHolder.addMidPrice(assetPair, BigDecimal.valueOf(8), Date())
+
+        //then
+        assertNull(midPriceHolder.getReferenceMidPrice(assetPair, Date()))
+        Thread.sleep(50)
+        assertEquals(BigDecimal.valueOf(9), midPriceHolder.getReferenceMidPrice(assetPair, Date()))
+    }
+
+    @Test
     fun noReferenceMidPriceTest() {
         //given
         val midPriceHolder = MidPriceHolder(1000, testReadOnlyMidPriceDatabaseAccessor, assetsPairsHolder)
-
 
         //then
         assertNull(midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("EURUSD"), Date()))
