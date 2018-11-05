@@ -3,6 +3,7 @@ package com.lykke.matching.engine.order.cancel
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
@@ -20,6 +21,7 @@ import java.util.Date
 import java.util.concurrent.BlockingQueue
 
 class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
+                                  assetsHolder: AssetsHolder,
                                   assetsPairsHolder: AssetsPairsHolder,
                                   private val balancesHolder: BalancesHolder,
                                   orderBookQueue: BlockingQueue<OrderBook>,
@@ -35,6 +37,7 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
                                   LOGGER: Logger) {
 
     private val limitOrdersCanceller = LimitOrdersCanceller(dictionariesDatabaseAccessor,
+            assetsHolder,
             assetsPairsHolder,
             balancesHolder,
             genericLimitOrderService,
@@ -45,6 +48,7 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
             LOGGER)
 
     private val stopLimitOrdersCanceller = StopLimitOrdersCanceller(dictionariesDatabaseAccessor,
+            assetsHolder,
             assetsPairsHolder,
             balancesHolder,
             genericStopLimitOrderService,
@@ -112,7 +116,10 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
             sequenceNumber = clientsSequenceNumber
         }
 
-        val updated = walletProcessor.persistBalances(processedMessage, sequenceNumber)
+        val updated = walletProcessor.persistBalances(processedMessage,
+                limitOrdersCanceller.getPersistenceData(),
+                stopLimitOrdersCanceller.getPersistenceData(),
+                sequenceNumber)
         if (!updated) {
             return false
         }
