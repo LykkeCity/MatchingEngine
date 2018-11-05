@@ -19,6 +19,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
     private var assetPairIdToMidPrices = HashMap<String, LinkedList<MidPrice>>()
     private var assetPairIdToReferencePrice = HashMap<String, BigDecimal>()
     private var midPriceRecalculationCount = 0
+    private var firstMidPriceTimestamp: Long? = null
 
     init {
         readOnlyMidPriceDatabaseAccessor
@@ -32,6 +33,10 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
     }
 
     fun getReferenceMidPrice(assetPair: AssetPair, operationTime: Date): BigDecimal? {
+        if (!isMidPriceDataReady()) {
+            return null
+        }
+
         removeObsoleteMidPrices(assetPair, getLowerTimeBound(operationTime.time))
 
         val result = assetPairIdToReferencePrice[assetPair.assetPairId]
@@ -39,6 +44,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
     }
 
     fun addMidPrice(assetPair: AssetPair, midPrice: BigDecimal, operationTime: Date) {
+        firstMidPriceTimestamp = operationTime.time
         removeObsoleteMidPrices(assetPair, getLowerTimeBound(operationTime.time))
         val midPrices = assetPairIdToMidPrices.getOrPut(assetPair.assetPairId) { LinkedList() }
 
@@ -128,5 +134,12 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
 
     private fun getLowerTimeBound(operationTimeMillis: Long): Long {
         return operationTimeMillis - refreshMidPricePeriod
+    }
+
+    private fun isMidPriceDataReady(): Boolean {
+        if (firstMidPriceTimestamp == null) {
+            return false
+        }
+        return firstMidPriceTimestamp as Long + refreshMidPricePeriod <= Date().time
     }
 }
