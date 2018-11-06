@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
@@ -81,6 +82,9 @@ class MarketOrderServiceTest: AbstractTest() {
 
     @Autowired
     private lateinit var midPriceHolder: MidPriceHolder
+
+    @Autowired
+    private lateinit var assetsPairsHolder: AssetsPairsHolder
 
     @Before
     fun setUp() {
@@ -843,6 +847,7 @@ class MarketOrderServiceTest: AbstractTest() {
     @Test
     fun testMidPriceUpdatedAfterMatching() {
         //given
+        initMidPriceHolder("BTCUSD")
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 0.6)
@@ -864,6 +869,7 @@ class MarketOrderServiceTest: AbstractTest() {
     @Test
     fun testOrderMidPriceDeviationAfterMatching() {
         //given
+        initMidPriceHolder("BTCUSD")
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
 
@@ -898,6 +904,7 @@ class MarketOrderServiceTest: AbstractTest() {
     @Test
     fun testSellOrderMidPriceDeviation() {
         //given
+        initMidPriceHolder("BTCUSD")
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
 
@@ -932,6 +939,7 @@ class MarketOrderServiceTest: AbstractTest() {
     @Test
     fun testBuyOrderMidPriceDeviation() {
         //given
+        initMidPriceHolder("BTCUSD")
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
 
@@ -1026,5 +1034,10 @@ class MarketOrderServiceTest: AbstractTest() {
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = -2.0)))
         eventOrder = (clientsEventsQueue.single() as ExecutionEvent).orders.single { it.orderType == OrderType.MARKET }
         assertEquals(OutgoingOrderStatus.MATCHED, eventOrder.status)
+    }
+
+    private fun initMidPriceHolder(assetPairId: String) {
+        midPriceHolder.addMidPrice(assetsPairsHolder.getAssetPair(assetPairId), BigDecimal.valueOf(1),  Date())
+        Thread.sleep(150)
     }
 }

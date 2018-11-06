@@ -607,6 +607,6 @@ open class TestApplicationContext {
     open fun midPriceHolder(readOnlyMidPriceDatabaseAccessor: TestReadOnlyMidPriceDatabaseAccessor,
                             applicationSettingsCache: ApplicationSettingsCache,
                             assetsPairsHolder: AssetsPairsHolder): MidPriceHolder {
-        return MidPriceHolder(1000, readOnlyMidPriceDatabaseAccessor, assetsPairsHolder)
+        return MidPriceHolder(100, readOnlyMidPriceDatabaseAccessor, assetsPairsHolder)
     }
 }

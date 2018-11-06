@@ -36,6 +36,7 @@ import com.lykke.matching.engine.services.validators.impl.OrderValidationExcepti
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.NumberUtils
+import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.Date
@@ -93,6 +94,10 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
     private val clientsLimitOrdersWithTrades = clientsLimitOrdersWithTrades.toMutableList()
     private val trustedClientsLimitOrdersWithTrades = trustedClientsLimitOrdersWithTrades.toMutableList()
 
+    companion object {
+        private val METRICS_LOGGER = MetricsLogger.getLogger()
+    }
+
     init {
         if (orderBook.assetPairId != assetPair.assetPairId) {
             throw IllegalArgumentException("Invalid order book asset pair: ${orderBook.assetPairId}")
@@ -119,7 +124,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         var upperMidPriceBound: BigDecimal? = null
         val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, date)
 
-        if (midPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
+        if (midPriceDeviationThreshold != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
             lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * midPriceDeviationThreshold)
             upperMidPriceBound = referenceMidPrice + (referenceMidPrice * midPriceDeviationThreshold)
         }
@@ -170,7 +175,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                 OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
                 null,
                 sequenceNumber, newMidPrice?.let { MidPricePersistenceData(MidPrice(assetPair.assetPairId, it, date.time)) })
-                if(!updated) {
+        if (!updated) {
             return OrderProcessResult(false, emptyList())
         }
         walletOperationsProcessor.apply().sendNotification(operationId, messageType.name, messageId)
@@ -247,12 +252,19 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             return
         }
 
+        //in corner cases order book can contain already out of range mid price
+        if (!OrderValidationUtils.isMidPriceValid(orderBook.getMidPrice(), lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
+            METRICS_LOGGER.logError("Order book ${orderBook.assetPairId}, mid price ${orderBook.getMidPrice()} is out of reference mid price range " +
+                    "lowerBound $lowerAcceptableMidPrice, upperBound: $upperAcceptableMidPrice all market orders and some limit order will be rejected")
+            processInvalidOrder(order, OrderStatus.TooHighMidPriceDeviation, "too high mid price deviation")
+            return
+        }
 
         if (orderBook.leadToNegativeSpread(order)) {
             val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()),
                     messageId,
-                    lowerMidPriceBound =  lowerAcceptableMidPrice,
-                    upperMidPriceBound =  upperAcceptableMidPrice,
+                    lowerMidPriceBound = lowerAcceptableMidPrice,
+                    upperMidPriceBound = upperAcceptableMidPrice,
                     balance = availableBalance)
             val orderCopy = matchingResult.order as LimitOrder
             val orderStatus = orderCopy.status
@@ -283,7 +295,9 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                                     order,
                                     limitAsset,
                                     lowerAcceptableMidPrice,
-                                    upperAcceptableMidPrice)) return
+                                    upperAcceptableMidPrice)) {
+                        return
+                    }
                 }
                 else -> {
                     LOGGER.error("Not handled order status: ${matchingResult.order.status}")
