@@ -36,7 +36,6 @@ import com.lykke.matching.engine.services.validators.impl.OrderValidationExcepti
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.NumberUtils
-import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.Date
@@ -93,10 +92,6 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
     private val lkkTrades = mutableListOf<LkkTrade>()
     private val clientsLimitOrdersWithTrades = clientsLimitOrdersWithTrades.toMutableList()
     private val trustedClientsLimitOrdersWithTrades = trustedClientsLimitOrdersWithTrades.toMutableList()
-
-    companion object {
-        private val METRICS_LOGGER = MetricsLogger.getLogger()
-    }
 
     init {
         if (orderBook.assetPairId != assetPair.assetPairId) {
@@ -252,15 +247,15 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             return
         }
 
-        //in corner cases order book can contain already out of range mid price
-        if (!OrderValidationUtils.isMidPriceValid(orderBook.getMidPrice(), lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
-            METRICS_LOGGER.logError("Order book ${orderBook.assetPairId}, mid price ${orderBook.getMidPrice()} is out of reference mid price range " +
-                    "lowerBound $lowerAcceptableMidPrice, upperBound: $upperAcceptableMidPrice all market orders and some limit order will be rejected")
-            processInvalidOrder(order, OrderStatus.TooHighMidPriceDeviation, "too high mid price deviation")
-            return
-        }
-
         if (orderBook.leadToNegativeSpread(order)) {
+            //in corner cases order book can contain already out of range mid price
+            if (!OrderValidationUtils.isMidPriceValid(orderBook.getMidPrice(), lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
+                LOGGER.error("$orderInfo, is rejected because order book mid price: ${orderBook.getMidPrice()} " +
+                        "already aut of range lowerBound: $lowerAcceptableMidPrice, upperBound: $upperAcceptableMidPrice")
+                processInvalidOrder(order, OrderStatus.TooHighMidPriceDeviation, "too high mid price deviation")
+                return
+            }
+
             val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()),
                     messageId,
                     lowerMidPriceBound = lowerAcceptableMidPrice,

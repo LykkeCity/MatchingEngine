@@ -30,6 +30,7 @@ import com.lykke.matching.engine.services.validators.business.impl.StopOrderBusi
 import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
 import com.lykke.utils.logging.ThrottlingLogger
+import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.LinkedBlockingQueue
 
 abstract class AbstractPerformanceTest {
@@ -139,7 +140,7 @@ abstract class AbstractPerformanceTest {
         genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, genericLimitOrderService,
                 persistenceManager)
 
-        val midPriceHolder = MidPriceHolder(10000, TestReadOnlyMidPriceDatabaseAccessor(), assetsPairsHolder)
+        val midPriceHolder = MidPriceHolder(10000, TestReadOnlyMidPriceDatabaseAccessor(), ApplicationEventPublisher {  })
         limitOrdersProcessorFactory = LimitOrdersProcessorFactory(balancesHolder, LimitOrderBusinessValidatorImpl(), limitOrderInputValidator,
                 genericLimitOrderService, clientLimitOrdersQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue,
                 trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, notificationSender, applicationSettingsCache, midPriceHolder)

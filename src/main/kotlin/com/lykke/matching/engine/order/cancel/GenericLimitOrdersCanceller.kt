@@ -172,7 +172,7 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
             midPricePersistenceData.midPrices!!.forEach {
                 val assetPair = assetsPairsHolder.getAssetPairAllowNulls(it.assetPairId)
                 if (assetPair != null) {
-                    midPriceHolder.addMidPrice(assetPair, it.midPrice, date)
+                    midPriceHolder.addMidPrice(assetPair, it.midPrice, date, true)
                 }
             }
         }

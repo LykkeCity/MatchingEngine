@@ -120,7 +120,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
     private fun updateMidPriceInCache(assetPairId: String, midPrice: BigDecimal?, operationTime: Date) {
         val assetPair = assetsPairsHolder.getAssetPairAllowNulls(assetPairId)
         if (assetPair != null && midPrice != null) {
-            midPriceHolder.addMidPrice(assetPair, midPrice, operationTime)
+            midPriceHolder.addMidPrice(assetPair, midPrice, operationTime, true)
         }
     }
 }

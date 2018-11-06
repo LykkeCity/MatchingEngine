@@ -48,6 +48,7 @@ import com.lykke.utils.logging.ThrottlingLogger
 import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
@@ -387,7 +388,9 @@ open class TestApplicationContext {
                                                 rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                                                 clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                                 trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                                messageSequenceNumberHolder: MessageSequenceNumberHolder, messageSender: MessageSender, midPriceHolder: MidPriceHolder): GenericLimitOrdersCancellerFactory {
+                                                messageSequenceNumberHolder: MessageSequenceNumberHolder, messageSender: MessageSender,
+                                                midPriceHolder: MidPriceHolder,
+                                                applicationEventPublisher: ApplicationEventPublisher): GenericLimitOrdersCancellerFactory {
         return GenericLimitOrdersCancellerFactory(dictionariesDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, genericLimitOrderService,
                 genericStopLimitOrderService, genericLimitOrderProcessorFactory, orderBookQueue, rabbitOrderBookQueue, clientLimitOrdersQueue, trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, messageSender, midPriceHolder)
     }
@@ -569,7 +572,8 @@ open class TestApplicationContext {
                                      limitOrdersCancelHelper: LimitOrdersCancelHelper,
                                      midPriceHolder: MidPriceHolder,
                                      assetsPairsHolder: AssetsPairsHolder,
-                                     persistenceManager: PersistenceManager): LimitOrderCancelService {
+                                     persistenceManager: PersistenceManager,
+                                     applicationEventPublisher: ApplicationEventPublisher): LimitOrderCancelService {
         return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelHelper, midPriceHolder, assetsPairsHolder, persistenceManager)
     }
 
@@ -606,7 +610,7 @@ open class TestApplicationContext {
     @Bean
     open fun midPriceHolder(readOnlyMidPriceDatabaseAccessor: TestReadOnlyMidPriceDatabaseAccessor,
                             applicationSettingsCache: ApplicationSettingsCache,
-                            assetsPairsHolder: AssetsPairsHolder): MidPriceHolder {
-        return MidPriceHolder(100, readOnlyMidPriceDatabaseAccessor, assetsPairsHolder)
+                            applicationEventPublisher: ApplicationEventPublisher): MidPriceHolder {
+        return MidPriceHolder(100, readOnlyMidPriceDatabaseAccessor, applicationEventPublisher)
     }
 }
