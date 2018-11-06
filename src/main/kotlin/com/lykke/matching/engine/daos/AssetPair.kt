@@ -11,7 +11,7 @@ class AssetPair(
         val minInvertedVolume: BigDecimal? = null,
         val maxVolume: BigDecimal? = null,
         val maxValue: BigDecimal? = null,
-        val limitOrderPriceDeviationThreshold: BigDecimal? = null,
+        val midPriceDeviationThreshold: BigDecimal? = null,
         val marketOrderPriceDeviationThreshold: BigDecimal? = null
 ) {
     override fun toString(): String {
@@ -24,7 +24,7 @@ class AssetPair(
                 "minInvertedVolume=$minInvertedVolume, " +
                 "maxVolume=$maxVolume, " +
                 "maxValue=$maxValue, " +
-                "limitOrderPriceDeviationThreshold=$limitOrderPriceDeviationThreshold, " +
+                "midPriceDeviationThreshold=$midPriceDeviationThreshold, " +
                 "marketOrderPriceDeviationThreshold=$marketOrderPriceDeviationThreshold"
     }
 }

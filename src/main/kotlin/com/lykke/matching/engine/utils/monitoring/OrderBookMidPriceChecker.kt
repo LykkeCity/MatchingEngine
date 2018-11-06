@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.utils.monitoring
 
 import com.lykke.matching.engine.common.events.RefMidPriceDangerousChangeEvent
-import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
+import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.utils.logging.MetricsLogger
@@ -20,14 +20,14 @@ class OrderBookMidPriceChecker {
     private lateinit var genericLimitOrderService: GenericLimitOrderService
 
     @Autowired
-    private lateinit var priceDeviationThresholdHolder: PriceDeviationThresholdHolder
+    private lateinit var assetPairsCache: AssetPairsCache
 
     @EventListener
     fun processReferencePriceReadyEvent(referencePriceReadyEvent: RefMidPriceDangerousChangeEvent) {
         val assetPairId = referencePriceReadyEvent.assetPairId
         val orderBook = genericLimitOrderService.getOrderBook(assetPairId)
         val midPrice = orderBook.getMidPrice()
-        val threshold = priceDeviationThresholdHolder.getMidPriceDeviationThreshold(assetPairId) ?: return
+        val threshold = assetPairsCache.getAssetPair(assetPairId)?.midPriceDeviationThreshold ?: return
 
         val lowerBound = getLowerBound(referencePriceReadyEvent.refMidPrice, threshold)
         val upperBound = getUpperBound(referencePriceReadyEvent.refMidPrice, threshold)

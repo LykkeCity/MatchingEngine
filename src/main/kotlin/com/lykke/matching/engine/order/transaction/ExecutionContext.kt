@@ -34,6 +34,7 @@ class ExecutionContext(val messageId: String,
 
     var tradeIndex: Long = 0
     var removeAllMidPrices = false
+    var executionContextForCancelOperation = false
 
     private val clientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
     private val trustedClientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
@@ -106,7 +107,7 @@ class ExecutionContext(val messageId: String,
         }
 
         getMidPrices().forEach { it ->
-            midPriceHolder.addMidPrice(this.assetPairsById[it.assetPairId]!!, it.midPrice, Date(it.timestamp))
+            midPriceHolder.addMidPrice(this.assetPairsById[it.assetPairId]!!, it.midPrice, Date(it.timestamp), executionContextForCancelOperation)
         }
     }
 }

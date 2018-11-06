@@ -150,6 +150,14 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         val executionContext = orderContext.executionContext
         val order = orderContext.order
         val orderBook = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId)
+
+        if (!OrderValidationUtils.isMidPriceValid(orderBook.getMidPrice(), orderContext.lowerMidPriceBound, orderContext.upperMidPriceBound)) {
+            executionContext.error("Limit order (id=${order.externalId}), is rejected because order book mid price: ${orderBook.getMidPrice()} " +
+                    "already aut of range lowerBound: ${orderContext.lowerMidPriceBound}, upperBound: ${orderContext.upperMidPriceBound}")
+            rejectOrder(orderContext, OrderStatus.TooHighMidPriceDeviation)
+            return ProcessedOrder(order, false)
+        }
+
         val matchingResult = matchingEngine.match(order,
                 orderBook.getOrderBook(!order.isBuySide()),
                 executionContext.messageId,
@@ -256,7 +264,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         val order = orderContext.order
         val orderSideBestPrice = getOrderSideBestPriceWithoutMatching(orderContext)
         val oppositeSideBestPrice = orderContext.executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId).getBestPrice(!order.isBuySide())
-        return checkMidPrice (orderSideBestPrice, oppositeSideBestPrice, orderContext)
+        return checkMidPrice(orderSideBestPrice, oppositeSideBestPrice, orderContext)
     }
 
     private fun checkMidPriceAfterMatching(orderContext: LimitOrderExecutionContext): Boolean {
