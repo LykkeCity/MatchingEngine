@@ -583,7 +583,8 @@ open class TestApplicationContext {
                                      limitOrdersCancelHelper: LimitOrdersCancelHelper,
                                      midPriceHolder: MidPriceHolder,
                                      assetsPairsHolder: AssetsPairsHolder,
-                                     persistenceManager: PersistenceManager): LimitOrderCancelService {
+                                     persistenceManager: PersistenceManager,
+                                     applicationEventPublisher: ApplicationEventPublisher): LimitOrderCancelService {
         return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelHelper, midPriceHolder, assetsPairsHolder, persistenceManager)
     }
 
@@ -638,8 +639,8 @@ open class TestApplicationContext {
     @Bean
     open fun midPriceHolder(readOnlyMidPriceDatabaseAccessor: TestReadOnlyMidPriceDatabaseAccessor,
                             applicationSettingsCache: ApplicationSettingsCache,
-                            assetsPairsHolder: AssetsPairsHolder): MidPriceHolder {
-        return MidPriceHolder(1000, readOnlyMidPriceDatabaseAccessor, assetsPairsHolder)
+                            applicationEventPublisher: ApplicationEventPublisher): MidPriceHolder {
+        return MidPriceHolder(100, readOnlyMidPriceDatabaseAccessor, applicationEventPublisher)
     }
 
     @Bean

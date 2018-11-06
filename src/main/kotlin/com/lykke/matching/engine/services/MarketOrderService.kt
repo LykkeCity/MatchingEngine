@@ -118,7 +118,7 @@ class MarketOrderService @Autowired constructor(
         var upperMidPriceBound: BigDecimal? = null
         val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, now)
 
-        if (midPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
+        if (midPriceDeviationThreshold != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
             lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * midPriceDeviationThreshold)
             upperMidPriceBound = referenceMidPrice + (referenceMidPrice * midPriceDeviationThreshold)
         }
@@ -127,6 +127,14 @@ class MarketOrderService @Autowired constructor(
         val marketOrderExecutionContext = MarketOrderExecutionContext(order, executionContext)
         marketOrderExecutionContext.lowerMidPriceBound = lowerMidPriceBound
         marketOrderExecutionContext.upperMidPriceBound = upperMidPriceBound
+
+        if (!OrderValidationUtils.isMidPriceValid(orderBook.getMidPrice(), lowerMidPriceBound, upperMidPriceBound)) {
+            LOGGER.error("MarketOrder (id=${order.externalId}), is rejected because order book mid price: ${orderBook.getMidPrice()} " +
+                    "already aut of range lowerBound: $lowerMidPriceBound, upperBound: $upperMidPriceBound")
+            order.updateStatus(TooHighMidPriceDeviation, now)
+            writeErrorNotification(messageWrapper, order, now)
+            return
+        }
 
         val matchingResult = matchingEngine.match(order,
                 getOrderBook(order),

@@ -8,6 +8,7 @@ import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
+import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder
@@ -72,6 +73,9 @@ class AllOrdersCancellerTest : AbstractTest() {
     @Autowired
     private lateinit var midPriceHolder: MidPriceHolder
 
+    @Autowired
+    private lateinit var assetsPairsHolder: AssetsPairsHolder
+
     @Before
     fun init() {
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 10000.0)
@@ -124,6 +128,8 @@ class AllOrdersCancellerTest : AbstractTest() {
     @Test
     fun testCancelAllOrdersCheckMidPricesAreRemoved() {
         //given
+        initMidPriceHolder("BTCUSD")
+
         val assetPair = assetPairsCache.getAssetPair("BTCUSD")
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 3500.0, volume = 0.5)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 6500.0, volume = 0.5)))
@@ -142,7 +148,7 @@ class AllOrdersCancellerTest : AbstractTest() {
         allOrdersCanceller.cancelAllOrders()
 
         //then
-        assertNull(midPriceHolder.getReferenceMidPrice(assetPair, Date()))
+        assertEquals(BigDecimal.ZERO, midPriceHolder.getReferenceMidPrice(assetPair, Date()))
 
         assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
         assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
@@ -192,4 +198,8 @@ class AllOrdersCancellerTest : AbstractTest() {
         assertBalance("Client1", "LKK1Y", 0.0, 0.0)
     }
 
+    private fun initMidPriceHolder(assetPairId: String) {
+        midPriceHolder.addMidPrice(assetsPairsHolder.getAssetPair(assetPairId), BigDecimal.valueOf(1),  Date())
+        Thread.sleep(150)
+    }
 }
