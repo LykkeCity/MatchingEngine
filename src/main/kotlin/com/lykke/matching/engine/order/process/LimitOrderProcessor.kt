@@ -30,6 +30,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
 
     override fun processOrder(order: LimitOrder, executionContext: ExecutionContext): ProcessedOrder {
         val orderContext = LimitOrderExecutionContext(order, executionContext)
+        orderContext.availableLimitAssetBalance = calculateAvailableBalance(orderContext)
         val validationResult = validateOrder(orderContext)
         return if (validationResult.isValid) {
             processValidOrder(orderContext)
@@ -69,24 +70,22 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
 
     private fun performBusinessValidation(orderContext: LimitOrderExecutionContext): OrderValidationResult {
         val order = orderContext.order
-        val availableLimitAssetBalance = calculateAvailableBalance(orderContext)
         try {
             limitOrderBusinessValidator.performValidation(applicationSettingsCache.isTrustedClient(order.clientId),
                     order,
-                    availableLimitAssetBalance,
+                    orderContext.availableLimitAssetBalance!!,
                     orderContext.limitVolume!!,
                     orderContext.executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId))
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, false, e.message, e.orderStatus)
         }
-        orderContext.availableLimitAssetBalance = availableLimitAssetBalance
         return OrderValidationResult(true)
     }
 
     private fun processInvalidOrder(orderContext: LimitOrderExecutionContext): ProcessedOrder {
         val order = orderContext.order
         val validationResult = orderContext.validationResult!!
-        orderContext.executionContext.info("${getOrderInfo(order)} is rejected: ${validationResult.message}")
+        orderContext.executionContext.error("${getOrderInfo(order)} is rejected: ${validationResult.message}")
         rejectOrder(orderContext, validationResult.status!!)
         return ProcessedOrder(order, false, validationResult.message)
     }
@@ -131,7 +130,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
                 applicationSettingsCache.limitOrderPriceDeviationThreshold(order.assetPairId),
                 executionContext = executionContext)
         orderContext.matchingResult = matchingResult
-        val orderCopy = matchingResult.order as LimitOrder
+        val orderCopy = matchingResult.orderCopy as LimitOrder
         val orderStatus = orderCopy.status
 
         when (OrderStatus.valueOf(orderStatus)) {
@@ -171,8 +170,8 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         }
 
         orderContext.ownWalletOperations = matchingResult.ownCashMovements
-        val orderCopy = matchingResult.order as LimitOrder
-        if (orderCopy.status == OrderStatus.Processing.name || orderCopy.status == OrderStatus.InOrderBook.name) {
+        val orderCopy = matchingResult.orderCopy as LimitOrder
+        if (isNotCompletedOrder(orderCopy)) {
             val processedOrder = preProcessPartiallyMatchedIncomingOrder(orderContext)
             if (processedOrder != null) {
                 return processedOrder
@@ -195,16 +194,20 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         processOppositeOrders(orderContext)
         addMatchedResultToEventData(orderContext)
 
-        if (orderCopy.status == OrderStatus.Processing.name || orderCopy.status == OrderStatus.InOrderBook.name) {
+        if (isNotCompletedOrder(orderCopy)) {
             orderContext.executionContext.orderBooksHolder.addOrder(order)
         }
 
         return ProcessedOrder(order, true)
     }
 
+    private fun isNotCompletedOrder(order: LimitOrder): Boolean {
+        return order.status == OrderStatus.Processing.name || order.status == OrderStatus.InOrderBook.name
+    }
+
     private fun preProcessPartiallyMatchedIncomingOrder(orderContext: LimitOrderExecutionContext): ProcessedOrder? {
         val matchingResult = orderContext.matchingResult!!
-        val orderCopy = matchingResult.order as LimitOrder
+        val orderCopy = matchingResult.orderCopy as LimitOrder
         val assetPair = orderContext.executionContext.assetPairsById[orderCopy.assetPairId]!!
         when {
             assetPair.minVolume != null && orderCopy.getAbsRemainingVolume() < assetPair.minVolume -> {
@@ -242,7 +245,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         }
         matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
 
-        val orderCopy = matchingResult.order as LimitOrder
+        val orderCopy = matchingResult.orderCopy as LimitOrder
         orderContext.executionContext.orderBooksHolder
                 .getChangedOrderBookCopy(orderCopy.assetPairId)
                 .setOrderBook(!orderCopy.isBuySide(), matchingResult.orderBook)
@@ -253,7 +256,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         val matchingResult = orderContext.matchingResult!!
         orderContext.executionContext.lkkTrades.addAll(matchingResult.lkkTrades)
 
-        val orderCopy = matchingResult.order as LimitOrder
+        val orderCopy = matchingResult.orderCopy as LimitOrder
         val limitOrderWithTrades = LimitOrderWithTrades(orderCopy,
                 matchingResult.marketOrderTrades.asSequence().map { it ->
                     LimitTradeInfo(it.tradeId,
@@ -311,10 +314,10 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         return ProcessedOrder(order, true)
     }
 
-    private fun calculateAvailableBalance(orderContext: LimitOrderExecutionContext): BigDecimal {
+    private fun calculateAvailableBalance(orderContext: LimitOrderExecutionContext): BigDecimal? {
         val balancesGetter = orderContext.executionContext.walletOperationsProcessor
         val clientId = orderContext.order.clientId
-        val limitAsset = orderContext.limitAsset!!
+        val limitAsset = orderContext.limitAsset ?: return null
         return NumberUtils.setScaleRoundHalfUp(balancesGetter.getAvailableBalance(clientId, limitAsset.assetId), limitAsset.accuracy)
     }
 

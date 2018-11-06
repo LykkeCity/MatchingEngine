@@ -52,9 +52,9 @@ abstract class AbstractTransactionOrderBooksHolder<AssetOrderBook : AbstractAsse
     }
 
     fun apply(date: Date) {
-        genericLimitOrderService.removeOrderFromMapsWithStatus(completedOrders)
-        genericLimitOrderService.removeOrderFromMapsWithStatus(cancelledOrders, OrderStatus.Cancelled, date)
-        genericLimitOrderService.removeOrderFromMapsWithStatus(replacedOrders, OrderStatus.Replaced, date)
+        genericLimitOrderService.removeOrdersFromMapsAndSetStatus(completedOrders)
+        genericLimitOrderService.removeOrdersFromMapsAndSetStatus(cancelledOrders, OrderStatus.Cancelled, date)
+        genericLimitOrderService.removeOrdersFromMapsAndSetStatus(replacedOrders, OrderStatus.Replaced, date)
         genericLimitOrderService.addOrders(newOrdersByExternalId.values)
         applySpecificPart(date)
     }

@@ -19,7 +19,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.order.ExecutionConfirmationService
+import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
@@ -158,7 +158,7 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var stopOrderBookProcessor: StopOrderBookProcessor
     @Autowired
-    protected lateinit var executionConfirmationService: ExecutionConfirmationService
+    protected lateinit var executionDataApplyService: ExecutionDataApplyService
     @Autowired
     protected lateinit var previousLimitOrdersProcessor: PreviousLimitOrdersProcessor
 
@@ -180,7 +180,7 @@ abstract class AbstractTest {
         singleLimitOrderService = SingleLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
-                executionConfirmationService,
+                executionDataApplyService,
                 previousLimitOrdersProcessor)
 
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)

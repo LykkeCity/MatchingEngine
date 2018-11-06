@@ -24,7 +24,7 @@ import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
-import com.lykke.matching.engine.order.ExecutionConfirmationService
+import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExecutionEventSender
 import com.lykke.matching.engine.order.ExecutionPersistenceService
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
@@ -35,6 +35,7 @@ import com.lykke.matching.engine.order.process.StopLimitOrderProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
+import com.lykke.matching.engine.order.transaction.ExecutionEventsSequenceNumbersGenerator
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
@@ -180,9 +181,9 @@ abstract class AbstractPerformanceTest {
 
         genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder)
 
+        val executionEventsSequenceNumbersGenerator = ExecutionEventsSequenceNumbersGenerator(messageSequenceNumberHolder)
         val executionPersistenceService = ExecutionPersistenceService(persistenceManager)
-        val executionEventSender = ExecutionEventSender(messageSequenceNumberHolder,
-                notificationSender,
+        val executionEventSender = ExecutionEventSender(notificationSender,
                 clientLimitOrdersQueue,
                 trustedClientsLimitOrdersQueue,
                 rabbitSwapQueue,
@@ -190,7 +191,9 @@ abstract class AbstractPerformanceTest {
                 genericLimitOrderService,
                 orderBookQueue,
                 rabbitOrderBookQueue)
-        val executionConfirmationService = ExecutionConfirmationService(executionPersistenceService, executionEventSender)
+        val executionDataApplyService = ExecutionDataApplyService(executionEventsSequenceNumbersGenerator,
+                executionPersistenceService,
+                executionEventSender)
 
         val executionContextFactory = ExecutionContextFactory(balancesHolder,
                 genericLimitOrderService,
@@ -218,7 +221,7 @@ abstract class AbstractPerformanceTest {
 
         genericLimitOrdersCancellerFactory = GenericLimitOrdersCancellerFactory(executionContextFactory,
                 stopOrderBookProcessor,
-                executionConfirmationService,
+                executionDataApplyService,
                 testDictionariesDatabaseAccessor,
                 assetsHolder,
                 assetsPairsHolder,
@@ -231,13 +234,13 @@ abstract class AbstractPerformanceTest {
         singleLimitOrderService = SingleLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
-                executionConfirmationService,
+                executionDataApplyService,
                 previousLimitOrdersProcessor)
 
         multiLimitOrderService = MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
-                executionConfirmationService,
+                executionDataApplyService,
                 previousLimitOrdersProcessor,
                 assetsHolder,
                 assetsPairsHolder,
@@ -248,7 +251,7 @@ abstract class AbstractPerformanceTest {
         marketOrderService = MarketOrderService(matchingEngine,
                 executionContextFactory,
                 stopOrderBookProcessor,
-                executionConfirmationService,
+                executionDataApplyService,
                 matchingResultHandlingHelper,
                 genericLimitOrderService,
                 assetsPairsHolder,

@@ -146,8 +146,8 @@ abstract class MatchingEngineTest {
     ) {
         matchingResult.apply()
         executionContext.apply()
-        assertTrue { matchingResult.order is MarketOrder }
-        assertEquals(marketPrice, matchingResult.order.takePrice())
+        assertTrue { matchingResult.orderCopy is MarketOrder }
+        assertEquals(marketPrice, matchingResult.orderCopy.takePrice())
         assertMatchingResult(matchingResult, marketBalance, status, skipSize, cancelledSize,
                 lkkTradesSize, cashMovementsSize, marketOrderTradesSize, completedLimitOrdersSize, limitOrdersReportSize, orderBookSize)
     }
@@ -169,8 +169,8 @@ abstract class MatchingEngineTest {
     ) {
         matchingResult.apply()
         executionContext.apply()
-        assertTrue { matchingResult.order is LimitOrder }
-        val matchedOrder = matchingResult.order as LimitOrder
+        assertTrue { matchingResult.orderCopy is LimitOrder }
+        val matchedOrder = matchingResult.orderCopy as LimitOrder
         assertEquals(remainingVolume, matchedOrder.remainingVolume)
         assertMatchingResult(matchingResult, marketBalance, status, skipSize, cancelledSize, lkkTradesSize,
                 cashMovementsSize, marketOrderTradesSize, completedLimitOrdersSize, limitOrdersReportSize, orderBookSize, matchedWithZeroLatestTrade)
@@ -190,7 +190,7 @@ abstract class MatchingEngineTest {
             orderBookSize: Int = 0,
             matchedWithZeroLatestTrade: Boolean = false
     ) {
-        assertEquals(status.name, matchingResult.order.status)
+        assertEquals(status.name, matchingResult.orderCopy.status)
         if (marketBalance == null) {
             assertNull(matchingResult.marketBalance)
         } else {

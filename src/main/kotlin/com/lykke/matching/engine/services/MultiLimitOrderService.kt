@@ -23,7 +23,7 @@ import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
-import com.lykke.matching.engine.order.ExecutionConfirmationService
+import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
 import com.lykke.matching.engine.services.utils.MultiOrderFilter
 import org.apache.log4j.Logger
@@ -36,7 +36,7 @@ import java.util.UUID
 class MultiLimitOrderService(private val executionContextFactory: ExecutionContextFactory,
                              private val genericLimitOrdersProcessor: GenericLimitOrdersProcessor,
                              private val stopOrderBookProcessor: StopOrderBookProcessor,
-                             private val executionConfirmationService: ExecutionConfirmationService,
+                             private val executionDataApplyService: ExecutionDataApplyService,
                              private val previousLimitOrdersProcessor: PreviousLimitOrdersProcessor,
                              private val assetsHolder: AssetsHolder,
                              private val assetsPairsHolder: AssetsPairsHolder,
@@ -86,7 +86,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
 
         val processedOrders = genericLimitOrdersProcessor.processOrders(multiLimitOrder.orders, executionContext)
         stopOrderBookProcessor.checkAndExecuteStopLimitOrders(executionContext)
-        val persisted = executionConfirmationService.persistAndSendEvents(messageWrapper, executionContext)
+        val persisted = executionDataApplyService.persistAndSendEvents(messageWrapper, executionContext)
 
         val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
         if (!persisted) {
