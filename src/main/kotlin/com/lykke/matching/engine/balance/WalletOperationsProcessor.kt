@@ -42,7 +42,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val rabbitClientBalanceUpdatesByClientIdAndAssetId = HashMap<String, ClientBalanceUpdate>()
+    private val clientBalanceUpdatesByClientIdAndAssetId = HashMap<String, ClientBalanceUpdate>()
 
     fun preProcess(operations: Collection<WalletOperation>, forceApply: Boolean = false): WalletOperationsProcessor {
         if (operations.isEmpty()) {
@@ -78,29 +78,38 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
             }
         }
 
-        changedAssetBalances.forEach {
-            val changedAssetBalance = it.value
-            if (isBalanceUpdateNotNeeded(changedAssetBalance)) {
-                return@forEach
-            }
-            changedAssetBalance.apply()
-            val key = generateKey(changedAssetBalance)
-            val update = rabbitClientBalanceUpdatesByClientIdAndAssetId.getOrPut(key) {
-                ClientBalanceUpdate(changedAssetBalance.clientId,
-                        changedAssetBalance.assetId,
-                        changedAssetBalance.originBalance,
-                        changedAssetBalance.balance,
-                        changedAssetBalance.originReserved,
-                        changedAssetBalance.reserved)
-            }
-            update.newBalance = changedAssetBalance.balance
-            update.newReserved = changedAssetBalance.reserved
-            if (NumberUtils.equalsIgnoreScale(update.oldBalance, update.newBalance) &&
-                    NumberUtils.equalsIgnoreScale(update.oldReserved, update.newReserved)) {
-                rabbitClientBalanceUpdatesByClientIdAndAssetId.remove(key)
-            }
-        }
+        changedAssetBalances.forEach { processChangedAssetBalance(it.value) }
         return this
+    }
+
+    private fun processChangedAssetBalance(changedAssetBalance: ChangedAssetBalance) {
+        if (!changedAssetBalance.isChanged()) {
+            return
+        }
+        changedAssetBalance.apply()
+        generateEventData(changedAssetBalance)
+    }
+
+    private fun generateEventData(changedAssetBalance: ChangedAssetBalance) {
+        val key = generateKey(changedAssetBalance)
+        val update = clientBalanceUpdatesByClientIdAndAssetId.getOrPut(key) {
+            ClientBalanceUpdate(changedAssetBalance.clientId,
+                    changedAssetBalance.assetId,
+                    changedAssetBalance.originBalance,
+                    changedAssetBalance.balance,
+                    changedAssetBalance.originReserved,
+                    changedAssetBalance.reserved)
+        }
+        update.newBalance = changedAssetBalance.balance
+        update.newReserved = changedAssetBalance.reserved
+        if (isBalanceUpdateNotificationNotNeeded(update)) {
+            clientBalanceUpdatesByClientIdAndAssetId.remove(key)
+        }
+    }
+
+    private fun isBalanceUpdateNotificationNotNeeded(clientBalanceUpdate: ClientBalanceUpdate): Boolean {
+        return NumberUtils.equalsIgnoreScale(clientBalanceUpdate.oldBalance, clientBalanceUpdate.newBalance) &&
+                NumberUtils.equalsIgnoreScale(clientBalanceUpdate.oldReserved, clientBalanceUpdate.newReserved)
     }
 
     fun apply(): WalletOperationsProcessor {
@@ -124,13 +133,13 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
     }
 
     fun sendNotification(id: String, type: String, messageId: String) {
-        if (rabbitClientBalanceUpdatesByClientIdAndAssetId.isNotEmpty()) {
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), rabbitClientBalanceUpdatesByClientIdAndAssetId.values.toList(), messageId))
+        if (clientBalanceUpdatesByClientIdAndAssetId.isNotEmpty()) {
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), clientBalanceUpdatesByClientIdAndAssetId.values.toList(), messageId))
         }
     }
 
     fun getClientBalanceUpdates(): List<ClientBalanceUpdate> {
-        return rabbitClientBalanceUpdatesByClientIdAndAssetId.values.toList()
+        return clientBalanceUpdatesByClientIdAndAssetId.values.toList()
     }
 
     override fun getAvailableBalance(clientId: String, assetId: String): BigDecimal {
@@ -157,11 +166,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         return NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, operation.amount) && applicationSettings.isTrustedClient(operation.clientId)
     }
 
-    private fun isBalanceUpdateNotNeeded(changedAssetBalance: ChangedAssetBalance): Boolean {
-        return NumberUtils.equalsIgnoreScale(changedAssetBalance.originBalance, changedAssetBalance.balance) &&
-                NumberUtils.equalsIgnoreScale(changedAssetBalance.originReserved, changedAssetBalance.reserved)
-    }
-
     private fun getChangedAssetBalance(clientId: String, assetId: String): ChangedAssetBalance {
         val walletAssetBalance = getCurrentTransactionWalletAssetBalance(clientId, assetId)
         return ChangedAssetBalance(walletAssetBalance.wallet, walletAssetBalance.assetBalance)
@@ -185,6 +189,11 @@ private class ChangedAssetBalance(private val wallet: Wallet,
     val originReserved = assetBalance.reserved
     var balance = originBalance
     var reserved = originReserved
+
+    fun isChanged(): Boolean {
+        return !NumberUtils.equalsIgnoreScale(originBalance, balance) ||
+                !NumberUtils.equalsIgnoreScale(originReserved, reserved)
+    }
 
     fun apply(): Wallet {
         wallet.setBalance(assetId, balance)

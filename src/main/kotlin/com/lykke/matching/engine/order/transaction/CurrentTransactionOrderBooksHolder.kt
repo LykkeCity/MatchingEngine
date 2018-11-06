@@ -39,12 +39,12 @@ class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: G
 
         assetOrderBookCopiesByAssetPairId.forEach { assetPairId, orderBook ->
             if (changedBuySides.contains(assetPairId)) {
-                val updatedOrders = getUpdatedOrderBookAndOrder(orderBook.getOrderBook(true))
+                val updatedOrders = createUpdatedOrderBookAndOrder(orderBook.getOrderBook(true))
                 orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPairId, true, updatedOrders.updatedOrderBook))
                 updatedOrders.updatedOrder?.let { ordersToSave.add(it) }
             }
             if (changedSellSides.contains(assetPairId)) {
-                val updatedOrders = getUpdatedOrderBookAndOrder(orderBook.getOrderBook(false))
+                val updatedOrders = createUpdatedOrderBookAndOrder(orderBook.getOrderBook(false))
                 orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPairId, false, updatedOrders.updatedOrderBook))
                 updatedOrders.updatedOrder?.let { ordersToSave.add(it) }
             }
@@ -54,7 +54,7 @@ class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: G
         return OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove)
     }
 
-    private fun getUpdatedOrderBookAndOrder(orderBook: PriorityBlockingQueue<LimitOrder>): UpdatedOrderBookAndOrder {
+    private fun createUpdatedOrderBookAndOrder(orderBook: PriorityBlockingQueue<LimitOrder>): UpdatedOrderBookAndOrder {
         val updatedOrderBook = ArrayList<LimitOrder>(orderBook)
 
         val bestOrder = orderBook.peek()

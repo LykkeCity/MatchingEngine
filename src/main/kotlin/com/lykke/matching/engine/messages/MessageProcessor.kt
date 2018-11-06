@@ -24,7 +24,7 @@ import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.order.ExecutionConfirmationService
+import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
@@ -118,7 +118,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.singleLimitOrderService = SingleLimitOrderService(executionContextFactory,
                 applicationContext.getBean(GenericLimitOrdersProcessor::class.java),
                 applicationContext.getBean(StopOrderBookProcessor::class.java),
-                applicationContext.getBean(ExecutionConfirmationService::class.java),
+                applicationContext.getBean(ExecutionDataApplyService::class.java),
                 applicationContext.getBean(PreviousLimitOrdersProcessor::class.java))
 
         this.marketOrderService = applicationContext.getBean(MarketOrderService::class.java)

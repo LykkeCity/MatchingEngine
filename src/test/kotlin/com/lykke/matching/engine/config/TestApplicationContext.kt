@@ -25,7 +25,7 @@ import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.ExpiryOrdersQueue
-import com.lykke.matching.engine.order.ExecutionConfirmationService
+import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
@@ -296,7 +296,7 @@ open class TestApplicationContext {
                                     executionContextFactory: ExecutionContextFactory,
                                     previousLimitOrdersProcessor: PreviousLimitOrdersProcessor,
                                     stopOrderBookProcessor: StopOrderBookProcessor,
-                                    executionConfirmationService: ExecutionConfirmationService,
+                                    executionDataApplyService: ExecutionDataApplyService,
                                     assetsHolder: AssetsHolder,
                                     assetsPairsHolder: AssetsPairsHolder,
                                     balancesHolder: BalancesHolder,
@@ -304,7 +304,7 @@ open class TestApplicationContext {
         return MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
-                executionConfirmationService,
+                executionDataApplyService,
                 previousLimitOrdersProcessor,
                 assetsHolder,
                 assetsPairsHolder,
@@ -316,7 +316,7 @@ open class TestApplicationContext {
     open fun marketOrderService(matchingEngine: MatchingEngine,
                                 executionContextFactory: ExecutionContextFactory,
                                 stopOrderBookProcessor: StopOrderBookProcessor,
-                                executionConfirmationService: ExecutionConfirmationService,
+                                executionDataApplyService: ExecutionDataApplyService,
                                 matchingResultHandlingHelper: MatchingResultHandlingHelper,
                                 genericLimitOrderService: GenericLimitOrderService,
                                 assetsPairsHolder: AssetsPairsHolder,
@@ -328,7 +328,7 @@ open class TestApplicationContext {
         return MarketOrderService(matchingEngine,
                 executionContextFactory,
                 stopOrderBookProcessor,
-                executionConfirmationService,
+                executionDataApplyService,
                 matchingResultHandlingHelper,
                 genericLimitOrderService,
                 assetsPairsHolder,
@@ -342,7 +342,7 @@ open class TestApplicationContext {
     @Bean
     open fun genericLimitOrdersCancellerFactory(executionContextFactory: ExecutionContextFactory,
                                                 stopOrderBookProcessor: StopOrderBookProcessor,
-                                                executionConfirmationService: ExecutionConfirmationService,
+                                                executionDataApplyService: ExecutionDataApplyService,
                                                 dictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor,
                                                 assetsHolder: AssetsHolder,
                                                 assetsPairsHolder: AssetsPairsHolder, balancesHolder: BalancesHolder,
@@ -354,7 +354,7 @@ open class TestApplicationContext {
                                                 messageSequenceNumberHolder: MessageSequenceNumberHolder, messageSender: MessageSender): GenericLimitOrdersCancellerFactory {
         return GenericLimitOrdersCancellerFactory(executionContextFactory,
                 stopOrderBookProcessor,
-                executionConfirmationService,
+                executionDataApplyService,
                 dictionariesDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, genericLimitOrderService,
                 genericStopLimitOrderService)
     }

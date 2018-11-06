@@ -31,7 +31,7 @@ class MatchingResult(
         private val autoApply: Boolean = true
 ) {
 
-    val order: Order = orderCopyWrapper.copy
+    val orderCopy: Order = orderCopyWrapper.copy
     val uncompletedLimitOrderCopy: LimitOrder? = matchedUncompletedLimitOrderWrapper?.copy
     val uncompletedLimitOrder: LimitOrder? = uncompletedLimitOrderWrapper?.origin
 

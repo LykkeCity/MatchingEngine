@@ -8,7 +8,7 @@ import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
-import com.lykke.matching.engine.order.ExecutionConfirmationService
+import com.lykke.matching.engine.order.ExecutionDataApplyService
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -17,7 +17,7 @@ import java.util.Date
 @Component
 class GenericLimitOrdersCancellerFactory @Autowired constructor(private val executionContextFactory: ExecutionContextFactory,
                                                                 private val stopOrderBookProcessor: StopOrderBookProcessor,
-                                                                private val executionConfirmationService: ExecutionConfirmationService,
+                                                                private val executionDataApplyService: ExecutionDataApplyService,
                                                                 private val dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
                                                                 private val assetsHolder: AssetsHolder,
                                                                 private val assetsPairsHolder: AssetsPairsHolder,
@@ -29,7 +29,7 @@ class GenericLimitOrdersCancellerFactory @Autowired constructor(private val exec
     fun create(logger: Logger, date: Date): GenericLimitOrdersCanceller {
         return GenericLimitOrdersCanceller(executionContextFactory,
                 stopOrderBookProcessor,
-                executionConfirmationService,
+                executionDataApplyService,
                 dictionariesDatabaseAccessor,
                 assetsHolder,
                 assetsPairsHolder,

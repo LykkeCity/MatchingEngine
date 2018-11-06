@@ -35,7 +35,7 @@ import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.process.context.MarketOrderExecutionContext
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
-import com.lykke.matching.engine.order.ExecutionConfirmationService
+import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
@@ -50,7 +50,7 @@ class MarketOrderService @Autowired constructor(
         private val matchingEngine: MatchingEngine,
         private val executionContextFactory: ExecutionContextFactory,
         private val stopOrderBookProcessor: StopOrderBookProcessor,
-        private val executionConfirmationService: ExecutionConfirmationService,
+        private val executionDataApplyService: ExecutionDataApplyService,
         private val matchingResultHandlingHelper: MatchingResultHandlingHelper,
         private val genericLimitOrderService: GenericLimitOrderService,
         private val assetsPairsHolder: AssetsPairsHolder,
@@ -116,7 +116,7 @@ class MarketOrderService @Autowired constructor(
                 executionContext = executionContext)
         marketOrderExecutionContext.matchingResult = matchingResult
 
-        when (OrderStatus.valueOf(matchingResult.order.status)) {
+        when (OrderStatus.valueOf(matchingResult.orderCopy.status)) {
             ReservedVolumeGreaterThanBalance,
             NoLiquidity,
             NotEnoughFunds,
@@ -178,12 +178,12 @@ class MarketOrderService @Autowired constructor(
                 }
             }
             else -> {
-                executionContext.error("Not handled order status: ${matchingResult.order.status}")
+                executionContext.error("Not handled order status: ${matchingResult.orderCopy.status}")
             }
         }
 
         stopOrderBookProcessor.checkAndExecuteStopLimitOrders(executionContext)
-        val persisted = executionConfirmationService.persistAndSendEvents(messageWrapper, executionContext)
+        val persisted = executionDataApplyService.persistAndSendEvents(messageWrapper, executionContext)
         if (!persisted) {
             writePersistenceErrorResponse(messageWrapper, order)
             return
