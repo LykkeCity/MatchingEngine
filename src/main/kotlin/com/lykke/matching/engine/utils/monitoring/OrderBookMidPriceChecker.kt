@@ -9,23 +9,23 @@ import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
-class OrderBookMidPriceChecker(val genericLimitOrderService: GenericLimitOrderService,
-                               val assetPairsCache: AssetPairsCache) {
+class OrderBookMidPriceChecker {
     companion object {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     fun checkOrderBook(refMidPriceDangerousChangeEvent: RefMidPriceDangerousChangeEvent) {
         val assetPairId = refMidPriceDangerousChangeEvent.assetPairId
-        val orderBook = genericLimitOrderService.getOrderBook(assetPairId)
+        val executionContext = refMidPriceDangerousChangeEvent.executionContext
+        val orderBook = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPairId)
         val midPrice = orderBook.getMidPrice()
-        val threshold = assetPairsCache.getAssetPair(assetPairId)?.midPriceDeviationThreshold ?: return
+        val threshold = executionContext.assetPairsById[assetPairId]?.midPriceDeviationThreshold ?: return
 
         val lowerBound = getLowerBound(refMidPriceDangerousChangeEvent.refMidPrice, threshold)
         val upperBound = getUpperBound(refMidPriceDangerousChangeEvent.refMidPrice, threshold)
         if (!OrderValidationUtils.isMidPriceValid(midPrice, lowerBound, upperBound)) {
             METRICS_LOGGER.logError("Order book ${orderBook.assetPairId}, mid price $midPrice is out of reference mid price range " +
-                    "lowerBound $lowerBound, upperBound: $upperBound, event is triggered by orders cancel change: ${refMidPriceDangerousChangeEvent.cancel}" +
+                    "lowerBound $lowerBound, upperBound: $upperBound, event is triggered by orders cancel change: ${executionContext.executionContextForCancelOperation}" +
                     " All market orders and taker limit orders will be rejected")
         }
     }

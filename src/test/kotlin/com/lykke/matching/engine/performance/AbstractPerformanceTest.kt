@@ -172,7 +172,7 @@ abstract class AbstractPerformanceTest {
                 executionPersistenceService,
                 executionEventSender)
 
-        val midPriceHolder = MidPriceHolder(1000, TestReadOnlyMidPriceDatabaseAccessor(), OrderBookMidPriceChecker(genericLimitOrderService, assetPairsCache))
+        val midPriceHolder = MidPriceHolder(1000, TestReadOnlyMidPriceDatabaseAccessor(), OrderBookMidPriceChecker())
 
         val executionContextFactory = ExecutionContextFactory(balancesHolder,
                 genericLimitOrderService,

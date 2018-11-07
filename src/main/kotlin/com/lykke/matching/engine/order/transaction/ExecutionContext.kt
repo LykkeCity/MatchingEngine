@@ -101,9 +101,8 @@ class ExecutionContext(val messageId: String,
             midPriceHolder.clear()
         }
 
-        //add mid prices to holder after apply of new order books, inside midPrice holder is hook that checks new order book validity
         getMidPrices().forEach { it ->
-            midPriceHolder.addMidPrice(this.assetPairsById[it.assetPairId]!!, it.midPrice, Date(it.timestamp), executionContextForCancelOperation)
+            midPriceHolder.addMidPrice(this.assetPairsById[it.assetPairId]!!, it.midPrice, Date(it.timestamp), this)
         }
     }
 }

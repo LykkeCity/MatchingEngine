@@ -4,6 +4,7 @@ import com.lykke.matching.engine.common.events.RefMidPriceDangerousChangeEvent
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.database.ReadOnlyMidPriceDatabaseAccessor
+import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.monitoring.OrderBookMidPriceChecker
 import org.springframework.beans.factory.annotation.Value
@@ -38,7 +39,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
         }
     }
 
-    fun getReferenceMidPrice(assetPair: AssetPair, operationTime: Date): BigDecimal {
+    fun getReferenceMidPrice(assetPair: AssetPair, operationTime: Date, executionContext: ExecutionContext): BigDecimal {
         if (!isMidPriceDataReady(assetPair.assetPairId)) {
             return BigDecimal.ZERO
         }
@@ -55,16 +56,16 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
         val scaledReferenceMidPrice = NumberUtils.setScaleRoundUp(result, assetPair.accuracy)
 
         if (midPriceFirstTimeReady) {
-            midPriceChecker.checkOrderBook(RefMidPriceDangerousChangeEvent(assetPair.assetPairId, scaledReferenceMidPrice, false))
+            midPriceChecker.checkOrderBook(RefMidPriceDangerousChangeEvent(assetPair.assetPairId, scaledReferenceMidPrice, executionContext))
         }
 
         return scaledReferenceMidPrice
     }
 
-    fun addMidPrice(assetPair: AssetPair, newMidPrice: BigDecimal, operationTime: Date, cancel: Boolean = false) {
+    fun addMidPrice(assetPair: AssetPair, newMidPrice: BigDecimal, operationTime: Date, executionContext: ExecutionContext) {
         midPriceTimestampByAssetPairId.putIfAbsent(assetPair.assetPairId, operationTime.time)
         removeObsoleteMidPrices(assetPair.assetPairId, getLowerTimeBound(operationTime.time))
-        val midPriceDangerous =  isMidPriceChangeDangerous(assetPair.assetPairId, newMidPrice) && cancel
+        val midPriceDangerous =  isMidPriceChangeDangerous(assetPair.assetPairId, newMidPrice) && executionContext.executionContextForCancelOperation
 
         val midPrices = midPricesByAssetPairId.getOrPut(assetPair.assetPairId) { LinkedList() }
 
@@ -72,7 +73,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
         recalculateReferenceMidPriceForNewAddedMidPrice(assetPair.assetPairId, newMidPrice)
 
         if (midPriceDangerous) {
-            midPriceChecker.checkOrderBook(RefMidPriceDangerousChangeEvent(assetPair.assetPairId, referencePriceByAssetPairId[assetPair.assetPairId]!!, cancel))
+            midPriceChecker.checkOrderBook(RefMidPriceDangerousChangeEvent(assetPair.assetPairId, referencePriceByAssetPairId[assetPair.assetPairId]!!, executionContext))
         }
     }
 

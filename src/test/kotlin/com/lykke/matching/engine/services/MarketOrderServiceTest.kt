@@ -20,6 +20,7 @@ import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
 import com.lykke.matching.engine.order.OrderStatus.TooSmallVolume
+import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
@@ -36,6 +37,7 @@ import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
@@ -88,6 +90,8 @@ class MarketOrderServiceTest : AbstractTest() {
 
     @Autowired
     private lateinit var assetsPairsHolder: AssetsPairsHolder
+
+    private var executionContext = Mockito.mock(ExecutionContext::class.java)
 
     @Before
     fun setUp() {
@@ -859,13 +863,13 @@ class MarketOrderServiceTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9050.0, volume = 0.2)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9100.0, volume = 0.3)))
-        assertEquals(BigDecimal("9537.5"), midPriceHolder.getReferenceMidPrice(assetPair!!, Date()))
+        assertEquals(BigDecimal("9537.5"), midPriceHolder.getReferenceMidPrice(assetPair!!, Date(), executionContext))
 
         //when
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = -0.3)))
 
         //then
-        assertEquals(NumberUtils.setScaleRoundUp(BigDecimal("9533.333333333"), assetPair.accuracy), midPriceHolder.getReferenceMidPrice(assetPair, Date()))
+        assertEquals(NumberUtils.setScaleRoundUp(BigDecimal("9533.333333333"), assetPair.accuracy), midPriceHolder.getReferenceMidPrice(assetPair, Date(), executionContext))
     }
 
 
@@ -881,7 +885,7 @@ class MarketOrderServiceTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = 0.2)))
 
 
-        midPriceHolder.getReferenceMidPrice(assetPairsCache.getAssetPair("BTCUSD")!!, Date())
+        midPriceHolder.getReferenceMidPrice(assetPairsCache.getAssetPair("BTCUSD")!!, Date(), executionContext)
         clientsEventsQueue.clear()
 
         //when
@@ -913,7 +917,7 @@ class MarketOrderServiceTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = 0.2)))
 
 
-        midPriceHolder.getReferenceMidPrice(assetPairsCache.getAssetPair("BTCUSD")!!, Date())
+        midPriceHolder.getReferenceMidPrice(assetPairsCache.getAssetPair("BTCUSD")!!, Date(), executionContext)
         clientsEventsQueue.clear()
 
         //when
@@ -1120,7 +1124,7 @@ class MarketOrderServiceTest : AbstractTest() {
     }
 
     private fun initMidPriceHolder(assetPairId: String) {
-        midPriceHolder.addMidPrice(assetsPairsHolder.getAssetPair(assetPairId), BigDecimal.valueOf(1), Date())
+        midPriceHolder.addMidPrice(assetsPairsHolder.getAssetPair(assetPairId), BigDecimal.valueOf(1), Date(), executionContext)
         Thread.sleep(150)
     }
 }

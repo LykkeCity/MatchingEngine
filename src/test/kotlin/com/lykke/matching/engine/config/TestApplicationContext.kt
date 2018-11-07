@@ -638,9 +638,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun orderBookMidPriceChecker(genericLimitOrderService: GenericLimitOrderService,
-                                      assetPairsCache: AssetPairsCache): OrderBookMidPriceChecker {
-        return OrderBookMidPriceChecker(genericLimitOrderService, assetPairsCache)
+    open fun orderBookMidPriceChecker(): OrderBookMidPriceChecker {
+        return OrderBookMidPriceChecker()
     }
 
     @Bean
