@@ -1649,6 +1649,8 @@ class LimitOrderServiceTest : AbstractTest() {
     fun midPriceProtectionDoesNotWorkWhenNoThresholdForAssetPairTest() {
         //given
         initMidPriceHolder("BTCUSD")
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
+        assetPairsCache.update()
 
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
@@ -1826,11 +1828,10 @@ class LimitOrderServiceTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCEUR", price = 9100.0, volume = 0.3)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCEUR", price = 8000.0, volume = 0.3)))
 
-
         clientsEventsQueue.clear()
 
         //when
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client4", assetId = "BTCUSD", price = 9100.0, volume = -0.3), true))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client4", assetId = "BTCEUR", price = 9100.0, volume = -0.3), true))
 
 
         //then
@@ -1840,8 +1841,8 @@ class LimitOrderServiceTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders.first().status)
         assertEquals(OutgoingOrderStatus.REJECTED, executionEvent.orders[1].status)
         assertEquals(OrderRejectReason.TOO_HIGH_MID_PRICE_DEVIATION, executionEvent.orders[1].rejectReason)
-        assertOrderBookSize("BTCUSD", false, 1)
-        assertOrderBookSize("BTCUSD", true, 2)
+        assertOrderBookSize("BTCEUR", false, 1)
+        assertOrderBookSize("BTCEUR", true, 2)
     }
 
     @Test
@@ -2086,9 +2087,12 @@ class LimitOrderServiceTest : AbstractTest() {
     }
 
     @Test
-    fun testOrderBookMidPriceOutOfRance() {
+    fun testOrderBookMidPriceOutOfRange() {
         //given
         initMidPriceHolder("BTCUSD")
+
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
+        assetPairsCache.update()
 
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 10.0)
@@ -2098,6 +2102,9 @@ class LimitOrderServiceTest : AbstractTest() {
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = 0.3, price = 2000.0)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = 1.0, price = 6000.0)))
+
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.09)))
+        assetPairsCache.update()
 
         clientsEventsQueue.clear()
 
