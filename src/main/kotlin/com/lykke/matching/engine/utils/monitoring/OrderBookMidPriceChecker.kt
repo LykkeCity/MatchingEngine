@@ -5,25 +5,17 @@ import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.utils.logging.MetricsLogger
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
-class OrderBookMidPriceChecker {
+class OrderBookMidPriceChecker(private val genericLimitOrderService: GenericLimitOrderService,
+                               private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder) {
     companion object {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    @Autowired
-    private lateinit var genericLimitOrderService: GenericLimitOrderService
-
-    @Autowired
-    private lateinit var priceDeviationThresholdHolder: PriceDeviationThresholdHolder
-
-    @EventListener
-    fun processReferencePriceReadyEvent(referencePriceReadyEvent: RefMidPriceDangerousChangeEvent) {
+    fun checkOrderBook(referencePriceReadyEvent: RefMidPriceDangerousChangeEvent) {
         val assetPairId = referencePriceReadyEvent.assetPairId
         val orderBook = genericLimitOrderService.getOrderBook(assetPairId)
         val midPrice = orderBook.getMidPrice()

@@ -177,15 +177,14 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
 
         matchingEngine.apply()
 
-        if (newMidPrice != null) {
-            midPriceHolder.addMidPrice(assetPair, newMidPrice!!, date)
-        }
-
         genericLimitOrderService.moveOrdersToDone(completedOrders)
         genericLimitOrderService.cancelLimitOrders(ordersToCancel, date)
         genericLimitOrderService.addOrders(ordersToAdd)
         genericLimitOrderService.setOrderBook(assetPair.assetPairId, orderBook)
 
+        if (newMidPrice != null) {
+            midPriceHolder.addMidPrice(assetPair, newMidPrice!!, date)
+        }
         if (lkkTrades.isNotEmpty()) {
             lkkTradesQueue.put(lkkTrades)
         }

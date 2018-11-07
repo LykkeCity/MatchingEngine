@@ -5,8 +5,8 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.database.ReadOnlyMidPriceDatabaseAccessor
 import com.lykke.matching.engine.utils.NumberUtils
+import com.lykke.matching.engine.utils.monitoring.OrderBookMidPriceChecker
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import org.springframework.util.CollectionUtils
 import java.math.BigDecimal
@@ -15,7 +15,7 @@ import java.util.*
 @Component
 class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val refreshMidPricePeriod: Long,
                      readOnlyMidPriceDatabaseAccessor: ReadOnlyMidPriceDatabaseAccessor,
-                     private val applicationEventPublisher: ApplicationEventPublisher) {
+                     private val orderBookMidPriceChecker: OrderBookMidPriceChecker) {
 
     private val MAX_MID_PRICE_RECALCULATION_COUNT = 1000
 
@@ -52,11 +52,13 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
             refMidPrice
         } else prevReferencePriceByAssetPairId[assetPair.assetPairId] ?: BigDecimal.ZERO
 
+        val refMidPriceScaledValue = NumberUtils.setScaleRoundUp(result, assetPair.accuracy)
+
         if (midPriceFirstTimeReady) {
-            applicationEventPublisher.publishEvent(RefMidPriceDangerousChangeEvent(assetPair.assetPairId, result, false))
+            orderBookMidPriceChecker.checkOrderBook(RefMidPriceDangerousChangeEvent(assetPair.assetPairId, refMidPriceScaledValue, false))
         }
 
-        return NumberUtils.setScaleRoundUp(result, assetPair.accuracy)
+        return refMidPriceScaledValue
     }
 
     fun addMidPrice(assetPair: AssetPair, newMidPrice: BigDecimal, operationTime: Date, cancel: Boolean = false) {
@@ -70,7 +72,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
         recalculateReferenceMidPriceForNewAddedMidPrice(assetPair.assetPairId, newMidPrice)
 
         if (midPriceDangerous) {
-            applicationEventPublisher.publishEvent(RefMidPriceDangerousChangeEvent(assetPair.assetPairId, referencePriceByAssetPairId[assetPair.assetPairId]!!, cancel))
+            orderBookMidPriceChecker.checkOrderBook(RefMidPriceDangerousChangeEvent(assetPair.assetPairId, referencePriceByAssetPairId[assetPair.assetPairId]!!, cancel))
         }
     }
 

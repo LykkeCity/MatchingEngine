@@ -110,8 +110,8 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                     null,
                     midPricePersistenceData))
             if (updated) {
-                updateMidPriceInCache(order.assetPairId, newOrderBook.getMidPrice(), now)
                 genericLimitOrderService.cancelLimitOrder(Date(), limitOrderId, true)
+                updateMidPriceInCache(order.assetPairId, newOrderBook.getMidPrice(), now)
             }
         }
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())

@@ -130,11 +130,11 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
             return false
         }
 
-        updateMidPricesInCache(midPricePersistenceData)
 
         walletProcessor.apply().sendNotification(operationId, messageType.name, messageId)
         stopLimitOrdersCanceller.apply(messageId, processedMessage, stopLimitOrdersResult)
         limitOrdersCanceller.apply(messageId, processedMessage, limitOrdersCancelResult)
+        updateMidPricesInCache(midPricePersistenceData)
 
         if (trustedClientsLimitOrdersWithTrades.isNotEmpty()) {
             trustedClientsLimitOrdersQueue.put(LimitOrdersReport(messageId, trustedClientsLimitOrdersWithTrades))

@@ -42,6 +42,7 @@ import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputV
 import com.lykke.matching.engine.services.validators.input.input.LimitOrderCancelOperationInputValidatorImpl
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
+import com.lykke.matching.engine.utils.monitoring.OrderBookMidPriceChecker
 import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import com.lykke.utils.logging.ThrottlingLogger
@@ -602,6 +603,18 @@ open class TestApplicationContext {
         return MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
     }
 
+
+    @Bean
+    open fun priceDeviationThresholdHolder(settingsCache: ApplicationSettingsCache): PriceDeviationThresholdHolder {
+        return PriceDeviationThresholdHolder(settingsCache)
+    }
+
+    @Bean
+    open fun orderBookMidPriceChecker(genericLimitOrderService: GenericLimitOrderService,
+                                      priceDeviationThresholdHolder: PriceDeviationThresholdHolder): OrderBookMidPriceChecker {
+        return OrderBookMidPriceChecker(genericLimitOrderService, priceDeviationThresholdHolder)
+    }
+
     @Bean
     open fun testReadOnlyMidPriceDatabaseAccessor(): TestReadOnlyMidPriceDatabaseAccessor {
         return TestReadOnlyMidPriceDatabaseAccessor()
@@ -610,7 +623,7 @@ open class TestApplicationContext {
     @Bean
     open fun midPriceHolder(readOnlyMidPriceDatabaseAccessor: TestReadOnlyMidPriceDatabaseAccessor,
                             applicationSettingsCache: ApplicationSettingsCache,
-                            applicationEventPublisher: ApplicationEventPublisher): MidPriceHolder {
-        return MidPriceHolder(100, readOnlyMidPriceDatabaseAccessor, applicationEventPublisher)
+                            orderBookMidPriceChecker: OrderBookMidPriceChecker): MidPriceHolder {
+        return MidPriceHolder(100, readOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
     }
 }

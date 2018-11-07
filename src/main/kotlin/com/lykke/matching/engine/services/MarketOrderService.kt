@@ -257,16 +257,16 @@ class MarketOrderService @Autowired constructor(
                         return
                     }
 
-                    if (newMidPrice != null) {
-                        midPriceHolder.addMidPrice(assetPair, newMidPrice, matchingResult.timestamp)
-                    }
-
                     walletOperationsProcessor.apply().sendNotification(order.externalId, MessageType.MARKET_ORDER.name, messageWrapper.messageId!!)
 
                     matchingEngine.apply()
                     genericLimitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders.map { it.origin!! })
                     genericLimitOrderService.cancelLimitOrders(ordersToCancel, matchingResult.timestamp)
                     genericLimitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
+
+                    if (newMidPrice != null) {
+                        midPriceHolder.addMidPrice(assetPair, newMidPrice, matchingResult.timestamp)
+                    }
 
                     clientLimitOrdersReport.orders.addAll(cancelledOrdersWithTrades)
 
