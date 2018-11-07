@@ -5,35 +5,27 @@ import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.utils.logging.MetricsLogger
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
-class OrderBookMidPriceChecker {
+class OrderBookMidPriceChecker(val genericLimitOrderService: GenericLimitOrderService,
+                               val assetPairsCache: AssetPairsCache) {
     companion object {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    @Autowired
-    private lateinit var genericLimitOrderService: GenericLimitOrderService
-
-    @Autowired
-    private lateinit var assetPairsCache: AssetPairsCache
-
-    @EventListener
-    fun processReferencePriceReadyEvent(referencePriceReadyEvent: RefMidPriceDangerousChangeEvent) {
-        val assetPairId = referencePriceReadyEvent.assetPairId
+    fun checkOrderBook(refMidPriceDangerousChangeEvent: RefMidPriceDangerousChangeEvent) {
+        val assetPairId = refMidPriceDangerousChangeEvent.assetPairId
         val orderBook = genericLimitOrderService.getOrderBook(assetPairId)
         val midPrice = orderBook.getMidPrice()
         val threshold = assetPairsCache.getAssetPair(assetPairId)?.midPriceDeviationThreshold ?: return
 
-        val lowerBound = getLowerBound(referencePriceReadyEvent.refMidPrice, threshold)
-        val upperBound = getUpperBound(referencePriceReadyEvent.refMidPrice, threshold)
+        val lowerBound = getLowerBound(refMidPriceDangerousChangeEvent.refMidPrice, threshold)
+        val upperBound = getUpperBound(refMidPriceDangerousChangeEvent.refMidPrice, threshold)
         if (!OrderValidationUtils.isMidPriceValid(midPrice, lowerBound, upperBound)) {
             METRICS_LOGGER.logError("Order book ${orderBook.assetPairId}, mid price $midPrice is out of reference mid price range " +
-                    "lowerBound $lowerBound, upperBound: $upperBound, event is triggered by orders cancel change: ${referencePriceReadyEvent.cancel}" +
+                    "lowerBound $lowerBound, upperBound: $upperBound, event is triggered by orders cancel change: ${refMidPriceDangerousChangeEvent.cancel}" +
                     " All market orders and taker limit orders will be rejected")
         }
     }

@@ -57,6 +57,7 @@ import com.lykke.matching.engine.services.validators.settings.impl.MessageProces
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.monitoring.HealthMonitor
+import com.lykke.matching.engine.utils.monitoring.OrderBookMidPriceChecker
 import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import com.lykke.utils.logging.ThrottlingLogger
@@ -637,10 +638,16 @@ open class TestApplicationContext {
     }
 
     @Bean
+    open fun orderBookMidPriceChecker(genericLimitOrderService: GenericLimitOrderService,
+                                      assetPairsCache: AssetPairsCache): OrderBookMidPriceChecker {
+        return OrderBookMidPriceChecker(genericLimitOrderService, assetPairsCache)
+    }
+
+    @Bean
     open fun midPriceHolder(readOnlyMidPriceDatabaseAccessor: TestReadOnlyMidPriceDatabaseAccessor,
                             applicationSettingsCache: ApplicationSettingsCache,
-                            applicationEventPublisher: ApplicationEventPublisher): MidPriceHolder {
-        return MidPriceHolder(100, readOnlyMidPriceDatabaseAccessor, applicationEventPublisher)
+                            orderBookMidPriceChecker: OrderBookMidPriceChecker): MidPriceHolder {
+        return MidPriceHolder(100, readOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
     }
 
     @Bean

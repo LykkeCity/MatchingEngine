@@ -9,12 +9,12 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.assertEquals
+import com.lykke.matching.engine.utils.monitoring.OrderBookMidPriceChecker
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
@@ -47,7 +47,7 @@ class MidPriceHolderTest {
     private lateinit var assetsPairsHolder: AssetsPairsHolder
 
     @Autowired
-    private lateinit var applicationEventPublisher: ApplicationEventPublisher
+    private lateinit var orderBookMidPriceChecker: OrderBookMidPriceChecker
 
     @Test
     fun initialLoadingTest() {
@@ -56,7 +56,7 @@ class MidPriceHolderTest {
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
 
         //when
-        val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, applicationEventPublisher)
+        val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
         Thread.sleep(150)
         val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, Date())
@@ -69,7 +69,7 @@ class MidPriceHolderTest {
     fun noReferenceMidPriceIfDataIsNotYetCollected() {
         //given
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
-        val midPriceHolder = MidPriceHolder(40, testReadOnlyMidPriceDatabaseAccessor, applicationEventPublisher)
+        val midPriceHolder = MidPriceHolder(40, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
         midPriceHolder.addMidPrice(assetPair, BigDecimal.valueOf(10), Date())
         midPriceHolder.addMidPrice(assetPair, BigDecimal.valueOf(8), Date())
 
@@ -82,7 +82,7 @@ class MidPriceHolderTest {
     @Test
     fun noReferenceMidPriceTest() {
         //given
-        val midPriceHolder = MidPriceHolder(1000, testReadOnlyMidPriceDatabaseAccessor, applicationEventPublisher)
+        val midPriceHolder = MidPriceHolder(1000, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
 
         //then
         assertEquals(BigDecimal.ZERO, midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("EURUSD"), Date()))
@@ -91,7 +91,7 @@ class MidPriceHolderTest {
     @Test
     fun addFirstMidPriceTest() {
         //given
-        val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, applicationEventPublisher)
+        val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
 
         //when
         val midPrice = BigDecimal("1.11")
@@ -112,7 +112,7 @@ class MidPriceHolderTest {
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
 
         //when
-        val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, applicationEventPublisher)
+        val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
         val date = Date()
 
         val midPrice = MidPrice("EURUSD", getRandomBigDecimal(), date.time)
@@ -134,7 +134,7 @@ class MidPriceHolderTest {
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
 
         //when
-        val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, applicationEventPublisher)
+        val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
 
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
         IntRange(0, 900).forEach {
@@ -156,7 +156,7 @@ class MidPriceHolderTest {
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
 
         //when
-        val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, applicationEventPublisher)
+        val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
 
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
         IntRange(0, 1100).forEach {
@@ -176,7 +176,7 @@ class MidPriceHolderTest {
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
         val midPricesToExpire = ArrayList(getRandomMidPrices(3, "EURUSD"))
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPricesToExpire)
-        val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, applicationEventPublisher)
+        val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
 
         //when
         Thread.sleep(70)
@@ -197,7 +197,7 @@ class MidPriceHolderTest {
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
         val midPricesToExpire = ArrayList(getRandomMidPrices(3, "EURUSD"))
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPricesToExpire)
-        val midPriceHolder = MidPriceHolder(50, testReadOnlyMidPriceDatabaseAccessor, applicationEventPublisher)
+        val midPriceHolder = MidPriceHolder(50, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
 
         //when
         Thread.sleep(100)
@@ -217,7 +217,7 @@ class MidPriceHolderTest {
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
         val midPricesToExpire = ArrayList(getRandomMidPrices(3, "EURUSD"))
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPricesToExpire)
-        val midPriceHolder = MidPriceHolder(50, testReadOnlyMidPriceDatabaseAccessor, applicationEventPublisher)
+        val midPriceHolder = MidPriceHolder(50, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
 
         //when
         Thread.sleep(100)
@@ -235,7 +235,7 @@ class MidPriceHolderTest {
         val midPricesEURCHF = ArrayList(getRandomMidPrices(3, "EURCHF"))
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPricesEURUSD)
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURCHF", midPricesEURCHF)
-        val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, applicationEventPublisher)
+        val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
         Thread.sleep(150)
 
         //when
@@ -255,7 +255,7 @@ class MidPriceHolderTest {
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
         val midPrices = ArrayList(getRandomMidPrices(3, "EURUSD"))
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
-        val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, applicationEventPublisher)
+        val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
 
         //when
         midPriceHolder.clear()

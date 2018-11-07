@@ -31,8 +31,8 @@ import com.lykke.matching.engine.services.validators.business.impl.StopOrderBusi
 import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
 import com.lykke.matching.engine.utils.MessageBuilder
+import com.lykke.matching.engine.utils.monitoring.OrderBookMidPriceChecker
 import com.lykke.utils.logging.ThrottlingLogger
-import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.LinkedBlockingQueue
 
 abstract class AbstractPerformanceTest {
@@ -169,7 +169,7 @@ abstract class AbstractPerformanceTest {
                 rabbitOrderBookQueue)
         val executionConfirmationService = ExecutionConfirmationService(executionPersistenceService, executionEventSender)
 
-        val midPriceHolder = MidPriceHolder(1000, TestReadOnlyMidPriceDatabaseAccessor(), ApplicationEventPublisher {  })
+        val midPriceHolder = MidPriceHolder(1000, TestReadOnlyMidPriceDatabaseAccessor(), OrderBookMidPriceChecker(genericLimitOrderService, assetPairsCache))
 
         val executionContextFactory = ExecutionContextFactory(balancesHolder,
                 genericLimitOrderService,
