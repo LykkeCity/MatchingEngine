@@ -1959,7 +1959,7 @@ class LimitOrderServiceTest : AbstractTest() {
     }
 
     private fun initMidPriceHolder(assetPairId: String) {
-        midPriceHolder.addMidPrice(assetsPairsHolder.getAssetPair(assetPairId), BigDecimal.valueOf(1),  Date())
+        midPriceHolder.addMidPrice(assetsPairsHolder.getAssetPair(assetPairId), BigDecimal.ZERO,  Date())
         Thread.sleep(150)
     }
 }
