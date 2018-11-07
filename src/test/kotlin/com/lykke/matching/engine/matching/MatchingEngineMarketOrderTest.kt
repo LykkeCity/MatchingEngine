@@ -536,7 +536,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         assertCompletedLimitOrders(matchingResult.completedLimitOrders, false)
         assertEquals("Client1", matchingResult.skipLimitOrders.first().clientId)
 
-        assertEquals(matchingResult.order.externalId, marketOrder.externalId)
+        assertEquals(matchingResult.orderCopy.externalId, marketOrder.externalId)
         assertNotNull(marketOrder.matchedAt)
         assertEquals(now, marketOrder.matchedAt!!)
         assertNotNull(matchingResult.uncompletedLimitOrder)

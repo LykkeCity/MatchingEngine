@@ -15,7 +15,6 @@ import com.lykke.matching.engine.services.utils.AbstractAssetOrderBook
 import java.math.BigDecimal
 import java.util.*
 import java.util.stream.Collectors
-import kotlin.collections.ArrayList
 
 abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrderBook,
         TCancelResult : AbstractLimitOrdersCancelResult<TAssetOrderBook>>(private val dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,

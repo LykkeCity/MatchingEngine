@@ -10,7 +10,6 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.order.ExecutionConfirmationService
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.services.AssetOrderBook
@@ -21,7 +20,7 @@ import java.util.Date
 
 class GenericLimitOrdersCanceller(private val executionContextFactory: ExecutionContextFactory,
                                   private val stopOrderBookProcessor: StopOrderBookProcessor,
-                                  private val executionConfirmationService: ExecutionConfirmationService,
+                                  private val executionDataApplyService: ExecutionDataApplyService,
                                   dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
                                   assetsHolder: AssetsHolder,
                                   private val assetsPairsHolder: AssetsPairsHolder,
@@ -86,7 +85,7 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
         val limitOrdersCancelResult = processLimitOrders()
         val stopLimitOrdersResult = processStopLimitOrders()
 
-        val assetPairsById = getAssetPairsById(limitOrdersCancelResult.assetOrderBooks.keys)
+        val assetPairsById = getAssetPairsByIdMap(limitOrdersCancelResult.assetOrderBooks.keys)
         val executionContext = executionContextFactory.create(messageId,
                 operationId,
                 messageType,
@@ -122,10 +121,11 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
         executionContext.removeAllMidPrices = cancelAll
 
         stopOrderBookProcessor.checkAndExecuteStopLimitOrders(executionContext)
-        return executionConfirmationService.persistAndSendEvents(messageWrapper, executionContext)
+
+        return executionDataApplyService.persistAndSendEvents(messageWrapper, executionContext)
     }
 
-    private fun getAssetPairsById(assetPairIds: Collection<String>): Map<String, AssetPair> {
+    private fun getAssetPairsByIdMap(assetPairIds: Collection<String>): Map<String, AssetPair> {
         return assetPairIds.asSequence()
                 .mapNotNull { assetsPairsHolder.getAssetPairAllowNulls(it) }
                 .groupBy { it.assetPairId }

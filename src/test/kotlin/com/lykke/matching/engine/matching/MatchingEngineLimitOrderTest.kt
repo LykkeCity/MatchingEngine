@@ -467,7 +467,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
             assertNotNull(it.order.lastMatchTime)
             assertEquals(now, it.order.lastMatchTime!!)
         }
-        assertEquals(matchingResult.order.externalId, limitOrder.externalId)
+        assertEquals(matchingResult.orderCopy.externalId, limitOrder.externalId)
         assertNotNull(limitOrder.lastMatchTime)
         assertEquals(now, limitOrder.lastMatchTime!!)
         assertEquals(BigDecimal.valueOf(-0.09), matchingResult.uncompletedLimitOrder!!.remainingVolume)

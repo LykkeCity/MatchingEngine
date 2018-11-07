@@ -77,7 +77,7 @@ class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder
         }
     }
 
-    override fun removeOrderFromMapsWithStatus(orders: Collection<LimitOrder>, status: OrderStatus?, date: Date?) {
+    override fun removeOrdersFromMapsAndSetStatus(orders: Collection<LimitOrder>, status: OrderStatus?, date: Date?) {
         orders.forEach { order ->
             val removedOrder = stopLimitOrdersMap.remove(order.externalId)
             if (removedOrder != null) {

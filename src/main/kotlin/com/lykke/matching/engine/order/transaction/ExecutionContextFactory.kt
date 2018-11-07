@@ -29,7 +29,7 @@ class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                assetPairsById: Map<String, AssetPair>,
                date: Date,
                logger: Logger,
-               assetsById: Map<String, Asset> = getAssetsById(assetPairsById),
+               assetsById: Map<String, Asset> = getAssetsByIdMap(assetPairsById),
                preProcessorValidationResultsByOrderId: Map<String, OrderValidationResult> = emptyMap(),
                walletOperationsProcessor: WalletOperationsProcessor = balancesHolder.createWalletProcessor(logger),
                orderBooksHolder: CurrentTransactionOrderBooksHolder = genericLimitOrderService.createCurrentTransactionOrderBooksHolder(),
@@ -49,7 +49,7 @@ class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                 logger)
     }
 
-    private fun getAssetsById(assetPairsById: Map<String, AssetPair>): Map<String, Asset> {
+    private fun getAssetsByIdMap(assetPairsById: Map<String, AssetPair>): Map<String, Asset> {
         return assetPairsById.values
                 .flatMapTo(mutableSetOf()) {
                     listOf(it.baseAssetId, it.quotingAssetId)

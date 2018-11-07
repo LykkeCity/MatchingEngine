@@ -6,13 +6,14 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.matching.MatchingEngine
-import com.lykke.matching.engine.order.ExecutionConfirmationService
+import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExecutionEventSender
 import com.lykke.matching.engine.order.ExecutionPersistenceService
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.*
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
+import com.lykke.matching.engine.order.transaction.ExecutionEventsSequenceNumbersGenerator
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
@@ -51,13 +52,17 @@ open class TestExecutionContext {
     }
 
     @Bean
+    open fun executionEventsSequenceNumbersGenerator(messageSequenceNumberHolder: MessageSequenceNumberHolder): ExecutionEventsSequenceNumbersGenerator {
+        return ExecutionEventsSequenceNumbersGenerator(messageSequenceNumberHolder)
+    }
+
+    @Bean
     open fun executionPersistenceService(persistenceManager: PersistenceManager): ExecutionPersistenceService {
         return ExecutionPersistenceService(persistenceManager)
     }
 
     @Bean
-    open fun executionEventSender(messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                  messageSender: MessageSender,
+    open fun executionEventSender(messageSender: MessageSender,
                                   clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                   trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                   rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
@@ -65,8 +70,7 @@ open class TestExecutionContext {
                                   genericLimitOrderService: GenericLimitOrderService,
                                   orderBookQueue: BlockingQueue<OrderBook>,
                                   rabbitOrderBookQueue: BlockingQueue<OrderBook>): ExecutionEventSender {
-        return ExecutionEventSender(messageSequenceNumberHolder,
-                messageSender,
+        return ExecutionEventSender(messageSender,
                 clientLimitOrdersQueue,
                 trustedClientsLimitOrdersQueue,
                 rabbitSwapQueue,
@@ -77,9 +81,12 @@ open class TestExecutionContext {
     }
 
     @Bean
-    open fun executionConfirmationService(executionPersistenceService: ExecutionPersistenceService,
-                                          executionEventSender: ExecutionEventSender): ExecutionConfirmationService {
-        return ExecutionConfirmationService(executionPersistenceService, executionEventSender)
+    open fun executionDataApplyService(executionEventsSequenceNumbersGenerator: ExecutionEventsSequenceNumbersGenerator,
+                                       executionPersistenceService: ExecutionPersistenceService,
+                                       executionEventSender: ExecutionEventSender): ExecutionDataApplyService {
+        return ExecutionDataApplyService(executionEventsSequenceNumbersGenerator,
+                executionPersistenceService,
+                executionEventSender)
     }
 
     @Bean

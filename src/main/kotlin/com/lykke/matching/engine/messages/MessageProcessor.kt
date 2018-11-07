@@ -24,7 +24,7 @@ import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.order.ExecutionConfirmationService
+import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
@@ -118,7 +118,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.singleLimitOrderService = SingleLimitOrderService(executionContextFactory,
                 applicationContext.getBean(GenericLimitOrdersProcessor::class.java),
                 applicationContext.getBean(StopOrderBookProcessor::class.java),
-                applicationContext.getBean(ExecutionConfirmationService::class.java),
+                applicationContext.getBean(ExecutionDataApplyService::class.java),
                 applicationContext.getBean(PreviousLimitOrdersProcessor::class.java))
 
         this.marketOrderService = applicationContext.getBean(MarketOrderService::class.java)
@@ -246,10 +246,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         result[MessageType.CASH_TRANSFER_OPERATION] = cashTransferOperationService
         result[MessageType.RESERVED_CASH_IN_OUT_OPERATION] = reservedCashInOutOperationService
         result[MessageType.LIMIT_ORDER] = singleLimitOrderService
-        result[MessageType.OLD_LIMIT_ORDER] = singleLimitOrderService
         result[MessageType.MARKET_ORDER] = marketOrderService
         result[MessageType.LIMIT_ORDER_CANCEL] = limitOrderCancelService
-        result[MessageType.OLD_LIMIT_ORDER_CANCEL] = limitOrderCancelService
         result[MessageType.LIMIT_ORDER_MASS_CANCEL] = limitOrderMassCancelService
         result[MessageType.MULTI_LIMIT_ORDER_CANCEL] = multiLimitOrderCancelService
         result[MessageType.MULTI_LIMIT_ORDER] = multiLimitOrderService

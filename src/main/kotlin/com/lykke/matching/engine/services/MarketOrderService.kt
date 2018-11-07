@@ -16,7 +16,7 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.order.ExecutionConfirmationService
+import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.InvalidFee
 import com.lykke.matching.engine.order.OrderStatus.InvalidValue
@@ -53,7 +53,7 @@ class MarketOrderService @Autowired constructor(
         private val matchingEngine: MatchingEngine,
         private val executionContextFactory: ExecutionContextFactory,
         private val stopOrderBookProcessor: StopOrderBookProcessor,
-        private val executionConfirmationService: ExecutionConfirmationService,
+        private val executionDataApplyService: ExecutionDataApplyService,
         private val matchingResultHandlingHelper: MatchingResultHandlingHelper,
         private val genericLimitOrderService: GenericLimitOrderService,
         private val assetsPairsHolder: AssetsPairsHolder,
@@ -145,7 +145,7 @@ class MarketOrderService @Autowired constructor(
                 executionContext = executionContext)
         marketOrderExecutionContext.matchingResult = matchingResult
 
-        when (OrderStatus.valueOf(matchingResult.order.status)) {
+        when (OrderStatus.valueOf(matchingResult.orderCopy.status)) {
             ReservedVolumeGreaterThanBalance,
             NoLiquidity,
             NotEnoughFunds,
@@ -166,7 +166,7 @@ class MarketOrderService @Autowired constructor(
         }
 
         stopOrderBookProcessor.checkAndExecuteStopLimitOrders(executionContext)
-        val persisted = executionConfirmationService.persistAndSendEvents(messageWrapper, executionContext)
+        val persisted = executionDataApplyService.persistAndSendEvents(messageWrapper, executionContext)
         if (!persisted) {
             writePersistenceErrorResponse(messageWrapper, order)
             return

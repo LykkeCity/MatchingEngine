@@ -9,6 +9,6 @@ interface AbstractGenericLimitOrderService<T : AbstractAssetOrderBook> {
     fun getOrderBook(assetPairId: String): T
     fun cancelLimitOrders(orders: Collection<LimitOrder>, date: Date)
     fun setOrderBook(assetPairId: String, assetOrderBook: T)
-    fun removeOrderFromMapsWithStatus(orders: Collection<LimitOrder>, status: OrderStatus? = null, date: Date? = null)
+    fun removeOrdersFromMapsAndSetStatus(orders: Collection<LimitOrder>, status: OrderStatus? = null, date: Date? = null)
     fun addOrders(orders: Collection<LimitOrder>)
 }

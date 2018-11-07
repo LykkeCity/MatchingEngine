@@ -9,7 +9,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
-import com.lykke.matching.engine.order.ExecutionConfirmationService
+import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.log4j.Logger
@@ -18,7 +18,7 @@ import java.util.*
 class SingleLimitOrderService(private val executionContextFactory: ExecutionContextFactory,
                               private val genericLimitOrdersProcessor: GenericLimitOrdersProcessor,
                               private val stopOrderBookProcessor: StopOrderBookProcessor,
-                              private val executionConfirmationService: ExecutionConfirmationService,
+                              private val executionDataApplyService: ExecutionDataApplyService,
                               private val previousLimitOrdersProcessor: PreviousLimitOrdersProcessor) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(SingleLimitOrderService::class.java.name)
@@ -61,7 +61,7 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
                 executionContext)
         val processedOrder = genericLimitOrdersProcessor.processOrders(listOf(order), executionContext).single()
         stopOrderBookProcessor.checkAndExecuteStopLimitOrders(executionContext)
-        val persisted = executionConfirmationService.persistAndSendEvents(messageWrapper, executionContext)
+        val persisted = executionDataApplyService.persistAndSendEvents(messageWrapper, executionContext)
 
         if (!persisted) {
             val message = "Unable to save result data"
@@ -105,10 +105,6 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
                               status: MessageStatus,
                               internalOrderId: String?,
                               statusReason: String? = null) {
-        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
-            return
-        }
         val builder = ProtocolMessages.NewResponse.newBuilder().setStatus(status.type)
         internalOrderId?.let { builder.setMatchingEngineId(internalOrderId) }
         statusReason?.let { builder.setStatusReason(it) }
