@@ -215,7 +215,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
 
         val order = orderContext.order
         if (!checkMidPriceAfterMatching(orderContext)) {
-            val message = "${getOrderInfo(orderContext.matchingResult!!.order as LimitOrder)}: too high mid price deviation"
+            val message = "${getOrderInfo(orderContext.matchingResult!!.orderCopy as LimitOrder)}: too high mid price deviation"
             orderContext.executionContext.info(message)
             orderContext.order.updateStatus(OrderStatus.TooHighMidPriceDeviation, orderContext.executionContext.date)
             return processRejectedMatchingResult(orderContext)

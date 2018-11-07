@@ -161,7 +161,7 @@ class MarketOrderService @Autowired constructor(
                 processMatchedStatus(marketOrderExecutionContext, messageWrapper.messageId!!)
             }
             else -> {
-                executionContext.error("Not handled order status: ${matchingResult.order.status}")
+                executionContext.error("Not handled order status: ${matchingResult.orderCopy.status}")
             }
         }
 

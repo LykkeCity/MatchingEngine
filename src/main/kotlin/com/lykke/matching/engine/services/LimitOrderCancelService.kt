@@ -19,7 +19,7 @@ import java.util.stream.Collectors
 class LimitOrderCancelService(private val genericLimitOrderService: GenericLimitOrderService,
                               private val genericStopLimitOrderService: GenericStopLimitOrderService,
                               private val validator: LimitOrderCancelOperationBusinessValidator,
-                              private val limitOrdersCancelHelper: LimitOrdersCancelHelper, ) : AbstractService {
+                              private val limitOrdersCancelHelper: LimitOrdersCancelHelper) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
     }
