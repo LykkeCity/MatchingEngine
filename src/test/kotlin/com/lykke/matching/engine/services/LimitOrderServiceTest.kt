@@ -77,9 +77,6 @@ class LimitOrderServiceTest : AbstractTest() {
     }
 
     @Autowired
-    private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
-
-    @Autowired
     private lateinit var midPriceHolder: MidPriceHolder
 
     @Autowired

@@ -35,6 +35,8 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
                           private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
                           private val matchingResultHandlingHelper: MatchingResultHandlingHelper) : OrderProcessor<LimitOrder> {
 
+    private var midPrice: BigDecimal? = null
+
     override fun processOrder(order: LimitOrder, executionContext: ExecutionContext): ProcessedOrder {
 
 
@@ -248,6 +250,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
             return ProcessedOrder(order, false, message)
         }
 
+        processOrderMidPrice(orderContext)
         matchingResult.apply()
         processOppositeOrders(orderContext)
         addMatchedResultToEventData(orderContext)
@@ -257,6 +260,12 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         }
 
         return ProcessedOrder(order, true)
+    }
+
+    private fun processOrderMidPrice(orderContext: LimitOrderExecutionContext) {
+        this.midPrice?.let {
+            orderContext.executionContext.updateMidPrice(MidPrice(orderContext.order.assetPairId, it, orderContext.executionContext.date.time))
+        }
     }
 
     private fun isNotCompletedOrder(order: LimitOrder): Boolean {
@@ -280,9 +289,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         val midPrice = getMidPrice(orderSideBestPrice, oppositeSideBestPrice)
 
         if (OrderValidationUtils.isMidPriceValid(midPrice, orderContext.lowerMidPriceBound, orderContext.upperMidPriceBound)) {
-            midPrice?.let {
-                orderContext.executionContext.updateMidPrice(MidPrice(orderContext.order.assetPairId, midPrice, orderContext.executionContext.date.time))
-            }
+            this.midPrice = midPrice
             return true
         }
 
@@ -440,6 +447,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         order.reservedLimitVolume = limitVolume
         orderContext.executionContext.orderBooksHolder.addOrder(order)
         addOrderToReport(orderContext.order.copy(), orderContext.executionContext)
+        processOrderMidPrice(orderContext)
 
         if (!applicationSettingsCache.isTrustedClient(order.clientId)) {
             orderContext.executionContext.info("${getOrderInfo(order)} added to order book")
@@ -492,7 +500,6 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
             lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * midPriceDeviationThreshold)
             upperMidPriceBound = referenceMidPrice + (referenceMidPrice * midPriceDeviationThreshold)
         }
-
 
         return lowerMidPriceBound to upperMidPriceBound
     }
