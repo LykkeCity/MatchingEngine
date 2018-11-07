@@ -36,7 +36,7 @@ class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDataba
                         asset.minInvertedVolume?.toBigDecimal(),
                         asset.maxVolume?.toBigDecimal(),
                         asset.maxValue?.toBigDecimal(),
-                        asset.limitOrderPriceDeviationThreshold?.toBigDecimal(),
+                        asset.midPriceDeviationThreshold?.toBigDecimal(),
                         asset.marketOrderPriceDeviationThreshold?.toBigDecimal())
             }
         } catch(e: Exception) {
@@ -60,7 +60,7 @@ class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDataba
                         assetPair.minInvertedVolume?.toBigDecimal(),
                         assetPair.maxVolume?.toBigDecimal(),
                         assetPair.maxValue?.toBigDecimal(),
-                        assetPair.limitOrderPriceDeviationThreshold?.toBigDecimal(),
+                        assetPair.midPriceDeviationThreshold?.toBigDecimal(),
                         assetPair.marketOrderPriceDeviationThreshold?.toBigDecimal())
             }
         } catch(e: Exception) {

@@ -13,7 +13,7 @@ public class AzureAssetPair extends TableServiceEntity {
     private Double minInvertedVolume;
     private Double maxVolume;
     private Double maxValue;
-    private Double limitOrderPriceDeviationThreshold;
+    private Double midPriceDeviationThreshold;
     private Double marketOrderPriceDeviationThreshold;
 
     public AzureAssetPair() {
@@ -26,7 +26,7 @@ public class AzureAssetPair extends TableServiceEntity {
                           Double minInvertedVolume,
                           Double maxVolume,
                           Double maxValue,
-                          Double limitOrderPriceDeviationThreshold,
+                          Double midPriceDeviationThreshold,
                           Double marketOrderPriceDeviationThreshold) {
         super(ASSET_PAIR, baseAssetId + quotingAssetId);
         this.baseAssetId = baseAssetId;
@@ -37,7 +37,7 @@ public class AzureAssetPair extends TableServiceEntity {
         this.maxVolume = maxVolume;
         this.maxValue = maxValue;
         this.maxValue = maxValue;
-        this.limitOrderPriceDeviationThreshold = limitOrderPriceDeviationThreshold;
+        this.midPriceDeviationThreshold = midPriceDeviationThreshold;
         this.marketOrderPriceDeviationThreshold = marketOrderPriceDeviationThreshold;
     }
 
@@ -101,12 +101,12 @@ public class AzureAssetPair extends TableServiceEntity {
         this.maxValue = maxValue;
     }
 
-    public Double getLimitOrderPriceDeviationThreshold() {
-        return limitOrderPriceDeviationThreshold;
+    public Double getMidPriceDeviationThreshold() {
+        return midPriceDeviationThreshold;
     }
 
-    public void setLimitOrderPriceDeviationThreshold(Double limitOrderPriceDeviationThreshold) {
-        this.limitOrderPriceDeviationThreshold = limitOrderPriceDeviationThreshold;
+    public void setMidPriceDeviationThreshold(Double midPriceDeviationThreshold) {
+        this.midPriceDeviationThreshold = midPriceDeviationThreshold;
     }
 
     public Double getMarketOrderPriceDeviationThreshold() {
@@ -127,7 +127,7 @@ public class AzureAssetPair extends TableServiceEntity {
                 ", minInvertedVolume=" + minInvertedVolume +
                 ", maxVolume=" + maxVolume +
                 ", maxValue=" + maxValue +
-                ", limitOrderPriceDeviationThreshold=" + limitOrderPriceDeviationThreshold +
+                ", midPriceDeviationThreshold=" + midPriceDeviationThreshold +
                 ", marketOrderPriceDeviationThreshold=" + marketOrderPriceDeviationThreshold +
                 ")";
     }
