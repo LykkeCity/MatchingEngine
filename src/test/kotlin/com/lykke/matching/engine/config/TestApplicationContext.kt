@@ -345,7 +345,7 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun priceDeviationThreshold(assetPairsCache: AssetPairsCache, settingsCache: ApplicationSettingsCache): PriceDeviationThresholdHolder {
+    open fun priceDeviationThreshold(settingsCache: ApplicationSettingsCache): PriceDeviationThresholdHolder {
         return PriceDeviationThresholdHolder(settingsCache)
     }
 

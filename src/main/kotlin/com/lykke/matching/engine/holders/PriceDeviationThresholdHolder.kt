@@ -13,6 +13,6 @@ class PriceDeviationThresholdHolder(private val settingsCache: ApplicationSettin
     }
 
     fun getMarketOrderPriceDeviationThreshold(assetPairId: String, executionContext: ExecutionContext): BigDecimal? {
-        return executionContext.assetPairsById[assetPairId]?.marketOrderPriceDeviationThreshold
+        return executionContext.assetPairsById[assetPairId]?.marketOrderPriceDeviationThreshold ?: settingsCache.marketOrderPriceDeviationThreshold(assetPairId)
     }
 }
