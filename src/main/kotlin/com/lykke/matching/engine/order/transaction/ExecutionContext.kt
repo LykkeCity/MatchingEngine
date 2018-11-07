@@ -25,10 +25,6 @@ class ExecutionContext(val messageId: String,
                        val date: Date,
                        val logger: Logger) {
 
-    companion object {
-        private val DEBUGGER = Logger.getLogger(ExecutionContext::class.java.name)
-    }
-
     var tradeIndex: Long = 0
 
     private val clientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
@@ -81,7 +77,6 @@ class ExecutionContext(val messageId: String,
     }
 
     fun apply() {
-        DEBUGGER.info("[$messageId] Changes are applied to cache")
         walletOperationsProcessor.apply()
         orderBooksHolder.apply(date)
         stopOrderBooksHolder.apply(date)
