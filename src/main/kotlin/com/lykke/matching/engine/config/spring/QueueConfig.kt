@@ -62,12 +62,6 @@ open class QueueConfig {
 
     @Bean
     @RabbitQueue
-    open fun orderBookQueue(): BlockingQueue<OrderBook> {
-        return LinkedBlockingQueue<OrderBook>()
-    }
-
-    @Bean
-    @RabbitQueue
     open fun rabbitOrderBookQueue(): BlockingQueue<OrderBook> {
         return LinkedBlockingQueue<OrderBook>()
     }
@@ -100,6 +94,11 @@ open class QueueConfig {
     @RabbitQueue
     open fun trustedClientsLimitOrdersQueue(): BlockingQueue<LimitOrdersReport> {
         return LinkedBlockingQueue<LimitOrdersReport>()
+    }
+
+    @Bean
+    open fun orderBookQueue(): BlockingQueue<OrderBook> {
+        return LinkedBlockingQueue<OrderBook>()
     }
 
     @Bean
