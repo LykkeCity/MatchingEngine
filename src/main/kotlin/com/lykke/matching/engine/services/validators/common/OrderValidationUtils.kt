@@ -25,8 +25,8 @@ class OrderValidationUtils {
         }
 
         fun isMidPriceValid(midPrice: BigDecimal?, lowerAcceptableMidPrice: BigDecimal?, upperAcceptableMidPrice: BigDecimal?): Boolean {
-            if (lowerAcceptableMidPrice != null && lowerAcceptableMidPrice != BigDecimal.ZERO && upperAcceptableMidPrice != null
-                    && upperAcceptableMidPrice != BigDecimal.ZERO && lowerAcceptableMidPrice.compareTo(upperAcceptableMidPrice).sign != -1) {
+            if (lowerAcceptableMidPrice != null && !NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, lowerAcceptableMidPrice) && upperAcceptableMidPrice != null
+                    && !NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, upperAcceptableMidPrice) && lowerAcceptableMidPrice.compareTo(upperAcceptableMidPrice).sign != -1) {
                 throw IllegalArgumentException("Invalid data supplied for mid price validation, mid price $midPrice," +
                         " lower bound: $lowerAcceptableMidPrice, upper bound: $upperAcceptableMidPrice")
             }

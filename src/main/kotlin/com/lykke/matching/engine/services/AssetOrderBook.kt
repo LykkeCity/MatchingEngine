@@ -41,7 +41,7 @@ class AssetOrderBook(assetId: String) : AbstractAssetOrderBook(assetId) {
     fun getAskPrice() = askOrderBook.peek()?.price ?: BigDecimal.ZERO
     fun getBidPrice() = bidOrderBook.peek()?.price ?: BigDecimal.ZERO
     fun getMidPrice(): BigDecimal? {
-        return if (getAskPrice() != BigDecimal.ZERO && getBidPrice() != BigDecimal.ZERO) {
+        return if (!NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, getAskPrice()) && !NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, getBidPrice())) {
             NumberUtils.divideWithMaxScale(getAskPrice() + getBidPrice(), BigDecimal.valueOf(2))
         } else
             null
