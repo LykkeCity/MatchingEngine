@@ -1927,7 +1927,7 @@ class LimitOrderServiceTest : AbstractTest() {
     }
 
     @Test
-    fun testOrderBookMidPriceOutOfRance() {
+    fun testOrderBookMidPriceOutOfRange() {
         //given
         initMidPriceHolder("BTCUSD")
 
