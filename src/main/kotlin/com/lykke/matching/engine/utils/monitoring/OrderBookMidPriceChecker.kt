@@ -1,10 +1,9 @@
 package com.lykke.matching.engine.utils.monitoring
 
 import com.lykke.matching.engine.common.events.RefMidPriceDangerousChangeEvent
-import com.lykke.matching.engine.database.cache.AssetPairsCache
-import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.utils.logging.MetricsLogger
+import org.apache.log4j.Logger
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
@@ -12,6 +11,7 @@ import java.math.BigDecimal
 class OrderBookMidPriceChecker {
     companion object {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
+        private val LOGGER = Logger.getLogger(OrderBookMidPriceChecker::class.java)
     }
 
     fun checkOrderBook(refMidPriceDangerousChangeEvent: RefMidPriceDangerousChangeEvent) {
@@ -24,9 +24,11 @@ class OrderBookMidPriceChecker {
         val lowerBound = getLowerBound(refMidPriceDangerousChangeEvent.refMidPrice, threshold)
         val upperBound = getUpperBound(refMidPriceDangerousChangeEvent.refMidPrice, threshold)
         if (!OrderValidationUtils.isMidPriceValid(midPrice, lowerBound, upperBound)) {
-            METRICS_LOGGER.logError("Order book ${orderBook.assetPairId}, mid price $midPrice is out of reference mid price range " +
+            val message = "Order book ${orderBook.assetPairId}, mid price $midPrice is out of reference mid price range " +
                     "lowerBound $lowerBound, upperBound: $upperBound, event is triggered by orders cancel change: ${executionContext.executionContextForCancelOperation}" +
-                    " All market orders and taker limit orders will be rejected")
+                    " All market orders and taker limit orders will be rejected"
+            LOGGER.warn(message)
+            METRICS_LOGGER.logError(message)
         }
     }
 
