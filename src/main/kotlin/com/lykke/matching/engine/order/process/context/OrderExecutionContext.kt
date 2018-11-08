@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.Order
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.matching.MatchingResult
 import com.lykke.matching.engine.order.transaction.ExecutionContext
+import java.math.BigDecimal
 
 abstract class OrderExecutionContext<T: Order>(val order: T,
                                                val executionContext: ExecutionContext) {
@@ -14,6 +15,9 @@ abstract class OrderExecutionContext<T: Order>(val order: T,
     } else {
         executionContext.assetPairsById[order.assetPairId]?.let { executionContext.assetsById[it.quotingAssetId] }
     }
+
+    var lowerMidPriceBound: BigDecimal? = null
+    var upperMidPriceBound: BigDecimal? = null
     var matchingResult: MatchingResult? = null
     var cancelledOppositeClientsOrders: List<LimitOrder>? = null
     var cancelledOppositeTrustedClientsOrders: List<LimitOrder>? = null

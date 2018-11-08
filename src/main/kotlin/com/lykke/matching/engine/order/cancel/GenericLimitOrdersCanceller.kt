@@ -2,18 +2,20 @@ package com.lykke.matching.engine.order.cancel
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
+import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
+import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
+import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
-import com.lykke.matching.engine.order.ExecutionDataApplyService
 import org.apache.log4j.Logger
 import java.util.Date
 
@@ -27,6 +29,7 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
                                   genericLimitOrderService: GenericLimitOrderService,
                                   genericStopLimitOrderService: GenericStopLimitOrderService,
                                   private val date: Date,
+                                  private val cancelAll: Boolean = false,
                                   private val LOGGER: Logger) {
 
     private val limitOrdersCanceller = LimitOrdersCanceller(dictionariesDatabaseAccessor,
@@ -93,6 +96,8 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
                 LOGGER,
                 walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, validateBalances))
 
+        executionContext.executionContextForCancelOperation = true
+
         executionContext.walletOperationsProcessor.preProcess(limitOrdersCancelResult.walletOperations
                 .plus(stopLimitOrdersResult.walletOperations))
 
@@ -111,6 +116,11 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
         executionContext.addTrustedClientsLimitOrdersWithTrades(limitOrdersCancelResult.trustedClientsOrdersWithTrades)
         executionContext.addTrustedClientsLimitOrdersWithTrades(stopLimitOrdersResult.trustedClientsOrdersWithTrades)
 
+        getMidPrices(limitOrdersCancelResult.assetOrderBooks).forEach {
+            executionContext.updateMidPrice(it)
+        }
+        executionContext.removeAllMidPrices = cancelAll
+
         stopOrderBookProcessor.checkAndExecuteStopLimitOrders(executionContext)
 
         return executionDataApplyService.persistAndSendEvents(messageWrapper, executionContext)
@@ -121,5 +131,21 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
                 .mapNotNull { assetsPairsHolder.getAssetPairAllowNulls(it) }
                 .groupBy { it.assetPairId }
                 .mapValues { it.value.single() }
+    }
+
+    private fun getMidPrices(assetPairIdToAssetOrderBook: Map<String, AssetOrderBook>): List<MidPrice> {
+        if (cancelAll) {
+            return emptyList()
+        }
+
+        val result = ArrayList<MidPrice>()
+        assetPairIdToAssetOrderBook.forEach { assetPairId, orderBook ->
+            val midPrice = orderBook.getMidPrice()
+            if (midPrice != null) {
+                result.add(MidPrice(assetPairId, midPrice, date.time))
+            }
+        }
+
+        return result
     }
 }

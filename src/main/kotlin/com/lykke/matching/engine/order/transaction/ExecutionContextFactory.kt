@@ -6,18 +6,20 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Component
-import java.util.Date
+import java.util.*
 
 @Component
 class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                               private val genericLimitOrderService: GenericLimitOrderService,
                               private val genericStopLimitOrderService: GenericStopLimitOrderService,
+                              private val midPriceHolder: MidPriceHolder,
                               private val assetsHolder: AssetsHolder) {
 
     fun create(messageId: String,
@@ -42,6 +44,7 @@ class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                 walletOperationsProcessor,
                 orderBooksHolder,
                 stopOrderBooksHolder,
+                midPriceHolder,
                 date,
                 logger)
     }

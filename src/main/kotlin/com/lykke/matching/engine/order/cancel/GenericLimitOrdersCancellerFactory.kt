@@ -4,15 +4,15 @@ import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
+import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
+import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
-import com.lykke.matching.engine.order.ExecutionDataApplyService
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import java.util.Date
+import java.util.*
 
 @Component
 class GenericLimitOrdersCancellerFactory @Autowired constructor(private val executionContextFactory: ExecutionContextFactory,
@@ -26,7 +26,7 @@ class GenericLimitOrdersCancellerFactory @Autowired constructor(private val exec
                                                                 private val genericStopLimitOrderService: GenericStopLimitOrderService) {
 
 
-    fun create(logger: Logger, date: Date): GenericLimitOrdersCanceller {
+    fun create(logger: Logger, date: Date, cancelAll: Boolean = false): GenericLimitOrdersCanceller {
         return GenericLimitOrdersCanceller(executionContextFactory,
                 stopOrderBookProcessor,
                 executionDataApplyService,
@@ -37,6 +37,7 @@ class GenericLimitOrdersCancellerFactory @Autowired constructor(private val exec
                 genericLimitOrderService,
                 genericStopLimitOrderService,
                 date,
+                cancelAll,
                 logger)
     }
 }

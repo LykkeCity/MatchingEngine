@@ -17,6 +17,7 @@ import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersist
 import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisMidPriceDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
@@ -100,6 +101,15 @@ open class DatabaseAccessorConfig {
             Storage.Azure -> fileProcessedMessagesDatabaseAccessor()
             Storage.RedisWithoutOrders,
             Storage.Redis -> redisProcessedMessagesDatabaseAccessor.get()
+        }
+    }
+
+    @Bean
+    open fun readOnlyMidPriceDatabaseAccessor(redisMidPriceDatabaseAccessor: Optional<RedisMidPriceDatabaseAccessor>): ReadOnlyMidPriceDatabaseAccessor {
+        return when (config.me.storage) {
+            Storage.Azure -> AzureReadOnlyMidPriceDatabaseAccessor()
+            Storage.RedisWithoutOrders,
+            Storage.Redis -> redisMidPriceDatabaseAccessor.get()
         }
     }
 

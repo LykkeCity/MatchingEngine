@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.database.common
 
+import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
 import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
@@ -27,6 +28,7 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                                     private val redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
                                     private val cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
                                     private val messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>,
+                                    private val redisMidPriceDatabaseAccessor: Optional<MidPriceDatabaseAccessor>,
                                     private val fileProcessedMessagesDatabaseAccessor: FileProcessedMessagesDatabaseAccessor,
                                     private val persistedOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<OrderBookPersistEvent>,
                                     private val persistedStopOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<StopOrderBookPersistEvent>,
@@ -50,6 +52,7 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                         persistedOrdersApplicationEventPublisher,
                         persistedStopOrdersApplicationEventPublisher,
                         persistedWalletsApplicationEventPublisher,
+                        redisMidPriceDatabaseAccessor.get() as RedisMidPriceDatabaseAccessor,
                         redisConnection.get(),
                         config
                 )
@@ -62,6 +65,7 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                         stopOrdersDatabaseAccessorsHolder.primaryAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
                         persistedWalletsApplicationEventPublisher,
+                        redisMidPriceDatabaseAccessor.get() as RedisMidPriceDatabaseAccessor,
                         redisConnection.get(),
                         config)
         }
