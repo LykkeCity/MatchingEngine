@@ -32,10 +32,11 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.getSetting
+import com.nhaarman.mockito_kotlin.doAnswer
+import com.nhaarman.mockito_kotlin.mock
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
@@ -87,7 +88,9 @@ class LimitOrderServiceTest : AbstractTest() {
     @Autowired
     private lateinit var messageBuilder: MessageBuilder
 
-    private var executionContext = Mockito.mock(ExecutionContext::class.java)
+    private var executionContextMock = mock<ExecutionContext> {
+        on {date} doAnswer { Date() }
+    }
 
     @Before
     fun setUp() {
@@ -1694,7 +1697,7 @@ class LimitOrderServiceTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = 0.3)))
 
         //then
-        assertEquals(BigDecimal.valueOf(9500), midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("BTCUSD"), Date(), executionContext))
+        assertEquals(BigDecimal.valueOf(9500), midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("BTCUSD"), executionContextMock))
     }
 
     @Test
@@ -2123,7 +2126,7 @@ class LimitOrderServiceTest : AbstractTest() {
     }
 
     private fun initMidPriceHolder(assetPairId: String) {
-        midPriceHolder.addMidPrice(assetsPairsHolder.getAssetPair(assetPairId), BigDecimal.ZERO, Date(), executionContext)
+        midPriceHolder.addMidPrice(assetsPairsHolder.getAssetPair(assetPairId), BigDecimal.ZERO, executionContextMock)
         Thread.sleep(150)
     }
 }

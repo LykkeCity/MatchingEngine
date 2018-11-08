@@ -14,7 +14,7 @@ import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import org.apache.log4j.Logger
 import java.util.Date
 
-class ExecutionContext(val messageId: String,
+open class ExecutionContext(val messageId: String,
                        val requestId: String,
                        val messageType: MessageType,
                        val processedMessage: ProcessedMessage?,
@@ -25,7 +25,7 @@ class ExecutionContext(val messageId: String,
                        val orderBooksHolder: CurrentTransactionOrderBooksHolder,
                        val stopOrderBooksHolder: CurrentTransactionStopOrderBooksHolder,
                        val midPriceHolder: MidPriceHolder,
-                       val date: Date,
+                       open val date: Date,
                        val logger: Logger) {
 
     var tradeIndex: Long = 0
@@ -106,7 +106,7 @@ class ExecutionContext(val messageId: String,
         }
 
         getMidPrices().forEach { it ->
-            midPriceHolder.addMidPrice(this.assetPairsById[it.assetPairId]!!, it.midPrice, Date(it.timestamp), this)
+            midPriceHolder.addMidPrice(this.assetPairsById[it.assetPairId]!!, it.midPrice, this)
         }
     }
 }

@@ -34,10 +34,11 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.getSetting
+import com.nhaarman.mockito_kotlin.doAnswer
+import com.nhaarman.mockito_kotlin.mock
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
@@ -91,7 +92,9 @@ class MarketOrderServiceTest : AbstractTest() {
     @Autowired
     private lateinit var assetsPairsHolder: AssetsPairsHolder
 
-    private var executionContext = Mockito.mock(ExecutionContext::class.java)
+    private var executionContextMock = mock<ExecutionContext> {
+        on {date} doAnswer { Date() }
+    }
 
     @Before
     fun setUp() {
@@ -107,6 +110,7 @@ class MarketOrderServiceTest : AbstractTest() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("LKKGBP", "LKK", "GBP", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("ETHUSD", "ETH", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 8))
+
         initServices()
     }
 
@@ -863,13 +867,13 @@ class MarketOrderServiceTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9050.0, volume = 0.2)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9100.0, volume = 0.3)))
-        assertEquals(BigDecimal("9537.5"), midPriceHolder.getReferenceMidPrice(assetPair!!, Date(), executionContext))
+        assertEquals(BigDecimal("9537.5"), midPriceHolder.getReferenceMidPrice(assetPair!!, executionContextMock))
 
         //when
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = -0.3)))
 
         //then
-        assertEquals(NumberUtils.setScaleRoundUp(BigDecimal("9533.333333333"), assetPair.accuracy), midPriceHolder.getReferenceMidPrice(assetPair, Date(), executionContext))
+        assertEquals(NumberUtils.setScaleRoundUp(BigDecimal("9533.333333333"), assetPair.accuracy), midPriceHolder.getReferenceMidPrice(assetPair, executionContextMock))
     }
 
 
@@ -885,7 +889,7 @@ class MarketOrderServiceTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = 0.2)))
 
 
-        midPriceHolder.getReferenceMidPrice(assetPairsCache.getAssetPair("BTCUSD")!!, Date(), executionContext)
+        midPriceHolder.getReferenceMidPrice(assetPairsCache.getAssetPair("BTCUSD")!!, executionContextMock)
         clientsEventsQueue.clear()
 
         //when
@@ -917,7 +921,7 @@ class MarketOrderServiceTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = 0.2)))
 
 
-        midPriceHolder.getReferenceMidPrice(assetPairsCache.getAssetPair("BTCUSD")!!, Date(), executionContext)
+        midPriceHolder.getReferenceMidPrice(assetPairsCache.getAssetPair("BTCUSD")!!, executionContextMock)
         clientsEventsQueue.clear()
 
         //when
@@ -1124,7 +1128,7 @@ class MarketOrderServiceTest : AbstractTest() {
     }
 
     private fun initMidPriceHolder(assetPairId: String) {
-        midPriceHolder.addMidPrice(assetsPairsHolder.getAssetPair(assetPairId), BigDecimal.valueOf(1), Date(), executionContext)
+        midPriceHolder.addMidPrice(assetsPairsHolder.getAssetPair(assetPairId), BigDecimal.valueOf(1), executionContextMock)
         Thread.sleep(150)
     }
 }

@@ -39,13 +39,13 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
         }
     }
 
-    fun getReferenceMidPrice(assetPair: AssetPair, operationTime: Date, executionContext: ExecutionContext): BigDecimal {
+    fun getReferenceMidPrice(assetPair: AssetPair, executionContext: ExecutionContext): BigDecimal {
         if (!isMidPriceDataReady(assetPair.assetPairId)) {
             return BigDecimal.ZERO
         }
 
         val midPriceFirstTimeReady = readyRefMidPricesAssetPairs.add(assetPair.assetPairId)
-        removeObsoleteMidPrices(assetPair.assetPairId, getLowerTimeBound(operationTime.time))
+        removeObsoleteMidPrices(assetPair.assetPairId, getLowerTimeBound(executionContext.date.time))
 
         val refMidPrice = referencePriceByAssetPairId[assetPair.assetPairId]
 
@@ -62,7 +62,8 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
         return scaledReferenceMidPrice
     }
 
-    fun addMidPrice(assetPair: AssetPair, newMidPrice: BigDecimal, operationTime: Date, executionContext: ExecutionContext) {
+    fun addMidPrice(assetPair: AssetPair, newMidPrice: BigDecimal, executionContext: ExecutionContext) {
+        val operationTime  = executionContext.date
         midPriceTimestampByAssetPairId.putIfAbsent(assetPair.assetPairId, operationTime.time)
         removeObsoleteMidPrices(assetPair.assetPairId, getLowerTimeBound(operationTime.time))
         val midPriceDangerous =  isMidPriceChangeDangerous(assetPair.assetPairId, newMidPrice) && executionContext.executionContextForCancelOperation

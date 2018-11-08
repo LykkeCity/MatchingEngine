@@ -116,7 +116,7 @@ class MarketOrderService @Autowired constructor(
 
         var lowerMidPriceBound: BigDecimal? = null
         var upperMidPriceBound: BigDecimal? = null
-        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, now, executionContext)
+        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, executionContext)
 
         if (midPriceDeviationThreshold != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
             lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * midPriceDeviationThreshold)
