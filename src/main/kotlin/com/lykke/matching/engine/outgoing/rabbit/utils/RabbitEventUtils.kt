@@ -6,7 +6,7 @@ class RabbitEventUtils {
             return "client_queue_${exchangeName}_$index"
         }
 
-        fun getTrustedClientsEventConsumerQueue(exchangeName: String, index: Int): String {
+        fun getTrustedClientsEventConsumerQueueName(exchangeName: String, index: Int): String {
             return "trusted_client_queue_${exchangeName}_$index"
         }
     }

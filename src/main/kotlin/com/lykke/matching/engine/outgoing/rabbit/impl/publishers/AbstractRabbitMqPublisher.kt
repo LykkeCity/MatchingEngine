@@ -18,7 +18,7 @@ import java.util.concurrent.BlockingQueue
 abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
                                             private val exchangeName: String,
                                             private val queueName: String,
-                                            val queue: BlockingQueue<out T>,
+                                            private val queue: BlockingQueue<out T>,
                                             private val appName: String,
                                             private val appVersion: String,
                                             private val exchangeType: BuiltinExchangeType,

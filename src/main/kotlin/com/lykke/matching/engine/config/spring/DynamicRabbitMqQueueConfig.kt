@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.config.spring
 
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.rabbit.utils.RabbitEventUtils
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
@@ -37,7 +38,7 @@ open class DynamicRabbitMqQueueConfig {
         config.me.rabbitMqConfigs.trustedClientsEvents.forEachIndexed { index, eventConfig ->
             (applicationContext as ConfigurableApplicationContext)
                     .beanFactory
-                    .registerSingleton(RabbitEventUtils.getTrustedClientsEventConsumerQueue(eventConfig.exchange, index), LinkedBlockingQueue<Event<*>>())
+                    .registerSingleton(RabbitEventUtils.getTrustedClientsEventConsumerQueueName(eventConfig.exchange, index), LinkedBlockingQueue<ExecutionEvent>())
         }
     }
 }

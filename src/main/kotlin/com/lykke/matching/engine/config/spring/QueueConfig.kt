@@ -11,6 +11,7 @@ import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.util.concurrent.BlockingDeque
@@ -28,7 +29,7 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun trustedClientsEventsQueue(): BlockingDeque<Event<*>> {
+    open fun trustedClientsEventsQueue(): BlockingDeque<ExecutionEvent> {
         return LinkedBlockingDeque()
     }
 
