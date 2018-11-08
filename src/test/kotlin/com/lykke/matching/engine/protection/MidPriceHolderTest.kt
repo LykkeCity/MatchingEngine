@@ -120,10 +120,8 @@ class MidPriceHolderTest {
 
         //when
         val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
-        val date = Date()
-        Mockito.`when`(executionContextMock.date).thenReturn(date)
 
-        val midPrice = MidPrice("EURUSD", getRandomBigDecimal(), date.time)
+        val midPrice = MidPrice("EURUSD", getRandomBigDecimal(), Date().time)
         midPrices.add(midPrice)
 
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
@@ -142,7 +140,7 @@ class MidPriceHolderTest {
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
 
         //when
-        val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
+        val midPriceHolder = MidPriceHolder(200, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
 
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
         IntRange(0, 900).forEach {
@@ -152,7 +150,7 @@ class MidPriceHolderTest {
             midPriceHolder.addMidPrice(assetPair, midPrice,  executionContextMock)
         }
 
-        Thread.sleep(150)
+        Thread.sleep(250)
 
         assertEquals(getExpectedReferencePrice(midPrices, assetPair.accuracy), midPriceHolder.getReferenceMidPrice(assetPair, executionContextMock))
     }
@@ -164,7 +162,7 @@ class MidPriceHolderTest {
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
 
         //when
-        val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
+        val midPriceHolder = MidPriceHolder(200, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
 
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
         IntRange(0, 1100).forEach {
@@ -174,7 +172,7 @@ class MidPriceHolderTest {
             midPriceHolder.addMidPrice(assetPair, midPrice, executionContextMock)
         }
 
-        Thread.sleep(150)
+        Thread.sleep(250)
         assertEquals(getExpectedReferencePrice(midPrices, assetPair.accuracy), midPriceHolder.getReferenceMidPrice(assetPair, executionContextMock))
     }
 
