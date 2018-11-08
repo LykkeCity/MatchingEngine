@@ -39,7 +39,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
     }
 
     fun getReferenceMidPrice(assetPair: AssetPair, operationTime: Date): BigDecimal {
-        if (!isMidPriceDataReady(assetPair.assetPairId)) {
+        if (!isMidPriceDataReady(assetPair.assetPairId, operationTime)) {
             return BigDecimal.ZERO
         }
 
@@ -190,8 +190,8 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
         return operationTimeMillis - refreshMidPricePeriod
     }
 
-    private fun isMidPriceDataReady(assetPairId: String): Boolean {
+    private fun isMidPriceDataReady(assetPairId: String, operationTime: Date): Boolean {
         val timestamp = midPriceTimestampByAssetPairId[assetPairId] ?: return false
-        return timestamp + refreshMidPricePeriod <= Date().time
+        return timestamp + refreshMidPricePeriod <= operationTime.time
     }
 }
