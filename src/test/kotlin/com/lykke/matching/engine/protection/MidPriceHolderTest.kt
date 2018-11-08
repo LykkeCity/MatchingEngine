@@ -139,7 +139,7 @@ class MidPriceHolderTest {
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
 
         //when
-        val midPriceHolder = MidPriceHolder(500, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
+        val midPriceHolder = MidPriceHolder(1000, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
 
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
         IntRange(0, 900).forEach {
@@ -149,7 +149,7 @@ class MidPriceHolderTest {
             midPriceHolder.addMidPrice(assetPair, midPrice,  executionContextMock)
         }
 
-        Thread.sleep(550)
+        Thread.sleep(1500)
 
         assertEquals(getExpectedReferencePrice(midPrices, assetPair.accuracy), midPriceHolder.getReferenceMidPrice(assetPair, executionContextMock))
     }
@@ -161,7 +161,7 @@ class MidPriceHolderTest {
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
 
         //when
-        val midPriceHolder = MidPriceHolder(500, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
+        val midPriceHolder = MidPriceHolder(1000, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
 
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
         IntRange(0, 1100).forEach {
@@ -171,7 +171,7 @@ class MidPriceHolderTest {
             midPriceHolder.addMidPrice(assetPair, midPrice, executionContextMock)
         }
 
-        Thread.sleep(500)
+        Thread.sleep(1500)
         assertEquals(getExpectedReferencePrice(midPrices, assetPair.accuracy), midPriceHolder.getReferenceMidPrice(assetPair, executionContextMock))
     }
 
