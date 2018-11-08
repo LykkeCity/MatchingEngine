@@ -66,7 +66,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
         val operationTime  = executionContext.date
         midPriceTimestampByAssetPairId.putIfAbsent(assetPair.assetPairId, operationTime.time)
         removeObsoleteMidPrices(assetPair.assetPairId, getLowerTimeBound(operationTime.time))
-        val midPriceDangerous =  isMidPriceChangeDangerous(assetPair.assetPairId, newMidPrice) && executionContext.executionContextForCancelOperation
+        val midPriceDangerous =  isMidPriceChanged(assetPair.assetPairId, newMidPrice) && executionContext.executionContextForCancelOperation
 
         val midPrices = midPricesByAssetPairId.getOrPut(assetPair.assetPairId) { LinkedList() }
 
@@ -87,13 +87,13 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
         midPriceRecalculationCount = 0
     }
 
-    fun isMidPriceChangeDangerous(assetPairId: String, newMidPrice: BigDecimal): Boolean {
+    fun isMidPriceChanged(assetPairId: String, newMidPrice: BigDecimal): Boolean {
         val midPrices = midPricesByAssetPairId[assetPairId]
         if (CollectionUtils.isEmpty(midPrices)) {
             return false
         }
 
-        return midPrices!!.last.midPrice > newMidPrice
+        return !NumberUtils.equalsIgnoreScale(midPrices!!.last.midPrice, newMidPrice)
     }
 
     private fun removeObsoleteMidPrices(assetPairId: String, lowerBoundTimeMillisBound: Long) {
