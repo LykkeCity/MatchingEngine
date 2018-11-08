@@ -88,6 +88,4 @@ class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: G
         tradeInfoList.add(TradeInfo(assetPairId, isBuySide, price, date))
         outgoingOrderBooks.add(OrderBook(assetPairId, isBuySide, date, orderBookCopy.getOrderBook(isBuySide)))
     }
-
-
 }

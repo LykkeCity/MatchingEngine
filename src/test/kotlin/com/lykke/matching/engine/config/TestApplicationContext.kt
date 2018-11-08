@@ -650,6 +650,15 @@ open class TestApplicationContext {
     }
 
     @Bean
+    fun executionContextFactory(balancesHolder: BalancesHolder,
+                                genericLimitOrderService: GenericLimitOrderService,
+                                genericStopLimitOrderService: GenericStopLimitOrderService,
+                                midPriceHolder: MidPriceHolder,
+                                assetsHolder: AssetsHolder): ExecutionContextFactory {
+        return ExecutionContextFactory(balancesHolder, genericLimitOrderService, genericStopLimitOrderService, midPriceHolder, assetsHolder)
+    }
+
+    @Bean
     open fun singleLimitOrderPreprocessor(limitOrderInputQueue: BlockingQueue<MessageWrapper>,
                                           preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
                                           @Qualifier("singleLimitOrderContextPreprocessorLogger")
