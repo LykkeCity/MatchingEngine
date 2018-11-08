@@ -80,6 +80,10 @@ class ExecutionContext(val messageId: String,
         this.midPricesByAssetPairId.put(midPrice.assetPairId, midPrice)
     }
 
+    fun removeMidPrice(assetPairId: String) {
+        this.midPricesByAssetPairId.remove(assetPairId)
+    }
+
     fun getMidPrices(): Collection<MidPrice> {
         return midPricesByAssetPairId.values
     }
