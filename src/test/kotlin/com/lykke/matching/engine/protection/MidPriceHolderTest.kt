@@ -15,7 +15,6 @@ import com.nhaarman.mockito_kotlin.doAnswer
 import com.nhaarman.mockito_kotlin.mock
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
@@ -140,7 +139,7 @@ class MidPriceHolderTest {
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
 
         //when
-        val midPriceHolder = MidPriceHolder(200, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
+        val midPriceHolder = MidPriceHolder(500, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
 
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
         IntRange(0, 900).forEach {
@@ -150,7 +149,7 @@ class MidPriceHolderTest {
             midPriceHolder.addMidPrice(assetPair, midPrice,  executionContextMock)
         }
 
-        Thread.sleep(250)
+        Thread.sleep(550)
 
         assertEquals(getExpectedReferencePrice(midPrices, assetPair.accuracy), midPriceHolder.getReferenceMidPrice(assetPair, executionContextMock))
     }
@@ -162,7 +161,7 @@ class MidPriceHolderTest {
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
 
         //when
-        val midPriceHolder = MidPriceHolder(200, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
+        val midPriceHolder = MidPriceHolder(500, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
 
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
         IntRange(0, 1100).forEach {
@@ -172,7 +171,7 @@ class MidPriceHolderTest {
             midPriceHolder.addMidPrice(assetPair, midPrice, executionContextMock)
         }
 
-        Thread.sleep(250)
+        Thread.sleep(500)
         assertEquals(getExpectedReferencePrice(midPrices, assetPair.accuracy), midPriceHolder.getReferenceMidPrice(assetPair, executionContextMock))
     }
 
