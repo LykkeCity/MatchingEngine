@@ -13,6 +13,7 @@ import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
@@ -80,6 +81,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val servicesMap: Map<MessageType, AbstractService>
     private val processedMessagesCache: ProcessedMessagesCache
 
+    private var currentTransactionDataHolder: CurrentTransactionDataHolder
+
     private var bestPriceBuilder: Timer? = null
     private var candlesBuilder: Timer? = null
     private var hoursCandlesBuilder: Timer? = null
@@ -111,6 +114,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.backOfficeDatabaseAccessor = applicationContext.getBean(AzureBackOfficeDatabaseAccessor::class.java)
 
         balanceUpdateHandler = applicationContext.getBean(BalanceUpdateHandler::class.java)
+
+        this.currentTransactionDataHolder = applicationContext.getBean(CurrentTransactionDataHolder::class.java)
 
         val assetsHolder = applicationContext.getBean(AssetsHolder::class.java)
         val assetsPairsHolder = applicationContext.getBean(AssetsPairsHolder::class.java)
@@ -201,6 +206,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 METRICS_LOGGER.logError("Unknown message type: ${message.type}")
                 return
             }
+
+            currentTransactionDataHolder.setMessageType(messageType)
 
             val service = servicesMap[messageType]
 

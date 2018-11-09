@@ -15,6 +15,12 @@ class PerformanceStatsHolder {
         stats.count++
     }
 
+    fun addPersistTime(type: Byte, persistTime: Long) {
+        val stats = statsMap.getOrPut(type) { PerformanceStats(type, 0, 0, 0) }
+        stats.persistTime += persistTime
+        stats.persistTimeCount++
+    }
+
     fun getStatsAndReset(): Map<Byte, PerformanceStats> {
         val result = statsMap
         statsMap = HashMap()
