@@ -15,8 +15,10 @@ import com.lykke.matching.engine.database.redis.RedisWithoutOrdersPersistenceMan
 import com.lykke.matching.engine.database.redis.accessor.impl.*
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.stereotype.Component
 import java.util.*
@@ -33,7 +35,9 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                                     private val persistedOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<OrderBookPersistEvent>,
                                     private val persistedStopOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<StopOrderBookPersistEvent>,
                                     private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<AccountPersistEvent>,
-                                    private val config: Config) : PersistenceManagerFactory {
+                                    private val config: Config,
+                                    private val currentTransactionDataHolder: CurrentTransactionDataHolder,
+                                    private val performanceStatsHolder: PerformanceStatsHolder) : PersistenceManagerFactory {
 
     override fun get(redisConnection: Optional<RedisConnection>): PersistenceManager {
         return when (config.me.storage) {
@@ -54,7 +58,9 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                         persistedWalletsApplicationEventPublisher,
                         redisMidPriceDatabaseAccessor.get() as RedisMidPriceDatabaseAccessor,
                         redisConnection.get(),
-                        config
+                        config,
+                        currentTransactionDataHolder,
+                        performanceStatsHolder
                 )
             }
             Storage.RedisWithoutOrders ->
@@ -67,7 +73,9 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                         persistedWalletsApplicationEventPublisher,
                         redisMidPriceDatabaseAccessor.get() as RedisMidPriceDatabaseAccessor,
                         redisConnection.get(),
-                        config)
+                        config,
+                        currentTransactionDataHolder,
+                        performanceStatsHolder)
         }
     }
 }

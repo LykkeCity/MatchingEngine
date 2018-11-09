@@ -11,6 +11,7 @@ import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.incoming.MessageRouter
@@ -72,6 +73,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val servicesMap: Map<MessageType, AbstractService>
     private val processedMessagesCache: ProcessedMessagesCache
 
+    private var currentTransactionDataHolder: CurrentTransactionDataHolder
+
     private var bestPriceBuilder: Timer? = null
     private var candlesBuilder: Timer? = null
     private var hoursCandlesBuilder: Timer? = null
@@ -100,6 +103,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.limitOrderDatabaseAccessor = applicationContext.getBean(AzureLimitOrderDatabaseAccessor::class.java)
         this.marketOrderDatabaseAccessor = applicationContext.getBean(AzureMarketOrderDatabaseAccessor::class.java)
         this.backOfficeDatabaseAccessor = applicationContext.getBean(AzureBackOfficeDatabaseAccessor::class.java)
+
+        this.currentTransactionDataHolder = applicationContext.getBean(CurrentTransactionDataHolder::class.java)
 
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
         this.applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
@@ -185,6 +190,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 METRICS_LOGGER.logError("Unknown message type: ${message.type}")
                 return
             }
+
+            currentTransactionDataHolder.setMessageType(messageType)
 
             val service = servicesMap[messageType]
 

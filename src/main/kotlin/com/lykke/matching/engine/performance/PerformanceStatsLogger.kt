@@ -23,9 +23,10 @@ class PerformanceStatsLogger @Autowired constructor (private val monitoringDatab
             val type = MessageType.valueOf(typeStats.type)!!.name
             val totalTime = PrintUtils.convertToString2(typeStats.totalTime.toDouble() / typeStats.count)
             val processingTime = PrintUtils.convertToString2(typeStats.processingTime.toDouble() / typeStats.count)
-            LOGGER.info("$type: count: ${typeStats.count}, total time: $totalTime, processing time: $processingTime")
+            val persistTime = PrintUtils.convertToString2(typeStats.persistTime.toDouble() / typeStats.persistTimeCount)
+            LOGGER.info("$type: count: ${typeStats.count}, total time: $totalTime, processing time: $processingTime, persist time: $persistTime, persist count: ${typeStats.persistTimeCount}")
 
-            monitoringDatabaseAccessor.savePerformanceStats(TypePerformanceStats(now, type, totalTime, processingTime, typeStats.count))
+            monitoringDatabaseAccessor.savePerformanceStats(TypePerformanceStats(now, type, totalTime, processingTime, typeStats.count, persistTime, typeStats.persistTimeCount))
         }
     }
 }
