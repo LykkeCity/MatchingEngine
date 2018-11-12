@@ -13,8 +13,10 @@ import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.log4j.Logger
+import org.springframework.stereotype.Service
 import java.util.*
 
+@Service
 class SingleLimitOrderService(private val executionContextFactory: ExecutionContextFactory,
                               private val genericLimitOrdersProcessor: GenericLimitOrdersProcessor,
                               private val stopOrderBookProcessor: StopOrderBookProcessor,
