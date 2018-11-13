@@ -149,8 +149,10 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         val orderBook = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId)
 
         if (!OrderValidationUtils.isMidPriceValid(orderBook.getMidPrice(), orderContext.lowerMidPriceBound, orderContext.upperMidPriceBound)) {
-            executionContext.controlsError("${getOrderInfo(order)} assetPairId = ${order.assetPairId}, is rejected because order book mid price: ${NumberUtils.roundForPrint(orderBook.getMidPrice())} " +
-                    "already aut of range lowerBound: ${NumberUtils.roundForPrint(orderContext.lowerMidPriceBound)}), upperBound: ${NumberUtils.roundForPrint(orderContext.upperMidPriceBound)}")
+            val message = "${getOrderInfo(order)} assetPairId = ${order.assetPairId}, is rejected because order book mid price: ${NumberUtils.roundForPrint(orderBook.getMidPrice())} " +
+                    "already aut of range lowerBound: ${NumberUtils.roundForPrint(orderContext.lowerMidPriceBound)}), upperBound: ${NumberUtils.roundForPrint(orderContext.upperMidPriceBound)}"
+            executionContext.error(message)
+            executionContext.controlsError(message)
             rejectOrder(orderContext, OrderStatus.TooHighMidPriceDeviation)
             return ProcessedOrder(order, false)
         }
@@ -281,14 +283,16 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
                 orderContext.executionContext.updateMidPrice(MidPrice(orderContext.order.assetPairId, midPrice, orderContext.executionContext.date.time))
             }
             orderContext.executionContext.controlsInfo("${getOrderInfo(orderContext.order)}, assetPair = ${orderContext.order.assetPairId}, mid price control passed, " +
-                    "lowerMidPriceBound = ${NumberUtils.roundForPrint(orderContext.lowerMidPriceBound)}, upperMidPriceBound = ${NumberUtils.roundForPrint(orderContext.upperMidPriceBound)}, " +
-                    "midPrice = ${NumberUtils.roundForPrint(midPrice)}")
+                    "l = ${NumberUtils.roundForPrint(orderContext.lowerMidPriceBound)}, u = ${NumberUtils.roundForPrint(orderContext.upperMidPriceBound)}, " +
+                    "m = ${NumberUtils.roundForPrint(midPrice)}")
             return true
         }
 
-        orderContext.executionContext.controlsError("${getOrderInfo(orderContext.order)}, assetPair = ${orderContext.order} is rejected: too high mid price deviation, " +
-                "lowerMidPriceBound = ${NumberUtils.roundForPrint(orderContext.lowerMidPriceBound)}, upperMidPriceBound = ${NumberUtils.roundForPrint(orderContext.upperMidPriceBound)}, " +
-                "midPrice = ${NumberUtils.roundForPrint(midPrice)}")
+        val message = "${getOrderInfo(orderContext.order)}, assetPair = ${orderContext.order} mid price control failed, " +
+                "l = ${NumberUtils.roundForPrint(orderContext.lowerMidPriceBound)}, u = ${NumberUtils.roundForPrint(orderContext.upperMidPriceBound)}, " +
+                "m = ${NumberUtils.roundForPrint(midPrice)}"
+        orderContext.executionContext.error(message)
+        orderContext.executionContext.controlsError(message)
         return false
     }
 
