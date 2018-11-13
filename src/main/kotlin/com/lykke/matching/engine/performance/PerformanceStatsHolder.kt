@@ -8,10 +8,19 @@ class PerformanceStatsHolder {
 
     private var statsMap = HashMap<Byte, PerformanceStats>()
 
-    fun addMessage(type: Byte, totalTime: Long, processingTime: Long) {
+    fun addMessage(type: Byte,
+                   inputQueueTime: Long?,
+                   preProcessedQueueTime: Long,
+                   preProcessingTime: Long?,
+                   processingTime: Long,
+                   totalTime: Long) {
         val stats = statsMap.getOrPut(type) { PerformanceStats(type, 0, 0, 0) }
-        stats.totalTime += totalTime
+        inputQueueTime?.let { stats.inputQueueTime += inputQueueTime }
+        preProcessingTime?.let { stats.preProcessingTime += preProcessingTime }
+
+        stats.preProcessedMessageQueueTime += preProcessedQueueTime
         stats.processingTime += processingTime
+        stats.totalTime += totalTime
         stats.count++
     }
 
