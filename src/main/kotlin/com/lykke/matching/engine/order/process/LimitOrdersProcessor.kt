@@ -313,9 +313,12 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             return
         }
 
-        CONTROLS_LOGGER.info("${orderInfo(order)}, assetPair = ${order.assetPairId}, mid price control passed, " +
-                "l = ${NumberUtils.roundForPrint(lowerAcceptableMidPrice)}, u = ${NumberUtils.roundForPrint(upperAcceptableMidPrice)}, " +
-                "m = ${NumberUtils.roundForPrint(midPrice)}")
+        if (!isTrustedClient) {
+            CONTROLS_LOGGER.info("${orderInfo(order)}, assetPair = ${order.assetPairId}, mid price control passed, " +
+                    "l = ${NumberUtils.roundForPrint(lowerAcceptableMidPrice)}, u = ${NumberUtils.roundForPrint(upperAcceptableMidPrice)}, " +
+                    "m = ${NumberUtils.roundForPrint(midPrice)}")
+        }
+
 
         order.reservedLimitVolume = limitVolume
         orderBook.addOrder(order)
@@ -407,9 +410,11 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             return false
         }
 
-        CONTROLS_LOGGER.info("${orderInfo(order)}, assetPair = ${order.assetPairId}, mid price control passed, " +
-                "l = ${NumberUtils.roundForPrint(lowerAcceptableMidPrice)}, u = ${NumberUtils.roundForPrint(upperAcceptableMidPrice)}, " +
-                "m = ${NumberUtils.roundForPrint(newMidPriceAfterMatching)}")
+        if (!isTrustedClient) {
+            CONTROLS_LOGGER.info("${orderInfo(order)}, assetPair = ${order.assetPairId}, mid price control passed, " +
+                    "l = ${NumberUtils.roundForPrint(lowerAcceptableMidPrice)}, u = ${NumberUtils.roundForPrint(upperAcceptableMidPrice)}, " +
+                    "m = ${NumberUtils.roundForPrint(newMidPriceAfterMatching)}")
+        }
 
         newMidPrice = newMidPriceAfterMatching
 
