@@ -7,9 +7,11 @@ class TypePerformanceStats(
         val type: String,
         val totalTime: String,
         val processingTime: String,
-        val count: Long
+        val count: Long,
+        val persistTime: String,
+        val persistCount: Long
 ) {
     override fun toString(): String {
-        return "TypePerformanceStats(timestamp=$timestamp, type='$type', totalTime='$totalTime', processingTime='$processingTime', count=$count)"
+        return "TypePerformanceStats(timestamp=$timestamp, type='$type', totalTime='$totalTime', processingTime='$processingTime', count=$count, persistTime=$persistTime, persistCount=$persistCount)"
     }
 }

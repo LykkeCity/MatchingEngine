@@ -7,6 +7,8 @@ public class AzurePerformanceStats extends TableServiceEntity {
     private String type;
     private String totalTime;
     private String processingTime;
+    private String persistTime;
+    private Long persistCount;
     private Long count;
 
     public AzurePerformanceStats() {
@@ -18,6 +20,8 @@ public class AzurePerformanceStats extends TableServiceEntity {
         this.totalTime = stats.getTotalTime();
         this.processingTime = stats.getProcessingTime();
         this.count = stats.getCount();
+        this.persistTime = stats.getPersistTime();
+        this.persistCount = stats.getPersistCount();
     }
 
     public String getType() {
@@ -50,5 +54,21 @@ public class AzurePerformanceStats extends TableServiceEntity {
 
     public void setCount(Long count) {
         this.count = count;
+    }
+
+    public String getPersistTime() {
+        return persistTime;
+    }
+
+    public Long getPersistCount() {
+        return persistCount;
+    }
+
+    public void setPersistTime(String persistTime) {
+        this.persistTime = persistTime;
+    }
+
+    public void setPersistCount(Long persistCount) {
+        this.persistCount = persistCount;
     }
 }
