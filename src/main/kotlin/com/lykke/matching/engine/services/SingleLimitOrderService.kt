@@ -23,6 +23,7 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
     companion object {
         private val LOGGER = Logger.getLogger(SingleLimitOrderService::class.java.name)
         private val STATS_LOGGER = Logger.getLogger("${SingleLimitOrderService::class.java.name}.stats")
+        private val CONTROLS_LOGGER = Logger.getLogger("${SingleLimitOrderService::class.java.name}.controls")
     }
 
     private var messagesCount: Long = 0
@@ -47,6 +48,7 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
                 mapOf(Pair(context.assetPair!!.assetPairId, context.assetPair)),
                 now,
                 LOGGER,
+                CONTROLS_LOGGER,
                 mapOf(Pair(context.baseAsset!!.assetId, context.baseAsset),
                         Pair(context.quotingAsset!!.assetId, context.quotingAsset)),
                 context.validationResult?.let { mapOf(Pair(order.id, it)) } ?: emptyMap())

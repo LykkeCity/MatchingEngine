@@ -94,6 +94,7 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
                 assetPairsById,
                 date,
                 LOGGER,
+                LOGGER,
                 walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, validateBalances))
 
         executionContext.executionContextForCancelOperation = true

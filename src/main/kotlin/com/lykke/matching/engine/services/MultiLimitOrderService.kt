@@ -75,7 +75,8 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                 messageWrapper.processedMessage,
                 mapOf(Pair(assetPair.assetPairId, assetPair)),
                 now,
-                LOGGER)
+                LOGGER,
+                CONTROLS_LOGGER)
 
         previousLimitOrdersProcessor.cancelAndReplaceOrders(multiLimitOrder.clientId,
                 multiLimitOrder.assetPairId,

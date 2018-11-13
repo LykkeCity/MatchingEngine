@@ -314,6 +314,6 @@ class MidPriceHolderTest {
     }
 
     private fun getExecutionContext(date: Date): ExecutionContext {
-        return executionContextFactory.create("test", "test", MessageType.LIMIT_ORDER, null, emptyMap(), date, Logger.getLogger(""))
+        return executionContextFactory.create("test", "test", MessageType.LIMIT_ORDER, null, emptyMap(), date, Logger.getLogger(""), Logger.getLogger(""))
     }
 }

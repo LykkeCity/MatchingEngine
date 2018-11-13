@@ -64,7 +64,7 @@ class MarketOrderService @Autowired constructor(
         private val midPriceHolder: MidPriceHolder,
         private val messageSender: MessageSender) : AbstractService {
     companion object {
-        private val TRADE_CONTROLS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.controls")
+        private val CONTROLS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.controls")
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
         private val STATS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.stats")
     }
@@ -110,7 +110,8 @@ class MarketOrderService @Autowired constructor(
                 messageWrapper.processedMessage,
                 mapOf(assetPair.assetPairId to assetPair),
                 now,
-                LOGGER)
+                LOGGER,
+                CONTROLS_LOGGER)
 
         val midPriceDeviationThreshold = priceDeviationThresholdHolder.getMidPriceDeviationThreshold(assetPair.assetPairId, executionContext)
         val marketOrderPriceDeviationThreshold = priceDeviationThresholdHolder.getMarketOrderPriceDeviationThreshold(assetPair.assetPairId, executionContext)
@@ -130,7 +131,7 @@ class MarketOrderService @Autowired constructor(
         marketOrderExecutionContext.upperMidPriceBound = upperMidPriceBound
         val assetOrderBook = genericLimitOrderService.getOrderBook(order.assetPairId)
         if (!OrderValidationUtils.isMidPriceValid(assetOrderBook.getMidPrice(), lowerMidPriceBound, upperMidPriceBound)) {
-            TRADE_CONTROLS_LOGGER.error("Market order (id=${order.externalId}, assetPairId = ${order.assetPairId}), is rejected because order book mid price: ${orderBook.getMidPrice()} " +
+            executionContext.controlsError("Market order (id=${order.externalId}, assetPairId = ${order.assetPairId}), is rejected because order book mid price: ${assetOrderBook.getMidPrice()} " +
                     "already aut of range lowerBound: $lowerMidPriceBound, upperBound: $upperMidPriceBound")
             order.updateStatus(TooHighMidPriceDeviation, now)
             sendErrorNotification(messageWrapper, order, now)
@@ -215,11 +216,15 @@ class MarketOrderService @Autowired constructor(
                 matchingResult.orderBook.peek()?.price ?: BigDecimal.ZERO)
 
         if (!OrderValidationUtils.isMidPriceValid(newMidPrice, marketOrderExecutionContext.lowerMidPriceBound, marketOrderExecutionContext.upperMidPriceBound)) {
-            LOGGER.info("Market order (id: ${order.externalId}) is rejected: too high mid price deviation")
+            executionContext.controlsError("Market order (id: ${order.externalId}, assetPairId = ${order.assetPairId}) is rejected: too high mid price deviation, " +
+                    "midPrice = $newMidPrice, lowerMidPriceBound = ${marketOrderExecutionContext.lowerMidPriceBound}, upperMidPriceBound = ${marketOrderExecutionContext.upperMidPriceBound}")
             order.updateStatus(TooHighMidPriceDeviation, executionContext.date)
             processRejectedMatchingResult(marketOrderExecutionContext)
             return
         }
+
+        executionContext.controlsInfo("Market order (id: ${order.externalId}, assetPairId = ${order.assetPairId}) passed mid price control, " +
+                "midPrice = $newMidPrice, lowerMidPriceBound = ${marketOrderExecutionContext.lowerMidPriceBound}, upperMidPriceBound = ${marketOrderExecutionContext.upperMidPriceBound}")
 
         if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
             matchingResultHandlingHelper.preProcessCancelledOppositeOrders(marketOrderExecutionContext)

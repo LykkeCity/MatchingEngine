@@ -97,6 +97,7 @@ abstract class MatchingEngineTest {
                 testDictionariesDatabaseAccessor.loadAssetPairs(),
                 now,
                 Logger.getLogger(MatchingEngineTest::class.java),
+                Logger.getLogger(MatchingEngineTest::class.java),
                 testBackOfficeDatabaseAccessor.assets)
     }
 

@@ -15,18 +15,19 @@ import org.apache.log4j.Logger
 import java.util.Date
 
 open class ExecutionContext(val messageId: String,
-                       val requestId: String,
-                       val messageType: MessageType,
-                       val processedMessage: ProcessedMessage?,
-                       val assetPairsById: Map<String, AssetPair>,
-                       val assetsById: Map<String, Asset>,
-                       val preProcessorValidationResultsByOrderId: Map<String, OrderValidationResult>,
-                       val walletOperationsProcessor: WalletOperationsProcessor,
-                       val orderBooksHolder: CurrentTransactionOrderBooksHolder,
-                       val stopOrderBooksHolder: CurrentTransactionStopOrderBooksHolder,
-                       val midPriceHolder: MidPriceHolder,
-                       open val date: Date,
-                       val logger: Logger) {
+                            val requestId: String,
+                            val messageType: MessageType,
+                            val processedMessage: ProcessedMessage?,
+                            val assetPairsById: Map<String, AssetPair>,
+                            val assetsById: Map<String, Asset>,
+                            val preProcessorValidationResultsByOrderId: Map<String, OrderValidationResult>,
+                            val walletOperationsProcessor: WalletOperationsProcessor,
+                            val orderBooksHolder: CurrentTransactionOrderBooksHolder,
+                            val stopOrderBooksHolder: CurrentTransactionStopOrderBooksHolder,
+                            val midPriceHolder: MidPriceHolder,
+                            open val date: Date,
+                            val logger: Logger,
+                            private val controlsLogger: Logger) {
 
     var tradeIndex: Long = 0
     var removeAllMidPrices = false
@@ -94,6 +95,14 @@ open class ExecutionContext(val messageId: String,
 
     fun error(message: String) {
         logger.error("[$messageId] $message")
+    }
+
+    fun controlsInfo(message: String) {
+        controlsLogger.info("[$messageId] $message")
+    }
+
+    fun controlsError(message: String) {
+        controlsLogger.error("[$messageId] $message")
     }
 
     fun apply() {

@@ -29,6 +29,7 @@ class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                assetPairsById: Map<String, AssetPair>,
                date: Date,
                logger: Logger,
+               controlsLogger: Logger,
                assetsById: Map<String, Asset> = getAssetsByIdMap(assetPairsById),
                preProcessorValidationResultsByOrderId: Map<String, OrderValidationResult> = emptyMap(),
                walletOperationsProcessor: WalletOperationsProcessor = balancesHolder.createWalletProcessor(logger),
@@ -46,7 +47,8 @@ class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                 stopOrderBooksHolder,
                 midPriceHolder,
                 date,
-                logger)
+                logger,
+                controlsLogger)
     }
 
     private fun getAssetsByIdMap(assetPairsById: Map<String, AssetPair>): Map<String, Asset> {

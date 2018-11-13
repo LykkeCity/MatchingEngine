@@ -136,7 +136,6 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
 
         if (!checkMidPriceWithoutMatching(orderContext)) {
             order.updateStatus(OrderStatus.TooHighMidPriceDeviation, orderContext.executionContext.date)
-            orderContext.executionContext.error("${getOrderInfo(order)}: too high mid price deviation")
             addOrderToReportIfNotTrusted(order, orderContext.executionContext)
             return ProcessedOrder(order, false)
         }
@@ -150,7 +149,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         val orderBook = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId)
 
         if (!OrderValidationUtils.isMidPriceValid(orderBook.getMidPrice(), orderContext.lowerMidPriceBound, orderContext.upperMidPriceBound)) {
-            executionContext.error("Limit order (id=${order.externalId}), is rejected because order book mid price: ${orderBook.getMidPrice()} " +
+            executionContext.controlsError("${getOrderInfo(order)} assetPairId = ${order.assetPairId}, is rejected because order book mid price: ${orderBook.getMidPrice()} " +
                     "already aut of range lowerBound: ${orderContext.lowerMidPriceBound}, upperBound: ${orderContext.upperMidPriceBound}")
             rejectOrder(orderContext, OrderStatus.TooHighMidPriceDeviation)
             return ProcessedOrder(order, false)
@@ -214,8 +213,6 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
 
         val order = orderContext.order
         if (!checkMidPriceAfterMatching(orderContext)) {
-            val message = "${getOrderInfo(orderContext.matchingResult!!.orderCopy as LimitOrder)}: too high mid price deviation"
-            orderContext.executionContext.info(message)
             orderContext.order.updateStatus(OrderStatus.TooHighMidPriceDeviation, orderContext.executionContext.date)
             return processRejectedMatchingResult(orderContext)
         }
@@ -283,9 +280,15 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
             midPrice?.let{
                 orderContext.executionContext.updateMidPrice(MidPrice(orderContext.order.assetPairId, midPrice, orderContext.executionContext.date.time))
             }
+            orderContext.executionContext.controlsInfo("${getOrderInfo(orderContext.order)}, assetPair = ${orderContext.order.assetPairId} mid price control passed, " +
+                    "lowerMidPriceBound = ${orderContext.lowerMidPriceBound}, upperMidPriceBound = ${orderContext.upperMidPriceBound}, " +
+                    "midPrice = $midPrice")
             return true
         }
 
+        orderContext.executionContext.controlsError("${getOrderInfo(orderContext.order)}, assetPair = ${orderContext.order} is rejected: too high mid price deviation, " +
+                "lowerMidPriceBound = ${orderContext.lowerMidPriceBound}, upperMidPriceBound = ${orderContext.upperMidPriceBound}, " +
+                "midPrice = $midPrice")
         return false
     }
 
