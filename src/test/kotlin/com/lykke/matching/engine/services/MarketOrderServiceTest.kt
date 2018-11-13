@@ -905,6 +905,7 @@ class MarketOrderServiceTest : AbstractTest() {
     fun testSellOrderMidPriceDeviation() {
         //given
         initMidPriceHolder("BTCUSD")
+
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
 
@@ -915,8 +916,6 @@ class MarketOrderServiceTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9200.0, volume = 0.2)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = 0.2)))
 
-
-        midPriceHolder.getReferenceMidPrice(assetPairsCache.getAssetPair("BTCUSD")!!, Date())
         clientsEventsQueue.clear()
 
         //when
@@ -1072,7 +1071,7 @@ class MarketOrderServiceTest : AbstractTest() {
     }
 
     private fun initMidPriceHolder(assetPairId: String) {
-        midPriceHolder.addMidPrice(assetsPairsHolder.getAssetPair(assetPairId), BigDecimal.valueOf(1), Date())
+        midPriceHolder.addMidPrice(assetsPairsHolder.getAssetPair(assetPairId), BigDecimal.ZERO, Date())
         Thread.sleep(150)
     }
 }

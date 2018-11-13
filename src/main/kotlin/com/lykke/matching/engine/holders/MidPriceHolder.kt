@@ -131,8 +131,9 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
     }
 
     private fun setRefMidPrice(assetPairId: String, newMidPrice: BigDecimal) {
-        referencePriceByAssetPairId[assetPairId]?.let {
-            prevReferencePriceByAssetPairId[assetPairId] = it
+        val currentRefMidPrice = referencePriceByAssetPairId[assetPairId]
+        if (currentRefMidPrice != null && currentRefMidPrice != BigDecimal.ZERO) {
+            prevReferencePriceByAssetPairId[assetPairId] = currentRefMidPrice
         }
 
         referencePriceByAssetPairId[assetPairId] = newMidPrice
