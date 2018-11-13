@@ -24,6 +24,10 @@ public class NumberUtils {
     }
 
     public static String roundForPrint(BigDecimal value) {
+        if (value == null) {
+            return null;
+        }
+
         return FORMAT.format(value);
     }
 
