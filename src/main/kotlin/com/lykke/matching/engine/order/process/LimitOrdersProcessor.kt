@@ -250,8 +250,8 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         if (orderBook.leadToNegativeSpread(order)) {
             //in corner cases order book can contain already out of range mid price
             if (!OrderValidationUtils.isMidPriceValid(orderBook.getMidPrice(), lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
-                CONTROLS_LOGGER.error("$orderInfo assetId = ${order.assetPairId}, is rejected because order book mid price: ${orderBook.getMidPrice()} " +
-                        "already aut of range lowerBound: $lowerAcceptableMidPrice, upperBound: $upperAcceptableMidPrice")
+                CONTROLS_LOGGER.error("$orderInfo assetId = ${order.assetPairId}, is rejected because order book mid price: ${NumberUtils.roundForPrint(orderBook.getMidPrice())} " +
+                        "already aut of range lowerBound: ${NumberUtils.roundForPrint(lowerAcceptableMidPrice)}, upperBound: ${NumberUtils.roundForPrint(upperAcceptableMidPrice)}")
                 processInvalidOrder(order, OrderStatus.TooHighMidPriceDeviation, "too high mid price deviation")
                 return
             }
@@ -311,9 +311,9 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             return
         }
 
-        CONTROLS_LOGGER.info("${orderInfo(order)}, assetPair = ${order.assetPairId} mid price control passed, " +
-                "lowerMidPriceBound = $lowerAcceptableMidPrice, upperMidPriceBound = $upperAcceptableMidPrice, " +
-                "midPrice = $midPrice")
+        CONTROLS_LOGGER.info("${orderInfo(order)}, assetPair = ${order.assetPairId}, mid price control passed, " +
+                "lowerMidPriceBound = ${NumberUtils.roundForPrint(lowerAcceptableMidPrice)}, upperMidPriceBound = ${NumberUtils.roundForPrint(upperAcceptableMidPrice)}, " +
+                "midPrice = ${NumberUtils.roundForPrint(midPrice)}")
 
         order.reservedLimitVolume = limitVolume
         orderBook.addOrder(order)
@@ -356,8 +356,8 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                                                 lowerAcceptableMidPrice: BigDecimal?,
                                                 upperAcceptableMidPrice: BigDecimal?) {
         CONTROLS_LOGGER.info("${orderInfo(order)}, assetPair = ${order.assetPairId} is rejected: too high mid price deviation, " +
-                "lowerMidPriceBound = $lowerAcceptableMidPrice, upperMidPriceBound = $upperAcceptableMidPrice, " +
-                "midPrice = $midPrice")
+                "lowerMidPriceBound = ${NumberUtils.roundForPrint(lowerAcceptableMidPrice)}, upperMidPriceBound = ${NumberUtils.roundForPrint(upperAcceptableMidPrice)}, " +
+                "midPrice = ${NumberUtils.roundForPrint(midPrice)}")
         processInvalidOrder(order, OrderStatus.TooHighMidPriceDeviation)
     }
 
@@ -403,9 +403,9 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             return false
         }
 
-        CONTROLS_LOGGER.info("${orderInfo(order)}, assetPair = ${order.assetPairId} mid price control passed, " +
-                "lowerMidPriceBound = $lowerAcceptableMidPrice, upperMidPriceBound = $upperAcceptableMidPrice, " +
-                "midPrice = $newMidPriceAfterMatching")
+        CONTROLS_LOGGER.info("${orderInfo(order)}, assetPair = ${order.assetPairId}, mid price control passed, " +
+                "lowerMidPriceBound = ${NumberUtils.roundForPrint(lowerAcceptableMidPrice)}, upperMidPriceBound = ${NumberUtils.roundForPrint(upperAcceptableMidPrice)}, " +
+                "midPrice = ${NumberUtils.roundForPrint(newMidPriceAfterMatching)}")
 
         newMidPrice = newMidPriceAfterMatching
 

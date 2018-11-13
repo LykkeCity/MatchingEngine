@@ -141,8 +141,8 @@ class MarketOrderService @Autowired constructor(
         }
 
         if (!OrderValidationUtils.isMidPriceValid(orderBook.getMidPrice(), lowerMidPriceBound, upperMidPriceBound)) {
-            TRADE_CONTROLS_LOGGER.error("Market order (id=${order.externalId}, assetPairId = ${order.assetPairId}), is rejected because order book mid price: ${orderBook.getMidPrice()} " +
-                    "already aut of range lowerBound: $lowerMidPriceBound, upperBound: $upperMidPriceBound")
+            TRADE_CONTROLS_LOGGER.error("Market order (id=${order.externalId}, assetPairId = ${order.assetPairId}), is rejected because order book mid price: ${NumberUtils.roundForPrint(orderBook.getMidPrice())} " +
+                    "already aut of range lowerBound: ${NumberUtils.roundForPrint(lowerMidPriceBound)}, upperBound: ${NumberUtils.roundForPrint(upperMidPriceBound)}")
             order.updateStatus(TooHighMidPriceDeviation, now)
             writeErrorNotification(messageWrapper, order, now)
             return
@@ -224,14 +224,15 @@ class MarketOrderService @Autowired constructor(
 
                     if (!OrderValidationUtils.isMidPriceValid(newMidPrice, lowerMidPriceBound, upperMidPriceBound)) {
                         TRADE_CONTROLS_LOGGER.info("Market order (id: ${order.externalId}, assetPairId = ${order.assetPairId}) is rejected: too high mid price deviation, " +
-                                "midPrice = $newMidPrice, lowerMidPriceBound = $lowerMidPriceBound, upperMidPriceBound = $upperMidPriceBound")
+                                "midPrice = ${NumberUtils.roundForPrint(newMidPrice)}, lowerMidPriceBound = ${NumberUtils.roundForPrint(lowerMidPriceBound)}, " +
+                                "upperMidPriceBound = ${NumberUtils.roundForPrint(upperMidPriceBound)}")
                         order.updateStatus(TooHighMidPriceDeviation, matchingResult.timestamp)
                         writeErrorNotification(messageWrapper, order, now)
                         return
                     }
 
                     TRADE_CONTROLS_LOGGER.info("Market order (id: ${order.externalId}, assetPairId = ${order.assetPairId}) passed mid price control, " +
-                            "midPrice = $newMidPrice, lowerMidPriceBound = $lowerMidPriceBound, upperMidPriceBound = $upperMidPriceBound")
+                            "midPrice = ${NumberUtils.roundForPrint(newMidPrice)}, lowerMidPriceBound = ${NumberUtils.roundForPrint(lowerMidPriceBound)}, upperMidPriceBound = ${NumberUtils.roundForPrint(upperMidPriceBound)}")
 
                     matchingResult.apply()
 
