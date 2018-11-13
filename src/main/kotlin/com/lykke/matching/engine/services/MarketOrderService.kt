@@ -131,8 +131,9 @@ class MarketOrderService @Autowired constructor(
         marketOrderExecutionContext.upperMidPriceBound = upperMidPriceBound
         val assetOrderBook = genericLimitOrderService.getOrderBook(order.assetPairId)
         if (!OrderValidationUtils.isMidPriceValid(assetOrderBook.getMidPrice(), lowerMidPriceBound, upperMidPriceBound)) {
-            executionContext.controlsError("Market order (id=${order.externalId}, assetPairId = ${order.assetPairId}), is rejected because order book mid price: ${assetOrderBook.getMidPrice()} " +
-                    "already aut of range lowerBound: $lowerMidPriceBound, upperBound: $upperMidPriceBound")
+            executionContext.controlsError("Market order (id=${order.externalId}, assetPairId = ${order.assetPairId}), " +
+                    "is rejected because order book mid price: ${NumberUtils.roundForPrint(assetOrderBook.getMidPrice())} " +
+                    "already aut of range lowerBound: ${NumberUtils.roundForPrint(lowerMidPriceBound)}, upperBound: ${NumberUtils.roundForPrint(upperMidPriceBound)}")
             order.updateStatus(TooHighMidPriceDeviation, now)
             sendErrorNotification(messageWrapper, order, now)
             return
@@ -217,14 +218,16 @@ class MarketOrderService @Autowired constructor(
 
         if (!OrderValidationUtils.isMidPriceValid(newMidPrice, marketOrderExecutionContext.lowerMidPriceBound, marketOrderExecutionContext.upperMidPriceBound)) {
             executionContext.controlsError("Market order (id: ${order.externalId}, assetPairId = ${order.assetPairId}) is rejected: too high mid price deviation, " +
-                    "midPrice = $newMidPrice, lowerMidPriceBound = ${marketOrderExecutionContext.lowerMidPriceBound}, upperMidPriceBound = ${marketOrderExecutionContext.upperMidPriceBound}")
+                    "midPrice = ${NumberUtils.roundForPrint(newMidPrice)}, lowerMidPriceBound = ${NumberUtils.roundForPrint(marketOrderExecutionContext.lowerMidPriceBound)}, " +
+                    "upperMidPriceBound = ${NumberUtils.roundForPrint(marketOrderExecutionContext.upperMidPriceBound)}")
             order.updateStatus(TooHighMidPriceDeviation, executionContext.date)
             processRejectedMatchingResult(marketOrderExecutionContext)
             return
         }
 
-        executionContext.controlsInfo("Market order (id: ${order.externalId}, assetPairId = ${order.assetPairId}) passed mid price control, " +
-                "midPrice = $newMidPrice, lowerMidPriceBound = ${marketOrderExecutionContext.lowerMidPriceBound}, upperMidPriceBound = ${marketOrderExecutionContext.upperMidPriceBound}")
+        executionContext.controlsInfo("Market order (id: ${order.externalId}, assetPairId = ${order.assetPairId}), mid price control passed, " +
+                "midPrice = ${NumberUtils.roundForPrint(newMidPrice)}, lowerMidPriceBound = ${NumberUtils.roundForPrint(marketOrderExecutionContext.lowerMidPriceBound)}, " +
+                "upperMidPriceBound = ${NumberUtils.roundForPrint(marketOrderExecutionContext.upperMidPriceBound)}")
 
         if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
             matchingResultHandlingHelper.preProcessCancelledOppositeOrders(marketOrderExecutionContext)
