@@ -46,6 +46,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
+        private val CONTROLS_LOGGER = Logger.getLogger("${MultiLimitOrderService::class.java.name}.controls")
     }
 
     override fun processMessage(messageWrapper: MessageWrapper) {

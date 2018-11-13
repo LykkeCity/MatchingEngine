@@ -64,6 +64,7 @@ class MarketOrderService @Autowired constructor(
         private val midPriceHolder: MidPriceHolder,
         private val messageSender: MessageSender) : AbstractService {
     companion object {
+        private val TRADE_CONTROLS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.controls")
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
         private val STATS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.stats")
     }
@@ -129,7 +130,7 @@ class MarketOrderService @Autowired constructor(
         marketOrderExecutionContext.upperMidPriceBound = upperMidPriceBound
         val assetOrderBook = genericLimitOrderService.getOrderBook(order.assetPairId)
         if (!OrderValidationUtils.isMidPriceValid(assetOrderBook.getMidPrice(), lowerMidPriceBound, upperMidPriceBound)) {
-            LOGGER.error("MarketOrder (id=${order.externalId}), is rejected because order book mid price: ${assetOrderBook.getMidPrice()} " +
+            TRADE_CONTROLS_LOGGER.error("Market order (id=${order.externalId}, assetPairId = ${order.assetPairId}), is rejected because order book mid price: ${orderBook.getMidPrice()} " +
                     "already aut of range lowerBound: $lowerMidPriceBound, upperBound: $upperMidPriceBound")
             order.updateStatus(TooHighMidPriceDeviation, now)
             sendErrorNotification(messageWrapper, order, now)
