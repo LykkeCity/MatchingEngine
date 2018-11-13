@@ -51,7 +51,9 @@ class CashInOutPreprocessor(
             return
         }
 
-        performDeduplicationCheck(parsedData)
+        if (!isMessageDuplicated(parsedData)) {
+            preProcessedMessageQueue.put(parsedData.messageWrapper)
+        }
     }
 
     private fun validateData(cashInOutParsedData: CashInOutParsedData): Boolean {
@@ -86,16 +88,17 @@ class CashInOutPreprocessor(
         }
     }
 
-    private fun performDeduplicationCheck(cashInOutParsedData: CashInOutParsedData) {
+    private fun isMessageDuplicated(cashInOutParsedData: CashInOutParsedData): Boolean {
         val parsedMessageWrapper = cashInOutParsedData.messageWrapper
         val context = cashInOutParsedData.messageWrapper.context as CashInOutContext
         if (cashOperationIdDatabaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
             writeResponse(parsedMessageWrapper, DUPLICATE)
             LOGGER.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
             METRICS_LOGGER.logError("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
-        } else {
-            preProcessedMessageQueue.put(parsedMessageWrapper)
+            return true
         }
+
+        return false
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
@@ -117,11 +120,13 @@ class CashInOutPreprocessor(
 
     override fun run() {
         while (true) {
-            val message = cashInOutInputQueue.take()
+            val messageWrapper = cashInOutInputQueue.take()
             try {
-                preProcess(message)
+                messageWrapper.messagePreProcessorStartTimestamp = System.nanoTime()
+                preProcess(messageWrapper)
+                messageWrapper.messagePreProcessorEndTimestamp = System.nanoTime()
             } catch (exception: Exception) {
-                handlePreprocessingException(exception, message)
+                handlePreprocessingException(exception, messageWrapper)
             }
         }
     }
