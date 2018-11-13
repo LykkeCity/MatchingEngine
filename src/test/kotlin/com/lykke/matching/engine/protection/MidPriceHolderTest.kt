@@ -277,6 +277,24 @@ class MidPriceHolderTest {
         assertEquals(BigDecimal.TEN, newReferenceMidPrice)
     }
 
+    @Test
+    fun prevRefMidPriceUsedIfNoNewMidPriceAvailable() {
+        //given
+        val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
+        val midPrices = ArrayList(getRandomMidPrices(3, "EURUSD"))
+        testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
+        val midPriceHolder = MidPriceHolder(50, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
+
+        //when
+        Thread.sleep(100)
+
+
+        //then
+        val expectedReferencePrice = getExpectedReferencePrice(midPrices, assetPair.accuracy)
+        assertEquals(expectedReferencePrice, midPriceHolder.getReferenceMidPrice(assetPair, Date()))
+        assertEquals(expectedReferencePrice, midPriceHolder.getReferenceMidPrice(assetPair, Date()))
+    }
+
     private fun getRandomMidPrices(size: Int, assetId: String): List<MidPrice> {
         val result = ArrayList<MidPrice>()
         val start = Date().time
