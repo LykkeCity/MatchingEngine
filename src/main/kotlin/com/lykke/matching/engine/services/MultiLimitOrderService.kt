@@ -45,10 +45,11 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
+        private val CONTROLS_LOGGER = Logger.getLogger("${MultiLimitOrderService::class.java.name}.controls")
     }
 
     private val matchingEngine = MatchingEngine(LOGGER, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, feeProcessor)
-    private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER)
+    private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER, CONTROLS_LOGGER)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         if (messageWrapper.parsedMessage == null) {
@@ -154,7 +155,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 ordersToCancel,
                 cancelResult.clientsOrdersWithTrades,
                 cancelResult.trustedClientsOrdersWithTrades,
-                LOGGER)
+                LOGGER,
+                CONTROLS_LOGGER)
 
         matchingEngine.initTransaction()
         val result = processor.preProcess(messageWrapper.messageId!!, multiLimitOrder.orders)

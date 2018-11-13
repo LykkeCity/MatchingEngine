@@ -29,12 +29,14 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
                                  matchingEngine: MatchingEngine,
                                  messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                  messageSender: MessageSender,
-                                 private val LOGGER: Logger) {
+                                 private val LOGGER: Logger,
+                                 CONTROLS_LOGGER: Logger) {
 
     private val limitOrderProcessor = SingleLimitOrderProcessor(limitOrderService,
             limitOrdersProcessorFactory,
             matchingEngine,
-            LOGGER)
+            LOGGER,
+            CONTROLS_LOGGER)
 
     private val stopLimitOrderProcessor = StopLimitOrderProcessor(limitOrderService,
             stopLimitOrderService,

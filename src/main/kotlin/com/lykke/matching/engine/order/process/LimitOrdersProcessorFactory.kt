@@ -51,7 +51,8 @@ class LimitOrdersProcessorFactory(private val balancesHolder: BalancesHolder,
                ordersToCancel: Collection<LimitOrder>,
                clientsLimitOrdersWithTrades: Collection<LimitOrderWithTrades>,
                trustedClientsLimitOrdersWithTrades: Collection<LimitOrderWithTrades>,
-               LOGGER: Logger) =
+               LOGGER: Logger,
+               CONTROLS_LOGGER: Logger) =
 
             LimitOrdersProcessor(
                     isTrustedClient,
@@ -80,5 +81,6 @@ class LimitOrdersProcessorFactory(private val balancesHolder: BalancesHolder,
                     singleLimitOrderBusinessValidator,
                     messageSequenceNumberHolder,
                     messageSender,
-                    LOGGER)
+                    LOGGER,
+                    CONTROLS_LOGGER)
 }

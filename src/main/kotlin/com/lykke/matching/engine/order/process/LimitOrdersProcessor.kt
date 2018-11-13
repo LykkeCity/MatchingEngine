@@ -71,7 +71,8 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                            private val businessValidator: LimitOrderBusinessValidator,
                            private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                            private val messageSender: MessageSender,
-                           private val LOGGER: Logger) {
+                           private val LOGGER: Logger,
+                           private val CONTROLS_LOGGER: Logger) {
 
     private val orderServiceHelper = OrderServiceHelper(genericLimitOrderService, LOGGER)
     private val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
@@ -249,7 +250,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         if (orderBook.leadToNegativeSpread(order)) {
             //in corner cases order book can contain already out of range mid price
             if (!OrderValidationUtils.isMidPriceValid(orderBook.getMidPrice(), lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
-                LOGGER.error("$orderInfo, is rejected because order book mid price: ${orderBook.getMidPrice()} " +
+                CONTROLS_LOGGER.error("$orderInfo assetId = ${order.assetPairId}, is rejected because order book mid price: ${orderBook.getMidPrice()} " +
                         "already aut of range lowerBound: $lowerAcceptableMidPrice, upperBound: $upperAcceptableMidPrice")
                 processInvalidOrder(order, OrderStatus.TooHighMidPriceDeviation, "too high mid price deviation")
                 return
@@ -304,10 +305,15 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         val orderSideBestPrice = getOrderSideBestPrice(order, orderBook)
         val oppositeBestPrice = if (order.isBuySide()) orderBook.getAskPrice() else orderBook.getBidPrice()
 
-        if (!OrderValidationUtils.isMidPriceValid(getMidPrice(orderSideBestPrice, oppositeBestPrice), lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
-            processInvalidOrder(order, OrderStatus.TooHighMidPriceDeviation, "too high mid price deviation")
+        val midPrice = getMidPrice(orderSideBestPrice, oppositeBestPrice)
+        if (!OrderValidationUtils.isMidPriceValid(midPrice, lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
+            processTooHighMidPriceDeviation(order, midPrice, lowerAcceptableMidPrice, upperAcceptableMidPrice)
             return
         }
+
+        CONTROLS_LOGGER.info("${orderInfo(order)}, assetPair = ${order.assetPairId} mid price control passed, " +
+                "lowerMidPriceBound = $lowerAcceptableMidPrice, upperMidPriceBound = $upperAcceptableMidPrice, " +
+                "midPrice = $midPrice")
 
         order.reservedLimitVolume = limitVolume
         orderBook.addOrder(order)
@@ -343,6 +349,16 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         order.updateStatus(orderStatus, date)
         addToReportIfNotTrusted(order)
         processedOrders.add(ProcessedOrder(order, false, message))
+    }
+
+    private fun processTooHighMidPriceDeviation(order: LimitOrder,
+                                                midPrice: BigDecimal?,
+                                                lowerAcceptableMidPrice: BigDecimal?,
+                                                upperAcceptableMidPrice: BigDecimal?) {
+        CONTROLS_LOGGER.info("${orderInfo(order)}, assetPair = ${order.assetPairId} is rejected: too high mid price deviation, " +
+                "lowerMidPriceBound = $lowerAcceptableMidPrice, upperMidPriceBound = $upperAcceptableMidPrice, " +
+                "midPrice = $midPrice")
+        processInvalidOrder(order, OrderStatus.TooHighMidPriceDeviation)
     }
 
     private fun processMatchingResult(matchingResult: MatchingResult,
@@ -383,9 +399,13 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         val newMidPriceAfterMatching = getMidPrice(orderSideBestPrice, oppositeSideBestPrice)
 
         if (!OrderValidationUtils.isMidPriceValid(newMidPriceAfterMatching, lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
-            processInvalidOrder(order, OrderStatus.TooHighMidPriceDeviation, "too high mid price deviation")
+            processTooHighMidPriceDeviation(order, newMidPriceAfterMatching, lowerAcceptableMidPrice, upperAcceptableMidPrice)
             return false
         }
+
+        CONTROLS_LOGGER.info("${orderInfo(order)}, assetPair = ${order.assetPairId} mid price control passed, " +
+                "lowerMidPriceBound = $lowerAcceptableMidPrice, upperMidPriceBound = $upperAcceptableMidPrice, " +
+                "midPrice = $newMidPriceAfterMatching")
 
         newMidPrice = newMidPriceAfterMatching
 

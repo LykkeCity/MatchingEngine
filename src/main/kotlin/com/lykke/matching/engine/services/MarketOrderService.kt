@@ -75,7 +75,9 @@ class MarketOrderService @Autowired constructor(
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
         private val messageSender: MessageSender,
         private val midPriceHolder: MidPriceHolder) : AbstractService {
+
     companion object {
+        private val TRADE_CONTROLS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.controls")
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
         private val STATS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.stats")
     }
@@ -85,7 +87,7 @@ class MarketOrderService @Autowired constructor(
     private var totalTime: Double = 0.0
 
     private val matchingEngine = MatchingEngine(LOGGER, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, feeProcessor)
-    private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER)
+    private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER, TRADE_CONTROLS_LOGGER)
     private val orderServiceHelper = OrderServiceHelper(genericLimitOrderService, LOGGER)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
@@ -139,7 +141,7 @@ class MarketOrderService @Autowired constructor(
         }
 
         if (!OrderValidationUtils.isMidPriceValid(orderBook.getMidPrice(), lowerMidPriceBound, upperMidPriceBound)) {
-            LOGGER.error("MarketOrder (id=${order.externalId}), is rejected because order book mid price: ${orderBook.getMidPrice()} " +
+            TRADE_CONTROLS_LOGGER.error("Market order (id=${order.externalId}, assetPairId = ${order.assetPairId}), is rejected because order book mid price: ${orderBook.getMidPrice()} " +
                     "already aut of range lowerBound: $lowerMidPriceBound, upperBound: $upperMidPriceBound")
             order.updateStatus(TooHighMidPriceDeviation, now)
             writeErrorNotification(messageWrapper, order, now)
@@ -221,11 +223,15 @@ class MarketOrderService @Autowired constructor(
                             matchingResult.orderBook.peek()?.price ?: BigDecimal.ZERO)
 
                     if (!OrderValidationUtils.isMidPriceValid(newMidPrice, lowerMidPriceBound, upperMidPriceBound)) {
-                        LOGGER.info("Market order (id: ${order.externalId}) is rejected: too high mid price deviation")
+                        TRADE_CONTROLS_LOGGER.info("Market order (id: ${order.externalId}, assetPairId = ${order.assetPairId}) is rejected: too high mid price deviation, " +
+                                "midPrice = $newMidPrice, lowerMidPriceBound = $lowerMidPriceBound, upperMidPriceBound = $upperMidPriceBound")
                         order.updateStatus(TooHighMidPriceDeviation, matchingResult.timestamp)
                         writeErrorNotification(messageWrapper, order, now)
                         return
                     }
+
+                    TRADE_CONTROLS_LOGGER.info("Market order (id: ${order.externalId}, assetPairId = ${order.assetPairId}) passed mid price control, " +
+                            "midPrice = $newMidPrice, lowerMidPriceBound = $lowerMidPriceBound, upperMidPriceBound = $upperMidPriceBound")
 
                     matchingResult.apply()
 

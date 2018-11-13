@@ -20,7 +20,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
 
     private var logCount = 100
     private var totalTime: Double = 0.0
-    private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory.create(LOGGER)
+    private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory.create(LOGGER, STATS_LOGGER)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val context = messageWrapper.context as SingleLimitOrderContext

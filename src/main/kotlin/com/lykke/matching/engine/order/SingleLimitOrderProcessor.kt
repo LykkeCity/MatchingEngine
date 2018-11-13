@@ -18,7 +18,8 @@ import java.util.*
 class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrderService,
                                 private val limitOrdersProcessorFactory: LimitOrdersProcessorFactory,
                                 private val matchingEngine: MatchingEngine,
-                                private val LOGGER: Logger) {
+                                private val LOGGER: Logger,
+                                private val CONTROLS_LOGGER: Logger) {
 
     fun processLimitOrder(singleLimitContext: SingleLimitOrderContext,
                           now: Date,
@@ -60,7 +61,8 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
                 ordersToCancel,
                 clientsLimitOrdersWithTrades,
                 emptyList(),
-                LOGGER)
+                LOGGER,
+                CONTROLS_LOGGER)
 
         matchingEngine.initTransaction()
         val result = processor.preProcess(singleLimitContext.messageId, listOf(order))
