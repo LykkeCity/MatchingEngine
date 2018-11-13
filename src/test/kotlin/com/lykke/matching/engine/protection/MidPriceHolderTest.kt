@@ -291,8 +291,8 @@ class MidPriceHolderTest {
 
         //then
         val expectedReferencePrice = getExpectedReferencePrice(midPrices, assetPair.accuracy)
-        assertEquals(expectedReferencePrice, midPriceHolder.getReferenceMidPrice(assetPair, Date()))
-        assertEquals(expectedReferencePrice, midPriceHolder.getReferenceMidPrice(assetPair, Date()))
+        assertEquals(expectedReferencePrice, midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date())))
+        assertEquals(expectedReferencePrice, midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date())))
     }
 
     private fun getRandomMidPrices(size: Int, assetId: String): List<MidPrice> {
