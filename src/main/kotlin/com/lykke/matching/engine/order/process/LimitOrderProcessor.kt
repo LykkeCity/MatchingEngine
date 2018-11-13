@@ -35,8 +35,6 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
                           private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
                           private val matchingResultHandlingHelper: MatchingResultHandlingHelper) : OrderProcessor<LimitOrder> {
     override fun processOrder(order: LimitOrder, executionContext: ExecutionContext): ProcessedOrder {
-
-
         val orderContext = LimitOrderExecutionContext(order, executionContext)
         orderContext.availableLimitAssetBalance = calculateAvailableBalance(orderContext)
         val validationResult = validateOrder(orderContext)
@@ -282,9 +280,13 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
             midPrice?.let{
                 orderContext.executionContext.updateMidPrice(MidPrice(orderContext.order.assetPairId, midPrice, orderContext.executionContext.date.time))
             }
-            orderContext.executionContext.controlsInfo("${getOrderInfo(orderContext.order)}, assetPair = ${orderContext.order.assetPairId}, mid price control passed, " +
-                    "l = ${NumberUtils.roundForPrint(orderContext.lowerMidPriceBound)}, u = ${NumberUtils.roundForPrint(orderContext.upperMidPriceBound)}, " +
-                    "m = ${NumberUtils.roundForPrint(midPrice)}")
+
+            if (!applicationSettingsCache.isTrustedClient(orderContext.order.clientId)) {
+                orderContext.executionContext.controlsInfo("${getOrderInfo(orderContext.order)}, assetPair = ${orderContext.order.assetPairId}, mid price control passed, " +
+                        "l = ${NumberUtils.roundForPrint(orderContext.lowerMidPriceBound)}, u = ${NumberUtils.roundForPrint(orderContext.upperMidPriceBound)}, " +
+                        "m = ${NumberUtils.roundForPrint(midPrice)}")
+            }
+
             return true
         }
 
