@@ -157,7 +157,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             sequenceNumber = clientsSequenceNumber
         }
 
-            val updated = walletOperationsProcessor.persistBalances(processedMessage,
+        val updated = walletOperationsProcessor.persistBalances(processedMessage,
                 OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
                 null,
                 sequenceNumber, getMidPricesPersistenceData(assetPair.assetPairId, date))
@@ -551,7 +551,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                 return if (order.price > orderBook.getBidPrice()) order.price else orderBook.getBidPrice()
             }
 
-            return if (order.price < orderBook.getAskPrice()) order.price else orderBook.getAskPrice()
+            return if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, orderBook.getAskPrice()) || order.price < orderBook.getAskPrice()) order.price else orderBook.getAskPrice()
         }
 
         return if (order.isBuySide()) orderBook.getBidPrice() else orderBook.getAskPrice()
@@ -559,7 +559,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
 
     private fun getMidPricesPersistenceData(assetPairId: String, operationTime: Date): MidPricePersistenceData? {
         return if (!CollectionUtils.isEmpty(newMidPrices)) {
-            val midPrices = newMidPrices.map { MidPrice(assetPairId, it, operationTime.time) }
+            val midPrices = newMidPrices.mapIndexed { idx, element -> MidPrice(assetPairId, element, operationTime.time + idx) }
             MidPricePersistenceData(midPrices)
         } else {
             null
@@ -575,7 +575,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
     }
 
     private fun getMidPriceBounds(): Pair<BigDecimal?, BigDecimal?> {
-        val midPriceDeviationThreshold = applicationSettingsCache.midPriceDeviationThreshold(assetPair.assetPairId)
+        val midPriceDeviationThreshold = BigDecimal.valueOf(0.05)
 
         var lowerMidPriceBound: BigDecimal? = null
         var upperMidPriceBound: BigDecimal? = null
