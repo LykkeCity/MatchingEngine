@@ -27,10 +27,6 @@ class StopLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabas
                 genericStopLimitOrderService,
                 date) {
 
-    override fun processChangedOrderBook(orderBookCopy: AssetStopOrderBook, isBuy: Boolean) {
-        // nothing to do
-    }
-
     override fun getOrderLimitVolume(order: LimitOrder, limitAsset: Asset): BigDecimal {
         return order.reservedLimitVolume ?: if (order.isBuySide())
             NumberUtils.setScale(order.volume * (order.upperPrice ?: order.lowerPrice)!!, limitAsset.accuracy, false)
