@@ -32,7 +32,7 @@ class PerformanceStatsHolder {
     }
 
     fun addPersistTime(type: Byte, persistTime: Long) {
-        val stats = statsMap.getOrPut(type) { PerformanceStats(type, 0, 0, 0) }
+        val stats = statsMap.getOrPut(type) { PerformanceStats(type) }
         stats.persistTime += persistTime
         stats.persistTimeCount++
     }

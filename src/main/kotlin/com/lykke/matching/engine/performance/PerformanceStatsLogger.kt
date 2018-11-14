@@ -36,8 +36,8 @@ class PerformanceStatsLogger @Autowired constructor(private val monitoringDataba
                     (inputQueueTime?.let { "input queue time: $it, " } ?: "") +
                     (preProcessingTime?.let { "pre processing time: $it, " } ?: "") +
                     "pre processed message queue time: $preProcessedMessageQueueTime, " +
-                    "processing time: $processingTime, " +
-                    "persist time: $persistTime, " +
+                    "processing time: $processingTime " +
+                    "(persist time: $persistTime), " +
                     "persist count: ${typeStats.persistTimeCount}, " +
                     "total time: $totalTime")
 
