@@ -12,7 +12,7 @@ import java.util.Date
 
 @Component
 @Profile("default")
-class PerformanceStatsLogger @Autowired constructor (private val monitoringDatabaseAccessor: MonitoringDatabaseAccessor) {
+class PerformanceStatsLogger @Autowired constructor(private val monitoringDatabaseAccessor: MonitoringDatabaseAccessor) {
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(PerformanceStatsLogger::class.java.name)
     }
@@ -21,12 +21,36 @@ class PerformanceStatsLogger @Autowired constructor (private val monitoringDatab
         val now = Date()
         stats.forEach { typeStats ->
             val type = MessageType.valueOf(typeStats.type)!!.name
+            val inputQueueTime = typeStats.inputQueueTime?.let {
+                PrintUtils.convertToString2(it.toDouble() / typeStats.count)
+            }
+            val preProcessingTime = typeStats.preProcessingTime?.let {
+                PrintUtils.convertToString2(it.toDouble() / typeStats.count)
+            }
+            val preProcessedMessageQueueTime = PrintUtils.convertToString2(typeStats.preProcessedMessageQueueTime.toDouble() / typeStats.count)
+
             val totalTime = PrintUtils.convertToString2(typeStats.totalTime.toDouble() / typeStats.count)
             val processingTime = PrintUtils.convertToString2(typeStats.processingTime.toDouble() / typeStats.count)
             val persistTime = PrintUtils.convertToString2(typeStats.persistTime.toDouble() / typeStats.persistTimeCount)
-            LOGGER.info("$type: count: ${typeStats.count}, total time: $totalTime, processing time: $processingTime, persist time: $persistTime, persist count: ${typeStats.persistTimeCount}")
+            LOGGER.info("$type: count: ${typeStats.count}, " +
+                    (inputQueueTime?.let { "input queue time: $it, " } ?: "") +
+                    (preProcessingTime?.let { "pre processing time: $it, " } ?: "") +
+                    "pre processed message queue time: $preProcessedMessageQueueTime, " +
+                    "processing time: $processingTime " +
+                    "(persist time: $persistTime), " +
+                    "persist count: ${typeStats.persistTimeCount}, " +
+                    "total time: $totalTime")
 
-            monitoringDatabaseAccessor.savePerformanceStats(TypePerformanceStats(now, type, totalTime, processingTime, typeStats.count, persistTime, typeStats.persistTimeCount))
+            monitoringDatabaseAccessor.savePerformanceStats(TypePerformanceStats(now,
+                    type,
+                    inputQueueTime,
+                    preProcessingTime,
+                    preProcessedMessageQueueTime,
+                    processingTime,
+                    persistTime,
+                    totalTime,
+                    typeStats.count,
+                    typeStats.persistTimeCount))
         }
     }
 }

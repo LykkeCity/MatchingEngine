@@ -240,11 +240,30 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
             val endTime = System.nanoTime()
 
-            performanceStatsHolder.addMessage(message.type, endTime - message.startTimestamp, endTime - startTime)
+            recordPerformanceStats(message, startTime, endTime)
         } catch (exception: Exception) {
             LOGGER.error("[${message.sourceIp}]: Got error during message processing: ${exception.message}", exception)
             METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message processing", exception)
         }
+    }
+
+    private fun recordPerformanceStats(messageWrapper: MessageWrapper, startMessageProcessingTime: Long, endMessageProcessingTime: Long) {
+        val totalTime = endMessageProcessingTime - messageWrapper.startTimestamp
+        val processingTime = endMessageProcessingTime - startMessageProcessingTime
+
+        val inputQueueTime = messageWrapper.messagePreProcessorStartTimestamp?.let {
+            it - messageWrapper.startTimestamp
+        }
+
+        val preProcessingTime = messageWrapper.messagePreProcessorStartTimestamp?.let {
+            messageWrapper.messagePreProcessorEndTimestamp!! - it
+        }
+
+        val preProcessedMessageQueueStartTime = messageWrapper.messagePreProcessorEndTimestamp
+                ?: messageWrapper.startTimestamp
+        val preProcessedMessageQueueTime = startMessageProcessingTime - preProcessedMessageQueueStartTime
+
+        performanceStatsHolder.addMessage(messageWrapper.type, inputQueueTime, preProcessedMessageQueueTime, preProcessingTime, processingTime, totalTime)
     }
 
     private fun initServicesMap(): Map<MessageType, AbstractService> {
