@@ -1,16 +1,15 @@
-package com.lykke.matching.engine.updaters
+package com.lykke.matching.engine.order.transaction
 
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.common.entity.BalancesData
-import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.holders.BalancesHolder
 import java.math.BigDecimal
 
-class BalancesUpdater(private val balancesHolder: BalancesHolder) {
+class CurrentTransactionBalancesHolder(private val balancesHolder: BalancesHolder) {
 
-    private val changedBalances = mutableMapOf<String, MutableMap<String, AssetBalance>>()
-    private val changedWallets = mutableMapOf<String, Wallet>()
+    private val changedBalancesByClientIdAndAssetId = mutableMapOf<String, MutableMap<String, AssetBalance>>()
+    private val changedWalletsByClientId = mutableMapOf<String, Wallet>()
 
     fun updateBalance(clientId: String, assetId: String, balance: BigDecimal) {
         val walletAssetBalance = getWalletAssetBalance(clientId, assetId)
@@ -23,18 +22,18 @@ class BalancesUpdater(private val balancesHolder: BalancesHolder) {
     }
 
     fun persistenceData(): BalancesData {
-        return BalancesData(changedWallets.values, changedBalances.flatMap { it.value.values })
+        return BalancesData(changedWalletsByClientId.values, changedBalancesByClientIdAndAssetId.flatMap { it.value.values })
     }
 
     fun apply() {
-        balancesHolder.setWallets(changedWallets.values)
+        balancesHolder.setWallets(changedWalletsByClientId.values)
     }
 
     fun getWalletAssetBalance(clientId: String, assetId: String): WalletAssetBalance {
-        val wallet = changedWallets.getOrPut(clientId) {
+        val wallet = changedWalletsByClientId.getOrPut(clientId) {
             copyWallet(balancesHolder.wallets[clientId]) ?: Wallet(clientId)
         }
-        val assetBalance = changedBalances
+        val assetBalance = changedBalancesByClientIdAndAssetId
                 .getOrPut(clientId) {
                     mutableMapOf()
                 }
@@ -42,6 +41,11 @@ class BalancesUpdater(private val balancesHolder: BalancesHolder) {
                     wallet.balances.getOrPut(assetId) { AssetBalance(clientId, assetId) }
                 }
         return WalletAssetBalance(wallet, assetBalance)
+    }
+
+    fun getChangedCopyOrOriginalAssetBalance(clientId: String, assetId: String): AssetBalance {
+        return (changedWalletsByClientId[clientId] ?: balancesHolder.wallets[clientId] ?: Wallet(clientId)).balances[assetId]
+                ?: AssetBalance(clientId, assetId)
     }
 
     private fun copyWallet(wallet: Wallet?): Wallet? {
