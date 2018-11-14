@@ -1,4 +1,4 @@
-package com.lykke.matching.engine.outgoing.rabbit.impl
+package com.lykke.matching.engine.outgoing.rabbit.impl.publishers
 
 import com.google.gson.Gson
 import com.lykke.matching.engine.logging.DatabaseLogger
@@ -8,20 +8,21 @@ import com.lykke.utils.logging.ThrottlingLogger
 import com.rabbitmq.client.AMQP
 import com.rabbitmq.client.BuiltinExchangeType
 import org.apache.log4j.Logger
+import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.BlockingQueue
 
 class RabbitMqPublisher(uri: String,
                         exchangeName: String,
+                        publisherName: String,
                         queue: BlockingQueue<out Event<*>>,
                         appName: String,
                         appVersion: String,
                         exchangeType: BuiltinExchangeType,
                         private val gson: Gson,
-                        private val messageDatabaseLogger: DatabaseLogger<Event<*>>? = null) : AbstractRabbitMqPublisher<Event<*>>(uri, exchangeName,
+                        applicationEventPublisher: ApplicationEventPublisher,
+                        private val messageDatabaseLogger: DatabaseLogger<Event<*>>? = null) : AbstractRabbitMqPublisher<Event<*>>(uri, exchangeName, publisherName,
         queue, appName, appVersion, exchangeType, LOGGER,
-        MESSAGES_LOGGER, METRICS_LOGGER, STATS_LOGGER, messageDatabaseLogger) {
-
-
+        MESSAGES_LOGGER, METRICS_LOGGER, STATS_LOGGER, applicationEventPublisher, messageDatabaseLogger) {
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(RabbitMqPublisher::class.java.name)
         private val MESSAGES_LOGGER = Logger.getLogger("${RabbitMqPublisher::class.java.name}.message")

@@ -32,6 +32,15 @@ import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.services.BalanceUpdateService
+import com.lykke.matching.engine.services.CashInOutOperationService
+import com.lykke.matching.engine.services.CashTransferOperationService
+import com.lykke.matching.engine.services.GenericLimitOrderService
+import com.lykke.matching.engine.services.GenericStopLimitOrderService
+import com.lykke.matching.engine.services.MarketOrderService
+import com.lykke.matching.engine.services.MessageSender
+import com.lykke.matching.engine.services.MultiLimitOrderService
+import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.*
 import com.lykke.matching.engine.services.validators.business.*
