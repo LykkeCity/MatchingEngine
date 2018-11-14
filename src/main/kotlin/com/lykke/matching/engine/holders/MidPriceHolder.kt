@@ -35,6 +35,30 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
         }
     }
 
+    fun getReferenceMidPrice(assetPair: AssetPair, operationTime: Date, notSavedMidPrices: List<BigDecimal>): BigDecimal {
+        val currentRefMidPrice = getReferenceMidPrice(assetPair, operationTime)
+        val notSavedMidPricesLength = BigDecimal.valueOf(notSavedMidPrices.size.toLong())
+        if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, notSavedMidPricesLength)) {
+            return currentRefMidPrice
+        }
+
+        var notSavedMidPricesSum = BigDecimal.ZERO
+
+        notSavedMidPrices.forEach { notSavedMidPricesSum += it }
+
+        val currentMidPricesLength = BigDecimal.valueOf(midPricesByAssetPairId[assetPair.assetPairId]?.size?.toLong() ?: 0)
+        val totalMidPricesLength = notSavedMidPricesLength + currentMidPricesLength
+
+        val newMidPricesPart = NumberUtils.divideWithMaxScale(notSavedMidPricesSum, totalMidPricesLength)
+        if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, currentMidPricesLength)) {
+            return NumberUtils.setScaleRoundUp(newMidPricesPart, assetPair.accuracy)
+        }
+
+        val currentMidPricesCoef = NumberUtils.divideWithMaxScale(currentMidPricesLength, totalMidPricesLength)
+
+        return  NumberUtils.setScaleRoundUp(currentRefMidPrice * currentMidPricesCoef + newMidPricesPart, assetPair.accuracy)
+    }
+
     fun getReferenceMidPrice(assetPair: AssetPair, executionContext: ExecutionContext): BigDecimal {
         val operationTime = executionContext.date
 
@@ -66,6 +90,10 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
         if (midPriceDangerous) {
             orderBookMidPriceChecker.checkOrderBook(RefMidPriceDangerousChangeEvent(assetPair.assetPairId, referencePriceByAssetPairId[assetPair.assetPairId]!!, executionContext))
         }
+    }
+
+    fun addMidPrices(assetPair: AssetPair, newMidPrices: List<BigDecimal>, operationTime: Date, cancel: Boolean = false) {
+        newMidPrices.forEach { addMidPrice(assetPair, it, operationTime, cancel) }
     }
 
     fun clear() {
