@@ -294,6 +294,19 @@ open class TestApplicationContext {
     }
 
     @Bean
+    open fun singleLimitOrderService(executionContextFactory: ExecutionContextFactory,
+                                     genericLimitOrdersProcessor: GenericLimitOrdersProcessor,
+                                     stopOrderBookProcessor: StopOrderBookProcessor,
+                                     executionDataApplyService: ExecutionDataApplyService,
+                                     previousLimitOrdersProcessor: PreviousLimitOrdersProcessor): SingleLimitOrderService {
+        return SingleLimitOrderService(executionContextFactory,
+                genericLimitOrdersProcessor,
+                stopOrderBookProcessor,
+                executionDataApplyService,
+                previousLimitOrdersProcessor)
+    }
+
+    @Bean
     open fun multiLimitOrderService(genericLimitOrdersProcessor: GenericLimitOrdersProcessor,
                                     executionContextFactory: ExecutionContextFactory,
                                     previousLimitOrdersProcessor: PreviousLimitOrdersProcessor,
