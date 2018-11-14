@@ -5,6 +5,9 @@ import com.microsoft.azure.storage.table.TableServiceEntity;
 
 public class AzurePerformanceStats extends TableServiceEntity {
     private String type;
+    private String inputQueueTime;
+    private String preProcessingTime;
+    private String preProcessedMessageQueueTime;
     private String totalTime;
     private String processingTime;
     private String persistTime;
@@ -17,6 +20,9 @@ public class AzurePerformanceStats extends TableServiceEntity {
     public AzurePerformanceStats(String partitionKey, String rowKey, TypePerformanceStats stats) {
         super(partitionKey, rowKey);
         this.type = stats.getType();
+        this.inputQueueTime = stats.getInputQueueTime();
+        this.preProcessingTime = stats.getPreProcessingTime();
+        this.preProcessedMessageQueueTime = stats.getPreProcessedMessageQueueTime();
         this.totalTime = stats.getTotalTime();
         this.processingTime = stats.getProcessingTime();
         this.count = stats.getCount();
@@ -70,5 +76,29 @@ public class AzurePerformanceStats extends TableServiceEntity {
 
     public void setPersistCount(Long persistCount) {
         this.persistCount = persistCount;
+    }
+
+    public String getInputQueueTime() {
+        return inputQueueTime;
+    }
+
+    public String getPreProcessingTime() {
+        return preProcessingTime;
+    }
+
+    public String getPreProcessedMessageQueue() {
+        return preProcessedMessageQueueTime;
+    }
+
+    public void setInputQueueTime(String inputQueueTime) {
+        this.inputQueueTime = inputQueueTime;
+    }
+
+    public void setPreProcessingTime(String preProcessingTime) {
+        this.preProcessingTime = preProcessingTime;
+    }
+
+    public void setPreProcessedMessageQueue(String preProcessedMessageQueue) {
+        this.preProcessedMessageQueueTime = preProcessedMessageQueue;
     }
 }
