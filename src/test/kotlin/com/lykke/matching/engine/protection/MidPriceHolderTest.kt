@@ -289,6 +289,51 @@ class MidPriceHolderTest {
         assertEquals(expectedReferencePrice, midPriceHolder.getReferenceMidPrice(assetPair, Date()))
     }
 
+    @Test
+    fun getRefMidPriceWithNotSavedCurrentMidPricesExistTest() {
+        //given
+        val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
+        val midPrices = ArrayList(getRandomMidPrices(1, "EURUSD"))
+        testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
+        val midPriceHolder = MidPriceHolder(50, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
+        Thread.sleep(100)
+
+        //when
+        val savedMidPrices = getRandomBigDecimalList(3)
+        val notSavedMidPrices = getRandomBigDecimalList(3)
+
+        midPriceHolder.addMidPrices(assetPair, savedMidPrices, Date())
+
+
+        val refMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, Date(), notSavedMidPrices)
+        //then
+        assertEquals(getExpectedRefPrice(savedMidPrices.plus(notSavedMidPrices), assetPair.accuracy), refMidPrice)
+    }
+
+    @Test
+    fun getRefMidPriceWithNotSavedCurrentMidPricesDoesNotExistTest() {
+        //given
+        val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
+        val midPrices = ArrayList(getRandomMidPrices(1, "EURUSD"))
+        testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
+        val midPriceHolder = MidPriceHolder(50, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
+        Thread.sleep(100)
+
+        //when
+        val notSavedMidPrices = getRandomBigDecimalList(3)
+
+
+        val refMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, Date(), notSavedMidPrices)
+        //then
+        assertEquals(getExpectedRefPrice(notSavedMidPrices, assetPair.accuracy), refMidPrice)
+    }
+
+    private fun getRandomBigDecimalList(size: Int): List<BigDecimal> {
+        val result = ArrayList<BigDecimal>()
+        IntRange(0, size - 1).forEach { result.add(getRandomBigDecimal()) }
+        return result
+    }
+
     private fun getRandomMidPrices(size: Int, assetId: String): List<MidPrice> {
         val result = ArrayList<MidPrice>()
         val start = Date().time
@@ -298,6 +343,13 @@ class MidPriceHolderTest {
 
     private fun getRandomBigDecimal(): BigDecimal {
         return NumberUtils.setScale(BigDecimal.valueOf(Math.random() * 1000), 0, false)
+    }
+
+    private fun getExpectedRefPrice(midPrices: List<BigDecimal>, accuracy: Int): BigDecimal {
+        var sum = BigDecimal.ZERO
+        midPrices.forEach { sum += it }
+
+        return NumberUtils.setScaleRoundUp(NumberUtils.divideWithMaxScale(sum, BigDecimal.valueOf(midPrices.size.toLong())), accuracy)
     }
 
     private fun getExpectedReferencePrice(midPrices: List<MidPrice>, accuracy: Int): BigDecimal {

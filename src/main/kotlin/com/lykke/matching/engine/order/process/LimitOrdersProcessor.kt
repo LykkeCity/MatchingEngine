@@ -37,6 +37,7 @@ import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
+import org.springframework.util.CollectionUtils
 import java.math.BigDecimal
 import java.util.Date
 import java.util.LinkedList
@@ -82,7 +83,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
     private var buySideOrderBookChanged = false
     private var sellSideOrderBookChanged = false
 
-    private var newMidPrice: BigDecimal? = null
+    private var newMidPrices = ArrayList<BigDecimal>()
 
     private val ordersToCancel = ordersToCancel.filter { it.status != OrderStatus.Replaced.name }.toMutableList()
     private val completedOrders = ordersToCancel.filter { it.status == OrderStatus.Replaced.name }.toMutableList()
@@ -114,18 +115,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
     }
 
     fun preProcess(messageId: String, orders: Collection<LimitOrder>): LimitOrdersProcessor {
-        val midPriceDeviationThreshold = applicationSettingsCache.midPriceDeviationThreshold(assetPair.assetPairId)
-
-        var lowerMidPriceBound: BigDecimal? = null
-        var upperMidPriceBound: BigDecimal? = null
-        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, date)
-
-        if (midPriceDeviationThreshold != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
-            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * midPriceDeviationThreshold)
-            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * midPriceDeviationThreshold)
-        }
-
-        orders.forEach { preProcess(messageId, it, lowerMidPriceBound, upperMidPriceBound) }
+        orders.forEach { preProcess(messageId, it) }
         return this
     }
 
@@ -167,10 +157,10 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             sequenceNumber = clientsSequenceNumber
         }
 
-        val updated = walletOperationsProcessor.persistBalances(processedMessage,
+            val updated = walletOperationsProcessor.persistBalances(processedMessage,
                 OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
                 null,
-                sequenceNumber, newMidPrice?.let { MidPricePersistenceData(MidPrice(assetPair.assetPairId, it, date.time)) })
+                sequenceNumber, getMidPricesPersistenceData(assetPair.assetPairId, date))
         if (!updated) {
             return OrderProcessResult(false, emptyList())
         }
@@ -183,8 +173,8 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         genericLimitOrderService.addOrders(ordersToAdd)
         genericLimitOrderService.setOrderBook(assetPair.assetPairId, orderBook)
 
-        if (newMidPrice != null) {
-            midPriceHolder.addMidPrice(assetPair, newMidPrice!!, date)
+        if (!CollectionUtils.isEmpty(newMidPrices)) {
+            midPriceHolder.addMidPrices(assetPair, newMidPrices, date)
         }
         if (lkkTrades.isNotEmpty()) {
             lkkTradesQueue.put(lkkTrades)
@@ -229,10 +219,8 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
     }
 
     private fun preProcess(messageId: String,
-                           order: LimitOrder,
-                           lowerAcceptableMidPrice: BigDecimal?,
-                           upperAcceptableMidPrice: BigDecimal?) {
-
+                           order: LimitOrder) {
+        val (lowerAcceptableMidPrice, upperAcceptableMidPrice) = getMidPriceBounds()
         val limitAsset = if (order.isBuySide()) quotingAsset else baseAsset
         val limitVolume = if (order.isBuySide()) NumberUtils.setScaleRoundUp(order.getAbsVolume() * order.price, limitAsset.accuracy) else order.getAbsVolume()
 
@@ -322,7 +310,10 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
 
         order.reservedLimitVolume = limitVolume
         orderBook.addOrder(order)
-        newMidPrice = orderBook.getMidPrice()
+
+        orderBook.getMidPrice()?.let {
+            newMidPrices.add(it)
+        }
         ordersToAdd.add(order)
         addToReport(order.copy())
         processedOrders.add(ProcessedOrder(order, true))
@@ -416,7 +407,10 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                     "m = ${NumberUtils.roundForPrint(newMidPriceAfterMatching)}")
         }
 
-        newMidPrice = newMidPriceAfterMatching
+
+        newMidPriceAfterMatching?.let {
+            newMidPrices.add(it)
+        }
 
         if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
             val result = genericLimitOrderService.calculateWalletOperationsForCancelledOrders(matchingResult.cancelledLimitOrders.map {
@@ -563,11 +557,35 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         return if (order.isBuySide()) orderBook.getBidPrice() else orderBook.getAskPrice()
     }
 
+    private fun getMidPricesPersistenceData(assetPairId: String, operationTime: Date): MidPricePersistenceData? {
+        return if (!CollectionUtils.isEmpty(newMidPrices)) {
+            val midPrices = newMidPrices.map { MidPrice(assetPairId, it, operationTime.time) }
+            MidPricePersistenceData(midPrices)
+        } else {
+            null
+        }
+    }
+
     private fun getMidPrice(orderSideBestPrice: BigDecimal, oppositeBestPrice: BigDecimal): BigDecimal? {
         if (NumberUtils.equalsIgnoreScale(orderSideBestPrice, BigDecimal.ZERO) || NumberUtils.equalsIgnoreScale(oppositeBestPrice, BigDecimal.ZERO)) {
             return null
         }
 
         return NumberUtils.divideWithMaxScale((orderSideBestPrice + oppositeBestPrice), BigDecimal.valueOf(2))
+    }
+
+    private fun getMidPriceBounds(): Pair<BigDecimal?, BigDecimal?> {
+        val midPriceDeviationThreshold = applicationSettingsCache.midPriceDeviationThreshold(assetPair.assetPairId)
+
+        var lowerMidPriceBound: BigDecimal? = null
+        var upperMidPriceBound: BigDecimal? = null
+        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, date, newMidPrices)
+
+        if (midPriceDeviationThreshold != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
+            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * midPriceDeviationThreshold)
+            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * midPriceDeviationThreshold)
+        }
+
+        return lowerMidPriceBound to upperMidPriceBound
     }
 }
