@@ -12,7 +12,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import org.apache.log4j.Logger
-import java.util.Date
+import java.util.*
 
 open class ExecutionContext(val messageId: String,
                             val requestId: String,
@@ -36,7 +36,7 @@ open class ExecutionContext(val messageId: String,
     private val clientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
     private val trustedClientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
 
-    private val midPricesByAssetPairId = HashMap<String, MidPrice>()
+    private val midPricesByAssetPairId = HashMap<String, MutableList<MidPrice>>()
 
     var marketOrderWithTrades: MarketOrderWithTrades? = null
 
@@ -78,7 +78,8 @@ open class ExecutionContext(val messageId: String,
     fun getTrustedClientsLimitOrdersWithTrades() = trustedClientLimitOrdersWithTradesByInternalId.values
 
     fun updateMidPrice(midPrice: MidPrice) {
-        this.midPricesByAssetPairId.put(midPrice.assetPairId, midPrice)
+        val midPrices = this.midPricesByAssetPairId.getOrPut(midPrice.assetPairId) { ArrayList() }
+        midPrices.add(midPrice)
     }
 
     fun removeMidPrice(assetPairId: String) {
@@ -86,7 +87,11 @@ open class ExecutionContext(val messageId: String,
     }
 
     fun getMidPrices(): Collection<MidPrice> {
-        return midPricesByAssetPairId.values
+        return midPricesByAssetPairId.values.flatMap {it}
+    }
+
+    fun getMidPrices(assetPairId: String): Collection<MidPrice> {
+        return midPricesByAssetPairId[assetPairId] ?: emptyList()
     }
 
     fun info(message: String) {

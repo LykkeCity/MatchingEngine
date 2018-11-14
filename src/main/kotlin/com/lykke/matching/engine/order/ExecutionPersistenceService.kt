@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.order
 
+import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
@@ -19,7 +20,8 @@ class ExecutionPersistenceService(private val persistenceManager: PersistenceMan
             return messageWrapper.persisted
         }
 
-        val midPricePersistenceData =  MidPricePersistenceData(executionContext.getMidPrices(), executionContext.removeAllMidPrices)
+        val midPricePersistenceData =  MidPricePersistenceData(executionContext.getMidPrices().mapIndexed{ index, element ->
+            MidPrice(element.assetPairId, element.midPrice, element.timestamp + index)}, executionContext.removeAllMidPrices)
 
         val persisted = persistenceManager.persist(PersistenceData(executionContext.walletOperationsProcessor.persistenceData(),
                 executionContext.processedMessage,

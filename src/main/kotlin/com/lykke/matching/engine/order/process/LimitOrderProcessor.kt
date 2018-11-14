@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.order.process
 
 import com.lykke.matching.engine.balance.BalanceException
+import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.daos.WalletOperation
@@ -274,10 +275,10 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
     }
 
     fun checkMidPrice(orderSideBestPrice: BigDecimal, oppositeSideBestPrice: BigDecimal, orderContext: LimitOrderExecutionContext): Boolean {
-        val midPrice = getMidPrice(orderSideBestPrice, oppositeSideBestPrice)
+        val midPrice = getMidPrice(orderSideBestPrice, oppositeSideBestPrice, orderContext.executionContext.assetPairsById[orderContext.order.assetPairId]!!)
 
         if (OrderValidationUtils.isMidPriceValid(midPrice, orderContext.lowerMidPriceBound, orderContext.upperMidPriceBound)) {
-            midPrice?.let{
+            midPrice?.let {
                 orderContext.executionContext.updateMidPrice(MidPrice(orderContext.order.assetPairId, midPrice, orderContext.executionContext.date.time))
             }
 
@@ -466,12 +467,12 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
 
     private fun getOrderInfo(order: LimitOrder) = "Limit order (id: ${order.externalId})"
 
-    private fun getMidPrice(orderSideBestPrice: BigDecimal, oppositeBestPrice: BigDecimal): BigDecimal? {
+    private fun getMidPrice(orderSideBestPrice: BigDecimal, oppositeBestPrice: BigDecimal, assetPair: AssetPair): BigDecimal? {
         if (NumberUtils.equalsIgnoreScale(orderSideBestPrice, BigDecimal.ZERO) || NumberUtils.equalsIgnoreScale(oppositeBestPrice, BigDecimal.ZERO)) {
             return null
         }
 
-        return NumberUtils.divideWithMaxScale((orderSideBestPrice + oppositeBestPrice), BigDecimal.valueOf(2))
+        return NumberUtils.setScaleRoundUp(NumberUtils.divideWithMaxScale((orderSideBestPrice + oppositeBestPrice), BigDecimal.valueOf(2)), assetPair.accuracy)
     }
 
     private fun isPartiallyMatchedOrderCancelled(orderContext: LimitOrderExecutionContext): Boolean {
@@ -496,9 +497,11 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         val executionContext = orderContext.executionContext
 
         val midPriceDeviationThreshold = priceDeviationThresholdHolder.getMidPriceDeviationThreshold(order.assetPairId, executionContext)
-        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(executionContext.assetPairsById[order.assetPairId]!!, orderContext.executionContext)
+        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(executionContext.assetPairsById[order.assetPairId]!!,
+                orderContext.executionContext,
+                orderContext.executionContext.getMidPrices(order.assetPairId).map { it.midPrice })
 
-        if (midPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
+        if (midPriceDeviationThreshold != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
             lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * midPriceDeviationThreshold)
             upperMidPriceBound = referenceMidPrice + (referenceMidPrice * midPriceDeviationThreshold)
         }

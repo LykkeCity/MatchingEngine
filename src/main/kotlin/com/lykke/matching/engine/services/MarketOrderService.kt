@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
+import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
@@ -216,7 +217,7 @@ class MarketOrderService @Autowired constructor(
         matchingResultHandlingHelper.formOppositeOrderBookAfterMatching(marketOrderExecutionContext)
 
         val newMidPrice = getMidPrice(genericLimitOrderService.getOrderBook(order.assetPairId).getBestPrice(order.isBuySide()),
-                matchingResult.orderBook.peek()?.price ?: BigDecimal.ZERO)
+                matchingResult.orderBook.peek()?.price ?: BigDecimal.ZERO, marketOrderExecutionContext.executionContext.assetPairsById[order.assetPairId]!!)
 
         if (!OrderValidationUtils.isMidPriceValid(newMidPrice, marketOrderExecutionContext.lowerMidPriceBound, marketOrderExecutionContext.upperMidPriceBound)) {
             val message = "Market order (id: ${order.externalId}, assetPairId = ${order.assetPairId}) mid price control failed, " +
@@ -323,12 +324,12 @@ class MarketOrderService @Autowired constructor(
         messageSender.sendMessage(outgoingMessage)
     }
 
-    private fun getMidPrice(orderSideBestPrice: BigDecimal, oppositeSideBestPrice: BigDecimal): BigDecimal? {
+    private fun getMidPrice(orderSideBestPrice: BigDecimal, oppositeSideBestPrice: BigDecimal, assetPair: AssetPair): BigDecimal? {
         if (NumberUtils.equalsIgnoreScale(orderSideBestPrice, BigDecimal.ZERO) || NumberUtils.equalsIgnoreScale(oppositeSideBestPrice, BigDecimal.ZERO)) {
             return null
         }
 
-        return NumberUtils.divideWithMaxScale(orderSideBestPrice + oppositeSideBestPrice, BigDecimal.valueOf(2))
+        return NumberUtils.setScaleRoundUp(NumberUtils.divideWithMaxScale(orderSideBestPrice + oppositeSideBestPrice, BigDecimal.valueOf(2)), assetPair.accuracy)
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {

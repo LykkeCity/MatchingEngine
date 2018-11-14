@@ -308,10 +308,10 @@ class MidPriceHolderTest {
         val savedMidPrices = getRandomBigDecimalList(3)
         val notSavedMidPrices = getRandomBigDecimalList(3)
 
-        midPriceHolder.addMidPrices(assetPair, savedMidPrices, Date())
+        midPriceHolder.addMidPrices(assetPair, savedMidPrices, getExecutionContext(Date()))
 
 
-        val refMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, Date(), notSavedMidPrices)
+        val refMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date()), notSavedMidPrices)
         //then
         assertEquals(getExpectedRefPrice(savedMidPrices.plus(notSavedMidPrices), assetPair.accuracy), refMidPrice)
     }
@@ -329,7 +329,7 @@ class MidPriceHolderTest {
         val notSavedMidPrices = getRandomBigDecimalList(3)
 
 
-        val refMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, Date(), notSavedMidPrices)
+        val refMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date()), notSavedMidPrices)
         //then
         assertEquals(getExpectedRefPrice(notSavedMidPrices, assetPair.accuracy), refMidPrice)
     }
