@@ -8,8 +8,8 @@ import java.util.concurrent.BlockingQueue
 @Component
 class MessageRouter(
         private val limitOrderInputQueue: BlockingQueue<MessageWrapper>,
-        val cashInOutInputQueue: BlockingQueue<MessageWrapper>,
-        val cashTransferInputQueue: BlockingQueue<MessageWrapper>,
+        private val cashInOutInputQueue: BlockingQueue<MessageWrapper>,
+        private val cashTransferInputQueue: BlockingQueue<MessageWrapper>,
         private val limitOrderCancelInputQueue: BlockingQueue<MessageWrapper>,
         private val limitOrderMassCancelInputQueue: BlockingQueue<MessageWrapper>,
         val preProcessedMessageQueue: BlockingQueue<MessageWrapper>

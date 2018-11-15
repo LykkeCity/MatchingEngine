@@ -29,7 +29,8 @@ class LimitOrderMassCancelService(private val genericLimitOrderService: GenericL
                 getStopOrders(context),
                 now,
                 context.processedMessage,
-                false))
+                false,
+                messageWrapper))
 
         limitOrdersCancelHelper.processPersistResults(updateSuccessful, messageWrapper, context.messageId)
     }
