@@ -2,7 +2,6 @@ package com.lykke.matching.engine.config
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.spring.QueueConfig
-import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.*
@@ -11,6 +10,7 @@ import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
+import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
 import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationParsedData
@@ -19,10 +19,15 @@ import com.lykke.matching.engine.incoming.parsers.impl.*
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPreprocessor
+import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.notification.*
-import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
+import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
-import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
+import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
+import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
+import com.lykke.matching.engine.order.process.StopOrderBookProcessor
+import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
+import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
@@ -40,10 +45,10 @@ import com.lykke.matching.engine.services.validators.*
 import com.lykke.matching.engine.services.validators.business.*
 import com.lykke.matching.engine.services.validators.business.impl.*
 import com.lykke.matching.engine.services.validators.impl.*
+import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
 import com.lykke.matching.engine.services.validators.input.CashTransferOperationInputValidator
 import com.lykke.matching.engine.services.validators.input.LimitOrderCancelOperationInputValidator
-import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.services.validators.input.impl.CashInOutOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.CashTransferOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
@@ -65,7 +70,7 @@ import java.util.concurrent.Executor
 import java.util.concurrent.LinkedBlockingQueue
 
 @Configuration
-@Import(QueueConfig::class)
+@Import(QueueConfig::class, TestExecutionContext::class)
 open class TestApplicationContext {
 
     @Bean
@@ -189,8 +194,9 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun stopOrdersDatabaseAccessorsHolder(testStopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor): StopOrdersDatabaseAccessorsHolder {
-        return StopOrdersDatabaseAccessorsHolder(testStopOrderBookDatabaseAccessor, null)
+    open fun stopOrdersDatabaseAccessorsHolder(testStopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor,
+                                               testFileStopOrderDatabaseAccessor: TestFileStopOrderDatabaseAccessor): StopOrdersDatabaseAccessorsHolder {
+        return StopOrdersDatabaseAccessorsHolder(testStopOrderBookDatabaseAccessor, testFileStopOrderDatabaseAccessor)
     }
 
     @Bean
@@ -198,7 +204,7 @@ open class TestApplicationContext {
                                 stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder): PersistenceManager {
         return TestPersistenceManager(balancesDatabaseAccessorsHolder().primaryAccessor,
                 ordersDatabaseAccessorsHolder,
-                stopOrdersDatabaseAccessorsHolder.primaryAccessor)
+                stopOrdersDatabaseAccessorsHolder)
     }
 
     @Bean
@@ -305,96 +311,81 @@ open class TestApplicationContext {
                                       assetsPairsHolder: AssetsPairsHolder,
                                       balancesHolder: BalancesHolder,
                                       quotesUpdateQueue: BlockingQueue<QuotesUpdate>,
-                                      tradeInfoQueue: BlockingQueue<TradeInfo>,
-                                      applicationSettingsCache: ApplicationSettingsCache): GenericLimitOrderService {
+                                      tradeInfoQueue: BlockingQueue<TradeInfo>): GenericLimitOrderService {
         return GenericLimitOrderService(testOrderDatabaseAccessor,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
                 quotesUpdateQueue,
-                tradeInfoQueue,
-                applicationSettingsCache)
+                tradeInfoQueue)
     }
 
     @Bean
-    open fun limitOrdersProcessorFactory(assetsHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder,
-                                         balancesHolder: BalancesHolder, genericLimitOrderService: GenericLimitOrderService,
-                                         applicationSettingsCache: ApplicationSettingsCache,
-                                         limitOrderInputValidator: LimitOrderInputValidator,
-                                         settingsCache: ApplicationSettingsCache,
-                                         clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                         lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
-                                         orderBookQueue: BlockingQueue<OrderBook>,
-                                         rabbitOrderBookQueue: BlockingQueue<OrderBook>,
-                                         trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                         messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                         limitOrderBusinessValidator: LimitOrderBusinessValidator,
-                                         messageSender: MessageSender): LimitOrdersProcessorFactory {
-        return LimitOrdersProcessorFactory(balancesHolder, limitOrderBusinessValidator, limitOrderInputValidator, genericLimitOrderService, clientLimitOrdersQueue,
-                lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, messageSender, applicationSettingsCache)
-    }
-
-    @Bean
-    open fun genericLimitOrderProcessorFactory(genericLimitOrderService: GenericLimitOrderService, genericStopLimitOrderService: GenericStopLimitOrderService,
-                                               limitOrderProcessorFactory: LimitOrdersProcessorFactory, balancesHolder: BalancesHolder,
-                                               clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>, assetsHolder: AssetsHolder,
-                                               assetsPairsHolder: AssetsPairsHolder, feeProcessor: FeeProcessor, messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                               messageSender: MessageSender, stopOrderBusinessValidatorImpl: StopOrderBusinessValidator, singleLimitOrderContextParser: SingleLimitOrderContextParser): GenericLimitOrderProcessorFactory {
-        return GenericLimitOrderProcessorFactory(genericLimitOrderService, genericStopLimitOrderService, limitOrderProcessorFactory, stopOrderBusinessValidatorImpl, assetsHolder, assetsPairsHolder, balancesHolder,
-                clientLimitOrdersQueue, feeProcessor, singleLimitOrderContextParser, messageSequenceNumberHolder, messageSender)
-    }
-
-    @Bean
-    open fun multiLimitOrderService(genericLimitOrderService: GenericLimitOrderService,
-                                    genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
-                                    limitOrderProcessorFactory: LimitOrdersProcessorFactory,
+    open fun multiLimitOrderService(genericLimitOrdersProcessor: GenericLimitOrdersProcessor,
+                                    executionContextFactory: ExecutionContextFactory,
+                                    previousLimitOrdersProcessor: PreviousLimitOrdersProcessor,
+                                    stopOrderBookProcessor: StopOrderBookProcessor,
+                                    executionDataApplyService: ExecutionDataApplyService,
                                     assetsHolder: AssetsHolder,
                                     assetsPairsHolder: AssetsPairsHolder,
                                     balancesHolder: BalancesHolder,
-                                    genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory,
-                                    feeProcessor: FeeProcessor,
                                     applicationSettingsCache: ApplicationSettingsCache): MultiLimitOrderService {
-        return MultiLimitOrderService(genericLimitOrderService,
-                genericLimitOrdersCancellerFactory,
-                limitOrderProcessorFactory,
+        return MultiLimitOrderService(executionContextFactory,
+                genericLimitOrdersProcessor,
+                stopOrderBookProcessor,
+                executionDataApplyService,
+                previousLimitOrdersProcessor,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                genericLimitOrderProcessorFactory,
-                feeProcessor,
                 applicationSettingsCache)
     }
 
     @Bean
-    open fun marketOrderService(genericLimitOrderService: GenericLimitOrderService, assetsHolder: AssetsHolder,
-                                assetsPairsHolder: AssetsPairsHolder, balancesHolder: BalancesHolder, clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                orderBookQueue: BlockingQueue<OrderBook>,
-                                rabbitOrderBookQueue: BlockingQueue<OrderBook>,
+    open fun marketOrderService(matchingEngine: MatchingEngine,
+                                executionContextFactory: ExecutionContextFactory,
+                                stopOrderBookProcessor: StopOrderBookProcessor,
+                                executionDataApplyService: ExecutionDataApplyService,
+                                matchingResultHandlingHelper: MatchingResultHandlingHelper,
+                                genericLimitOrderService: GenericLimitOrderService,
+                                assetsPairsHolder: AssetsPairsHolder,
                                 rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
-                                lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
-                                genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory, marketOrderValidator: MarketOrderValidator,
-                                feeProcessor: FeeProcessor,
+                                marketOrderValidator: MarketOrderValidator,
                                 messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                 messageSender: MessageSender,
                                 applicationSettingsCache: ApplicationSettingsCache): MarketOrderService {
-        return MarketOrderService(genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, clientLimitOrdersQueue, trustedClientsLimitOrdersQueue,
-                lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, genericLimitOrderProcessorFactory, marketOrderValidator, feeProcessor, applicationSettingsCache, messageSequenceNumberHolder, messageSender)
+        return MarketOrderService(matchingEngine,
+                executionContextFactory,
+                stopOrderBookProcessor,
+                executionDataApplyService,
+                matchingResultHandlingHelper,
+                genericLimitOrderService,
+                assetsPairsHolder,
+                rabbitSwapQueue,
+                marketOrderValidator,
+                applicationSettingsCache,
+                messageSequenceNumberHolder,
+                messageSender)
     }
 
     @Bean
-    open fun genericLimitOrdersCancellerFactory(dictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor,
+    open fun genericLimitOrdersCancellerFactory(executionContextFactory: ExecutionContextFactory,
+                                                stopOrderBookProcessor: StopOrderBookProcessor,
+                                                executionDataApplyService: ExecutionDataApplyService,
+                                                dictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor,
                                                 assetsHolder: AssetsHolder,
                                                 assetsPairsHolder: AssetsPairsHolder, balancesHolder: BalancesHolder,
                                                 genericLimitOrderService: GenericLimitOrderService, genericStopLimitOrderService: GenericStopLimitOrderService,
-                                                genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory,
                                                 orderBookQueue: BlockingQueue<OrderBook>,
                                                 rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                                                 clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                                 trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                                 messageSequenceNumberHolder: MessageSequenceNumberHolder, messageSender: MessageSender): GenericLimitOrdersCancellerFactory {
-        return GenericLimitOrdersCancellerFactory(dictionariesDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, genericLimitOrderService,
-                genericStopLimitOrderService, genericLimitOrderProcessorFactory, orderBookQueue, rabbitOrderBookQueue, clientLimitOrdersQueue, trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, messageSender)
+        return GenericLimitOrdersCancellerFactory(executionContextFactory,
+                stopOrderBookProcessor,
+                executionDataApplyService,
+                dictionariesDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, genericLimitOrderService,
+                genericStopLimitOrderService)
     }
 
     @Bean
@@ -404,10 +395,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun genericStopLimitOrderService(persistenceManager: TestPersistenceManager,
-                                          stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
-                                          genericLimitOrderService: GenericLimitOrderService): GenericStopLimitOrderService {
-        return GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, genericLimitOrderService, persistenceManager)
+    open fun genericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder): GenericStopLimitOrderService {
+        return GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder)
     }
 
     @Bean
@@ -416,13 +405,18 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun testStopOrderBookDatabaseAccessor(): TestStopOrderBookDatabaseAccessor {
-        return TestStopOrderBookDatabaseAccessor()
+    open fun testStopOrderBookDatabaseAccessor(testFileStopOrderDatabaseAccessor: TestFileStopOrderDatabaseAccessor): TestStopOrderBookDatabaseAccessor {
+        return TestStopOrderBookDatabaseAccessor(testFileStopOrderDatabaseAccessor)
     }
 
     @Bean
     open fun testFileOrderDatabaseAccessor(): TestFileOrderDatabaseAccessor {
         return TestFileOrderDatabaseAccessor()
+    }
+
+    @Bean
+    open fun testFileStopOrderDatabaseAccessor(): TestFileStopOrderDatabaseAccessor {
+        return TestFileStopOrderDatabaseAccessor()
     }
 
     @Bean

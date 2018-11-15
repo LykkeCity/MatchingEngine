@@ -12,7 +12,7 @@ class AssetStopOrderBook(assetPairId: String): AbstractAssetOrderBook(assetPairI
 
         private val LOGGER = Logger.getLogger(AssetStopOrderBook::class.java.name)
 
-        private val LOWER_SELL_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
+        private val LOWER_SELL_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
             var result = o2.lowerLimitPrice!!.compareTo(o1.lowerLimitPrice!!)
             if (result == 0) {
                 result = o1.lowerPrice!!.compareTo(o2.lowerPrice!!)
@@ -22,9 +22,9 @@ class AssetStopOrderBook(assetPairId: String): AbstractAssetOrderBook(assetPairI
             }
 
             result
-        })
+        }
 
-        private val UPPER_SELL_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
+        private val UPPER_SELL_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
             var result = o1.upperLimitPrice!!.compareTo(o2.upperLimitPrice!!)
             if (result == 0) {
                 result = o1.upperPrice!!.compareTo(o2.upperPrice!!)
@@ -34,9 +34,9 @@ class AssetStopOrderBook(assetPairId: String): AbstractAssetOrderBook(assetPairI
             }
 
             result
-        })
+        }
 
-        private val LOWER_BUY_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
+        private val LOWER_BUY_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
             var result = o2.lowerLimitPrice!!.compareTo(o1.lowerLimitPrice!!)
             if (result == 0) {
                 result = o2.lowerPrice!!.compareTo(o1.lowerPrice!!)
@@ -46,9 +46,9 @@ class AssetStopOrderBook(assetPairId: String): AbstractAssetOrderBook(assetPairI
             }
 
             result
-        })
+        }
 
-        private val UPPER_BUY_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
+        private val UPPER_BUY_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
             var result = o1.upperLimitPrice!!.compareTo(o2.upperLimitPrice!!)
             if (result == 0) {
                 result = o2.upperPrice!!.compareTo(o1.upperPrice!!)
@@ -58,7 +58,7 @@ class AssetStopOrderBook(assetPairId: String): AbstractAssetOrderBook(assetPairI
             }
 
             result
-        })
+        }
     }
 
     private var lowerAskOrderBook = PriorityBlockingQueue<LimitOrder>(50, LOWER_SELL_COMPARATOR)
@@ -77,10 +77,10 @@ class AssetStopOrderBook(assetPairId: String): AbstractAssetOrderBook(assetPairI
         if (isLower) lowerAskOrderBook else upperAskOrderBook
     }
 
-    fun addOrder(order: LimitOrder) {
+    override fun addOrder(order: LimitOrder): Boolean {
         if (order.assetPairId != assetPairId) {
             LOGGER.error("Unable to add order ${order.externalId} (order asset pair: ${order.assetPairId}, order book asset pair: $assetPairId)")
-            return
+            return false
         }
         if (order.isBuySide()) {
             bidOrderBook[order.externalId] = order
@@ -99,6 +99,7 @@ class AssetStopOrderBook(assetPairId: String): AbstractAssetOrderBook(assetPairI
                 upperAskOrderBook.add(order)
             }
         }
+        return true
     }
 
     override fun removeOrder(order: LimitOrder): Boolean {

@@ -29,8 +29,8 @@ class TrustedClientsEventsListener {
     @PostConstruct
     fun initRabbitMqPublisher() {
         config.me.rabbitMqConfigs.trustedClientsEvents.forEachIndexed { index, rabbitConfig ->
-            val trustedClientsEventConsumerQueue = RabbitEventUtils.getTrustedClientsEventConsumerQueue(rabbitConfig.exchange, index)
-            val queue = applicationContext.getBean(trustedClientsEventConsumerQueue) as BlockingQueue<Event<*>>
+            val trustedClientsEventConsumerQueue = RabbitEventUtils.getTrustedClientsEventConsumerQueueName(rabbitConfig.exchange, index)
+            val queue = applicationContext.getBean(trustedClientsEventConsumerQueue) as BlockingQueue<ExecutionEvent>
             rabbitMqService.startPublisher(rabbitConfig,
                     trustedClientsEventConsumerQueue,
                     queue,

@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.config.spring.rabbit
 
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.rabbit.impl.dispatchers.RabbitEventDispatcher
 import com.lykke.matching.engine.outgoing.rabbit.utils.RabbitEventUtils
 import com.lykke.matching.engine.utils.config.Config
@@ -23,7 +24,7 @@ open class RabbitConfiguration {
     private lateinit var applicationContext: ApplicationContext
 
     @Bean
-    open fun trustedClientsEventsDispatcher(trustedClientsEventsQueue: BlockingDeque<Event<*>>): RabbitEventDispatcher<Event<*>> {
+    open fun trustedClientsEventsDispatcher(trustedClientsEventsQueue: BlockingDeque<ExecutionEvent>): RabbitEventDispatcher<ExecutionEvent> {
         return RabbitEventDispatcher("TrustedClientEventsDispatcher", trustedClientsEventsQueue, trustedQueueNameToQueue())
     }
 
@@ -33,11 +34,11 @@ open class RabbitConfiguration {
     }
 
     @Bean
-    open fun trustedQueueNameToQueue(): Map<String, BlockingQueue<Event<*>>> {
-        val consumerNameToQueue = HashMap<String, BlockingQueue<Event<*>>>()
+    open fun trustedQueueNameToQueue(): Map<String, BlockingQueue<ExecutionEvent>> {
+        val consumerNameToQueue = HashMap<String, BlockingQueue<ExecutionEvent>>()
         config.me.rabbitMqConfigs.trustedClientsEvents.forEachIndexed { index, rabbitConfig ->
-            val trustedClientsEventConsumerQueueName = RabbitEventUtils.getTrustedClientsEventConsumerQueue(rabbitConfig.exchange, index)
-            val queue = applicationContext.getBean(trustedClientsEventConsumerQueueName) as BlockingQueue<Event<*>>
+            val trustedClientsEventConsumerQueueName = RabbitEventUtils.getTrustedClientsEventConsumerQueueName(rabbitConfig.exchange, index)
+            val queue = applicationContext.getBean(trustedClientsEventConsumerQueueName) as BlockingQueue<ExecutionEvent>
 
             consumerNameToQueue.put(trustedClientsEventConsumerQueueName, queue)
         }

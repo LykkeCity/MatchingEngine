@@ -117,11 +117,20 @@ message LimitOrder {
     optional double upperLimitPrice = 13;
     optional double upperPrice = 14;
     optional string messageId = 15;
+    optional int32 timeInForce = 16;
+    optional int64 expiryTime = 17;
 }
 
 enum LimitOrderType {
     LIMIT = 0;
     STOP_LIMIT = 1;
+}
+
+enum OrderTimeInForce {
+    GTC = 0;
+    GTD = 1;
+    IOC = 2;
+    FOK = 3;
 }
 
 message OldMarketOrder {
@@ -219,10 +228,17 @@ message MultiLimitOrder {
     message Order {
         required string uid = 1;
         required double volume = 2;
-        required double price = 3;
+        optional double price = 3;
         optional LimitOrderFee fee = 4;
         repeated LimitOrderFee fees = 5;
         optional string oldUid = 6;
+        optional int32 timeInForce = 7;
+        optional int64 expiryTime = 8;
+        optional int32 type = 9;
+        optional double lowerLimitPrice = 10;
+        optional double lowerPrice = 11;
+        optional double upperLimitPrice = 12;
+        optional double upperPrice = 13;
     }
 
     repeated Order orders = 5;

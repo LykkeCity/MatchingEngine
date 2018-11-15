@@ -15,7 +15,7 @@ import java.util.concurrent.BlockingQueue
 abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
                                             private val exchangeName: String,
                                             private val queueName: String,
-                                            val queue: BlockingQueue<out T>,
+                                            private val queue: BlockingQueue<out T>,
                                             private val appName: String,
                                             private val appVersion: String,
                                             private val exchangeType: BuiltinExchangeType,
@@ -26,7 +26,7 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
                                             private val applicationEventPublisher: ApplicationEventPublisher,
 
                                             /** null if do not need to log */
-                                               private val messageDatabaseLogger: DatabaseLogger<T>? = null) : Thread() {
+                                            private val messageDatabaseLogger: DatabaseLogger<T>? = null) : Thread() {
 
     companion object {
         private const val LOG_COUNT = 1000

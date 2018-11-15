@@ -24,7 +24,8 @@ class LimitOrdersCancelHelper(private val cancellerFactory: GenericLimitOrdersCa
                         val stopOrders: List<LimitOrder>?,
                         val now: Date,
                         val processedMessage: ProcessedMessage,
-                        val validateBalances: Boolean)
+                        val validateBalances: Boolean,
+                        val messageWrapper: MessageWrapper)
 
     fun cancelOrders(cancelRequest: CancelRequest): Boolean {
         val canceller = cancellerFactory.create(LOGGER, cancelRequest.now)
@@ -32,7 +33,8 @@ class LimitOrdersCancelHelper(private val cancellerFactory: GenericLimitOrdersCa
         canceller.preProcessLimitOrders(cancelRequest.limitOrders ?: emptyList())
         canceller.preProcessStopLimitOrders(cancelRequest.stopOrders ?: emptyList())
 
-        return canceller.applyFull(cancelRequest.uid,
+        return canceller.applyFull(cancelRequest.messageWrapper,
+                cancelRequest.uid,
                 cancelRequest.messageId,
                 cancelRequest.processedMessage,
                 cancelRequest.messageType,
