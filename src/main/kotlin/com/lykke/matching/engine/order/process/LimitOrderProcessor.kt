@@ -291,7 +291,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
             return true
         }
 
-        val message = "${getOrderInfo(orderContext.order)}, assetPair = ${orderContext.order} mid price control failed, " +
+        val message = "${getOrderInfo(orderContext.order)}, assetPair = ${orderContext.order.assetPairId} mid price control failed, " +
                 "l = ${NumberUtils.roundForPrint(orderContext.lowerMidPriceBound)}, u = ${NumberUtils.roundForPrint(orderContext.upperMidPriceBound)}, " +
                 "m = ${NumberUtils.roundForPrint(midPrice)}"
         orderContext.executionContext.error(message)
