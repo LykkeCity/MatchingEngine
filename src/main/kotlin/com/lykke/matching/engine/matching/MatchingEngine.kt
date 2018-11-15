@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.matching
 
+import com.lykke.matching.engine.balance.BalancesGetter
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.CopyWrapper
@@ -11,9 +12,6 @@ import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.NotEnoughFundsFeeException
 import com.lykke.matching.engine.fee.singleFeeTransfer
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -22,12 +20,12 @@ import com.lykke.matching.engine.outgoing.messages.TradeInfo
 import com.lykke.matching.engine.outgoing.messages.v2.builders.bigDecimalToString
 import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import com.lykke.matching.engine.services.GenericLimitOrderService
+import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils.Companion.checkExecutionPriceDeviation
 import com.lykke.matching.engine.utils.NumberUtils
-import org.apache.log4j.Logger
+import org.springframework.stereotype.Component
 import java.math.BigDecimal
-import java.util.Date
 import java.util.HashMap
 import java.util.HashSet
 import java.util.LinkedList
@@ -36,59 +34,30 @@ import java.util.concurrent.PriorityBlockingQueue
 import kotlin.collections.ArrayList
 import kotlin.collections.set
 
-class MatchingEngine(private val LOGGER: Logger,
-                     private val genericLimitOrderService: GenericLimitOrderService,
-                     private val assetsHolder: AssetsHolder,
-                     private val assetsPairsHolder: AssetsPairsHolder,
-                     private val balancesHolder: BalancesHolder,
+@Component
+class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderService,
                      private val feeProcessor: FeeProcessor) {
 
     companion object {
         private const val RELATIVE_SPREAD_ACCURACY = 4
     }
 
-    private var tradeIndex: Long = 0
-    private val changedOrders = HashMap<LimitOrder, CopyWrapper<LimitOrder>>()
-
-    fun initTransaction(): MatchingEngine {
-        tradeIndex = 0
-        changedOrders.clear()
-        return this
-    }
-
-    fun apply() {
-        val copyWrappers = changedOrders.values.toList()
-        changedOrders.clear()
-        copyWrappers.forEach { it.applyToOrigin() }
-    }
-
-    fun updatedOrders(orderBook: PriorityBlockingQueue<LimitOrder>): UpdatedOrders {
-        val updatedOrderBook = ArrayList<LimitOrder>(orderBook)
-
-        val bestOrder = orderBook.peek()
-                ?: return UpdatedOrders(updatedOrderBook, null)
-
-        val updatedBestOrder = changedOrders[bestOrder]?.copy
-                ?: return UpdatedOrders(updatedOrderBook, null)
-
-        updatedOrderBook.remove(bestOrder)
-        updatedOrderBook.add(0, updatedBestOrder)
-        return UpdatedOrders(updatedOrderBook, updatedBestOrder)
-    }
-
     fun match(originOrder: Order,
               orderBook: PriorityBlockingQueue<LimitOrder>,
               messageId: String,
+              balance: BigDecimal? = null,
+              priceDeviationThreshold: BigDecimal? = null,
               lowerMidPriceBound: BigDecimal? = null,
               upperMidPriceBound: BigDecimal? = null,
               moPriceDeviationThreshold: BigDecimal? = null,
-              balance: BigDecimal? = null): MatchingResult {
+              executionContext: ExecutionContext): MatchingResult {
         val orderWrapper = CopyWrapper(originOrder)
         val order = orderWrapper.copy
-        val availableBalance = balance ?: getBalance(order)
+        val assetPair = executionContext.assetPairsById[order.assetPairId]!!
+        val availableBalance = balance ?: getBalance(order, assetPair, executionContext.walletOperationsProcessor)
         val workingOrderBook = PriorityBlockingQueue(orderBook)
         val bestPrice = if (workingOrderBook.isNotEmpty()) workingOrderBook.peek().takePrice() else null
-        val now = Date()
+        val now = executionContext.date
 
         var remainingVolume = order.getAbsVolume()
         val matchedOrders = LinkedList<CopyWrapper<LimitOrder>>()
@@ -98,7 +67,6 @@ class MatchingEngine(private val LOGGER: Logger,
         var totalVolume = BigDecimal.ZERO
         val limitReservedBalances = HashMap<String, BigDecimal>() // limit reserved balances for trades funds control
         val availableBalances = HashMap<String, MutableMap<String, BigDecimal>>() // clientId -> assetId -> balance; available balances for market balance control and fee funds control
-        val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val isBuy = order.isBuySide()
         val lkkTrades = LinkedList<LkkTrade>()
         val completedLimitOrders = LinkedList<CopyWrapper<LimitOrder>>()
@@ -106,8 +74,10 @@ class MatchingEngine(private val LOGGER: Logger,
         var uncompletedLimitOrderWrapper: CopyWrapper<LimitOrder>? = null
         val allOwnCashMovements = LinkedList<WalletOperation>()
         val allOppositeCashMovements = LinkedList<WalletOperation>()
-        val asset = assetsHolder.getAsset(if (isBuy) assetPair.quotingAssetId else assetPair.baseAssetId)
-        val limitAsset = assetsHolder.getAsset(if (isBuy) assetPair.baseAssetId else assetPair.quotingAssetId)
+        val baseAsset = executionContext.assetsById[assetPair.baseAssetId]!!
+        val quotingAsset = executionContext.assetsById[assetPair.quotingAssetId]!!
+        val asset = if (isBuy) quotingAsset else baseAsset
+        val limitAsset = if (isBuy) baseAsset else quotingAsset
 
         setMarketBalance(availableBalances, order, asset, availableBalance)
 
@@ -129,7 +99,7 @@ class MatchingEngine(private val LOGGER: Logger,
                     continue
                 }
 
-                val limitOrderCopyWrapper = changedOrders.getOrPut(limitOrderOrigin) { CopyWrapper(limitOrderOrigin) }
+                val limitOrderCopyWrapper = executionContext.orderBooksHolder.getOrPutOrderCopyWrapper(limitOrderOrigin) { CopyWrapper(limitOrderOrigin) }
                 val limitOrder = limitOrderCopyWrapper.copy
 
                 var isFullyMatched = false
@@ -140,41 +110,41 @@ class MatchingEngine(private val LOGGER: Logger,
                     isFullyMatched = true; marketRemainingVolume
                 }
 
-                var marketRoundedVolume = NumberUtils.setScale(if (isBuy) volume else -volume, assetsHolder.getAsset(assetPair.baseAssetId).accuracy, !isBuy)
-                var oppositeRoundedVolume = NumberUtils.setScale(if (isBuy) -limitOrder.price * volume else limitOrder.price * volume, assetsHolder.getAsset(assetPair.quotingAssetId).accuracy, isBuy)
+                var marketRoundedVolume = NumberUtils.setScale(if (isBuy) volume else -volume, baseAsset.accuracy, !isBuy)
+                var oppositeRoundedVolume = NumberUtils.setScale(if (isBuy) -limitOrder.price * volume else limitOrder.price * volume, quotingAsset.accuracy, isBuy)
 
-                LOGGER.info("Matching with limit order ${limitOrder.externalId}, client ${limitOrder.clientId}, price ${limitOrder.price}, " +
+                executionContext.info("Matching with limit order ${limitOrder.externalId}, client ${limitOrder.clientId}, price ${limitOrder.price}, " +
                         "marketVolume ${NumberUtils.roundForPrint(if (isBuy) oppositeRoundedVolume else marketRoundedVolume)}, " +
                         "limitVolume ${NumberUtils.roundForPrint(if (isBuy) marketRoundedVolume else oppositeRoundedVolume)}")
 
                 if ((!order.isStraight()) && isFullyMatched) {
-                    oppositeRoundedVolume = BigDecimal.valueOf(order.volume.signum().toLong()) * (NumberUtils.setScale(order.volume.abs() - totalLimitVolume.abs(), assetsHolder.getAsset(assetPair.quotingAssetId).accuracy, isBuy))
-                    marketRoundedVolume = NumberUtils.setScale(NumberUtils.divideWithMaxScale(-oppositeRoundedVolume, limitOrder.price), assetsHolder.getAsset(assetPair.baseAssetId).accuracy, !isBuy)
-                    LOGGER.info("Rounding last matched limit order trade: ${NumberUtils.roundForPrint(marketRoundedVolume)}")
+                    oppositeRoundedVolume = BigDecimal.valueOf(order.volume.signum().toLong()) * (NumberUtils.setScale(order.volume.abs() - totalLimitVolume.abs(), quotingAsset.accuracy, isBuy))
+                    marketRoundedVolume = NumberUtils.setScale( NumberUtils.divideWithMaxScale(-oppositeRoundedVolume, limitOrder.price), baseAsset.accuracy, !isBuy)
+                    executionContext.info("Rounding last matched limit order trade: ${NumberUtils.roundForPrint(marketRoundedVolume)}")
                 }
 
-                LOGGER.info("Corrected volumes: " +
+                executionContext.info("Corrected volumes: " +
                         "marketVolume ${NumberUtils.roundForPrint(if (isBuy) oppositeRoundedVolume else marketRoundedVolume)}, " +
                         "limitVolume ${NumberUtils.roundForPrint(if (isBuy) marketRoundedVolume else oppositeRoundedVolume)}")
 
                 val limitOrderInfo = "id: ${limitOrder.externalId}, client: ${limitOrder.clientId}, asset: ${limitOrder.assetPairId}"
 
                 if (!genericLimitOrderService.checkAndReduceBalance(
-                                limitOrder,
-                                if (isBuy) marketRoundedVolume else oppositeRoundedVolume,
-                                limitReservedBalances)) {
-                    LOGGER.info("Added order ($limitOrderInfo) to cancelled limit orders")
+                        limitOrder,
+                        if (isBuy) marketRoundedVolume else oppositeRoundedVolume,
+                        limitReservedBalances)) {
+                    executionContext.info("Added order ($limitOrderInfo) to cancelled limit orders")
                     cancelledLimitOrders.add(limitOrderCopyWrapper)
                     continue
                 }
 
                 if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, if (isBuy) marketRoundedVolume else oppositeRoundedVolume)) {
                     if (isFullyMatched) {
-                        LOGGER.info("Skipped order ($limitOrderInfo) due to zero latest trade")
+                        executionContext.info("Skipped order ($limitOrderInfo) due to zero latest trade")
                         matchedWithZeroLatestTrade = true
                         skipLimitOrders.add(limitOrderOrigin)
                     } else {
-                        LOGGER.info("Added order ($limitOrderInfo) to cancelled limit orders due to zero trade")
+                        executionContext.info("Added order ($limitOrderInfo) to cancelled limit orders due to zero trade")
                         cancelledLimitOrders.add(limitOrderCopyWrapper)
                     }
                     continue
@@ -202,36 +172,34 @@ class MatchingEngine(private val LOGGER: Logger,
                             mapOf(Pair(assetPair.assetPairId, limitOrder.price)),
                             availableBalances)
                 } catch (e: FeeException) {
-                    LOGGER.info("Added order ($limitOrderInfo) to cancelled limit orders: ${e.message}")
+                    executionContext.info("Added order ($limitOrderInfo) to cancelled limit orders: ${e.message}")
                     cancelledLimitOrders.add(limitOrderCopyWrapper)
                     continue
                 }
 
                 val midPrice = getMidPrice(skipLimitOrders, bestAsk, bestBid, isBuy)
-
                 if (!checkMidPrice(lowerMidPriceBound, upperMidPriceBound, midPrice)) {
-                    LOGGER.info("Invalid mid price order(${order.externalId}), lowerMidPriceBound=$lowerMidPriceBound, upperMidPriceBound=$upperMidPriceBound, midPrice=$midPrice")
+                    executionContext.info("Invalid mid price order(${order.externalId}), l=$lowerMidPriceBound, u=$upperMidPriceBound, m=$midPrice")
                     order.updateStatus(OrderStatus.TooHighMidPriceDeviation, now)
-                    return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+                    return MatchingResult(orderWrapper, cancelledLimitOrders)
                 }
 
                 val takerFees = try {
-                    feeProcessor.processFee(order.fees
-                            ?: emptyList(), if (isBuy) baseAssetOperation else quotingAssetOperation, ownCashMovements, mapOf(Pair(assetPair.assetPairId, limitOrder.price)), availableBalances)
+                    feeProcessor.processFee(order.fees ?: emptyList(), if (isBuy) baseAssetOperation else quotingAssetOperation, ownCashMovements, mapOf(Pair(assetPair.assetPairId, limitOrder.price)), availableBalances)
                 } catch (e: NotEnoughFundsFeeException) {
                     order.updateStatus(OrderStatus.NotEnoughFunds, now)
-                    LOGGER.info("Not enough funds for fee for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}, marketBalance: ${getMarketBalance(availableBalances, order, asset)} : ${e.message}")
-                    return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+                    executionContext.info("Not enough funds for fee for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}, marketBalance: ${getMarketBalance(availableBalances, order, asset)} : ${e.message}")
+                    return MatchingResult(orderWrapper, cancelledLimitOrders)
                 } catch (e: FeeException) {
                     order.updateStatus(OrderStatus.InvalidFee, now)
-                    LOGGER.info("Invalid fee for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}, marketBalance: ${getMarketBalance(availableBalances, order, asset)} : ${e.message}")
-                    return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+                    executionContext.info("Invalid fee for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}, marketBalance: ${getMarketBalance(availableBalances, order, asset)} : ${e.message}")
+                    return MatchingResult(orderWrapper, cancelledLimitOrders)
                 }
                 if (takerFees.isNotEmpty()) {
-                    LOGGER.info("Taker fee transfers: ${takerFees.map { it.transfer }}")
+                    executionContext.info("Taker fee transfers: ${takerFees.map { it.transfer }}")
                 }
                 if (makerFees.isNotEmpty()) {
-                    LOGGER.info("Maker fee transfers: ${makerFees.map { it.transfer }}")
+                    executionContext.info("Maker fee transfers: ${makerFees.map { it.transfer }}")
                 }
 
                 val matchedLimitOrderCopyWrapper = CopyWrapper(limitOrder)
@@ -240,12 +208,11 @@ class MatchingEngine(private val LOGGER: Logger,
                     limitOrderCopy.reservedLimitVolume = NumberUtils.setScaleRoundHalfUp(limitOrderCopy.reservedLimitVolume!! + if (-marketRoundedVolume < BigDecimal.ZERO) -marketRoundedVolume else -oppositeRoundedVolume, limitAsset.accuracy)
                 }
 
-                val limitVolumeAsset = assetsHolder.getAsset(assetsPairsHolder.getAssetPair(limitOrder.assetPairId).baseAssetId)
-                val newRemainingVolume = NumberUtils.setScaleRoundHalfUp(limitOrderCopy.remainingVolume + marketRoundedVolume, limitVolumeAsset.accuracy)
+                val newRemainingVolume = NumberUtils.setScaleRoundHalfUp(limitOrderCopy.remainingVolume + marketRoundedVolume, baseAsset.accuracy)
                 val isLimitMatched = newRemainingVolume.signum() != limitOrderCopy.remainingVolume.signum()
                 if (isLimitMatched) {
                     if (newRemainingVolume.signum() * limitOrderCopy.remainingVolume.signum() < 0) {
-                        LOGGER.info("Matched volume is overflowed (previous: ${limitOrderCopy.remainingVolume}, current: $newRemainingVolume)")
+                        executionContext.info("Matched volume is overflowed (previous: ${limitOrderCopy.remainingVolume}, current: $newRemainingVolume)")
                     }
                     lkkTrades.add(LkkTrade(limitOrder.assetPairId, limitOrder.clientId, limitOrder.price, limitOrderCopy.remainingVolume, now))
                     lkkTrades.add(LkkTrade(limitOrder.assetPairId, order.clientId, limitOrder.price, -limitOrderCopy.remainingVolume, now))
@@ -267,7 +234,7 @@ class MatchingEngine(private val LOGGER: Logger,
 
                 setMarketBalance(availableBalances, order, asset, NumberUtils.setScaleRoundHalfUp(getMarketBalance(availableBalances, order, asset) - (if (isBuy) oppositeRoundedVolume else marketRoundedVolume).abs(), asset.accuracy))
 
-                remainingVolume = if (isFullyMatched) BigDecimal.ZERO else NumberUtils.setScale(remainingVolume - getVolume(marketRoundedVolume.abs(), order.isStraight(), limitOrder.price), assetsHolder.getAsset(if (order.isStraight()) assetPair.baseAssetId else assetPair.quotingAssetId).accuracy, order.isOrigBuySide())
+                remainingVolume = if (isFullyMatched) BigDecimal.ZERO else NumberUtils.setScale(remainingVolume - getVolume(marketRoundedVolume.abs(), order.isStraight(), limitOrder.price), (if (order.isStraight()) baseAsset else quotingAsset).accuracy, order.isOrigBuySide())
                 limitOrderCopy.lastMatchTime = now
 
                 allOppositeCashMovements.addAll(oppositeCashMovements)
@@ -277,22 +244,16 @@ class MatchingEngine(private val LOGGER: Logger,
                 val roundedAbsoluteSpread = if (absoluteSpread != null) NumberUtils.setScaleRoundHalfUp(absoluteSpread, assetPair.accuracy) else null
                 val roundedRelativeSpread = if (relativeSpread != null) NumberUtils.setScaleRoundHalfUp(relativeSpread, RELATIVE_SPREAD_ACCURACY) else null
 
-                val baseAsset: Asset
-                val quotingAsset: Asset
                 val baseMarketVolume: String
                 val baseLimitVolume: String
                 val quotingMarketVolume: String
                 val quotingLimitVolume: String
                 if (isBuy) {
-                    baseAsset = limitAsset
-                    quotingAsset = asset
                     baseMarketVolume = bigDecimalToString(marketRoundedVolume.abs())!!
                     quotingMarketVolume = bigDecimalToString(-oppositeRoundedVolume.abs())!!
                     baseLimitVolume = bigDecimalToString(-marketRoundedVolume.abs())!!
                     quotingLimitVolume = bigDecimalToString(oppositeRoundedVolume.abs())!!
                 } else {
-                    baseAsset = asset
-                    quotingAsset = limitAsset
                     baseMarketVolume = bigDecimalToString(-marketRoundedVolume.abs())!!
                     quotingMarketVolume = bigDecimalToString(oppositeRoundedVolume.abs())!!
                     baseLimitVolume = bigDecimalToString(marketRoundedVolume.abs())!!
@@ -310,7 +271,7 @@ class MatchingEngine(private val LOGGER: Logger,
                         limitOrder.id,
                         limitOrder.externalId,
                         now,
-                        tradeIndex,
+                        executionContext.tradeIndex,
                         order.fee,
                         singleFeeTransfer(order.fee, takerFees),
                         takerFees,
@@ -333,7 +294,7 @@ class MatchingEngine(private val LOGGER: Logger,
                                 asset.assetId,
                                 order.clientId,
                                 NumberUtils.setScaleRoundHalfUp((if (isBuy) oppositeRoundedVolume else marketRoundedVolume).abs(), asset.accuracy).toPlainString(),
-                                tradeIndex,
+                                executionContext.tradeIndex,
                                 limitOrder.fee,
                                 singleFeeTransfer(limitOrder.fee, makerFees),
                                 makerFees,
@@ -344,7 +305,7 @@ class MatchingEngine(private val LOGGER: Logger,
                                 baseLimitVolume,
                                 quotingAsset.assetId,
                                 quotingLimitVolume))))
-                tradeIndex++
+                executionContext.tradeIndex++
 
                 totalVolume += volume
                 totalLimitPrice += volume * limitOrder.price
@@ -356,48 +317,46 @@ class MatchingEngine(private val LOGGER: Logger,
         if (order.takePrice() == null && remainingVolume > BigDecimal.ZERO) {
             if (matchedWithZeroLatestTrade) {
                 order.updateStatus(OrderStatus.InvalidVolumeAccuracy, now)
-                LOGGER.info("Invalid volume accuracy, latest trade has volume=0 for market order id: ${order.externalId}")
+                executionContext.info("Invalid volume accuracy, latest trade has volume=0 for market order id: ${order.externalId}")
             } else {
                 order.updateStatus(OrderStatus.NoLiquidity, now)
-                LOGGER.info("No liquidity, not enough funds on limit orders, for market order id: ${order.externalId}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)} | Unfilled: ${NumberUtils.roundForPrint(remainingVolume)}, price: ${order.takePrice()}")
+                executionContext.info("No liquidity, not enough funds on limit orders, for market order id: ${order.externalId}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)} | Unfilled: ${NumberUtils.roundForPrint(remainingVolume)}, price: ${order.takePrice()}")
             }
-            return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+            return MatchingResult(orderWrapper, cancelledLimitOrders)
         }
 
         if (order.calculateReservedVolume() > availableBalance) {
             order.updateStatus(OrderStatus.ReservedVolumeGreaterThanBalance, now)
-            LOGGER.info("Reserved volume (${order.calculateReservedVolume()}) greater than balance ($availableBalance) for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}")
-            return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+            executionContext.info("Reserved volume (${order.calculateReservedVolume()}) greater than balance ($availableBalance) for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}")
+            return MatchingResult(orderWrapper, cancelledLimitOrders)
         }
 
         val reservedBalance = if (order.calculateReservedVolume() > BigDecimal.ZERO) NumberUtils.setScale(order.calculateReservedVolume(), asset.accuracy, true) else availableBalance
         val marketBalance = getMarketBalance(availableBalances, order, asset)
         if (marketBalance < BigDecimal.ZERO || reservedBalance < NumberUtils.setScale((if (isBuy) totalLimitPrice else totalVolume), asset.accuracy, true)) {
             order.updateStatus(OrderStatus.NotEnoughFunds, now)
-            LOGGER.info("Not enough funds for order id: ${order.externalId}, " +
+            executionContext.info("Not enough funds for order id: ${order.externalId}, " +
                     "client: ${order.clientId}, asset: ${order.assetPairId}, " +
                     "volume: ${NumberUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}, " +
-                    "marketBalance: $marketBalance : $reservedBalance < ${NumberUtils.setScaleRoundUp((if (isBuy) totalLimitPrice else totalVolume), asset.accuracy)}")
-            return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+                    "marketBalance: $marketBalance : $reservedBalance < ${NumberUtils.setScaleRoundUp((if(isBuy) totalLimitPrice else totalVolume), asset.accuracy)}")
+            return MatchingResult(orderWrapper, cancelledLimitOrders)
         }
 
         val executionPrice = calculateExecutionPrice(order, assetPair, totalLimitPrice, totalVolume)
-
         if (!checkMaxVolume(order, assetPair, executionPrice)) {
             order.updateStatus(OrderStatus.InvalidVolume, now)
-            LOGGER.info("Too large volume of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxValue=${assetPair.maxValue}, straight=${order.isStraight()}")
-            return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+            executionContext.info("Too large volume of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxValue=${assetPair.maxValue}, straight=${order.isStraight()}")
+            return MatchingResult(orderWrapper, cancelledLimitOrders)
         }
         if (!checkMaxValue(order, assetPair, executionPrice)) {
             order.updateStatus(OrderStatus.InvalidValue, now)
-            LOGGER.info("Too large value of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxValue=${assetPair.maxValue}, straight=${order.isStraight()}")
-            return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+            executionContext.info("Too large value of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxValue=${assetPair.maxValue}, straight=${order.isStraight()}")
+            return MatchingResult(orderWrapper, cancelledLimitOrders)
         }
-
-        if (order.takePrice() == null && !checkExecutionPriceDeviation(order.isBuySide(), executionPrice, bestPrice, moPriceDeviationThreshold)) {
+        if (order.takePrice() == null && !checkExecutionPriceDeviation(order.isBuySide(), executionPrice, bestPrice, priceDeviationThreshold)) {
             order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
-            LOGGER.info("Too high price deviation (order id: ${order.externalId}): threshold: $moPriceDeviationThreshold, bestPrice: $bestPrice, executionPrice: $executionPrice)")
-            return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+            executionContext.info("Too high price deviation (order id: ${order.externalId}): threshold: $priceDeviationThreshold, bestPrice: $bestPrice, executionPrice: $executionPrice)")
+            return MatchingResult(orderWrapper, cancelledLimitOrders)
         }
 
         if (order.takePrice() != null && remainingVolume > BigDecimal.ZERO) {
@@ -414,7 +373,6 @@ class MatchingEngine(private val LOGGER: Logger,
         order.updatePrice(executionPrice)
 
         return MatchingResult(orderWrapper,
-                now,
                 cancelledLimitOrders,
                 matchedOrders,
                 skipLimitOrders.toSet(),
@@ -443,10 +401,9 @@ class MatchingEngine(private val LOGGER: Logger,
         return if (straight) volume else volume * price
     }
 
-    private fun getBalance(order: Order): BigDecimal {
-        val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
+    private fun getBalance(order: Order, assetPair: AssetPair, balancesGetter: BalancesGetter): BigDecimal {
         val asset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
-        return balancesHolder.getAvailableBalance(order.clientId, asset)
+        return balancesGetter.getAvailableBalance(order.clientId, asset)
     }
 
     private fun getMarketBalance(availableBalances: MutableMap<String, MutableMap<String, BigDecimal>>, order: Order, asset: Asset): BigDecimal {

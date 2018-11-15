@@ -9,47 +9,44 @@ import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
-import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
+import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.fee.FeeProcessor
+import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
+import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
+import com.lykke.matching.engine.order.process.StopOrderBookProcessor
+import com.lykke.matching.engine.order.ExecutionDataApplyService
+import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
 import com.lykke.matching.engine.services.utils.MultiOrderFilter
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
-import java.util.ArrayList
 import java.util.Date
 import java.util.UUID
 
 @Service
-class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderService,
-                             private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
-                             private val limitOrdersProcessorFactory: LimitOrdersProcessorFactory,
+class MultiLimitOrderService(private val executionContextFactory: ExecutionContextFactory,
+                             private val genericLimitOrdersProcessor: GenericLimitOrdersProcessor,
+                             private val stopOrderBookProcessor: StopOrderBookProcessor,
+                             private val executionDataApplyService: ExecutionDataApplyService,
+                             private val previousLimitOrdersProcessor: PreviousLimitOrdersProcessor,
                              private val assetsHolder: AssetsHolder,
                              private val assetsPairsHolder: AssetsPairsHolder,
                              private val balancesHolder: BalancesHolder,
-                             genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null,
-                             feeProcessor: FeeProcessor,
-                             private val settings: ApplicationSettingsCache) : AbstractService {
+                             private val applicationSettingsCache: ApplicationSettingsCache) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
         private val CONTROLS_LOGGER = Logger.getLogger("${MultiLimitOrderService::class.java.name}.controls")
     }
-
-    private val matchingEngine = MatchingEngine(LOGGER, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, feeProcessor)
-    private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER, CONTROLS_LOGGER)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         if (messageWrapper.parsedMessage == null) {
@@ -60,115 +57,41 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
     private fun processMultiOrder(messageWrapper: MessageWrapper) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrder
-        val isTrustedClient = balancesHolder.isTrustedClient(message.clientId)
-
-        LOGGER.debug("Got ${if (!isTrustedClient) "client " else ""}multi limit order id: ${message.uid}, " +
-                (if (messageWrapper.messageId != message.uid) "messageId: ${messageWrapper.messageId}, " else "") +
-                "client ${message.clientId}, " +
-                "assetPair: ${message.assetPairId}, " +
-                (if (message.hasCancelAllPreviousLimitOrders()) "cancelPrevious: ${message.cancelAllPreviousLimitOrders}, " else "") +
-                (if (message.hasCancelMode()) "cancelMode: ${message.cancelMode}" else ""))
-
         val assetPair = assetsPairsHolder.getAssetPairAllowNulls(message.assetPairId)
         if (assetPair == null) {
-            LOGGER.info("Unable to process message (${messageWrapper.messageId}): unknown asset pair")
+            LOGGER.info("Unable to process message (${messageWrapper.messageId}): unknown asset pair ${message.assetPairId}")
             writeResponse(messageWrapper, MessageStatus.UNKNOWN_ASSET)
             return
         }
-        val multiLimitOrder = readMultiLimitOrder(message, isTrustedClient, assetPair)
+        val isTrustedClient = applicationSettingsCache.isTrustedClient(message.clientId)
+
+        val multiLimitOrder = readMultiLimitOrder(messageWrapper.messageId!!, message, isTrustedClient, assetPair)
         val now = Date()
 
-        var buySideOrderBookChanged = false
-        var sellSideOrderBookChanged = false
-
-        var previousBuyOrders: Collection<LimitOrder>? = null
-        var previousSellOrders: Collection<LimitOrder>? = null
-        val ordersToReplace = mutableListOf<LimitOrder>()
-
-        val ordersToCancel = ArrayList<LimitOrder>()
-        if (multiLimitOrder.cancelAllPreviousLimitOrders) {
-            if (multiLimitOrder.cancelBuySide) {
-                previousBuyOrders = limitOrderService.searchOrders(multiLimitOrder.clientId, multiLimitOrder.assetPairId, true)
-                ordersToCancel.addAll(previousBuyOrders)
-                buySideOrderBookChanged = true
-            }
-            if (multiLimitOrder.cancelSellSide) {
-                previousSellOrders = limitOrderService.searchOrders(multiLimitOrder.clientId, multiLimitOrder.assetPairId, false)
-                ordersToCancel.addAll(previousSellOrders)
-                sellSideOrderBookChanged = true
-            }
-        }
-
-        val notFoundReplacements = mutableMapOf<String, LimitOrder>()
-
-        buySideOrderBookChanged = processReplacements(multiLimitOrder,
-                true,
-                notFoundReplacements,
-                previousBuyOrders,
-                ordersToCancel,
-                ordersToReplace) || buySideOrderBookChanged
-
-        sellSideOrderBookChanged = processReplacements(multiLimitOrder,
-                false,
-                notFoundReplacements,
-                previousSellOrders,
-                ordersToCancel,
-                ordersToReplace) || sellSideOrderBookChanged
-
-        val cancelResult = genericLimitOrdersCancellerFactory.create(LOGGER, now)
-                .preProcessLimitOrders(ordersToCancel)
-                .processLimitOrders()
-
-        val orderBook = cancelResult.assetOrderBooks[multiLimitOrder.assetPairId] ?: limitOrderService.getOrderBook(multiLimitOrder.assetPairId).copy()
-
-        val cancelBaseVolume = cancelResult.walletOperations
-                .stream()
-                .filter { it.assetId == assetPair.baseAssetId }
-                .map { t -> -t.reservedAmount }
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-
-        val cancelQuotingVolume = cancelResult.walletOperations
-                .stream()
-                .filter { it.assetId == assetPair.quotingAssetId }
-                .map { t -> -t.reservedAmount }
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-
-        notFoundReplacements.values.forEach {
-            it.updateStatus(OrderStatus.NotFoundPrevious, now)
-        }
-        ordersToReplace.forEach {
-            LOGGER.info("Order (${it.externalId}) is replaced by (${(multiLimitOrder.buyReplacements[it.externalId]
-                    ?: multiLimitOrder.sellReplacements[it.externalId])?.externalId})")
-            it.updateStatus(OrderStatus.Replaced, now)
-        }
-
-        val processor = limitOrdersProcessorFactory.create(matchingEngine,
+        val executionContext = executionContextFactory.create(messageWrapper.messageId!!,
+                messageWrapper.id!!,
+                MessageType.MULTI_LIMIT_ORDER,
+                messageWrapper.processedMessage,
+                mapOf(Pair(assetPair.assetPairId, assetPair)),
                 now,
-                balancesHolder.isTrustedClient(multiLimitOrder.clientId),
-                multiLimitOrder.clientId,
-                assetPair,
-                assetsHolder.getAsset(assetPair.baseAssetId),
-                assetsHolder.getAsset(assetPair.quotingAssetId),
-                orderBook,
-                cancelBaseVolume,
-                cancelQuotingVolume,
-                ordersToCancel,
-                cancelResult.clientsOrdersWithTrades,
-                cancelResult.trustedClientsOrdersWithTrades,
                 LOGGER,
                 CONTROLS_LOGGER)
 
-        matchingEngine.initTransaction()
-        val result = processor.preProcess(messageWrapper.messageId!!, multiLimitOrder.orders)
-                .apply(messageWrapper.messageId!!,
-                        messageWrapper.processedMessage,
-                        multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER,
-                        buySideOrderBookChanged, sellSideOrderBookChanged)
-        messageWrapper.triedToPersist = true
-        messageWrapper.persisted = result.success
-        val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
+        previousLimitOrdersProcessor.cancelAndReplaceOrders(multiLimitOrder.clientId,
+                multiLimitOrder.assetPairId,
+                multiLimitOrder.cancelAllPreviousLimitOrders,
+                multiLimitOrder.cancelBuySide,
+                multiLimitOrder.cancelSellSide,
+                multiLimitOrder.buyReplacements,
+                multiLimitOrder.sellReplacements,
+                executionContext)
 
-        if (!result.success) {
+        val processedOrders = genericLimitOrdersProcessor.processOrders(multiLimitOrder.orders, executionContext)
+        stopOrderBookProcessor.checkAndExecuteStopLimitOrders(executionContext)
+        val persisted = executionDataApplyService.persistAndSendEvents(messageWrapper, executionContext)
+
+        val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
+        if (!persisted) {
             val errorMessage = "Unable to save result data"
             LOGGER.error("$errorMessage (multi limit order id ${multiLimitOrder.messageUid})")
 
@@ -183,7 +106,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         responseBuilder.setId(multiLimitOrder.messageUid)
                 .setStatus(MessageStatus.OK.type).assetPairId = multiLimitOrder.assetPairId
 
-        result.orders.forEach { processedOrder ->
+        processedOrders.forEach { processedOrder ->
             val order = processedOrder.order
             val statusBuilder = ProtocolMessages.MultiLimitOrderResponse.OrderStatus.newBuilder()
                     .setId(order.externalId)
@@ -192,16 +115,23 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                     .setVolume(order.volume.toDouble())
                     .setPrice(order.price.toDouble())
             processedOrder.reason?.let { statusBuilder.statusReason = processedOrder.reason }
-            responseBuilder.addStatuses(statusBuilder.build())
+            responseBuilder.addStatuses(statusBuilder)
         }
         messageWrapper.writeMultiLimitOrderResponse(responseBuilder)
-
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair, now)
     }
 
-    private fun readMultiLimitOrder(message: ProtocolMessages.MultiLimitOrder,
+    private fun readMultiLimitOrder(messageId: String,
+                                    message: ProtocolMessages.MultiLimitOrder,
                                     isTrustedClient: Boolean,
                                     assetPair: AssetPair): MultiLimitOrder {
+        LOGGER.debug("Got ${if (!isTrustedClient) "client " else ""}multi limit order id: ${message.uid}, " +
+                (if (messageId != message.uid) "messageId: $messageId, " else "") +
+                "client ${message.clientId}, " +
+                "assetPair: ${message.assetPairId}, " +
+                "ordersCount: ${message.ordersCount}, " +
+                (if (message.hasCancelAllPreviousLimitOrders()) "cancelPrevious: ${message.cancelAllPreviousLimitOrders}, " else "") +
+                (if (message.hasCancelMode()) "cancelMode: ${message.cancelMode}" else ""))
+
         val clientId = message.clientId
         val messageUid = message.uid
         val assetPairId = message.assetPairId
@@ -226,7 +156,19 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 LOGGER)
 
         message.ordersList.forEach { currentOrder ->
-
+            if (!isTrustedClient) {
+                LOGGER.debug("Incoming limit order (message id: $messageId): ${getIncomingOrderInfo(currentOrder)}")
+            }
+            val type = if (currentOrder.hasType()) LimitOrderType.getByExternalId(currentOrder.type) else LimitOrderType.LIMIT
+            val status = when(type) {
+                LimitOrderType.LIMIT -> OrderStatus.InOrderBook
+                LimitOrderType.STOP_LIMIT -> OrderStatus.Pending
+            }
+            val price = if (currentOrder.hasPrice()) BigDecimal.valueOf(currentOrder.price) else BigDecimal.ZERO
+            val lowerLimitPrice = if (currentOrder.hasLowerLimitPrice()) BigDecimal.valueOf(currentOrder.lowerLimitPrice) else null
+            val lowerPrice = if (currentOrder.hasLowerPrice()) BigDecimal.valueOf(currentOrder.lowerPrice) else null
+            val upperLimitPrice = if (currentOrder.hasUpperLimitPrice()) BigDecimal.valueOf(currentOrder.upperLimitPrice) else null
+            val upperPrice = if (currentOrder.hasUpperPrice()) BigDecimal.valueOf(currentOrder.upperPrice) else null
             val feeInstruction = if (currentOrder.hasFee()) LimitOrderFeeInstruction.create(currentOrder.fee) else null
             val feeInstructions = NewLimitOrderFeeInstruction.create(currentOrder.feesList)
             val previousExternalId = if (currentOrder.hasOldUid()) currentOrder.oldUid else null
@@ -236,8 +178,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                     message.assetPairId,
                     message.clientId,
                     BigDecimal.valueOf(currentOrder.volume),
-                    BigDecimal.valueOf(currentOrder.price),
-                    OrderStatus.InOrderBook.name,
+                    price,
+                    status.name,
                     now,
                     Date(message.timestamp),
                     now,
@@ -245,12 +187,15 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                     null,
                     fee = feeInstruction,
                     fees = listOfLimitOrderFee(feeInstruction, feeInstructions),
-                    type = LimitOrderType.LIMIT,
-                    upperPrice = null,
-                    upperLimitPrice = null,
-                    lowerPrice = null,
-                    lowerLimitPrice = null,
-                    previousExternalId = previousExternalId)
+                    type = type,
+                    lowerLimitPrice = lowerLimitPrice,
+                    lowerPrice = lowerPrice,
+                    upperLimitPrice = upperLimitPrice,
+                    upperPrice = upperPrice,
+                    previousExternalId = previousExternalId
+//                    timeInForce = if (currentOrder.hasTimeInForce()) OrderTimeInForce.getByExternalId(currentOrder.timeInForce) else null,
+//                    expiryTime = if (currentOrder.hasExpiryTime()) Date(currentOrder.expiryTime) else null
+            )
 
             filter.checkAndAdd(order)
             previousExternalId?.let {
@@ -278,34 +223,32 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 sellReplacements)
     }
 
-    private fun processReplacements(multiLimitOrder: MultiLimitOrder,
-                                    isBuy: Boolean,
-                                    notFoundReplacements: MutableMap<String, LimitOrder>,
-                                    previousOrders: Collection<LimitOrder>?,
-                                    ordersToCancel: MutableCollection<LimitOrder>,
-                                    ordersToReplace: MutableCollection<LimitOrder>): Boolean {
-        var addedToCancel = false
-        val replacements = if (isBuy) multiLimitOrder.buyReplacements else multiLimitOrder.sellReplacements
-        if (replacements.isEmpty()) {
-            return addedToCancel
-        }
-        val mutableReplacements = replacements.toMutableMap()
-        val isAlreadyCancelled = isBuy && multiLimitOrder.cancelBuySide || !isBuy && multiLimitOrder.cancelSellSide
-        val ordersToCheck = previousOrders ?: limitOrderService.searchOrders(multiLimitOrder.clientId, multiLimitOrder.assetPairId, isBuy)
-        ordersToCheck.forEach {
-            if (mutableReplacements.containsKey(it.externalId)) {
-                val newOrder = mutableReplacements.remove(it.externalId)
-                if (!isAlreadyCancelled) {
-                    ordersToCancel.add(it)
-                    addedToCancel = true
-                }
-                if (newOrder?.status == OrderStatus.InOrderBook.name) {
-                    ordersToReplace.add(it)
-                }
-            }
-        }
-        notFoundReplacements.putAll(mutableReplacements)
-        return addedToCancel
+    private fun getIncomingOrderInfo(incomingOrder: ProtocolMessages.MultiLimitOrder.Order): String {
+        return "id: ${incomingOrder.uid}" +
+                (if (incomingOrder.hasType()) ", type: ${incomingOrder.type}" else "") +
+                ", volume: ${NumberUtils.roundForPrint(incomingOrder.volume)}" +
+                (if (incomingOrder.hasPrice()) ", price: ${NumberUtils.roundForPrint(incomingOrder.price)}" else "") +
+                (if (incomingOrder.hasLowerLimitPrice()) ", lowerLimitPrice: ${NumberUtils.roundForPrint(incomingOrder.lowerLimitPrice)}" else "") +
+                (if (incomingOrder.hasLowerPrice()) ", lowerPrice: ${NumberUtils.roundForPrint(incomingOrder.lowerPrice)}" else "") +
+                (if (incomingOrder.hasUpperLimitPrice()) ", upperLimitPrice: ${NumberUtils.roundForPrint(incomingOrder.upperLimitPrice)}" else "") +
+                (if (incomingOrder.hasUpperPrice()) ", upperPrice: ${NumberUtils.roundForPrint(incomingOrder.upperPrice)}" else "") +
+                (if (incomingOrder.hasOldUid()) ", oldUid: ${incomingOrder.oldUid}" else "") +
+//                (if (incomingOrder.hasTimeInForce()) ", timeInForce: ${incomingOrder.timeInForce}" else "") +
+//                (if (incomingOrder.hasExpiryTime()) ", expiryTime: ${incomingOrder.expiryTime}" else "") +
+                (if (incomingOrder.hasFee()) ", fee: ${getIncomingFeeInfo(incomingOrder.fee)}" else "") +
+                (if (incomingOrder.feesCount > 0) ", fees: ${incomingOrder.feesList.asSequence().map { getIncomingFeeInfo(incomingOrder.fee) }.joinToString(", ")}" else "")
+    }
+
+    private fun getIncomingFeeInfo(incomingFee: ProtocolMessages.LimitOrderFee): String {
+        return "type: ${incomingFee.type}, " +
+                (if (incomingFee.hasMakerSize()) ", makerSize: ${NumberUtils.roundForPrint(incomingFee.makerSize)}" else "") +
+                (if (incomingFee.hasTakerSize()) ", takerSize: ${NumberUtils.roundForPrint(incomingFee.takerSize)}" else "") +
+                (if (incomingFee.hasSourceClientId()) ", sourceClientId: ${incomingFee.sourceClientId}" else "") +
+                (if (incomingFee.hasTargetClientId()) ", targetClientId: ${incomingFee.targetClientId}" else "") +
+                (if (incomingFee.hasMakerSizeType()) ", makerSizeType: ${incomingFee.makerSizeType}" else "") +
+                (if (incomingFee.hasTakerSizeType()) ", takerSizeType: ${incomingFee.takerSizeType}" else "") +
+                (if (incomingFee.hasMakerFeeModificator()) ", makerFeeModificator: ${NumberUtils.roundForPrint(incomingFee.makerFeeModificator)}" else "") +
+                (if (incomingFee.assetIdCount > 0) ", assetIds: ${incomingFee.assetIdList}}" else "")
     }
 
     private fun parseMultiLimitOrder(array: ByteArray): ProtocolMessages.MultiLimitOrder {
@@ -318,7 +261,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
         messageWrapper.id = message.uid
-        messageWrapper.processedMessage = if (settings.isTrustedClient(message.clientId))
+        messageWrapper.processedMessage = if (applicationSettingsCache.isTrustedClient(message.clientId))
             null
         else
             ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)

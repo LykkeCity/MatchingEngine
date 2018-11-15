@@ -1,55 +1,43 @@
 package com.lykke.matching.engine.order.cancel
 
+import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
-import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.holders.*
+import com.lykke.matching.engine.holders.AssetsHolder
+import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
-import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
-import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
-import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
+import com.lykke.matching.engine.messages.MessageWrapper
+import com.lykke.matching.engine.order.ExecutionDataApplyService
+import com.lykke.matching.engine.order.process.StopOrderBookProcessor
+import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
-import com.lykke.matching.engine.services.MessageSender
 import org.apache.log4j.Logger
-import org.springframework.util.CollectionUtils
 import java.util.Date
-import java.util.concurrent.BlockingQueue
-import kotlin.collections.ArrayList
 
-class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
+class GenericLimitOrdersCanceller(private val executionContextFactory: ExecutionContextFactory,
+                                  private val stopOrderBookProcessor: StopOrderBookProcessor,
+                                  private val executionDataApplyService: ExecutionDataApplyService,
+                                  dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
                                   assetsHolder: AssetsHolder,
                                   private val assetsPairsHolder: AssetsPairsHolder,
                                   private val balancesHolder: BalancesHolder,
-                                  orderBookQueue: BlockingQueue<OrderBook>,
-                                  rabbitOrderBookQueue: BlockingQueue<OrderBook>,
-                                  private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                  private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                   genericLimitOrderService: GenericLimitOrderService,
                                   genericStopLimitOrderService: GenericStopLimitOrderService,
-                                  genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory,
-                                  private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                  private val messageSender: MessageSender,
                                   private val date: Date,
-                                  private val midPriceHolder: MidPriceHolder,
-                                  LOGGER: Logger,
-                                  private val cancelAll: Boolean = false) {
+                                  private val cancelAll: Boolean = false,
+                                  private val LOGGER: Logger) {
 
     private val limitOrdersCanceller = LimitOrdersCanceller(dictionariesDatabaseAccessor,
             assetsHolder,
             assetsPairsHolder,
             balancesHolder,
             genericLimitOrderService,
-            genericLimitOrderProcessorFactory,
-            orderBookQueue,
-            rabbitOrderBookQueue,
-            date,
-            LOGGER)
+            date)
 
     private val stopLimitOrdersCanceller = StopLimitOrdersCanceller(dictionariesDatabaseAccessor,
             assetsHolder,
@@ -88,101 +76,56 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
         return stopLimitOrdersCanceller.process()
     }
 
-    fun applyFull(operationId: String,
+    fun applyFull(messageWrapper: MessageWrapper?,
+                  operationId: String,
                   messageId: String,
                   processedMessage: ProcessedMessage?,
                   messageType: MessageType,
                   validateBalances: Boolean): Boolean {
         val limitOrdersCancelResult = processLimitOrders()
         val stopLimitOrdersResult = processStopLimitOrders()
-
-        val walletProcessor = balancesHolder.createWalletProcessor(null, validateBalances)
-        walletProcessor.preProcess(limitOrdersCancelResult.walletOperations)
-        walletProcessor.preProcess(stopLimitOrdersResult.walletOperations)
-
-        val limitOrdersWithTrades = mutableListOf<LimitOrderWithTrades>()
-        limitOrdersWithTrades.addAll(stopLimitOrdersResult.clientsOrdersWithTrades)
-        limitOrdersWithTrades.addAll(limitOrdersCancelResult.clientsOrdersWithTrades)
-
-        val trustedClientsLimitOrdersWithTrades = mutableListOf<LimitOrderWithTrades>()
-        trustedClientsLimitOrdersWithTrades.addAll(stopLimitOrdersResult.trustedClientsOrdersWithTrades)
-        trustedClientsLimitOrdersWithTrades.addAll(limitOrdersCancelResult.trustedClientsOrdersWithTrades)
-
-        var sequenceNumber: Long? = null
-        var clientsSequenceNumber: Long? = null
-        var trustedClientsSequenceNumber: Long? = null
-        if (trustedClientsLimitOrdersWithTrades.isNotEmpty()) {
-            trustedClientsSequenceNumber = messageSequenceNumberHolder.getNewValue()
-            sequenceNumber = trustedClientsSequenceNumber
+        val assetPairsById = getAssetPairsByIdMap(limitOrdersCancelResult.assetOrderBooks.keys)
+        val executionContext = executionContextFactory.create(messageId,
+                operationId,
+                messageType,
+                processedMessage,
+                assetPairsById,
+                date,
+                LOGGER,
+                LOGGER,
+                walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, validateBalances))
+        executionContext.executionContextForCancelOperation = true
+        executionContext.walletOperationsProcessor.preProcess(limitOrdersCancelResult.walletOperations
+                .plus(stopLimitOrdersResult.walletOperations))
+        limitOrdersCancelResult.assetOrderBooks.forEach {
+            executionContext.orderBooksHolder.setOrderBook(it.value)
         }
-        if (limitOrdersWithTrades.isNotEmpty()) {
-            clientsSequenceNumber = messageSequenceNumberHolder.getNewValue()
-            sequenceNumber = clientsSequenceNumber
+        stopLimitOrdersResult.assetOrderBooks.forEach {
+            executionContext.stopOrderBooksHolder.setOrderBook(it.value)
         }
-
-        val midPricePersistenceData = getMidPricePersistenceData(limitOrdersCancelResult.assetOrderBooks)
-        val updated = walletProcessor.persistBalances(processedMessage,
-                limitOrdersCanceller.getPersistenceData(),
-                stopLimitOrdersCanceller.getPersistenceData(),
-                sequenceNumber, midPricePersistenceData)
-
-        if (!updated) {
-            return false
+        executionContext.orderBooksHolder.addCancelledOrders(limitOrdersCanceller.getProcessedOrders())
+        executionContext.stopOrderBooksHolder.addCancelledOrders(stopLimitOrdersCanceller.getProcessedOrders())
+        executionContext.addClientsLimitOrdersWithTrades(limitOrdersCancelResult.clientsOrdersWithTrades)
+        executionContext.addClientsLimitOrdersWithTrades(stopLimitOrdersResult.clientsOrdersWithTrades)
+        executionContext.addTrustedClientsLimitOrdersWithTrades(limitOrdersCancelResult.trustedClientsOrdersWithTrades)
+        executionContext.addTrustedClientsLimitOrdersWithTrades(stopLimitOrdersResult.trustedClientsOrdersWithTrades)
+        getMidPrices(limitOrdersCancelResult.assetOrderBooks).forEach {
+            executionContext.updateMidPrice(it)
         }
-
-
-        walletProcessor.apply().sendNotification(operationId, messageType.name, messageId)
-        stopLimitOrdersCanceller.apply(messageId, processedMessage, stopLimitOrdersResult)
-        limitOrdersCanceller.apply(messageId, processedMessage, limitOrdersCancelResult)
-        updateMidPricesInCache(midPricePersistenceData)
-
-        if (trustedClientsLimitOrdersWithTrades.isNotEmpty()) {
-            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(messageId, trustedClientsLimitOrdersWithTrades))
-            messageSender.sendTrustedClientsMessage(EventFactory.createTrustedClientsExecutionEvent(trustedClientsSequenceNumber!!,
-                    messageId,
-                    operationId,
-                    date,
-                    messageType,
-                    trustedClientsLimitOrdersWithTrades))
-        }
-
-        if (limitOrdersWithTrades.isNotEmpty()) {
-            clientLimitOrdersQueue.put(LimitOrdersReport(messageId, limitOrdersWithTrades))
-            messageSender.sendMessage(EventFactory.createExecutionEvent(clientsSequenceNumber!!,
-                    messageId,
-                    operationId,
-                    date,
-                    messageType,
-                    walletProcessor.getClientBalanceUpdates(),
-                    limitOrdersWithTrades))
-        }
-
-        limitOrdersCanceller.checkAndProcessStopOrders(messageId)
-
-        return true
+        executionContext.removeAllMidPrices = cancelAll
+        stopOrderBookProcessor.checkAndExecuteStopLimitOrders(executionContext)
+        return executionDataApplyService.persistAndSendEvents(messageWrapper, executionContext)
     }
-
-    private fun updateMidPricesInCache(midPricePersistenceData: MidPricePersistenceData) {
-        if (midPricePersistenceData.removeAll) {
-            midPriceHolder.clear()
-            return
-        }
-
-        if(!CollectionUtils.isEmpty(midPricePersistenceData.midPrices)) {
-            midPricePersistenceData.midPrices!!.forEach {
-                val assetPair = assetsPairsHolder.getAssetPairAllowNulls(it.assetPairId)
-                if (assetPair != null) {
-                    midPriceHolder.addMidPrice(assetPair, it.midPrice, date, true)
-                }
-            }
-        }
+    private fun getAssetPairsByIdMap(assetPairIds: Collection<String>): Map<String, AssetPair> {
+        return assetPairIds.asSequence()
+                .mapNotNull { assetsPairsHolder.getAssetPairAllowNulls(it) }
+                .groupBy { it.assetPairId }
+                .mapValues { it.value.single() }
     }
-
-    private fun getMidPricePersistenceData(assetPairIdToAssetOrderBook: Map<String, AssetOrderBook>): MidPricePersistenceData {
+    private fun getMidPrices(assetPairIdToAssetOrderBook: Map<String, AssetOrderBook>): List<MidPrice> {
         if (cancelAll) {
-            return MidPricePersistenceData(midPrice = null, removeAll = true)
+            return emptyList()
         }
-
         val result = ArrayList<MidPrice>()
         assetPairIdToAssetOrderBook.forEach { assetPairId, orderBook ->
             val midPrice = orderBook.getMidPrice()
@@ -190,7 +133,6 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
                 result.add(MidPrice(assetPairId, midPrice, date.time))
             }
         }
-
-        return MidPricePersistenceData(result)
+        return result
     }
 }

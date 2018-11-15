@@ -4,8 +4,6 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.IncomingLimitOrder
-import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
-import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.PrintUtils
@@ -16,12 +14,6 @@ import java.math.BigDecimal
 
 @Ignore
 class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
-
-    private val messageBuilder = MessageBuilder(singleLimitOrderContextParser,
-            cashInOutContextParser,
-            cashTransferContextParser,
-            LimitOrderCancelOperationContextParser(),
-            LimitOrderMassCancelOperationContextParser())
 
     override fun initServices() {
         super.initServices()
@@ -172,11 +164,10 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
     fun testAddAndMatchLimitOrder3(): Double {
         val counter = ActionTimeCounter()
 
+        initServices()
         testBalanceHolderWrapper.updateBalance("Client5", "USD", 18.6)
         testBalanceHolderWrapper.updateBalance("Client5", "TIME", 1000.0)
         testBalanceHolderWrapper.updateBalance("Client2", "TIME", 1000.0)
-
-        initServices()
 
         counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "TIMEUSD", clientId = "Client5", orders =
         listOf(IncomingLimitOrder(-100.0, 26.955076)),
@@ -195,10 +186,10 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
     fun testAddAndMatchLimitOrderZeroVolumes(): Double {
         val counter = ActionTimeCounter()
 
+        initServices()
+
         testBalanceHolderWrapper.updateBalance("Client5", "BTC", 1000.0)
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
-
-        initServices()
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "BTCEUR", clientId = "Client2", price = 3629.355, volume = 0.19259621)))
 
@@ -228,11 +219,12 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
 
         testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client3"))
 
+        initServices()
+
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.26170853)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC",  0.001)
         testBalanceHolderWrapper.updateBalance("Client3", "CHF", 1000.0)
 
-        initServices()
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client2", assetId = "BTCCHF", uid = "1", price = 4384.15, volume = -0.26070853)))
 
@@ -258,7 +250,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
         testBalanceHolderWrapper.updateBalance(client, "EUR", 700.04)
         testBalanceHolderWrapper.updateBalance(marketMaker, "BTC", 2.0)
 
-        testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(clientId = client, assetId = "BTCEUR", price = 4722.0, volume = 0.14825226))
+        primaryOrdersDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(clientId = client, assetId = "BTCEUR", price = 4722.0, volume = 0.14825226))
         initServices()
 
         counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "BTCEUR", clientId = marketMaker, orders =
@@ -278,7 +270,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
 
         val order = MessageBuilder.buildLimitOrder(clientId = client, assetId = "EURUSD", price = 1.2, volume = 1.0)
         order.reservedLimitVolume = BigDecimal.valueOf(1.19)
-        testOrderDatabaseAccessor.addLimitOrder(order)
+        primaryOrdersDatabaseAccessor.addLimitOrder(order)
 
         initServices()
 
