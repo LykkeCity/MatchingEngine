@@ -20,6 +20,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdat
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.junit.After
@@ -135,7 +136,7 @@ abstract class AbstractTest {
     protected lateinit var clientsEventsQueue: BlockingQueue<Event<*>>
 
     @Autowired
-    protected lateinit var trustedClientsEventsQueue: BlockingQueue<Event<*>>
+    protected lateinit var trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>
 
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
 

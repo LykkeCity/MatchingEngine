@@ -31,6 +31,7 @@ import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.CashInOutOperationService
 import com.lykke.matching.engine.services.CashTransferOperationService
@@ -105,7 +106,7 @@ open class TestApplicationContext {
 
     @Bean
     open fun notificationSender(clientsEventsQueue: BlockingQueue<Event<*>>,
-                                trustedClientsEventsQueue: BlockingQueue<Event<*>>): MessageSender {
+                                trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>): MessageSender {
         return MessageSender(clientsEventsQueue, trustedClientsEventsQueue)
     }
 
