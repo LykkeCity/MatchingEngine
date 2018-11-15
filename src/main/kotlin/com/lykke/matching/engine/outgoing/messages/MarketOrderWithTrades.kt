@@ -6,5 +6,5 @@ import java.util.LinkedList
 class MarketOrderWithTrades (
     val messageId: String,
     val order: MarketOrder,
-    val trades: MutableList<TradeInfo> = LinkedList()
+    val trades: List<TradeInfo> = emptyList()
 )

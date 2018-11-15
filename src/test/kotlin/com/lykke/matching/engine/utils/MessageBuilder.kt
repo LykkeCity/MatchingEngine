@@ -201,11 +201,16 @@ companion object {
             orders.forEach { order ->
                 val orderBuilder = ProtocolMessages.MultiLimitOrder.Order.newBuilder()
                         .setVolume(order.volume)
-                        .setPrice(order.price)
+                order.price?.let { orderBuilder.price = it }
                 order.feeInstruction?.let { orderBuilder.fee = buildLimitOrderFee(it) }
                 order.feeInstructions.forEach { orderBuilder.addFees(buildNewLimitOrderFee(it)) }
                 orderBuilder.uid = order.uid
                 order.oldUid?.let { orderBuilder.oldUid = order.oldUid }
+                order.type?.let { orderBuilder.type = it.externalId }
+                order.lowerLimitPrice?.let { orderBuilder.lowerLimitPrice = it }
+                order.lowerPrice?.let { orderBuilder.lowerPrice = it }
+                order.upperLimitPrice?.let { orderBuilder.upperLimitPrice = it }
+                order.upperPrice?.let { orderBuilder.upperPrice = it }
                 multiOrderBuilder.addOrders(orderBuilder.build())
             }
             return multiOrderBuilder.build()
@@ -319,7 +324,6 @@ companion object {
 
         return cashInOutContextParser.parse(MessageWrapper("Test", MessageType.CASH_IN_OUT_OPERATION.type, builder.build().toByteArray(), null)).messageWrapper
     }
-
 
     fun buildLimitOrderCancelWrapper(uid: String) = buildLimitOrderCancelWrapper(listOf(uid))
 
