@@ -1,4 +1,4 @@
-package com.lykke.matching.engine.outgoing.rabbit.impl
+package com.lykke.matching.engine.outgoing.rabbit.impl.publishers
 
 import com.rabbitmq.client.AMQP
 

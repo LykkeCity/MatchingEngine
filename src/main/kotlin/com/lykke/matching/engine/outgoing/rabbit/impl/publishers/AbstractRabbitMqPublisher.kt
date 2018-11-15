@@ -1,6 +1,8 @@
-package com.lykke.matching.engine.outgoing.rabbit.impl
+package com.lykke.matching.engine.outgoing.rabbit.impl.publishers
 
 import com.lykke.matching.engine.logging.DatabaseLogger
+import com.lykke.matching.engine.outgoing.rabbit.events.RabbitFailureEvent
+import com.lykke.matching.engine.outgoing.rabbit.events.RabbitRecoverEvent
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.utils.logging.MetricsLogger
@@ -10,19 +12,23 @@ import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 import org.apache.log4j.Logger
+import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.BlockingQueue
 
-abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
-                                               private val exchangeName: String,
-                                               private val queue: BlockingQueue<out T>,
-                                               private val appName: String,
-                                               private val appVersion: String,
-                                               private val exchangeType: BuiltinExchangeType,
-                                               private val LOGGER: ThrottlingLogger,
-                                               private val MESSAGES_LOGGER: Logger,
-                                               private val METRICS_LOGGER: MetricsLogger,
-                                               private val STATS_LOGGER: Logger,
-                                               /** null if do not need to log */
+abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
+                                            private val exchangeName: String,
+                                            private val queueName: String,
+                                            private val queue: BlockingQueue<out T>,
+                                            private val appName: String,
+                                            private val appVersion: String,
+                                            private val exchangeType: BuiltinExchangeType,
+                                            private val LOGGER: ThrottlingLogger,
+                                            private val MESSAGES_LOGGER: Logger,
+                                            private val METRICS_LOGGER: MetricsLogger,
+                                            private val STATS_LOGGER: Logger,
+                                            private val applicationEventPublisher: ApplicationEventPublisher,
+
+                                            /** null if do not need to log */
                                                private val messageDatabaseLogger: DatabaseLogger<T>? = null) : Thread() {
 
     companion object {
@@ -49,9 +55,10 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
             channel!!.exchangeDeclare(exchangeName, exchangeType, true)
 
             LOGGER.info("Connected to RabbitMQ: ${factory.host}:${factory.port}, exchange: $exchangeName")
-
+            publishRecoverEvent()
             return true
         } catch (e: Exception) {
+            publishFailureEvent(null)
             LOGGER.error("Unable to connect to RabbitMQ: ${factory.host}:${factory.port}, exchange: $exchangeName: ${e.message}", e)
             return false
         }
@@ -78,13 +85,25 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
                 val endPersistTime = System.nanoTime()
                 val endTime = System.nanoTime()
                 fixTime(startTime, endTime, startPersistTime, endPersistTime)
+
                 return
             } catch (exception: Exception) {
+                publishFailureEvent(item)
                 LOGGER.error("Exception during RabbitMQ publishing: ${exception.message}", exception)
                 METRICS_LOGGER.logError("Exception during RabbitMQ publishing: ${exception.message}", exception)
                 tryConnectUntilSuccess()
             }
         }
+    }
+
+    private fun publishRecoverEvent() {
+        LOGGER.info("Rabbit MQ publisher: $queueName recovered")
+        applicationEventPublisher.publishEvent(RabbitRecoverEvent(queueName))
+    }
+
+    private fun publishFailureEvent(event: T?) {
+        LOGGER.error("Rabbit MQ publisher: $queueName failed")
+        applicationEventPublisher.publishEvent(RabbitFailureEvent(queueName, event))
     }
 
     private fun logMessage(item: T, stringRepresentation: String?) {
@@ -114,7 +133,7 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
         totalTime += (endTime - startTime).toDouble() / LOG_COUNT
 
         if (messagesCount % LOG_COUNT == 0L) {
-            STATS_LOGGER.info("Exchange: $exchangeName. Messages: ${LOG_COUNT}. Total: ${PrintUtils.convertToString(totalTime)}. " +
+            STATS_LOGGER.info("Exchange: $exchangeName. Messages: $LOG_COUNT. Total: ${PrintUtils.convertToString(totalTime)}. " +
                     " Persist: ${PrintUtils.convertToString(totalPersistTime)}, ${NumberUtils.roundForPrint2(100 * totalPersistTime / totalTime)} %")
             totalPersistTime = 0.0
             totalTime = 0.0

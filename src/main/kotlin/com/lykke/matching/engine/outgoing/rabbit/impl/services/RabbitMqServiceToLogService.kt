@@ -1,4 +1,4 @@
-package com.lykke.matching.engine.outgoing.rabbit.impl
+package com.lykke.matching.engine.outgoing.rabbit.impl.services
 
 import com.google.gson.Gson
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
