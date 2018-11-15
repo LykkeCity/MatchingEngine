@@ -2,7 +2,7 @@ group 'com.lykke.me'
 version '0.1'
 
 buildscript {
-    ext.spring_boot_version = '2.0.0.RELEASE'
+    ext.spring_boot_version = '2.0.6.RELEASE'
     ext.kotlin_version =  '1.2.10'
 
     repositories {

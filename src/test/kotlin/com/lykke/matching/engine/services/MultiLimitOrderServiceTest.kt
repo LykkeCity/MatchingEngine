@@ -995,7 +995,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         val event = trustedClientsEventsQueue.poll() as ExecutionEvent
         assertEquals(5, event.orders.size)
 
-        assertTrue(genericLimitOrderService.getOrderBook("BTCEUR").getOrderBook(true).map { it.externalId } == listOf("3"))
+        assertEquals(genericLimitOrderService.getOrderBook("BTCEUR").getOrderBook(true).map { it.externalId }, listOf("3"))
     }
 
     @Test

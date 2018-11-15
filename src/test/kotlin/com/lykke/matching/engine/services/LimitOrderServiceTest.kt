@@ -444,6 +444,34 @@ class LimitOrderServiceTest: AbstractTest() {
     }
 
     @Test
+    fun testStatusDate() {
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 1.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1.0)
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", uid = "order1", assetId = "EURUSD", volume = -1.0, price = 1.0)))
+
+        assertEquals(OrderStatus.InOrderBook.name, genericLimitOrderService.getOrder("order1")!!.status)
+        val inOrderBookStatusDate = genericLimitOrderService.getOrder("order1")!!.statusDate
+
+        Thread.sleep(10)
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", volume = 0.4, price = 1.0)))
+
+        assertEquals(OrderStatus.Processing.name, genericLimitOrderService.getOrder("order1")!!.status)
+        val partiallyMatchedStatusDate1 = genericLimitOrderService.getOrder("order1")!!.statusDate
+
+        Thread.sleep(10)
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", volume = 0.4, price = 1.0)))
+
+        assertEquals(OrderStatus.Processing.name, genericLimitOrderService.getOrder("order1")!!.status)
+        val partiallyMatchedStatusDate2 = genericLimitOrderService.getOrder("order1")!!.statusDate
+
+        assertTrue(partiallyMatchedStatusDate1!! > inOrderBookStatusDate)
+        assertEquals(partiallyMatchedStatusDate1, partiallyMatchedStatusDate2)
+    }
+
+    @Test
     fun testAddLimitOrderEURUSD() {
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
 
