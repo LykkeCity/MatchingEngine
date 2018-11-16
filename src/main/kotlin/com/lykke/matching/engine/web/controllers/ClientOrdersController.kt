@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.web.controllers
 
-import com.lykke.matching.engine.database.cache.AssetPairsCache
+import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
@@ -27,7 +27,7 @@ class ClientOrdersController {
     private lateinit var genericStopLimitOrderService: GenericStopLimitOrderService
 
     @Autowired
-    private lateinit var assetPairsCache: AssetPairsCache
+    private lateinit var assetPairsHolder: AssetsPairsHolder
 
     @Autowired
     private lateinit var balancesHolder: BalancesHolder
@@ -48,7 +48,7 @@ class ClientOrdersController {
             throw WalletNotFoundException()
         }
 
-        if (assetPairId != null && assetPairsCache.getAssetPair(assetPairId) == null) {
+        if (assetPairId != null && assetPairsHolder.getAssetPairAllowNulls(assetPairId) == null) {
             throw IllegalArgumentException("Asset pair is not supported")
         }
 
