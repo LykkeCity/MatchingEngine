@@ -40,7 +40,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
             return BigDecimal.ZERO
         }
 
-        val currentRefMidPrice = getReferenceMidPrice(assetPair, executionContext)
+        val currentRefMidPrice = getUnScaledReferenceMidPrice(assetPair, executionContext)
         val notSavedMidPricesLength = BigDecimal.valueOf(notSavedMidPrices.size.toLong())
         if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, notSavedMidPricesLength)) {
             return currentRefMidPrice
@@ -65,22 +65,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
     }
 
     fun getReferenceMidPrice(assetPair: AssetPair, executionContext: ExecutionContext): BigDecimal {
-        val operationTime = executionContext.date
-
-        if (!isMidPriceDataReady(assetPair.assetPairId, operationTime)) {
-            return BigDecimal.ZERO
-        }
-        val midPriceFirstTimeReady = readyRefMidPricesAssetPairs.add(assetPair.assetPairId)
-        removeObsoleteMidPrices(assetPair.assetPairId, getLowerTimeBound(operationTime.time))
-        val refMidPrice = referencePriceByAssetPairId[assetPair.assetPairId]
-        val result = if (refMidPrice != null && !NumberUtils.equalsIgnoreScale(refMidPrice, BigDecimal.ZERO)) {
-            refMidPrice
-        } else prevReferencePriceByAssetPairId[assetPair.assetPairId] ?: BigDecimal.ZERO
-        val refMidPriceScaledValue = NumberUtils.setScaleRoundUp(result, assetPair.accuracy)
-        if (midPriceFirstTimeReady) {
-            orderBookMidPriceChecker.checkOrderBook(RefMidPriceDangerousChangeEvent(assetPair.assetPairId, refMidPriceScaledValue, executionContext))
-        }
-        return refMidPriceScaledValue
+        return NumberUtils.setScaleRoundUp(getUnScaledReferenceMidPrice(assetPair, executionContext), assetPair.accuracy)
     }
 
     fun addMidPrice(assetPair: AssetPair, newMidPrice: BigDecimal, executionContext: ExecutionContext) {
@@ -116,6 +101,26 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
             return false
         }
         return !NumberUtils.equalsIgnoreScale(midPrices!!.last.midPrice, newMidPrice)
+    }
+
+    private fun getUnScaledReferenceMidPrice(assetPair: AssetPair, executionContext: ExecutionContext): BigDecimal {
+        val operationTime = executionContext.date
+
+        if (!isMidPriceDataReady(assetPair.assetPairId, operationTime)) {
+            return BigDecimal.ZERO
+        }
+        val midPriceFirstTimeReady = readyRefMidPricesAssetPairs.add(assetPair.assetPairId)
+        removeObsoleteMidPrices(assetPair.assetPairId, getLowerTimeBound(operationTime.time))
+        val refMidPrice = referencePriceByAssetPairId[assetPair.assetPairId]
+        val result = if (refMidPrice != null && !NumberUtils.equalsIgnoreScale(refMidPrice, BigDecimal.ZERO)) {
+            refMidPrice
+        } else prevReferencePriceByAssetPairId[assetPair.assetPairId] ?: BigDecimal.ZERO
+
+        if (midPriceFirstTimeReady) {
+            orderBookMidPriceChecker.checkOrderBook(RefMidPriceDangerousChangeEvent(assetPair.assetPairId, NumberUtils.setScaleRoundUp(result, assetPair.accuracy), executionContext))
+        }
+
+        return result
     }
 
     private fun removeObsoleteMidPrices(assetPairId: String, lowerBoundTimeMillisBound: Long) {
