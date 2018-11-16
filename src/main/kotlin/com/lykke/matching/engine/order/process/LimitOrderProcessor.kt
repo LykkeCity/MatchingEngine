@@ -370,7 +370,6 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         return null
     }
 
-
     private fun processOppositeOrders(orderContext: LimitOrderExecutionContext) {
         val matchingResult = orderContext.matchingResult!!
         orderContext.executionContext.orderBooksHolder.addCompletedOrders(matchingResult.completedLimitOrders.map { it.origin!! })

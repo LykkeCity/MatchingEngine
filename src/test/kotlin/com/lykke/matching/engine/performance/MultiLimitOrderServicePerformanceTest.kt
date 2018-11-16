@@ -221,6 +221,8 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
 
         initServices()
 
+        initServices()
+
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.26170853)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC",  0.001)
         testBalanceHolderWrapper.updateBalance("Client3", "CHF", 1000.0)

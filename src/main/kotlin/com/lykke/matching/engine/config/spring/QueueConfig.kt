@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPer
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.util.concurrent.BlockingDeque
@@ -28,7 +29,7 @@ open class QueueConfig {
 
     @Bean
     @RabbitQueue
-    open fun trustedClientsEventsQueue(): BlockingDeque<Event<*>> {
+    open fun trustedClientsEventsQueue(): BlockingDeque<ExecutionEvent> {
         return LinkedBlockingDeque()
     }
 

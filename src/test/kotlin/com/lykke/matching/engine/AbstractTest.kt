@@ -13,6 +13,7 @@ import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.utils.assertEquals
@@ -126,7 +127,7 @@ abstract class AbstractTest {
     protected lateinit var clientsEventsQueue: BlockingQueue<Event<*>>
 
     @Autowired
-    protected lateinit var trustedClientsEventsQueue: BlockingQueue<Event<*>>
+    protected lateinit var trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>
 
     @Autowired
     @Qualifier("rabbitCashInOutQueue")

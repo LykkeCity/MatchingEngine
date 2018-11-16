@@ -11,6 +11,7 @@ import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
+import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
@@ -34,6 +35,7 @@ import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
@@ -108,7 +110,7 @@ open class TestApplicationContext {
 
     @Bean
     open fun notificationSender(clientsEventsQueue: BlockingQueue<Event<*>>,
-                                trustedClientsEventsQueue: BlockingQueue<Event<*>>): MessageSender {
+                                trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>): MessageSender {
         return MessageSender(clientsEventsQueue, trustedClientsEventsQueue)
     }
 
