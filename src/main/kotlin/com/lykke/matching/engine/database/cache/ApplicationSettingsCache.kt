@@ -12,7 +12,7 @@ import javax.annotation.PostConstruct
 
 @Component
 class ApplicationSettingsCache @Autowired constructor(private val settingsDatabaseAccessor: SettingsDatabaseAccessor) : DataCache() {
-    private val settingsByGroupName = HashMap<String, MutableSet<Setting>>()
+    private val settingsByGroupName = HashMap<AvailableSettingGroup, MutableSet<Setting>>()
 
     @PostConstruct
     @Synchronized
@@ -25,9 +25,9 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
             }
 
             if (dbSettings == null) {
-                settingsByGroupName.remove(settingGroup.settingGroupName)
+                settingsByGroupName.remove(settingGroup)
             } else {
-                settingsByGroupName[settingGroup.settingGroupName] = dbSettings
+                settingsByGroupName[settingGroup] = dbSettings
             }
         }
     }
@@ -65,7 +65,7 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
     @Synchronized
     fun createOrUpdateSettingValue(settingGroup: AvailableSettingGroup, settingName: String, value: String, enabled: Boolean) {
         deleteSetting(settingGroup, settingName)
-        val settings = settingsByGroupName.getOrPut(settingGroup.settingGroupName) { HashSet() }
+        val settings = settingsByGroupName.getOrPut(settingGroup) { HashSet() }
         settings.add(Setting(settingName, value, enabled))
     }
 
@@ -74,13 +74,13 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
         val settings = getSettingsForSettingGroup(settingGroup)
         settings?.removeIf { it.name == settingName }
         if (CollectionUtils.isEmpty(settings)) {
-            settingsByGroupName.remove(settingGroup.settingGroupName)
+            settingsByGroupName.remove(settingGroup)
         }
     }
 
     @Synchronized
     fun deleteSettingGroup(settingGroup: AvailableSettingGroup) {
-        settingsByGroupName.remove(settingGroup.settingGroupName)
+        settingsByGroupName.remove(settingGroup)
     }
 
     @Synchronized
@@ -91,20 +91,20 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
     }
 
     @Synchronized
-    fun getSettingsGroup(settingGroupName: String, enabled: Boolean? = null): SettingsGroup? {
-        return settingsByGroupName[settingGroupName]?.filter { enabled == null || it.enabled == enabled }?.let {
-            SettingsGroup(settingGroupName, it.toSet())
+    fun getSettingsGroup(group: AvailableSettingGroup, enabled: Boolean? = null): SettingsGroup? {
+        return settingsByGroupName[group]?.filter { enabled == null || it.enabled == enabled }?.let {
+            SettingsGroup(group, it.toSet())
         }
     }
 
     @Synchronized
-    fun getSetting(settingGroupName: String, settingName: String, enabled: Boolean? = null): Setting? {
+    fun getSetting(settingGroupName: AvailableSettingGroup, settingName: String, enabled: Boolean? = null): Setting? {
         return getSettingsGroup(settingGroupName, enabled)?.let {
             it.settings.find { it.name == settingName }
         }
     }
 
     private fun getSettingsForSettingGroup(settingGroup: AvailableSettingGroup): MutableSet<Setting>? {
-        return settingsByGroupName[settingGroup.settingGroupName]
+        return settingsByGroupName[settingGroup]
     }
 }
