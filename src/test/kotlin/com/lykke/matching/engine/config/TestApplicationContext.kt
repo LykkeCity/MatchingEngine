@@ -269,8 +269,15 @@ open class TestApplicationContext {
     open fun reservedCashInOutOperation(balancesHolder: BalancesHolder,
                                         assetsHolder: AssetsHolder,
                                         reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
-                                        reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator): ReservedCashInOutOperationService {
-        return ReservedCashInOutOperationService(assetsHolder, balancesHolder, reservedCashOperationQueue, reservedCashInOutOperationValidator)
+                                        reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
+                                        messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                        messageSender: MessageSender): ReservedCashInOutOperationService {
+        return ReservedCashInOutOperationService(assetsHolder,
+                balancesHolder,
+                reservedCashOperationQueue,
+                reservedCashInOutOperationValidator,
+                messageSequenceNumberHolder,
+                messageSender)
     }
 
     @Bean

@@ -17,7 +17,7 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
-import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.messages.v2.events.ReservedBalanceUpdateEvent
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
@@ -167,7 +167,7 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
             LOGGER.info("Starting balances update, operationId: $operationId")
 
             var sequenceNumber: Long? = null
-            val cashInOutEvents = mutableListOf<Event<*>>()
+            val reservedBalanceUpdateEvents = mutableListOf<ReservedBalanceUpdateEvent>()
             balanceUpdates.forEach { clientBalanceUpdate ->
                 sequenceNumber = messageSequenceNumberHolder.getNewValue()
                 val walletOperation = WalletOperation(clientBalanceUpdate.id,
@@ -175,21 +175,19 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
                         BigDecimal.ZERO,
                         clientBalanceUpdate.newReserved - clientBalanceUpdate.oldReserved
                 )
-                cashInOutEvents.add(EventFactory.createCashInOutEvent(clientBalanceUpdate.newReserved - clientBalanceUpdate.oldReserved,
-                        sequenceNumber!!,
+                reservedBalanceUpdateEvents.add(EventFactory.createReservedBalanceUpdateEvent(sequenceNumber!!,
                         operationId,
                         operationId,
                         now,
                         MessageType.LIMIT_ORDER,
                         listOf(clientBalanceUpdate),
-                        walletOperation,
-                        emptyList()))
+                        walletOperation))
             }
 
             balancesHolder.insertOrUpdateWallets(updatedWallets, sequenceNumber)
             reservedVolumesDatabaseAccessor.addCorrectionsInfo(corrections)
             balancesHolder.sendBalanceUpdate(BalanceUpdate(operationId, MessageType.LIMIT_ORDER.name, now, balanceUpdates, operationId))
-            cashInOutEvents.forEach { messageSender.sendMessage(it) }
+            reservedBalanceUpdateEvents.forEach { messageSender.sendMessage(it) }
 
         }
         teeLog("Reserved volume recalculation finished")

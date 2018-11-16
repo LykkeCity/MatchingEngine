@@ -4,11 +4,13 @@ import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
+import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -25,7 +27,9 @@ import java.util.concurrent.BlockingQueue
 class ReservedCashInOutOperationService @Autowired constructor (private val assetsHolder: AssetsHolder,
                                                                 private val balancesHolder: BalancesHolder,
                                                                 private val reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
-                                                                private val reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator) : AbstractService {
+                                                                private val reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
+                                                                private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                                                private val messageSender: MessageSender) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(ReservedCashInOutOperationService::class.java.name)
@@ -62,7 +66,8 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
             return
         }
 
-        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage, null, null, null)
+        val sequenceNumber = messageSequenceNumberHolder.getNewValue()
+        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage, null, null, sequenceNumber)
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {
@@ -80,6 +85,16 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                 NumberUtils.setScaleRoundHalfUp(operation.reservedAmount, accuracy).toPlainString(),
                 operation.assetId,
                 messageWrapper.messageId!!))
+
+        val outgoingMessage = EventFactory.createReservedBalanceUpdateEvent(sequenceNumber,
+                messageWrapper.messageId!!,
+                message.id,
+                now,
+                MessageType.RESERVED_CASH_IN_OUT_OPERATION,
+                walletProcessor.getClientBalanceUpdates(),
+                operation)
+
+        messageSender.sendMessage(outgoingMessage)
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setMatchingEngineId(matchingEngineOperationId)
