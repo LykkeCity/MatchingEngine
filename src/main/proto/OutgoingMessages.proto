@@ -14,6 +14,7 @@ message Header {
         CASH_OUT = 2;
         CASH_TRANSFER = 3;
         ORDER = 4;
+        RESERVED_BALANCE_UPDATE = 5;
     }
     int32 messageType = 1;
     
@@ -191,4 +192,15 @@ message ExecutionEvent {
     Header header = 1;
     repeated BalanceUpdate balanceUpdates = 2;
     repeated Order orders = 3;
+}
+
+message ReservedBalanceUpdateEvent {
+    message ReservedBalanceUpdate {
+        string walletId = 1;
+        string assetId = 2;
+        string volume = 3;
+    }
+    Header header = 1;
+    repeated BalanceUpdate balanceUpdates = 2;
+    ReservedBalanceUpdate reservedBalanceUpdate = 3;
 }

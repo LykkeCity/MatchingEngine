@@ -11,8 +11,10 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.notification.TestReservedCashOperationListener
 import com.lykke.matching.engine.outgoing.messages.CashOperation
+import com.lykke.matching.engine.outgoing.messages.v2.enums.MessageType as OutgoingMessageType
 import com.lykke.matching.engine.outgoing.messages.v2.events.CashInEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.CashOutEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.ReservedBalanceUpdateEvent
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstruction
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstructions
@@ -108,6 +110,16 @@ class CashOperationServiceTest : AbstractTest() {
         assertEquals("Client3", operation.clientId)
         assertEquals("50.00", operation.reservedVolume)
         assertEquals("Asset1", operation.asset)
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ReservedBalanceUpdateEvent
+
+        assertEquals("Client3", event.reservedBalanceUpdate.walletId)
+        assertEquals("Asset1", event.reservedBalanceUpdate.assetId)
+        assertEquals("50", event.reservedBalanceUpdate.volume)
+
+        assertEquals(1, event.balanceUpdates.size)
+        assertEventBalanceUpdate("Client3", "Asset1", "100", "100", "50", "100", event.balanceUpdates)
     }
 
     @Test
@@ -172,6 +184,17 @@ class CashOperationServiceTest : AbstractTest() {
         assertEquals("Client3", operation.clientId)
         assertEquals("-49.00", operation.reservedVolume)
         assertEquals("Asset1", operation.asset)
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ReservedBalanceUpdateEvent
+
+        assertEquals(5, event.header.messageType.id)
+        assertEquals("Client3", event.reservedBalanceUpdate.walletId)
+        assertEquals("Asset1", event.reservedBalanceUpdate.assetId)
+        assertEquals("-49", event.reservedBalanceUpdate.volume)
+
+        assertEquals(1, event.balanceUpdates.size)
+        assertEventBalanceUpdate("Client3", "Asset1", "100", "100", "50", "1", event.balanceUpdates)
     }
 
     @Test
@@ -204,10 +227,12 @@ class CashOperationServiceTest : AbstractTest() {
         assertEquals("-24.00", operation.reservedVolume)
         assertEquals("Asset1", operation.asset)
 
+        clearMessageQueues()
         val messageWrapper1 = buildReservedCashInOutWrapper("Client3", "Asset1", -30.0)
         reservedCashInOutOperationService.processMessage(messageWrapper1)
         reservedBalance = testWalletDatabaseAccessor.getReservedBalance("Client3", "Asset1")
         assertEquals(BigDecimal.valueOf(26.0), reservedBalance)
+        assertEquals(0, clientsEventsQueue.size)
     }
 
     @Test
