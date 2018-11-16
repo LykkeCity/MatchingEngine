@@ -144,17 +144,16 @@ class ApplicationSettingsServiceTest : AbstractTest() {
 
         argumentCaptor<SettingHistoryRecord>().apply {
             verify(settingsHistoryDatabaseAccessor, times(2)).save(capture())
-            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS, firstValue.settingGroup)
-            assertEquals("settingName2", firstValue.name)
-            assertEquals("testClient2", firstValue.value)
-            assertEquals("testUser", firstValue.user)
-            assertEquals("[DELETE] delete", firstValue.comment)
+            val values = allValues.sortedBy { it.name }
+            assertEquals("settingName1", values.get(0).name)
+            assertEquals("testClient1", values.get(0).value)
+            assertEquals("testUser", values.get(0).user)
+            assertEquals("[DELETE] delete", values.get(0).comment)
 
-            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS, secondValue.settingGroup)
-            assertEquals("settingName1", secondValue.name)
-            assertEquals("testClient1", secondValue.value)
-            assertEquals("testUser", secondValue.user)
-            assertEquals("[DELETE] delete", secondValue.comment)
+            assertEquals("settingName2", values.get(1).name)
+            assertEquals("testClient2", values.get(1).value)
+            assertEquals("testUser", values.get(1).user)
+            assertEquals("[DELETE] delete", values.get(1).comment)
         }
     }
 
