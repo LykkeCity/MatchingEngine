@@ -141,18 +141,17 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         assertFalse(applicationSettingsCache.isTrustedClient("testClient"))
 
         argumentCaptor<SettingHistoryRecord>().apply {
-            verify(settingsHistoryDatabaseAccessor, times(2)).save(capture())
-            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, firstValue.settingGroupName)
-            assertEquals("settingName1", firstValue.name)
-            assertEquals("testClient1", firstValue.value)
-            assertEquals("testUser", firstValue.user)
-            assertEquals("[DELETE] delete", firstValue.comment)
+            verify(settingsHistoryDatabaseAccessor, times(2)).save(eq(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName), capture())
+            val values = allValues.sortedBy { it.name }
+            assertEquals("settingName1", values.get(0).name)
+            assertEquals("testClient1", values.get(0).value)
+            assertEquals("testUser", values.get(0).user)
+            assertEquals("[DELETE] delete", values.get(0).comment)
 
-            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, secondValue.settingGroupName)
-            assertEquals("settingName2", secondValue.name)
-            assertEquals("testClient2", secondValue.value)
-            assertEquals("testUser", secondValue.user)
-            assertEquals("[DELETE] delete", secondValue.comment)
+            assertEquals("settingName2", values.get(1).name)
+            assertEquals("testClient2", values.get(1).value)
+            assertEquals("testUser", values.get(1).user)
+            assertEquals("[DELETE] delete", values.get(1).comment)
         }
     }
 
