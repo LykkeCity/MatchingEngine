@@ -42,6 +42,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         testSettingsDatabaseAccessor.clear()
         testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient"))
         testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS.settingGroupName, getSetting("BTC"))
+        applicationSettingsCache.update()
 
         //when
         val allSettingGroups = applicationSettingsService.getAllSettingGroups()
@@ -64,6 +65,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         //given
         testSettingsDatabaseAccessor.clear()
         testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient"))
+        applicationSettingsCache.update()
 
         //when
         val settingsGroup = applicationSettingsService.getSettingsGroup(AvailableSettingGroup.TRUSTED_CLIENTS)
@@ -79,6 +81,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         //given
         testSettingsDatabaseAccessor.clear()
         testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient", "settingName"))
+        applicationSettingsCache.update()
 
         //when
         val setting = applicationSettingsService.getSetting(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName")
@@ -93,6 +96,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         //given
         testSettingsDatabaseAccessor.clear()
         testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient", "settingName"))
+        applicationSettingsCache.update()
 
         //when
         applicationSettingsService.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, SettingDto("settingName", "test", true, "testComment", "testUser"))
@@ -119,6 +123,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         testSettingsDatabaseAccessor.clear()
         testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient1", "settingName1"))
         testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient2", "settingName2"))
+        applicationSettingsCache.update()
 
         //when
         applicationSettingsService.deleteSettingsGroup(AvailableSettingGroup.TRUSTED_CLIENTS, DeleteSettingRequestDto("delete", "testUser"))
@@ -131,13 +136,13 @@ class ApplicationSettingsServiceTest : AbstractTest() {
 
         argumentCaptor<SettingHistoryRecord>().apply {
             verify(settingsHistoryDatabaseAccessor, times(2)).save(eq(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName), capture())
-            assertEquals("settingName1", firstValue.name)
-            assertEquals("testClient1", firstValue.value)
+            assertEquals("settingName2", firstValue.name)
+            assertEquals("testClient2", firstValue.value)
             assertEquals("testUser", firstValue.user)
             assertEquals("[DELETE] delete", firstValue.comment)
 
-            assertEquals("settingName2", secondValue.name)
-            assertEquals("testClient2", secondValue.value)
+            assertEquals("settingName1", secondValue.name)
+            assertEquals("testClient1", secondValue.value)
             assertEquals("testUser", secondValue.user)
             assertEquals("[DELETE] delete", secondValue.comment)
         }
@@ -148,6 +153,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         //given
         testSettingsDatabaseAccessor.clear()
         testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient", "settingName"))
+        applicationSettingsCache.update()
 
         //when
         applicationSettingsService.deleteSetting(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName", DeleteSettingRequestDto("delete", "testUser"))
