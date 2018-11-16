@@ -46,6 +46,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         testSettingsDatabaseAccessor.clear()
         testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient"))
         testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS, getSetting("BTC"))
+        applicationSettingsCache.update()
 
         //when
         val allSettingGroups = applicationSettingsService.getAllSettingGroups()
@@ -98,6 +99,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         testSettingsDatabaseAccessor.clear()
         testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient", "settingName"))
         settingsListener.clear()
+        applicationSettingsCache.update()
 
         //when
         applicationSettingsService.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, SettingDto("settingName", "test", true, "testComment", "testUser"))
@@ -126,6 +128,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         testSettingsDatabaseAccessor.clear()
         testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient1", "settingName1"))
         testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient2", "settingName2"))
+        applicationSettingsCache.update()
 
         //when
         applicationSettingsService.deleteSettingsGroup(AvailableSettingGroup.TRUSTED_CLIENTS, DeleteSettingRequestDto("delete", "testUser"))
@@ -158,6 +161,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         //given
         testSettingsDatabaseAccessor.clear()
         testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient", "settingName"))
+        applicationSettingsCache.update()
 
         //when
         applicationSettingsService.deleteSetting(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName", DeleteSettingRequestDto("delete", "testUser"))
