@@ -4,6 +4,7 @@ import com.lykke.matching.engine.common.events.RefMidPriceDangerousChangeEvent
 import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Component
