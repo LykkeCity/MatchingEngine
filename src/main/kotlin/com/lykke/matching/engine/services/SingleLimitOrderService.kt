@@ -105,10 +105,6 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
                               status: MessageStatus,
                               internalOrderId: String?,
                               statusReason: String? = null) {
-        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
-            return
-        }
         val builder = ProtocolMessages.NewResponse.newBuilder().setStatus(status.type)
         internalOrderId?.let { builder.setMatchingEngineId(internalOrderId) }
         statusReason?.let { builder.setStatusReason(it) }
