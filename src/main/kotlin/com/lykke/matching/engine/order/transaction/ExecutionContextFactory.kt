@@ -34,7 +34,8 @@ class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                preProcessorValidationResultsByOrderId: Map<String, OrderValidationResult> = emptyMap(),
                walletOperationsProcessor: WalletOperationsProcessor = balancesHolder.createWalletProcessor(logger),
                orderBooksHolder: CurrentTransactionOrderBooksHolder = genericLimitOrderService.createCurrentTransactionOrderBooksHolder(),
-               stopOrderBooksHolder: CurrentTransactionStopOrderBooksHolder = genericStopLimitOrderService.createCurrentTransactionOrderBooksHolder()): ExecutionContext {
+               stopOrderBooksHolder: CurrentTransactionStopOrderBooksHolder = genericStopLimitOrderService.createCurrentTransactionOrderBooksHolder(),
+               currentTransactionMidPriceHolder: CurrentTransactionMidPriceHolder = CurrentTransactionMidPriceHolder(midPriceHolder)): ExecutionContext {
         return ExecutionContext(messageId,
                 requestId,
                 messageType,
@@ -45,7 +46,7 @@ class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                 walletOperationsProcessor,
                 orderBooksHolder,
                 stopOrderBooksHolder,
-                midPriceHolder,
+                currentTransactionMidPriceHolder,
                 date,
                 logger,
                 controlsLogger)

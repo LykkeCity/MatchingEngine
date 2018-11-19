@@ -1,6 +1,8 @@
 package com.lykke.matching.engine.web.controllers
 
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
@@ -33,6 +35,12 @@ class OrderBooksController {
     @Autowired
     private lateinit var genericStopLimitOrderService: GenericStopLimitOrderService
 
+    @Autowired
+    private lateinit var midPriceHolder: MidPriceHolder
+
+    @Autowired
+    private lateinit var assetsPairsHolder: AssetsPairsHolder
+
     @GetMapping("/orderBooks", produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiOperation("Endpoint to get all limit order books")
     fun getOrderBooks(request: HttpServletRequest): LinkedList<OrderBook> {
@@ -41,8 +49,9 @@ class OrderBooksController {
 
         genericLimitOrderService.getAllOrderBooks().values.forEach {
             val orderBook = it.copy()
-            books.add(OrderBook(orderBook.assetPairId, true, now, orderBook.getOrderBook(true)))
-            books.add(OrderBook(orderBook.assetPairId, false, now, orderBook.getOrderBook(false)))
+            val refMidPrice = midPriceHolder.getRefMidPriceWithoutCleanupAndChecks(assetsPairsHolder.getAssetPair(orderBook.assetPairId), Date())
+            books.add(OrderBook(orderBook.assetPairId, refMidPrice, midPriceHolder.refreshMidPricePeriod, true, now, orderBook.getOrderBook(true)))
+            books.add(OrderBook(orderBook.assetPairId, refMidPrice, midPriceHolder.refreshMidPricePeriod, false, now, orderBook.getOrderBook(false)))
         }
 
         LOGGER.info("Order book snapshot sent to ${request.remoteAddr}")
@@ -82,7 +91,7 @@ class OrderBooksController {
     }
 
     @ExceptionHandler(Exception::class)
-    private fun handleException (request: HttpServletRequest, ex: Exception): ResponseEntity<*> {
+    private fun handleException(request: HttpServletRequest, ex: Exception): ResponseEntity<*> {
         LOGGER.error("Unable to write order book snapshot request to ${request.remoteAddr}", ex)
         return ResponseEntity<Any>(null, HttpStatus.INTERNAL_SERVER_ERROR)
     }

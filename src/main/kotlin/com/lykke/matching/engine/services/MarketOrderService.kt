@@ -235,7 +235,7 @@ class MarketOrderService @Autowired constructor(
                 matchingResultHandlingHelper.processUncompletedOppositeOrder(marketOrderExecutionContext)
             }
             if (newMidPrice != null) {
-                executionContext.updateMidPrice(MidPrice(order.assetPairId, newMidPrice, executionContext.date.time))
+                executionContext.currentTransactionMidPriceHolder.addMidPrice(order.assetPairId, newMidPrice)
             }
             matchingResult.apply()
             marketOrderExecutionContext.executionContext.orderBooksHolder

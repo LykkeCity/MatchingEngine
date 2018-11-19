@@ -68,26 +68,33 @@ class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: G
         return UpdatedOrderBookAndOrder(updatedOrderBook, updatedBestOrder)
     }
 
-    override fun applySpecificPart(date: Date) {
+    override fun applySpecificPart(date: Date, currentTransactionMidPriceHolder: CurrentTransactionMidPriceHolder, executionContext: ExecutionContext) {
         orderCopyWrappersByOriginalOrder.forEach { it.value.applyToOrigin() }
         assetOrderBookCopiesByAssetPairId.forEach { assetPairId, orderBook ->
             genericLimitOrderService.setOrderBook(assetPairId, orderBook)
             val orderBookCopy = orderBook.copy()
             if (changedBuySides.contains(assetPairId)) {
-                processChangedOrderBookSide(orderBookCopy, true, date)
+                processChangedOrderBookSide(orderBookCopy, true, date, currentTransactionMidPriceHolder, executionContext)
             }
             if (changedSellSides.contains(assetPairId)) {
-                processChangedOrderBookSide(orderBookCopy, false, date)
+                processChangedOrderBookSide(orderBookCopy, false, date, currentTransactionMidPriceHolder, executionContext)
             }
         }
     }
 
-    private fun processChangedOrderBookSide(orderBookCopy: AssetOrderBook, isBuySide: Boolean, date: Date) {
+    private fun processChangedOrderBookSide(orderBookCopy: AssetOrderBook,
+                                            isBuySide: Boolean,
+                                            date: Date,
+                                            currentTransactionMidPriceHolder: CurrentTransactionMidPriceHolder,
+                                            executionContext: ExecutionContext) {
         val assetPairId = orderBookCopy.assetPairId
         val price = if (isBuySide) orderBookCopy.getBidPrice() else orderBookCopy.getAskPrice()
         tradeInfoList.add(TradeInfo(assetPairId, isBuySide, price, date))
-        outgoingOrderBooks.add(OrderBook(assetPairId, isBuySide, date, orderBookCopy.getOrderBook(isBuySide)))
+        outgoingOrderBooks.add(OrderBook(assetPairId,
+                currentTransactionMidPriceHolder.getRefMidPrice(assetPairId, executionContext),
+                currentTransactionMidPriceHolder.getRefMidPricePeriod(),
+                isBuySide,
+                date,
+                orderBookCopy.getOrderBook(isBuySide)))
     }
-
-
 }

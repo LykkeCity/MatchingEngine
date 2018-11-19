@@ -90,7 +90,8 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     fun checkAndReduceBalance(order: LimitOrder, volume: BigDecimal, limitBalances: MutableMap<String, BigDecimal>): Boolean {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val limitAssetId = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
-        val availableBalance = limitBalances[order.clientId] ?: balancesHolder.getAvailableReservedBalance(order.clientId, limitAssetId)
+        val availableBalance = limitBalances[order.clientId]
+                ?: balancesHolder.getAvailableReservedBalance(order.clientId, limitAssetId)
         val accuracy = assetsHolder.getAsset(limitAssetId).accuracy
         val result = availableBalance >= volume
         LOGGER.debug("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${NumberUtils.roundForPrint(availableBalance)} >= ${NumberUtils.roundForPrint(volume)} = $result")
@@ -125,7 +126,8 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     }
 
     private fun removeFromClientMap(uid: String): Boolean {
-        val order: LimitOrder = clientLimitOrdersMap.values.firstOrNull { it.any { it.externalId == uid } }?.firstOrNull { it.externalId == uid } ?: return false
+        val order: LimitOrder = clientLimitOrdersMap.values.firstOrNull { it.any { it.externalId == uid } }?.firstOrNull { it.externalId == uid }
+                ?: return false
         return clientLimitOrdersMap[order.clientId]?.remove(order) ?: false
     }
 

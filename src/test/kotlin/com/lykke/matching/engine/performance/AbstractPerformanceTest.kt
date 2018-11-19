@@ -211,7 +211,6 @@ abstract class AbstractPerformanceTest {
                 LimitOrderBusinessValidatorImpl(),
                 applicationSettingsCache,
                 matchingEngine,
-                midPriceHolder,
                 PriceDeviationThresholdHolder(applicationSettingsCache),
                 matchingResultHandlingHelper)
 

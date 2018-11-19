@@ -15,7 +15,7 @@ import java.math.BigDecimal
 import java.util.*
 
 @Component
-class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val refreshMidPricePeriod: Long,
+class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") val refreshMidPricePeriod: Long,
                      readOnlyMidPriceDatabaseAccessor: ReadOnlyMidPriceDatabaseAccessor,
                      private val orderBookMidPriceChecker: OrderBookMidPriceChecker) {
     private val MAX_MID_PRICE_RECALCULATION_COUNT = 1000
@@ -34,6 +34,15 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
             midPriceTimestampByAssetPairId[key] = value.first.timestamp
             performFullRecalculationOfReferenceMidPrice(key)
         }
+    }
+
+    fun getRefMidPriceWithoutCleanupAndChecks(assetPair: AssetPair, operationTime: Date): BigDecimal {
+        if (!isMidPriceDataReady(assetPair.assetPairId, operationTime)) {
+            return BigDecimal.ZERO
+        }
+
+        val unscaledRefMidPrice = referencePriceByAssetPairId[assetPair.assetPairId] ?: BigDecimal.ZERO
+        return NumberUtils.setScaleRoundUp(unscaledRefMidPrice, assetPair.accuracy)
     }
 
     fun getReferenceMidPrice(assetPair: AssetPair, executionContext: ExecutionContext, notSavedMidPrices: Collection<BigDecimal>): BigDecimal {
