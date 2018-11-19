@@ -101,6 +101,7 @@ abstract class MatchingEngineTest {
                 testDictionariesDatabaseAccessor.loadAssetPairs(),
                 now,
                 Logger.getLogger(MatchingEngineTest::class.java),
+                Logger.getLogger(MatchingEngineTest::class.java),
                 testBackOfficeDatabaseAccessor.assets)
     }
 
@@ -110,11 +111,15 @@ abstract class MatchingEngineTest {
 
     protected fun match(order: Order,
                         orderBook: PriorityBlockingQueue<LimitOrder>,
-                        priceDeviationThreshold: BigDecimal? = null): MatchingResult {
+                        lowerBound: BigDecimal? = null,
+                        upperBound: BigDecimal? = null,
+                        moPriceDeviationThreshold: BigDecimal? = null): MatchingResult {
         return matchingEngine.match(order,
                 orderBook,
                 "test",
-                priceDeviationThreshold = priceDeviationThreshold,
+                lowerMidPriceBound = lowerBound,
+                upperMidPriceBound = upperBound,
+                moPriceDeviationThreshold = moPriceDeviationThreshold,
                 executionContext = executionContext)
     }
 

@@ -92,8 +92,8 @@ open class TestApplicationContext {
                            balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
                            applicationSettingsCache: ApplicationSettingsCache,
                            backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor): BalancesHolder {
-        return BalancesHolder(balancesDatabaseAccessorsHolder, persistenceManager, assetHolder(backOfficeDatabaseAccessor),
-                balanceUpdateNotificationQueue, balanceUpdateQueue, applicationSettingsCache)
+        return BalancesHolder(balancesDatabaseAccessorsHolder, balanceUpdateNotificationQueue, persistenceManager, assetHolder(backOfficeDatabaseAccessor),
+                balanceUpdateQueue, applicationSettingsCache)
     }
 
     @Bean

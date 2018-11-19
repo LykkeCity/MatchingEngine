@@ -112,16 +112,8 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                     midPricePersistenceData))
             if (updated) {
                 genericLimitOrderService.cancelLimitOrder(Date(), limitOrderId, true)
-                updateMidPriceInCache(order.assetPairId, newOrderBook.getMidPrice(), now)
             }
         }
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
-    }
-
-    private fun updateMidPriceInCache(assetPairId: String, midPrice: BigDecimal?, operationTime: Date) {
-        val assetPair = assetsPairsHolder.getAssetPairAllowNulls(assetPairId)
-        if (assetPair != null && midPrice != null) {
-            midPriceHolder.addMidPrice(assetPair, midPrice, operationTime, true)
-        }
     }
 }

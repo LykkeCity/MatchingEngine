@@ -348,6 +348,13 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
             executionContext.info("Too large volume of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxValue=${assetPair.maxValue}, straight=${order.isStraight()}")
             return MatchingResult(orderWrapper, cancelledLimitOrders)
         }
+
+        if (order.takePrice() == null && !checkExecutionPriceDeviation(order.isBuySide(), executionPrice, bestPrice, moPriceDeviationThreshold)) {
+            order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
+            executionContext.info("Too high price deviation (order id: ${order.externalId}): threshold: $moPriceDeviationThreshold, bestPrice: $bestPrice, executionPrice: $executionPrice)")
+            return MatchingResult(orderWrapper, cancelledLimitOrders)
+        }
+
         if (!checkMaxValue(order, assetPair, executionPrice)) {
             order.updateStatus(OrderStatus.InvalidValue, now)
             executionContext.info("Too large value of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxValue=${assetPair.maxValue}, straight=${order.isStraight()}")

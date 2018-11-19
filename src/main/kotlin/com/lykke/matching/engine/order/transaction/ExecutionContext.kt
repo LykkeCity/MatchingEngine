@@ -1,34 +1,44 @@
+
 package com.lykke.matching.engine.order.transaction
 
 import com.lykke.matching.engine.balance.WalletOperationsProcessor
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LkkTrade
+import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import org.apache.log4j.Logger
-import java.util.Date
+import java.util.*
 
-class ExecutionContext(val messageId: String,
-                       val requestId: String,
-                       val messageType: MessageType,
-                       val processedMessage: ProcessedMessage?,
-                       val assetPairsById: Map<String, AssetPair>,
-                       val assetsById: Map<String, Asset>,
-                       val preProcessorValidationResultsByOrderId: Map<String, OrderValidationResult>,
-                       val walletOperationsProcessor: WalletOperationsProcessor,
-                       val orderBooksHolder: CurrentTransactionOrderBooksHolder,
-                       val stopOrderBooksHolder: CurrentTransactionStopOrderBooksHolder,
-                       val date: Date,
-                       val logger: Logger) {
+open class ExecutionContext(val messageId: String,
+                            val requestId: String,
+                            val messageType: MessageType,
+                            val processedMessage: ProcessedMessage?,
+                            val assetPairsById: Map<String, AssetPair>,
+                            val assetsById: Map<String, Asset>,
+                            val preProcessorValidationResultsByOrderId: Map<String, OrderValidationResult>,
+                            val walletOperationsProcessor: WalletOperationsProcessor,
+                            val orderBooksHolder: CurrentTransactionOrderBooksHolder,
+                            val stopOrderBooksHolder: CurrentTransactionStopOrderBooksHolder,
+                            val midPriceHolder: MidPriceHolder,
+                            open val date: Date,
+                            val logger: Logger,
+                            private val controlsLogger: Logger) {
 
     var tradeIndex: Long = 0
+    var removeAllMidPrices = false
+    var executionContextForCancelOperation = false
 
     private val clientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
     private val trustedClientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
+
+    private val midPricesByAssetPairId = HashMap<String, MutableList<MidPrice>>()
+
     var marketOrderWithTrades: MarketOrderWithTrades? = null
 
     val lkkTrades = mutableListOf<LkkTrade>()
@@ -68,6 +78,23 @@ class ExecutionContext(val messageId: String,
     fun getClientsLimitOrdersWithTrades() = clientLimitOrdersWithTradesByInternalId.values
     fun getTrustedClientsLimitOrdersWithTrades() = trustedClientLimitOrdersWithTradesByInternalId.values
 
+    fun updateMidPrice(midPrice: MidPrice) {
+        val midPrices = this.midPricesByAssetPairId.getOrPut(midPrice.assetPairId) { ArrayList() }
+        midPrices.add(midPrice)
+    }
+
+    fun removeMidPrice(assetPairId: String) {
+        this.midPricesByAssetPairId.remove(assetPairId)
+    }
+
+    fun getMidPrices(): Collection<MidPrice> {
+        return midPricesByAssetPairId.values.flatMap {it}
+    }
+
+    fun getMidPrices(assetPairId: String): Collection<MidPrice> {
+        return midPricesByAssetPairId[assetPairId] ?: emptyList()
+    }
+
     fun info(message: String) {
         logger.info("[$messageId] $message")
     }
@@ -76,9 +103,25 @@ class ExecutionContext(val messageId: String,
         logger.error("[$messageId] $message")
     }
 
+    fun controlsInfo(message: String) {
+        controlsLogger.info("[$messageId] $message")
+    }
+
+    fun controlsError(message: String) {
+        controlsLogger.error("[$messageId] $message")
+    }
+
     fun apply() {
         walletOperationsProcessor.apply()
         orderBooksHolder.apply(date)
         stopOrderBooksHolder.apply(date)
+
+        if (removeAllMidPrices) {
+            midPriceHolder.clear()
+        }
+
+        getMidPrices().forEach { it ->
+            midPriceHolder.addMidPrice(this.assetPairsById[it.assetPairId]!!, it.midPrice, this)
+        }
     }
 }

@@ -100,6 +100,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
             return false
         }
         currentTransactionBalancesHolder.apply()
+        balanceUpdateNotificationQueue.put(BalanceUpdateNotification(clientId))
         return true
     }
     fun updateReservedBalance(processedMessage: ProcessedMessage?,
@@ -116,6 +117,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
             return false
         }
         currentTransactionBalancesHolder.apply()
+        balanceUpdateNotificationQueue.put(BalanceUpdateNotification(clientId))
         return true
     }
     fun insertOrUpdateWallets(wallets: Collection<Wallet>, messageSequenceNumber: Long?) {

@@ -14,7 +14,6 @@ import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (MatchingEngineTest.Config::class)])
@@ -295,7 +294,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.0, volume = 1.0))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -3.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true), priceDeviationThreshold = BigDecimal.valueOf(0.08))
+        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true), moPriceDeviationThreshold = BigDecimal.valueOf(0.08))
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.TooHighPriceDeviation, marketBalance = null)
     }
 
@@ -306,7 +305,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.0, volume = 1.0))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = 3.3, straight = false)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true), priceDeviationThreshold = BigDecimal.valueOf(0.08))
+        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true), moPriceDeviationThreshold = BigDecimal.valueOf(0.08))
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.TooHighPriceDeviation, marketBalance = null)
     }
 
@@ -616,5 +615,41 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         val matchingResult = match(marketOrder, getOrderBook("BTCCHF", false))
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.NotEnoughFunds)
+    }
+
+    @Test
+    fun testMatchingSellOrderMidPriceDeviation() {
+        //given
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 100.0)
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.7, volume = -1.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.6, volume = -1.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.3, volume = 1.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.3, volume = 0.5))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.5, volume = 0.5))
+        //when
+        val marketOrder = buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = -1.0)
+        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true), BigDecimal("1.5"), BigDecimal("1.6"))
+        //then
+        assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.TooHighMidPriceDeviation)
+    }
+    @Test
+    fun testMatchingBuyOrderMidPriceDeviation() {
+        //given
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 100.0)
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.7, volume = -0.5))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.6, volume = -0.5))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.3, volume = 1.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1.0))
+        //when
+        val marketOrder = buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = 1.0)
+        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false), BigDecimal("1.5"), BigDecimal("1.57"))
+        //then
+        assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.TooHighMidPriceDeviation)
     }
 }

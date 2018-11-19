@@ -150,9 +150,10 @@ abstract class AbstractPerformanceTest {
                 ordersDatabaseAccessorsHolder,
                 stopOrdersDatabaseAccessorsHolder)
         balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder,
+                balanceUpdateNotificationQueue,
                 persistenceManager,
                 assetsHolder,
-                balanceUpdateNotificationQueue, balanceUpdateQueue,
+                balanceUpdateQueue,
                 applicationSettingsCache)
 
         testBalanceHolderWrapper = TestBalanceHolderWrapper(BalanceUpdateHandlerTest(balanceUpdateQueue, balanceUpdateNotificationQueue), balancesHolder)
@@ -200,8 +201,7 @@ abstract class AbstractPerformanceTest {
 
         val executionContextFactory = ExecutionContextFactory(balancesHolder,
                 genericLimitOrderService,
-                genericStopLimitOrderService,
-                assetsHolder)
+                genericStopLimitOrderService, midPriceHolder, assetsHolder)
 
         val matchingResultHandlingHelper = MatchingResultHandlingHelper(applicationSettingsCache)
 
@@ -211,6 +211,8 @@ abstract class AbstractPerformanceTest {
                 LimitOrderBusinessValidatorImpl(),
                 applicationSettingsCache,
                 matchingEngine,
+                midPriceHolder,
+                PriceDeviationThresholdHolder(applicationSettingsCache),
                 matchingResultHandlingHelper)
 
         val stopOrderProcessor = StopLimitOrderProcessor(limitOrderInputValidator,
@@ -260,8 +262,9 @@ abstract class AbstractPerformanceTest {
                 assetsPairsHolder,
                 rabbitSwapQueue,
                 marketOrderValidator,
-                applicationSettingsCache,
                 messageSequenceNumberHolder,
+                PriceDeviationThresholdHolder(applicationSettingsCache),
+                midPriceHolder,
                 notificationSender)
 
     }

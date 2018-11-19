@@ -7,6 +7,8 @@ import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.holders.MidPriceHolder
+import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExecutionEventSender
@@ -48,10 +50,12 @@ open class TestExecutionContext {
     open fun executionContextFactory(balancesHolder: BalancesHolder,
                                      genericLimitOrderService: GenericLimitOrderService,
                                      genericStopLimitOrderService: GenericStopLimitOrderService,
+                                     midPriceHolder: MidPriceHolder,
                                      assetsHolder: AssetsHolder): ExecutionContextFactory {
         return ExecutionContextFactory(balancesHolder,
                 genericLimitOrderService,
                 genericStopLimitOrderService,
+                midPriceHolder,
                 assetsHolder)
     }
 
@@ -98,11 +102,15 @@ open class TestExecutionContext {
                                  limitOrderBusinessValidator: LimitOrderBusinessValidator,
                                  applicationSettingsCache: ApplicationSettingsCache,
                                  matchingEngine: MatchingEngine,
+                                 midPriceHolder: MidPriceHolder,
+                                 priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
                                  matchingResultHandlingHelper: MatchingResultHandlingHelper): LimitOrderProcessor {
         return LimitOrderProcessor(limitOrderInputValidator,
                 limitOrderBusinessValidator,
                 applicationSettingsCache,
                 matchingEngine,
+                midPriceHolder,
+                priceDeviationThresholdHolder,
                 matchingResultHandlingHelper)
     }
 

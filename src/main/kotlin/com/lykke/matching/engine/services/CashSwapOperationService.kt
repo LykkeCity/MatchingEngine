@@ -99,7 +99,7 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
 
         val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
         walletProcessor.preProcess(operations)
-        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage, null, null, null, null)
+        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage, null, null, null)
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {
