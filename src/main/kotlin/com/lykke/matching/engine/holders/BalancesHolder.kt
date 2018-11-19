@@ -18,6 +18,7 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAccessorsHolder,
+                     private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
                      private val persistenceManager: PersistenceManager,
                      private val assetsHolder: AssetsHolder,
                      private val balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
@@ -100,7 +101,6 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         currentTransactionBalancesHolder.apply()
         return true
     }
-
     fun updateReservedBalance(processedMessage: ProcessedMessage?,
                               messageSequenceNumber: Long?,
                               clientId: String,
@@ -117,7 +117,6 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         currentTransactionBalancesHolder.apply()
         return true
     }
-
     fun insertOrUpdateWallets(wallets: Collection<Wallet>, messageSequenceNumber: Long?) {
         persistenceManager.persist(PersistenceData(BalancesData(wallets, wallets.flatMap { it.balances.values }),
                 null,
@@ -127,16 +126,13 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
                 messageSequenceNumber = messageSequenceNumber))
         update()
     }
-
     fun sendBalanceUpdate(balanceUpdate: BalanceUpdate) {
         if (balanceUpdate.balances.isNotEmpty()) {
             LOGGER.info(balanceUpdate.toString())
             balanceUpdateQueue.put(balanceUpdate)
         }
     }
-
     fun isTrustedClient(clientId: String) = applicationSettingsCache.isTrustedClient(clientId)
-
     fun createWalletProcessor(logger: Logger?, validate: Boolean = true): WalletOperationsProcessor {
         return WalletOperationsProcessor(this,
                 createCurrentTransactionBalancesHolder(),
@@ -146,9 +142,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
                 validate,
                 logger)
     }
-
     private fun createCurrentTransactionBalancesHolder() = CurrentTransactionBalancesHolder(this)
-
     fun setWallets(wallets: Collection<Wallet>) {
         wallets.forEach { wallet ->
             this.wallets[wallet.clientId] = wallet

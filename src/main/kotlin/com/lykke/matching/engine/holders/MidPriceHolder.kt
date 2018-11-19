@@ -1,3 +1,4 @@
+
 package com.lykke.matching.engine.holders
 
 import com.lykke.matching.engine.common.events.RefMidPriceDangerousChangeEvent
@@ -43,7 +44,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
         val currentRefMidPrice = getUnScaledReferenceMidPrice(assetPair, executionContext)
         val notSavedMidPricesLength = BigDecimal.valueOf(notSavedMidPrices.size.toLong())
         if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, notSavedMidPricesLength)) {
-            return currentRefMidPrice
+            return NumberUtils.setScaleRoundUp(currentRefMidPrice, assetPair.accuracy)
         }
 
         var notSavedMidPricesSum = BigDecimal.ZERO

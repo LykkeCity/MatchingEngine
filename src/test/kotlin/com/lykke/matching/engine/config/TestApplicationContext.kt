@@ -601,13 +601,8 @@ open class TestApplicationContext {
     @Bean
     open fun limitOrderCancelService(genericLimitOrderService: GenericLimitOrderService,
                                      genericStopLimitOrderService: GenericStopLimitOrderService,
-                                     cancellerFactory: GenericLimitOrdersCancellerFactory,
                                      validator: LimitOrderCancelOperationBusinessValidator,
-                                     limitOrdersCancelHelper: LimitOrdersCancelHelper,
-                                     midPriceHolder: MidPriceHolder,
-                                     assetsPairsHolder: AssetsPairsHolder,
-                                     persistenceManager: PersistenceManager,
-                                     applicationEventPublisher: ApplicationEventPublisher): LimitOrderCancelService {
+                                     limitOrdersCancelHelper: LimitOrdersCancelHelper): LimitOrderCancelService {
         return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelHelper)
     }
 

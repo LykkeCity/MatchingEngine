@@ -1,7 +1,6 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.daos.context.LimitOrderCancelOperationContext
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.messages.MessageStatus
