@@ -143,8 +143,8 @@ class WalletOperationsProcessorTest : AbstractTest() {
 
     @Test
     fun testTrustedClientReservedOperations() {
-        settingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("TrustedClient1"))
-        settingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("TrustedClient2"))
+        settingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("TrustedClient1"))
+        settingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("TrustedClient2"))
         applicationSettingsCache.update()
 
         testBalanceHolderWrapper.updateBalance("TrustedClient1", "BTC", 1.0)
@@ -162,7 +162,13 @@ class WalletOperationsProcessorTest : AbstractTest() {
         assertEquals(BigDecimal.valueOf(0.1), clientBalanceUpdates.single().newBalance)
         assertEquals(BigDecimal.ZERO, clientBalanceUpdates.single().newReserved)
 
-        walletOperationsProcessor.sendNotification("id", "type", "messageId")
+        assertEquals(BigDecimal.ZERO, walletOperationsProcessor.getReservedBalance("TrustedClient1", "BTC"))
+
+        walletOperationsProcessor.preProcess(listOf(
+                WalletOperation("TrustedClient1", "BTC", BigDecimal.ZERO, BigDecimal.valueOf(0.1))),
+                allowTrustedClientReservedBalanceOperation = true)
+
+        assertEquals(BigDecimal.valueOf(0.1), walletOperationsProcessor.getReservedBalance("TrustedClient1", "BTC"))
     }
 
     @Test
