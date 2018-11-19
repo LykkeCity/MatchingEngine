@@ -60,7 +60,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
 
         val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
         try {
-            walletProcessor.preProcess(listOf(operation))
+            walletProcessor.preProcess(listOf(operation), allowTrustedClientReservedBalanceOperation = true)
         } catch (e: BalanceException) {
             LOGGER.info("Reserved cash in/out operation (${message.id}) failed due to invalid balance: ${e.message}")
             writeErrorResponse(messageWrapper, matchingEngineOperationId, MessageStatus.LOW_BALANCE, e.message)
