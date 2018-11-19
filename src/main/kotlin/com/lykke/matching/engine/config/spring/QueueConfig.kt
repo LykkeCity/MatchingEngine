@@ -30,51 +30,61 @@ open class QueueConfig {
     }
 
     @Bean
+    @RabbitQueue
     open fun trustedClientsEventsQueue(): BlockingDeque<ExecutionEvent> {
         return LinkedBlockingDeque()
     }
 
     @Bean
+    @RabbitQueue
     open fun balanceUpdateQueue(): BlockingDeque<BalanceUpdate> {
         return LinkedBlockingDeque<BalanceUpdate>()
     }
 
     @Bean
+    @RabbitQueue
     open fun cashSwapQueue(): BlockingDeque<CashSwapOperation> {
         return LinkedBlockingDeque<CashSwapOperation>()
     }
 
     @Bean
+    @RabbitQueue
     open fun clientLimitOrdersQueue(): BlockingDeque<LimitOrdersReport> {
         return LinkedBlockingDeque<LimitOrdersReport>()
     }
 
     @Bean
+    @RabbitQueue
     open fun rabbitOrderBookQueue(): BlockingDeque<OrderBook> {
         return LinkedBlockingDeque<OrderBook>()
     }
 
     @Bean
+    @RabbitQueue
     open fun rabbitCashInOutQueue(): BlockingDeque<CashOperation> {
         return LinkedBlockingDeque<CashOperation>()
     }
 
     @Bean
+    @RabbitQueue
     open fun rabbitSwapQueue(): BlockingDeque<MarketOrderWithTrades> {
         return LinkedBlockingDeque<MarketOrderWithTrades>()
     }
 
     @Bean
+    @RabbitQueue
     open fun rabbitTransferQueue(): BlockingDeque<CashTransferOperation> {
         return LinkedBlockingDeque<CashTransferOperation>()
     }
 
     @Bean
+    @RabbitQueue
     open fun reservedCashOperationQueue(): BlockingDeque<ReservedCashOperation> {
         return LinkedBlockingDeque<ReservedCashOperation>()
     }
 
     @Bean
+    @RabbitQueue
     open fun trustedClientsLimitOrdersQueue(): BlockingDeque<LimitOrdersReport> {
         return LinkedBlockingDeque<LimitOrdersReport>()
     }
