@@ -9,6 +9,7 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
@@ -87,15 +88,12 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                 operation.assetId,
                 messageWrapper.messageId!!))
 
-        val outgoingMessage = EventFactory.createReservedBalanceUpdateEvent(sequenceNumber,
+        sendEvent(sequenceNumber,
                 messageWrapper.messageId!!,
                 message.id,
                 now,
-                MessageType.RESERVED_CASH_IN_OUT_OPERATION,
                 walletProcessor.getClientBalanceUpdates(),
                 operation)
-
-        messageSender.sendMessage(outgoingMessage)
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setMatchingEngineId(matchingEngineOperationId)
@@ -128,6 +126,23 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(status.type)
         )
+    }
+
+    private fun sendEvent(sequenceNumber: Long,
+                          messageId: String,
+                          requestId: String,
+                          date: Date,
+                          clientBalanceUpdates: List<ClientBalanceUpdate>,
+                          walletOperation: WalletOperation) {
+        val outgoingMessage = EventFactory.createReservedBalanceUpdateEvent(sequenceNumber,
+                messageId,
+                requestId,
+                date,
+                MessageType.RESERVED_CASH_IN_OUT_OPERATION,
+                clientBalanceUpdates,
+                walletOperation)
+
+        messageSender.sendMessage(outgoingMessage)
     }
 
     private fun getMessage(messageWrapper: MessageWrapper): ProtocolMessages.ReservedCashInOutOperation {
