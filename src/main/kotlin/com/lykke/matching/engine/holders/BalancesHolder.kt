@@ -18,7 +18,6 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAccessorsHolder,
-                     private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
                      private val persistenceManager: PersistenceManager,
                      private val assetsHolder: AssetsHolder,
                      private val balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
