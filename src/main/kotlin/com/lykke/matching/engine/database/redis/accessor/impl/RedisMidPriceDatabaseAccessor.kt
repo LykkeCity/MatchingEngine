@@ -10,6 +10,7 @@ import org.apache.log4j.Logger
 import org.nustaq.serialization.FSTConfiguration
 import org.springframework.util.CollectionUtils
 import redis.clients.jedis.Transaction
+import java.lang.StringBuilder
 import java.util.HashMap
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
@@ -21,7 +22,6 @@ class RedisMidPriceDatabaseAccessor(private val dbIndex: Int,
                                     private val redisConnection: RedisConnection) : MidPriceDatabaseAccessor,
         ReadOnlyMidPriceDatabaseAccessor {
     private companion object {
-        val KEY_FORMAT = "MID_PRICE:%s:%s"
         val KEY_PREFIX = "MID_PRICE"
         val DELIMITER = ":"
         val LOGGER = Logger.getLogger(RedisMidPriceDatabaseAccessor::class.java)
@@ -84,6 +84,11 @@ class RedisMidPriceDatabaseAccessor(private val dbIndex: Int,
     }
 
     private fun getKey(assetPairId: String, timestamp: Long): String {
-        return KEY_FORMAT.format(assetPairId, timestamp.toString())
+        val result = StringBuilder(KEY_PREFIX)
+
+        return result.append(DELIMITER)
+                .append(assetPairId)
+                .append(DELIMITER)
+                .append(timestamp.toString()).toString()
     }
 }

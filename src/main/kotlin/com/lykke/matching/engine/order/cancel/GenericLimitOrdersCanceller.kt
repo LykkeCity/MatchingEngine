@@ -110,7 +110,9 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
         executionContext.addTrustedClientsLimitOrdersWithTrades(limitOrdersCancelResult.trustedClientsOrdersWithTrades)
         executionContext.addTrustedClientsLimitOrdersWithTrades(stopLimitOrdersResult.trustedClientsOrdersWithTrades)
         executionContext.currentTransactionMidPriceHolder.addMidPrices(getMidPrices(limitOrdersCancelResult.assetOrderBooks))
-        executionContext.currentTransactionMidPriceHolder.setRemoveAllFlag()
+        if (cancelAll) {
+            executionContext.currentTransactionMidPriceHolder.setRemoveAllFlag()
+        }
         stopOrderBookProcessor.checkAndExecuteStopLimitOrders(executionContext)
         return executionDataApplyService.persistAndSendEvents(messageWrapper, executionContext)
     }
