@@ -90,15 +90,16 @@ class RedisWithoutOrdersPersistenceManager(
                 ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}" +
                 (if (messageId != null) " ($messageId)" else ""))
 
-            currentTransactionDataHolder.getMessageType()?.let {
-                performanceStatsHolder.addPersistTime(it.type, commitTime - startTime)
-            }
-
-            if (!CollectionUtils.isEmpty(data.balancesData?.wallets)) {
-                persistedWalletsApplicationEventPublisher.publishEvent(AccountPersistEvent(data.balancesData!!.wallets))
-            }
+        currentTransactionDataHolder.getMessageType()?.let {
+            performanceStatsHolder.addPersistTime(it.type, commitTime - startTime)
         }
+
+        if (!CollectionUtils.isEmpty(data.balancesData?.wallets)) {
+            persistedWalletsApplicationEventPublisher.publishEvent(AccountPersistEvent(data.balancesData!!.wallets))
+        }
+
     }
+
 
     private fun persistProcessedMessages(transaction: Transaction, processedMessage: ProcessedMessage?) {
         LOGGER.trace("Start to persist processed messages in redis")
