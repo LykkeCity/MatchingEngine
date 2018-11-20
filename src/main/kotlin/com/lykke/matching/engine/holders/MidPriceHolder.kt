@@ -45,20 +45,18 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") val refreshM
         return NumberUtils.setScaleRoundUp(unscaledRefMidPrice, assetPair.accuracy)
     }
 
-    fun getReferenceMidPrice(assetPair: AssetPair, executionContext: ExecutionContext, notSavedMidPrices: Collection<BigDecimal>): BigDecimal {
+    fun getReferenceMidPrice(assetPair: AssetPair,
+                             executionContext: ExecutionContext,
+                             notSavedMidPricesSum: BigDecimal,
+                             notSavedMidPricesLength: BigDecimal): BigDecimal {
         if (!isMidPriceDataReady(assetPair.assetPairId, executionContext.date)) {
             return BigDecimal.ZERO
         }
 
         val currentRefMidPrice = getUnScaledReferenceMidPrice(assetPair, executionContext)
-        val notSavedMidPricesLength = BigDecimal.valueOf(notSavedMidPrices.size.toLong())
         if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, notSavedMidPricesLength)) {
             return NumberUtils.setScaleRoundUp(currentRefMidPrice, assetPair.accuracy)
         }
-
-        var notSavedMidPricesSum = BigDecimal.ZERO
-
-        notSavedMidPrices.forEach { notSavedMidPricesSum += it }
 
         val currentMidPricesLength = BigDecimal.valueOf(midPricesByAssetPairId[assetPair.assetPairId]?.size?.toLong() ?: 0)
         val totalMidPricesLength = notSavedMidPricesLength + currentMidPricesLength
