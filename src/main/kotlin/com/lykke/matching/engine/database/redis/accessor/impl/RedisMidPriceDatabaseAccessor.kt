@@ -31,13 +31,12 @@ class RedisMidPriceDatabaseAccessor(private val dbIndex: Int,
 
     override fun save(transaction: Transaction, midPrices: Collection<MidPrice>) {
         transaction.select(dbIndex)
-        val dataToInsert = HashMap<String, ByteArray>()
 
         midPrices.forEach { midPrice ->
-            dataToInsert[getKey(midPrice.assetPairId, midPrice.timestamp)] = conf.asByteArray(midPrice)
+            transaction.setex(getKey(midPrice.assetPairId, midPrice.timestamp).toByteArray(),
+                    TimeUnit.MILLISECONDS.toSeconds(midPriceTTL).toInt(),
+                    conf.asByteArray(midPrice))
         }
-
-        BulkUtils.bulkInsert(transaction, dataToInsert, TimeUnit.MILLISECONDS.toSeconds(midPriceTTL).toInt())
     }
 
     override fun getMidPricesByAssetPairMap(): Map<String, List<MidPrice>> {

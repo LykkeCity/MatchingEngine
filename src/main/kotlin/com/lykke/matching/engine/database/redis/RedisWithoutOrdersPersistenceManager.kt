@@ -49,7 +49,10 @@ class RedisWithoutOrdersPersistenceManager(
         }
         return try {
             if (!data.isEmptyWithoutOrders()) {
-                persistRedisData(redisConnection, data)
+                val startTime = System.nanoTime()
+                redisConnection.transactionalResource { transaction ->
+                    persistRedisData(transaction, data, startTime)
+                }
             }
             if (!data.isOrdersEmpty()) {
                 persistOrders(data.orderBooksData)
@@ -64,40 +67,39 @@ class RedisWithoutOrdersPersistenceManager(
         }
     }
 
-    private fun persistRedisData(redisConnection: RedisConnection, data: PersistenceData) {
-        val startTime = System.nanoTime()
-        redisConnection.transactionalResource { transaction ->
-            persistBalances(transaction, data.balancesData?.balances)
-            persistProcessedMessages(transaction, data.processedMessage)
+    private fun persistRedisData(transaction: Transaction, data: PersistenceData, startTime: Long) {
+        persistBalances(transaction, data.balancesData?.balances)
+        persistProcessedMessages(transaction, data.processedMessage)
 
-            if (data.processedMessage?.type == MessageType.CASH_IN_OUT_OPERATION.type ||
-                    data.processedMessage?.type == MessageType.CASH_TRANSFER_OPERATION.type) {
-                persistProcessedCashMessage(transaction, data.processedMessage)
-            }
-
-            persistMessageSequenceNumber(transaction, data.messageSequenceNumber)
-            persistMidPrices(transaction, data.midPricePersistenceData)
-
-            val persistTime = System.nanoTime()
-
-            transaction.exec()
-            val commitTime = System.nanoTime()
-
-            val messageId = data.processedMessage?.messageId
-            REDIS_PERFORMANCE_LOGGER.debug("Total: ${PrintUtils.convertToString2((commitTime - startTime).toDouble())}" +
-                    ", persist: ${PrintUtils.convertToString2((persistTime - startTime).toDouble())}" +
-                    ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}" +
-                    (if (messageId != null) " ($messageId)" else ""))
-
-            currentTransactionDataHolder.getMessageType()?.let {
-                performanceStatsHolder.addPersistTime(it.type, commitTime - startTime)
-            }
-
-            if (!CollectionUtils.isEmpty(data.balancesData?.wallets)) {
-                persistedWalletsApplicationEventPublisher.publishEvent(AccountPersistEvent(data.balancesData!!.wallets))
-            }
+        if (data.processedMessage?.type == MessageType.CASH_IN_OUT_OPERATION.type ||
+                data.processedMessage?.type == MessageType.CASH_TRANSFER_OPERATION.type) {
+            persistProcessedCashMessage(transaction, data.processedMessage)
         }
+
+        persistMessageSequenceNumber(transaction, data.messageSequenceNumber)
+        persistMidPrices(transaction, data.midPricePersistenceData)
+
+        val persistTime = System.nanoTime()
+
+        transaction.exec()
+        val commitTime = System.nanoTime()
+
+        val messageId = data.processedMessage?.messageId
+        REDIS_PERFORMANCE_LOGGER.debug("Total: ${PrintUtils.convertToString2((commitTime - startTime).toDouble())}" +
+                ", persist: ${PrintUtils.convertToString2((persistTime - startTime).toDouble())}" +
+                ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}" +
+                (if (messageId != null) " ($messageId)" else ""))
+
+        currentTransactionDataHolder.getMessageType()?.let {
+            performanceStatsHolder.addPersistTime(it.type, commitTime - startTime)
+        }
+
+        if (!CollectionUtils.isEmpty(data.balancesData?.wallets)) {
+            persistedWalletsApplicationEventPublisher.publishEvent(AccountPersistEvent(data.balancesData!!.wallets))
+        }
+
     }
+
 
     private fun persistProcessedMessages(transaction: Transaction, processedMessage: ProcessedMessage?) {
         LOGGER.trace("Start to persist processed messages in redis")
