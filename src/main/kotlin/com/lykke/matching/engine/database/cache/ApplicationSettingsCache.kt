@@ -51,14 +51,14 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
     }
 
     fun midPriceDeviationThreshold(assetPairId: String): BigDecimal? {
-        return getSettingsForSettingGroup(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD)
+        return getSettingsForSettingGroup(AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD)
                 ?.find { it.enabled && it.name == assetPairId }
                 ?.value
                 ?.toBigDecimal()
     }
 
     fun isMessageProcessingEnabled(): Boolean {
-        return CollectionUtils.isEmpty(getSettingsForSettingGroup(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD))
+        return getSettingsForSettingGroup(AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH)?.find { it.enabled } != null
     }
 
 
