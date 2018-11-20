@@ -5,9 +5,6 @@ import java.lang.StringBuilder
 
 class BulkUtils {
     companion object {
-        private const val BULK_INSERT_LUA_SCRIPT_EXPIRE = "redis.call('set', '%s', ARGV[%d], 'ex', %d) "
-        private const val BULK_INSERT_LUA_SCRIPT = "redis.call('set', '%s', ARGV[%d]) "
-
         fun bulkInsert(transaction: Transaction, valuesToKeys: Map<String, ByteArray>, expire: Int? = null) {
             val keys = ArrayList<String>()
             val values = ArrayList<ByteArray>()
@@ -21,19 +18,31 @@ class BulkUtils {
         }
 
         private fun getLuaScript(keys: List<String>, expire: Int?): String {
-            val luaScript = StringBuilder()
-
-            val scriptFormat =  if (expire != null) {
-                BULK_INSERT_LUA_SCRIPT_EXPIRE
+            return if (expire != null) {
+                getLuaBulkInsertExpireScript(keys, expire)
             } else {
-                BULK_INSERT_LUA_SCRIPT
+                getLuaBulkInsertScript(keys)
+            }
+        }
+
+        private fun getLuaBulkInsertExpireScript(keys: List<String>, expire: Int): String {
+            val result = StringBuilder()
+
+            keys.forEachIndexed { index, key ->
+                result.append("redis.call('set', '$key', ARGV[${index + 1}], 'ex', $expire) ")
             }
 
-            keys.forEachIndexed { index, element ->
-                luaScript.append(scriptFormat.format(element, index + 1, expire))
+            return result.toString()
+        }
+
+        private fun getLuaBulkInsertScript(keys: List<String>): String {
+            val result = StringBuilder()
+
+            keys.forEachIndexed { index, key ->
+                result.append("redis.call('set', '$key', ARGV[${index + 1}]) ")
             }
 
-            return luaScript.toString()
+            return result.toString()
         }
     }
 }
