@@ -58,7 +58,7 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
     }
 
     fun isMessageProcessingEnabled(): Boolean {
-        return getSettingsForSettingGroup(AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH)?.find { it.enabled } != null
+        return getSettingsForSettingGroup(AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH)?.find { it.enabled } == null
     }
 
 
