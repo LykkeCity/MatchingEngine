@@ -45,13 +45,35 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") val refreshM
         return NumberUtils.setScaleRoundUp(unscaledRefMidPrice, assetPair.accuracy)
     }
 
-    fun getReferenceMidPriceMidPriceSize(assetPair: AssetPair, executionContext: ExecutionContext): Pair<BigDecimal, Int> {
-        val unScaledReferenceMidPrice = getUnScaledReferenceMidPrice(assetPair, executionContext)
-        return NumberUtils.setScaleRoundUp(unScaledReferenceMidPrice.first, assetPair.accuracy) to unScaledReferenceMidPrice.second
+    fun getReferenceMidPrice(assetPair: AssetPair,
+                             executionContext: ExecutionContext,
+                             notSavedMidPricesSum: BigDecimal,
+                             notSavedMidPricesLength: BigDecimal): BigDecimal {
+        if (!isMidPriceDataReady(assetPair.assetPairId, executionContext.date)) {
+            return BigDecimal.ZERO
+        }
+
+        val currentRefMidPrice = getUnScaledReferenceMidPrice(assetPair, executionContext)
+        if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, notSavedMidPricesLength)) {
+            return NumberUtils.setScaleRoundUp(currentRefMidPrice, assetPair.accuracy)
+        }
+
+        val currentMidPricesLength = BigDecimal.valueOf(midPricesByAssetPairId[assetPair.assetPairId]?.size?.toLong() ?: 0)
+        val totalMidPricesLength = notSavedMidPricesLength + currentMidPricesLength
+
+        val newMidPricesPart = NumberUtils.divideWithMaxScale(notSavedMidPricesSum, totalMidPricesLength)
+
+        if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, currentMidPricesLength)) {
+            return NumberUtils.setScaleRoundUp(newMidPricesPart, assetPair.accuracy)
+        }
+
+        val currentMidPricesCoef = NumberUtils.divideWithMaxScale(currentMidPricesLength, totalMidPricesLength)
+
+        return  NumberUtils.setScaleRoundUp(currentRefMidPrice * currentMidPricesCoef + newMidPricesPart, assetPair.accuracy)
     }
 
     fun getReferenceMidPrice(assetPair: AssetPair, executionContext: ExecutionContext): BigDecimal {
-        return NumberUtils.setScaleRoundUp(getUnScaledReferenceMidPrice(assetPair, executionContext).first, assetPair.accuracy)
+        return NumberUtils.setScaleRoundUp(getUnScaledReferenceMidPrice(assetPair, executionContext), assetPair.accuracy)
     }
 
     fun addMidPrice(assetPair: AssetPair, newMidPrice: BigDecimal, executionContext: ExecutionContext) {
@@ -89,11 +111,11 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") val refreshM
         return !NumberUtils.equalsIgnoreScale(midPrices!!.last.midPrice, newMidPrice)
     }
 
-    private fun getUnScaledReferenceMidPrice(assetPair: AssetPair, executionContext: ExecutionContext): Pair<BigDecimal, Int> {
+    private fun getUnScaledReferenceMidPrice(assetPair: AssetPair, executionContext: ExecutionContext): BigDecimal {
         val operationTime = executionContext.date
 
         if (!isMidPriceDataReady(assetPair.assetPairId, operationTime)) {
-            return BigDecimal.ZERO to 0
+            return BigDecimal.ZERO
         }
         val midPriceFirstTimeReady = readyRefMidPricesAssetPairs.add(assetPair.assetPairId)
         removeObsoleteMidPrices(assetPair.assetPairId, getLowerTimeBound(operationTime.time))
@@ -106,7 +128,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") val refreshM
             orderBookMidPriceChecker.checkOrderBook(RefMidPriceDangerousChangeEvent(assetPair.assetPairId, NumberUtils.setScaleRoundUp(result, assetPair.accuracy), executionContext))
         }
 
-        return result to (midPricesByAssetPairId[assetPair.assetPairId]?.size ?: 0)
+        return result
     }
 
     private fun removeObsoleteMidPrices(assetPairId: String, lowerBoundTimeMillisBound: Long) {
