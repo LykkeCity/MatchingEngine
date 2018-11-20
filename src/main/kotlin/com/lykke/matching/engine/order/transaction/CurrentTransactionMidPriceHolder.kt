@@ -8,35 +8,48 @@ import java.util.*
 
 class CurrentTransactionMidPriceHolder(private val midPriceHolder: MidPriceHolder) {
     private val midPriceByAssetPair = HashMap<String, MutableList<BigDecimal>>()
+    private val midPriceSumByAssetPair = HashMap<String, BigDecimal>()
     private var removeAll = false
 
     fun addMidPrice(assetPairId: String, midPrice: BigDecimal) {
         val midPrices = midPriceByAssetPair.getOrPut(assetPairId) { ArrayList() }
         midPrices.add(midPrice)
+
+        val midPriceSum = midPriceSumByAssetPair.getOrPut(assetPairId) { BigDecimal.ZERO }
+        midPriceSumByAssetPair[assetPairId] = midPriceSum.add(midPrice)
     }
 
     fun addMidPrices(midPricesByAssetPairId: Map<String, List<BigDecimal>>) {
-        midPricesByAssetPairId.forEach { assetPairId, midPrices -> (midPriceByAssetPair.getOrPut(assetPairId) { ArrayList() }).addAll(midPrices) }
+        midPricesByAssetPairId.forEach { assetPairId, midPrices ->
+            (midPriceByAssetPair.getOrPut(assetPairId) { ArrayList() }).addAll(midPrices)
+            val midPriceSum = midPriceSumByAssetPair.getOrPut(assetPairId) { BigDecimal.ZERO }
+            val newMidPricesSum = midPrices.reduceRight { num, acc -> acc.add(num) }
+            midPriceSumByAssetPair[assetPairId] = midPriceSum.add(newMidPricesSum)
+        }
     }
 
     fun getPersistenceData(date: Date): MidPricePersistenceData {
         val midPricesList = ArrayList<MidPrice>()
 
-        midPriceByAssetPair.forEach{ assetPairId, midPrices ->
+        midPriceByAssetPair.forEach { assetPairId, midPrices ->
             midPrices.forEachIndexed { index, element ->
                 midPricesList.add(MidPrice(assetPairId, element, date.time + index))
             }
         }
 
-        return MidPricePersistenceData(midPricesList , removeAll)
+        return MidPricePersistenceData(midPricesList, removeAll)
     }
 
     fun getRefMidPrice(assetPairId: String, executionContext: ExecutionContext): BigDecimal {
-        return executionContext.assetPairsById[assetPairId]?.let {
-            midPriceHolder.getReferenceMidPrice(executionContext.assetPairsById[assetPairId]!!,
-                    executionContext,
-                    midPriceByAssetPair[assetPairId] ?: emptyList())
-        } ?: BigDecimal.ZERO
+        val assetPair = executionContext.assetPairsById[assetPairId] ?: return BigDecimal.ZERO
+
+        val midPricesSum = midPriceSumByAssetPair[assetPairId] ?: BigDecimal.ZERO
+        val midPricesLength = BigDecimal.valueOf(midPriceByAssetPair[assetPairId]?.size?.toLong() ?: 0L)
+
+        return midPriceHolder.getReferenceMidPrice(assetPair,
+                executionContext,
+                midPricesSum,
+                midPricesLength)
     }
 
     fun setRemoveAllFlag() {
