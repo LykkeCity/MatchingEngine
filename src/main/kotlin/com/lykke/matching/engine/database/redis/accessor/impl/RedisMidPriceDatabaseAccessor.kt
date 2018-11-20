@@ -4,16 +4,16 @@ import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.database.MidPriceDatabaseAccessor
 import com.lykke.matching.engine.database.ReadOnlyMidPriceDatabaseAccessor
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
-import com.lykke.matching.engine.database.redis.utils.BulkUtils
 import com.lykke.matching.engine.database.redis.utils.KeyUtils
 import org.apache.log4j.Logger
-import org.nustaq.serialization.FSTConfiguration
 import org.springframework.util.CollectionUtils
+import redis.clients.jedis.Jedis
 import redis.clients.jedis.Transaction
+import redis.clients.jedis.exceptions.JedisException
 import java.lang.StringBuilder
-import java.util.HashMap
+import java.math.BigDecimal
+import java.util.*
 import java.util.concurrent.TimeUnit
-import java.util.stream.Collectors
 import kotlin.Comparator
 import kotlin.math.sign
 
@@ -27,20 +27,17 @@ class RedisMidPriceDatabaseAccessor(private val dbIndex: Int,
         val LOGGER = Logger.getLogger(RedisMidPriceDatabaseAccessor::class.java)
     }
 
-    private var conf = FSTConfiguration.createDefaultConfiguration()
-
     override fun save(transaction: Transaction, midPrices: List<MidPrice>) {
         transaction.select(dbIndex)
 
         midPrices.forEach { midPrice ->
-            transaction.setex(getKey(midPrice.assetPairId, midPrice.timestamp).toByteArray(),
-                    TimeUnit.MILLISECONDS.toSeconds(midPriceTTL).toInt(),
-                    conf.asByteArray(midPrice))
+            transaction.setex(getKey(midPrice.assetPairId, midPrice.timestamp),
+                    TimeUnit.MILLISECONDS.toSeconds(midPriceTTL).toInt(), midPrice.midPrice.toString())
         }
     }
 
     override fun getMidPricesByAssetPairMap(): Map<String, List<MidPrice>> {
-        val assetPairIdToMidPrices = HashMap<String, List<MidPrice>>()
+        val assetPairIdToMidPrices = HashMap<String, MutableList<MidPrice>>()
         redisConnection.resource { jedis ->
             jedis.select(dbIndex)
             val midPriceKeys = jedis.keys("$KEY_PREFIX*").toList()
@@ -49,18 +46,19 @@ class RedisMidPriceDatabaseAccessor(private val dbIndex: Int,
                 return@resource
             }
 
-            val assetPairToKeys: Map<String, List<String>> = midPriceKeys
-                    .stream()
-                    .collect(Collectors.groupingBy { getAssetPairId(it) })
-
-            assetPairToKeys.forEach { assetPairId, keys ->
-                val result = jedis.mget(*keys.map { it.toByteArray() }.toTypedArray())
-                        .map { midPrice -> conf.asObject(midPrice) as MidPrice }
-                        .sortedWith(Comparator { midPrice1, midPrice2 -> (midPrice1.timestamp - midPrice2.timestamp).sign })
-
-                assetPairIdToMidPrices[assetPairId] = result
+            midPriceKeys.forEach { key ->
+                getAssetPairIdAndTimeStamp(key)?.let { assetPairIdToTimestamp ->
+                    val midPrice = getMidPrice(jedis, key)
+                    midPrice?.let {
+                        val assetPair = assetPairIdToTimestamp.first
+                        val timestamp = assetPairIdToTimestamp.second
+                        val midPrices = assetPairIdToMidPrices.getOrPut(assetPair) { ArrayList() }
+                        midPrices.add(MidPrice(assetPair, midPrice, timestamp))
+                    }
+                }
             }
 
+            assetPairIdToMidPrices.forEach { key, value -> value.sortWith(Comparator { midPrice1, midPrice2 -> (midPrice1.timestamp - midPrice2.timestamp).sign }) }
         }
 
         return assetPairIdToMidPrices
@@ -71,7 +69,17 @@ class RedisMidPriceDatabaseAccessor(private val dbIndex: Int,
         KeyUtils.removeAllKeysByPattern(transaction, "$KEY_PREFIX*")
     }
 
-    private fun getAssetPairId(key: String): String? {
+    private fun getMidPrice(jedis: Jedis, key: String): BigDecimal? {
+        try {
+            val midPrice = jedis.get(key)
+            return midPrice?.let { midPrice.toBigDecimal() }
+        } catch (e: JedisException) {
+            LOGGER.info("Failed to fetch mid price with key $key")
+            return null
+        }
+    }
+
+    private fun getAssetPairIdAndTimeStamp(key: String): Pair<String, Long>? {
         val keyParts = key.split(DELIMITER)
 
         if (keyParts.size != 3) {
@@ -79,7 +87,7 @@ class RedisMidPriceDatabaseAccessor(private val dbIndex: Int,
             return null
         }
 
-        return keyParts[1]
+        return keyParts[1] to keyParts[2].toLong()
     }
 
     private fun getKey(assetPairId: String, timestamp: Long): String {
