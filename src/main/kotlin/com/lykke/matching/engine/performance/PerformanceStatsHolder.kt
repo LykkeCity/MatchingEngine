@@ -14,7 +14,7 @@ class PerformanceStatsHolder {
                    preProcessingTime: Long?,
                    processingTime: Long,
                    totalTime: Long) {
-        val stats = statsMap.getOrPut(type) { PerformanceStats(type, 0, 0, 0) }
+        val stats = statsMap.getOrPut(type) { PerformanceStats(type) }
         inputQueueTime?.let {
             stats.inputQueueTime = stats.inputQueueTime ?: 0
             stats.inputQueueTime = (stats.inputQueueTime as Long) + inputQueueTime

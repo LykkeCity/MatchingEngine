@@ -5,9 +5,9 @@ import java.util.Date
 class TypePerformanceStats(
         val timestamp: Date,
         val type: String,
-        var inputQueueTime: String? = null,
-        var preProcessingTime: String? = null,
-        var preProcessedMessageQueueTime: String,
+        val inputQueueTime: String?,
+        val preProcessingTime: String?,
+        val preProcessedMessageQueueTime: String,
         val processingTime: String,
         val persistTime: String,
         val totalTime: String,
