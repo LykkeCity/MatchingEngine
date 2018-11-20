@@ -58,7 +58,7 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
     }
 
     fun isMessageProcessingEnabled(): Boolean {
-        return !CollectionUtils.isEmpty(getSettingsForSettingGroup(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD))
+        return CollectionUtils.isEmpty(getSettingsForSettingGroup(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD))
     }
 
 
