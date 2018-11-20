@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.database.MidPriceDatabaseAccessor
 import com.lykke.matching.engine.database.ReadOnlyMidPriceDatabaseAccessor
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
+import com.lykke.matching.engine.database.redis.utils.BulkUtils
 import com.lykke.matching.engine.database.redis.utils.KeyUtils
 import org.apache.log4j.Logger
 import org.nustaq.serialization.FSTConfiguration
@@ -30,11 +31,13 @@ class RedisMidPriceDatabaseAccessor(private val dbIndex: Int,
 
     override fun save(transaction: Transaction, midPrices: List<MidPrice>) {
         transaction.select(dbIndex)
+        val dataToInsert = HashMap<String, ByteArray>()
+
         midPrices.forEach { midPrice ->
-            val key = getKey(midPrice.assetPairId, midPrice.timestamp)
-            transaction.set(key.toByteArray(), conf.asByteArray(midPrice))
-            transaction.expire(key, TimeUnit.MILLISECONDS.toSeconds(midPriceTTL).toInt())
+            dataToInsert[getKey(midPrice.assetPairId, midPrice.timestamp)] = conf.asByteArray(midPrice)
         }
+
+        BulkUtils.bulkInsert(transaction, dataToInsert, TimeUnit.MILLISECONDS.toSeconds(midPriceTTL).toInt())
     }
 
     override fun getMidPricesByAssetPairMap(): Map<String, List<MidPrice>> {
