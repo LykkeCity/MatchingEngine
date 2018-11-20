@@ -45,7 +45,10 @@ class RedisPersistenceManager(
             return true
         }
         return try {
-            persistData(redisConnection, data)
+            val startTime = System.nanoTime()
+            redisConnection.transactionalResource { transaction ->
+                persistData(transaction, data, startTime)
+            }
             true
         } catch (e: Exception) {
             val message = "Unable to save data (${data.details()})"
@@ -55,10 +58,8 @@ class RedisPersistenceManager(
         }
     }
 
-    private fun persistData(redisConnection: RedisConnection, data: PersistenceData) {
-        val startTime = System.nanoTime()
-        redisConnection.transactionalResource { transaction ->
-            persistBalances(transaction, data.balancesData?.balances)
+    private fun persistData(transaction: Transaction, data: PersistenceData, startTime: Long) {
+             persistBalances(transaction, data.balancesData?.balances)
             persistProcessedMessages(transaction, data.processedMessage)
 
             if (data.processedMessage?.type == MessageType.CASH_IN_OUT_OPERATION.type ||
@@ -94,7 +95,7 @@ class RedisPersistenceManager(
             if (!CollectionUtils.isEmpty(data.stopOrderBooksData?.orderBooks)) {
                 persistedStopApplicationEventPublisher.publishEvent(StopOrderBookPersistEvent(data.stopOrderBooksData!!.orderBooks))
             }
-        }
+
     }
 
     private fun persistMidPrices(transaction: Transaction, midPricePersistenceData: MidPricePersistenceData?) {
