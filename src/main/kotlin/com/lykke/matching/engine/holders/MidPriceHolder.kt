@@ -1,3 +1,4 @@
+
 package com.lykke.matching.engine.holders
 
 import com.lykke.matching.engine.common.events.RefMidPriceDangerousChangeEvent
@@ -14,7 +15,7 @@ import java.math.BigDecimal
 import java.util.*
 
 @Component
-class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val refreshMidPricePeriod: Long,
+class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") val refreshMidPricePeriod: Long,
                      readOnlyMidPriceDatabaseAccessor: ReadOnlyMidPriceDatabaseAccessor,
                      private val orderBookMidPriceChecker: OrderBookMidPriceChecker) {
     private val MAX_MID_PRICE_RECALCULATION_COUNT = 1000
@@ -35,6 +36,15 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
         }
     }
 
+    fun getRefMidPriceWithoutCleanupAndChecks(assetPair: AssetPair, operationTime: Date): BigDecimal {
+        if (!isMidPriceDataReady(assetPair.assetPairId, operationTime)) {
+            return BigDecimal.ZERO
+        }
+
+        val unscaledRefMidPrice = referencePriceByAssetPairId[assetPair.assetPairId] ?: BigDecimal.ZERO
+        return NumberUtils.setScaleRoundUp(unscaledRefMidPrice, assetPair.accuracy)
+    }
+
     fun getReferenceMidPrice(assetPair: AssetPair, executionContext: ExecutionContext, notSavedMidPrices: Collection<BigDecimal>): BigDecimal {
         if (!isMidPriceDataReady(assetPair.assetPairId, executionContext.date)) {
             return BigDecimal.ZERO
@@ -43,7 +53,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
         val currentRefMidPrice = getUnScaledReferenceMidPrice(assetPair, executionContext)
         val notSavedMidPricesLength = BigDecimal.valueOf(notSavedMidPrices.size.toLong())
         if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, notSavedMidPricesLength)) {
-            return currentRefMidPrice
+            return NumberUtils.setScaleRoundUp(currentRefMidPrice, assetPair.accuracy)
         }
 
         var notSavedMidPricesSum = BigDecimal.ZERO

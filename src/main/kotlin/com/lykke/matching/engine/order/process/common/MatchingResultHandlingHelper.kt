@@ -59,7 +59,6 @@ class MatchingResultHandlingHelper(private val applicationSettingsCache: Applica
         }
         val matchingResult = orderExecutionContext.matchingResult!!
         val uncompletedLimitOrderCopy = matchingResult.uncompletedLimitOrderCopy!!
-        val assetPair = orderExecutionContext.executionContext.assetPairsById[uncompletedLimitOrderCopy.assetPairId]!!
         uncompletedLimitOrderCopy.updateStatus(OrderStatus.Cancelled, orderExecutionContext.executionContext.date)
         if (orderExecutionContext.cancelledOppositeOrdersWalletOperations == null) {
             orderExecutionContext.cancelledOppositeOrdersWalletOperations = mutableListOf()

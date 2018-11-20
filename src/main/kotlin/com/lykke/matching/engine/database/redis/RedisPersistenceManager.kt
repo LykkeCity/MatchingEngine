@@ -122,7 +122,6 @@ class RedisPersistenceManager(
         if (!CollectionUtils.isEmpty(midPricePersistenceData.midPrices)) {
             redisMidPriceDatabaseAccessor.save(transaction, midPricePersistenceData.midPrices!!)
         }
-
     }
 
     private fun persistProcessedMessages(transaction: Transaction, processedMessage: ProcessedMessage?) {

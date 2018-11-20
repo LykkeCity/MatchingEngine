@@ -2,6 +2,7 @@ package com.lykke.matching.engine.outgoing.socket
 
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageType.ORDER_BOOK_SNAPSHOT
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -24,7 +25,8 @@ class Connection(val socket: Socket,
                  val inputQueue: BlockingQueue<OrderBook>,
                  val orderBooks: ConcurrentHashMap<String, AssetOrderBook>,
                  val assetsCache: AssetsHolder,
-                 val assetPairsCache: AssetsPairsHolder) : Thread(Connection::class.java.name) {
+                 val assetPairsCache: AssetsPairsHolder,
+                 val midPriceHolder: MidPriceHolder) : Thread(Connection::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(Connection::class.java.name)
@@ -54,14 +56,16 @@ class Connection(val socket: Socket,
                             LOGGER.error("Unsupported message type: $type")
                         }
                     }
-                } catch (e: Exception) {}
+                } catch (e: Exception) {
+                }
             }
 
             val now = Date()
             orderBooks.values.forEach {
                 val orderBook = it.copy()
-                writeOrderBook(OrderBook(orderBook.assetPairId, true, now, orderBook.getOrderBook(true)), outputStream)
-                writeOrderBook(OrderBook(orderBook.assetPairId, false, now, orderBook.getOrderBook(false)), outputStream)
+                val refMidPrice = midPriceHolder.getRefMidPriceWithoutCleanupAndChecks(assetPairsCache.getAssetPair(orderBook.assetPairId), Date())
+                writeOrderBook(OrderBook(orderBook.assetPairId, refMidPrice, midPriceHolder.refreshMidPricePeriod, true, now, orderBook.getOrderBook(true)), outputStream)
+                writeOrderBook(OrderBook(orderBook.assetPairId, refMidPrice, midPriceHolder.refreshMidPricePeriod, false, now, orderBook.getOrderBook(false)), outputStream)
             }
 
             while (true) {
@@ -79,7 +83,7 @@ class Connection(val socket: Socket,
         }
     }
 
-    private fun writeOrderBook(orderBook: OrderBook, stream : DataOutputStream) {
+    private fun writeOrderBook(orderBook: OrderBook, stream: DataOutputStream) {
         val builder = ProtocolMessages.OrderBookSnapshot.newBuilder().setAsset(orderBook.assetPair).setIsBuy(orderBook.isBuy).setTimestamp(orderBook.timestamp.time)
         val pair = assetPairsCache.getAssetPair(orderBook.assetPair)
         val baseAsset = assetsCache.getAsset(pair.baseAssetId)
@@ -95,7 +99,7 @@ class Connection(val socket: Socket,
         stream.flush()
     }
 
-    fun isClosed() : Boolean {
+    fun isClosed(): Boolean {
         return socket.isClosed
     }
 

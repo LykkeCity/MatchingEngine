@@ -104,7 +104,8 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     }
 
     private fun removeFromClientMap(uid: String): Boolean {
-        val order: LimitOrder = clientLimitOrdersMap.values.firstOrNull { it.any { it.externalId == uid } }?.firstOrNull { it.externalId == uid } ?: return false
+        val order: LimitOrder = clientLimitOrdersMap.values.firstOrNull { it.any { it.externalId == uid } }?.firstOrNull { it.externalId == uid }
+                ?: return false
         return clientLimitOrdersMap[order.clientId]?.remove(order) ?: false
     }
 

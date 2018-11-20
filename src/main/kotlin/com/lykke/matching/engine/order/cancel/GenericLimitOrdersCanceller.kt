@@ -2,7 +2,6 @@ package com.lykke.matching.engine.order.cancel
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -17,6 +16,7 @@ import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.Date
 
 class GenericLimitOrdersCanceller(private val executionContextFactory: ExecutionContextFactory,
@@ -116,12 +116,8 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
 
         executionContext.addTrustedClientsLimitOrdersWithTrades(limitOrdersCancelResult.trustedClientsOrdersWithTrades)
         executionContext.addTrustedClientsLimitOrdersWithTrades(stopLimitOrdersResult.trustedClientsOrdersWithTrades)
-
-        getMidPrices(limitOrdersCancelResult.assetOrderBooks).forEach {
-            executionContext.updateMidPrice(it)
-        }
-        executionContext.removeAllMidPrices = cancelAll
-
+        executionContext.currentTransactionMidPriceHolder.addMidPrices(getMidPrices(limitOrdersCancelResult.assetOrderBooks))
+        executionContext.currentTransactionMidPriceHolder.setRemoveAllFlag()
         stopOrderBookProcessor.checkAndExecuteStopLimitOrders(executionContext)
 
         return executionDataApplyService.persistAndSendEvents(messageWrapper, executionContext)
@@ -134,16 +130,17 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
                 .mapValues { it.value.single() }
     }
 
-    private fun getMidPrices(assetPairIdToAssetOrderBook: Map<String, AssetOrderBook>): List<MidPrice> {
+    private fun getMidPrices(assetPairIdToAssetOrderBook: Map<String, AssetOrderBook>): Map<String, List<BigDecimal>> {
         if (cancelAll) {
-            return emptyList()
+            return emptyMap()
         }
 
-        val result = ArrayList<MidPrice>()
+        val result = HashMap<String, MutableList<BigDecimal>>()
+
         assetPairIdToAssetOrderBook.forEach { assetPairId, orderBook ->
-            val midPrice = orderBook.getMidPrice()
-            if (midPrice != null) {
-                result.add(MidPrice(assetPairId, midPrice, date.time))
+            orderBook.getMidPrice()?.let {
+                val list = result.getOrPut(assetPairId) { ArrayList() }
+                list.add(it)
             }
         }
 

@@ -190,8 +190,7 @@ abstract class AbstractPerformanceTest {
                 LimitOrderBusinessValidatorImpl(),
                 applicationSettingsCache,
                 matchingEngine,
-                midPriceHolder,
-                priceDeviationThresholdHolder,
+                PriceDeviationThresholdHolder(applicationSettingsCache),
                 matchingResultHandlingHelper)
 
         val stopOrderProcessor = StopLimitOrderProcessor(limitOrderInputValidator,

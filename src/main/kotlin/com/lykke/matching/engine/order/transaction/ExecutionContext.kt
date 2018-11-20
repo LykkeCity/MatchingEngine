@@ -1,3 +1,4 @@
+
 package com.lykke.matching.engine.order.transaction
 
 import com.lykke.matching.engine.balance.WalletOperationsProcessor
@@ -24,7 +25,7 @@ open class ExecutionContext(val messageId: String,
                             val walletOperationsProcessor: WalletOperationsProcessor,
                             val orderBooksHolder: CurrentTransactionOrderBooksHolder,
                             val stopOrderBooksHolder: CurrentTransactionStopOrderBooksHolder,
-                            val midPriceHolder: MidPriceHolder,
+                            val currentTransactionMidPriceHolder: CurrentTransactionMidPriceHolder,
                             open val date: Date,
                             val logger: Logger,
                             private val controlsLogger: Logger) {
@@ -35,8 +36,6 @@ open class ExecutionContext(val messageId: String,
 
     private val clientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
     private val trustedClientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
-
-    private val midPricesByAssetPairId = HashMap<String, MutableList<MidPrice>>()
 
     var marketOrderWithTrades: MarketOrderWithTrades? = null
 
@@ -77,23 +76,6 @@ open class ExecutionContext(val messageId: String,
     fun getClientsLimitOrdersWithTrades() = clientLimitOrdersWithTradesByInternalId.values
     fun getTrustedClientsLimitOrdersWithTrades() = trustedClientLimitOrdersWithTradesByInternalId.values
 
-    fun updateMidPrice(midPrice: MidPrice) {
-        val midPrices = this.midPricesByAssetPairId.getOrPut(midPrice.assetPairId) { ArrayList() }
-        midPrices.add(midPrice)
-    }
-
-    fun removeMidPrice(assetPairId: String) {
-        this.midPricesByAssetPairId.remove(assetPairId)
-    }
-
-    fun getMidPrices(): Collection<MidPrice> {
-        return midPricesByAssetPairId.values.flatMap {it}
-    }
-
-    fun getMidPrices(assetPairId: String): Collection<MidPrice> {
-        return midPricesByAssetPairId[assetPairId] ?: emptyList()
-    }
-
     fun info(message: String) {
         logger.info("[$messageId] $message")
     }
@@ -112,15 +94,9 @@ open class ExecutionContext(val messageId: String,
 
     fun apply() {
         walletOperationsProcessor.apply()
-        orderBooksHolder.apply(date)
-        stopOrderBooksHolder.apply(date)
+        orderBooksHolder.apply(date, currentTransactionMidPriceHolder, this)
+        stopOrderBooksHolder.apply(date, currentTransactionMidPriceHolder, this)
 
-        if (removeAllMidPrices) {
-            midPriceHolder.clear()
-        }
-
-        getMidPrices().forEach { it ->
-            midPriceHolder.addMidPrice(this.assetPairsById[it.assetPairId]!!, it.midPrice, this)
-        }
+        currentTransactionMidPriceHolder.apply(this)
     }
 }
