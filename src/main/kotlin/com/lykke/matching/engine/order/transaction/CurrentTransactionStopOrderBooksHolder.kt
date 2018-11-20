@@ -50,7 +50,7 @@ class CurrentTransactionStopOrderBooksHolder(private val genericStopLimitOrderSe
         return orderCopy
     }
 
-    override fun applySpecificPart(date: Date) {
+    override fun applySpecificPart(date: Date, currentTransactionMidPriceHolder: CurrentTransactionMidPriceHolder, executionContext: ExecutionContext ) {
         assetOrderBookCopiesByAssetPairId.forEach { assetPairId, orderBook ->
             genericStopLimitOrderService.setOrderBook(assetPairId, orderBook)
         }

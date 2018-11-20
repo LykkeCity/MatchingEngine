@@ -14,15 +14,12 @@ class ExecutionPersistenceService(private val persistenceManager: PersistenceMan
     fun persist(messageWrapper: MessageWrapper?,
                 executionContext: ExecutionContext,
                 sequenceNumber: Long? = null): Boolean {
-
         if (messageWrapper?.triedToPersist == true) {
             executionContext.error("There already was attempt to persist data")
             return messageWrapper.persisted
         }
 
-        val midPricePersistenceData =  MidPricePersistenceData(executionContext.getMidPrices().mapIndexed{ index, element ->
-            MidPrice(element.assetPairId, element.midPrice, element.timestamp + index)}, executionContext.removeAllMidPrices)
-
+        val midPricePersistenceData = executionContext.currentTransactionMidPriceHolder.getPersistenceData(executionContext.date)
         val persisted = persistenceManager.persist(PersistenceData(executionContext.walletOperationsProcessor.persistenceData(),
                 executionContext.processedMessage,
                 executionContext.orderBooksHolder.getPersistenceData(),

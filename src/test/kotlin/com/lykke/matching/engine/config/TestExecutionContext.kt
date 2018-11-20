@@ -101,8 +101,7 @@ open class TestExecutionContext {
                 limitOrderBusinessValidator,
                 applicationSettingsCache,
                 matchingEngine,
-                midPriceHolder,
-                midPriceDeviationThresholdHolder,
+                priceDeviationThresholdHolder,
                 matchingResultHandlingHelper)
     }
 

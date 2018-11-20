@@ -51,15 +51,15 @@ abstract class AbstractTransactionOrderBooksHolder<AssetOrderBook : AbstractAsse
         addRemovedOrders(orders, replacedOrders)
     }
 
-    fun apply(date: Date) {
+    fun apply(date: Date, currentTransactionMidPriceHolder: CurrentTransactionMidPriceHolder, executionContext: ExecutionContext) {
         genericLimitOrderService.removeOrdersFromMapsAndSetStatus(completedOrders)
         genericLimitOrderService.removeOrdersFromMapsAndSetStatus(cancelledOrders, OrderStatus.Cancelled, date)
         genericLimitOrderService.removeOrdersFromMapsAndSetStatus(replacedOrders, OrderStatus.Replaced, date)
         genericLimitOrderService.addOrders(newOrdersByExternalId.values)
-        applySpecificPart(date)
+        applySpecificPart(date, currentTransactionMidPriceHolder, executionContext)
     }
 
-    protected abstract fun applySpecificPart(date: Date)
+    protected abstract fun applySpecificPart(date: Date, currentTransactionMidPriceHolder: CurrentTransactionMidPriceHolder, executionContext: ExecutionContext)
 
     abstract fun getPersistenceData(): OrderBooksPersistenceData
 
