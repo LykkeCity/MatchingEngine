@@ -6,7 +6,6 @@ import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedDat
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
-import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.impl.OrderFatalValidationException
@@ -94,10 +93,10 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
     private fun handlePreprocessingException(exception: Exception, message: MessageWrapper) {
         try {
             val context = message.context
-            CashTransferPreprocessor.LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
+            LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
                     if (context != null) "Error details: $context" else "", exception)
 
-            CashTransferPreprocessor.METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
+            METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
             writeResponse(message, MessageStatus.RUNTIME)
         } catch (e: Exception) {
             val errorMessage = "Got error during message preprocessing failure handling"
