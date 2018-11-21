@@ -21,6 +21,10 @@ import javax.annotation.PostConstruct
 
 @Component
 class RabbitSwapEventListener {
+
+    @Volatile
+    private var failed = false
+
     @Autowired
     private lateinit var rabbitSwapQueue: BlockingDeque<MarketOrderWithTrades>
 
@@ -55,17 +59,20 @@ class RabbitSwapEventListener {
     @EventListener
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == RabbitSwapEventListener::class.java.simpleName) {
+            failed = true
+            logFail(rabbitFailureEvent.publisherName)
             rabbitFailureEvent.failedEvent?.let {
                 rabbitSwapQueue.putFirst(it as MarketOrderWithTrades)
             }
-
             applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT, rabbitFailureEvent.publisherName))
         }
     }
 
     @EventListener
     fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
-        if (rabbitRecoverEvent.publisherName == RabbitSwapEventListener::class.java.simpleName) {
+        if (rabbitRecoverEvent.publisherName == RabbitSwapEventListener::class.java.simpleName && failed) {
+            failed = false
+            logRecover(rabbitRecoverEvent.publisherName)
             applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
         }
     }

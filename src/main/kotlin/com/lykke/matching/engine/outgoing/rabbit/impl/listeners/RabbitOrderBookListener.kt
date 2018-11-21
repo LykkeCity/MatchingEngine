@@ -18,6 +18,10 @@ import javax.annotation.PostConstruct
 
 @Component
 class RabbitOrderBookListener {
+
+    @Volatile
+    private var failed = false
+
     @Autowired
     private lateinit var rabbitOrderBookQueue: BlockingDeque<OrderBook>
 
@@ -43,6 +47,8 @@ class RabbitOrderBookListener {
     @EventListener
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == RabbitOrderBookListener::class.java.simpleName) {
+            failed = true
+            logFail(rabbitFailureEvent.publisherName)
             rabbitFailureEvent.failedEvent?.let {
                 rabbitOrderBookQueue.putFirst(it as OrderBook)
             }
@@ -52,7 +58,9 @@ class RabbitOrderBookListener {
 
     @EventListener
     fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
-        if (rabbitRecoverEvent.publisherName == RabbitOrderBookListener::class.java.simpleName) {
+        if (rabbitRecoverEvent.publisherName == RabbitOrderBookListener::class.java.simpleName && failed) {
+            failed = false
+            logRecover(rabbitRecoverEvent.publisherName)
             applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
         }
     }

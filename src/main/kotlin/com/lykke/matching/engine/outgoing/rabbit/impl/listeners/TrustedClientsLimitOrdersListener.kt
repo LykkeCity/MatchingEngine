@@ -19,6 +19,9 @@ import javax.annotation.PostConstruct
 @Component
 class TrustedClientsLimitOrdersListener {
 
+    @Volatile
+    private var failed = false
+
     @Autowired
     private lateinit var trustedClientsLimitOrdersQueue: BlockingDeque<LimitOrdersReport>
 
@@ -44,7 +47,9 @@ class TrustedClientsLimitOrdersListener {
 
     @EventListener
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
-        if(rabbitFailureEvent.publisherName == TrustedClientsLimitOrdersListener::class.java.simpleName) {
+        if (rabbitFailureEvent.publisherName == TrustedClientsLimitOrdersListener::class.java.simpleName) {
+            failed = true
+            logFail(rabbitFailureEvent.publisherName)
             rabbitFailureEvent.failedEvent?.let {
                 trustedClientsLimitOrdersQueue.putFirst(it as LimitOrdersReport)
             }
@@ -54,7 +59,9 @@ class TrustedClientsLimitOrdersListener {
 
     @EventListener
     fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
-        if (rabbitRecoverEvent.publisherName == TrustedClientsLimitOrdersListener::class.java.simpleName) {
+        if (rabbitRecoverEvent.publisherName == TrustedClientsLimitOrdersListener::class.java.simpleName && failed) {
+            failed = false
+            logRecover(rabbitRecoverEvent.publisherName)
             applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
         }
     }
