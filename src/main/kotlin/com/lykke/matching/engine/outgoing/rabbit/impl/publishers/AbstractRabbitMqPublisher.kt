@@ -100,12 +100,10 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
     }
 
     private fun publishRecoverEvent() {
-        LOGGER.info("Rabbit MQ publisher: $queueName recovered")
         applicationEventPublisher.publishEvent(RabbitRecoverEvent(queueName))
     }
 
     private fun publishFailureEvent(event: T?) {
-        LOGGER.error("Rabbit MQ publisher: $queueName failed")
         applicationEventPublisher.publishEvent(RabbitFailureEvent(queueName, event))
     }
 

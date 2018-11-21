@@ -22,6 +22,9 @@ import javax.annotation.PostConstruct
 @Component
 class BalanceUpdatesListener {
 
+    @Volatile
+    private var failed = false
+
     @Autowired
     private lateinit var  balanceUpdateQueue: BlockingDeque<BalanceUpdate>
 
@@ -56,6 +59,9 @@ class BalanceUpdatesListener {
     @EventListener
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == BalanceUpdatesListener::class.java.simpleName) {
+            failed = true
+            logFail(rabbitFailureEvent.publisherName)
+
             rabbitFailureEvent.failedEvent?.let {
                 balanceUpdateQueue.putFirst(it as BalanceUpdate)
             }
@@ -65,7 +71,9 @@ class BalanceUpdatesListener {
 
     @EventListener
     fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
-        if (rabbitRecoverEvent.publisherName == BalanceUpdatesListener::class.java.simpleName) {
+        if (rabbitRecoverEvent.publisherName == BalanceUpdatesListener::class.java.simpleName && failed) {
+            failed = false
+            logRecover(rabbitRecoverEvent.publisherName)
             applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
         }
     }

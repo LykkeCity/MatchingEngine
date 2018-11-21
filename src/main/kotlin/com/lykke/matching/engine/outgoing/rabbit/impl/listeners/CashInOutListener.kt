@@ -22,6 +22,9 @@ import javax.annotation.PostConstruct
 @Component
 class CashInOutListener {
 
+    @Volatile
+    private var failed = false
+
     @Autowired
     private lateinit var rabbitCashInOutQueue: BlockingDeque<CashOperation>
 
@@ -56,6 +59,8 @@ class CashInOutListener {
     @EventListener
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == CashInOutListener::class.java.simpleName) {
+            failed = true
+            logFail(rabbitFailureEvent.publisherName)
             rabbitFailureEvent.failedEvent?.let {
                 rabbitCashInOutQueue.putFirst(it as CashOperation)
             }
@@ -65,7 +70,9 @@ class CashInOutListener {
 
     @EventListener
     fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
-        if (rabbitRecoverEvent.publisherName == CashInOutListener::class.java.simpleName) {
+        if (rabbitRecoverEvent.publisherName == CashInOutListener::class.java.simpleName && failed) {
+            failed = false
+            logRecover(rabbitRecoverEvent.publisherName)
             applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
         }
     }
