@@ -17,17 +17,17 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
     @PostConstruct
     @Synchronized
     override fun update() {
-        val settingGroups = settingsDatabaseAccessor.getAllSettingGroups(null)
+        val settingGroups = settingsDatabaseAccessor.getAllSettingGroups()
 
         AvailableSettingGroup.values().forEach { settingGroup ->
             val dbSettings = settingGroups.find { it.name == settingGroup.settingGroupName }?.let {
                 HashSet(it.settings)
             }
 
-            if (dbSettings == null) {
+            if (CollectionUtils.isEmpty(dbSettings)) {
                 settingsByGroupName.remove(settingGroup.settingGroupName)
             } else {
-                settingsByGroupName[settingGroup.settingGroupName] = dbSettings
+                settingsByGroupName[settingGroup.settingGroupName] = dbSettings!!
             }
         }
     }
