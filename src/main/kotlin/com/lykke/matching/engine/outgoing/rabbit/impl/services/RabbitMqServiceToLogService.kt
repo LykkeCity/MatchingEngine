@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Service
 
 @Service("rabbitMqService")
-@Profile("local")
+@Profile("default")
 class RabbitMqServiceToLogService(gson: Gson) : AbstractRabbitMQToLogService<Event<*>>(gson, LOGGER) {
     companion object {
         private val LOGGER = Logger.getLogger(RabbitMqServiceToLogService::class.java)
