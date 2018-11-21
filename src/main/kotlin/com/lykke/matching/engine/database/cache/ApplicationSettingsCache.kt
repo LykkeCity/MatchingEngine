@@ -5,13 +5,15 @@ import com.lykke.matching.engine.daos.setting.Setting
 import com.lykke.matching.engine.daos.setting.SettingsGroup
 import com.lykke.matching.engine.database.SettingsDatabaseAccessor
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import org.springframework.util.CollectionUtils
 import java.math.BigDecimal
 import javax.annotation.PostConstruct
 
 @Component
-class ApplicationSettingsCache @Autowired constructor(private val settingsDatabaseAccessor: SettingsDatabaseAccessor) : DataCache() {
+class ApplicationSettingsCache @Autowired constructor(private val settingsDatabaseAccessor: SettingsDatabaseAccessor,
+                                                      private val applicationEventPublisher: ApplicationEventPublisher) : DataCache() {
     private val settingsByGroupName = HashMap<String, MutableSet<Setting>>()
 
     @PostConstruct
@@ -62,13 +64,19 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
     fun createOrUpdateSettingValue(settingGroup: AvailableSettingGroup, settingName: String, value: String, enabled: Boolean) {
         deleteSetting(settingGroup, settingName)
         val settings = settingsByGroupName.getOrPut(settingGroup.settingGroupName) { HashSet() }
-        settings.add(Setting(settingName, value, enabled))
+        val settingToAdd = Setting(settingName, value, enabled)
+        settings.add(settingToAdd)
+        applicationEventPublisher.publishEvent(ApplicationSettingUpdateEvent(settingGroup, settingToAdd))
     }
 
     @Synchronized
     fun deleteSetting(settingGroup: AvailableSettingGroup, settingName: String) {
         val settings = getSettingsForSettingGroup(settingGroup)
-        settings?.removeIf { it.name == settingName }
+        val settingToRemove = settings?.find { it.name == settingName }
+        settingToRemove?.let {
+            settings.remove(settingToRemove)
+            applicationEventPublisher.publishEvent(ApplicationSettingDeleteEvent(settingGroup, settingToRemove))
+        }
         if (CollectionUtils.isEmpty(settings)) {
             settingsByGroupName.remove(settingGroup.settingGroupName)
         }
@@ -77,6 +85,7 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
     @Synchronized
     fun deleteSettingGroup(settingGroup: AvailableSettingGroup) {
         settingsByGroupName.remove(settingGroup.settingGroupName)
+        applicationEventPublisher.publishEvent(ApplicationGroupDeleteEvent(settingGroup))
     }
 
     @Synchronized
