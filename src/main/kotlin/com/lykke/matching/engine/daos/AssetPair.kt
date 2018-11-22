@@ -1,8 +1,9 @@
 package com.lykke.matching.engine.daos
 
+import java.io.Serializable
 import java.math.BigDecimal
 
-class AssetPair(
+data class AssetPair(
         val assetPairId: String,
         val baseAssetId: String,
         val quotingAssetId: String,
@@ -11,7 +12,7 @@ class AssetPair(
         val minInvertedVolume: BigDecimal? = null,
         val maxVolume: BigDecimal? = null,
         val maxValue: BigDecimal? = null
-) {
+): Serializable {
     override fun toString(): String {
         return "AssetPair(" +
                 "assetPairId='$assetPairId', " +
