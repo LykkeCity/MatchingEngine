@@ -6,6 +6,7 @@ import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
+import com.lykke.matching.engine.holders.DisabledFunctionalityRulesHolder
 import com.lykke.matching.engine.incoming.parsers.data.CashInOutParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
@@ -31,7 +32,8 @@ class CashInOutPreprocessor(
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
         private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
         private val cashInOutOperationPreprocessorPersistenceManager: PersistenceManager,
-        private val processedMessagesCache: ProcessedMessagesCache): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
+        private val processedMessagesCache: ProcessedMessagesCache,
+        private val disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(CashInOutPreprocessor::class.java.name)

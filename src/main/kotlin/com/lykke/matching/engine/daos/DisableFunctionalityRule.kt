@@ -4,12 +4,12 @@ import com.lykke.matching.engine.messages.MessageType
 import java.io.Serializable
 
 data class DisableFunctionalityRule(
-        val assetId: String?,
-        val assetPairId: String?,
+        val asset: Asset?,
+        val assetPair: AssetPair?,
         val messageType: MessageType?) : Serializable {
     fun isEmpty(): Boolean {
-        return assetId == null
-                && assetPairId == null
+        return asset == null
+                && assetPair == null
                 && messageType == null
     }
 }

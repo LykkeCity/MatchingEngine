@@ -3,6 +3,8 @@ package com.lykke.matching.engine.web.controllers
 import com.lykke.matching.engine.daos.DisableFunctionalityRule
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.SettingNotFoundException
+import com.lykke.matching.engine.holders.AssetsHolder
+import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.services.ApplicationSettingsService
 import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
@@ -41,6 +43,12 @@ class DisabledFunctionalityRulesController {
 
     @Autowired
     private lateinit var applicationSettingsService: ApplicationSettingsService
+
+    @Autowired
+    private lateinit var assetsPairsHolder: AssetsPairsHolder
+
+    @Autowired
+    private lateinit var assetsHolder: AssetsHolder
 
     @PostMapping(consumes = [MediaType.APPLICATION_JSON_VALUE])
     @ApiOperation("Create disable functionality rule")
@@ -157,7 +165,9 @@ class DisabledFunctionalityRulesController {
 
     fun toDisabledFunctionalityRule(disabledFunctionalityRuleDto: DisabledFunctionalityRuleDto): DisableFunctionalityRule {
         return disabledFunctionalityRuleDto.let { rule ->
-            DisableFunctionalityRule(rule.assetId, rule.assetPairId, rule.messageTypeId?.let { MessageType.valueOf(it.toByte()) })
+            DisableFunctionalityRule(rule.assetId?.let { assetsHolder.getAsset(it) },
+                    rule.assetPairId?.let { assetsPairsHolder.getAssetPair(it) },
+                    rule.messageTypeId?.let { MessageType.valueOf(it.toByte()) })
         }
     }
 
@@ -169,8 +179,8 @@ class DisabledFunctionalityRulesController {
                                        user: String? = null): DisabledFunctionalityRuleDto {
         return DisabledFunctionalityRuleDto(
                 id = id,
-                assetId = rule.assetId,
-                assetPairId = rule.assetPairId,
+                assetId = rule.asset?.assetId,
+                assetPairId = rule.assetPair?.assetPairId,
                 messageTypeId = rule.messageType!!.type.toInt(),
                 enabled = enabled,
                 timestamp = timestamp,
