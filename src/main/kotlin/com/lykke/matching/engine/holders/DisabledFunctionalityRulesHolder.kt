@@ -10,6 +10,7 @@ import org.nustaq.serialization.FSTConfiguration
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
+import javax.annotation.PostConstruct
 
 @Component
 class DisabledFunctionalityRulesHolder(val applicationSettingsCache: ApplicationSettingsCache) {
@@ -17,11 +18,20 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
     private val conf = FSTConfiguration.createJsonConfiguration()
 
     fun isDisabled(rule: DisableFunctionalityRule): Boolean {
-        if (rule.isEmpty()) {
+        if (rule.isEmpty() || disabledFunctionalityRules.isEmpty()) {
             return false
         }
 
-        return disabledFunctionalityRules.count { isRuleMatch(rule, it) } > 0
+        return disabledFunctionalityRules.count {
+            isRuleMatch(rule, it)
+        } > 0
+    }
+
+    @PostConstruct
+    private fun init() {
+        applicationSettingsCache.getSettingsGroup(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES.settingGroupName, true)?.settings?.forEach {
+            disabledFunctionalityRules.add(conf.asObject(it.value.toByteArray()) as DisableFunctionalityRule)
+        }
     }
 
     @EventListener
@@ -55,8 +65,8 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
     private fun isRuleMatch(inputRequest: DisableFunctionalityRule, disableRule: DisableFunctionalityRule): Boolean {
         return (disableRule.asset == null ||
                 inputRequest.asset == disableRule.asset
-                || inputRequest.assetPair?.baseAssetId == disableRule.asset?.assetId
-                || inputRequest.assetPair?.quotingAssetId == disableRule.asset?.assetId)
+                || inputRequest.assetPair?.baseAssetId == disableRule.asset.assetId
+                || inputRequest.assetPair?.quotingAssetId == disableRule.asset.assetId)
                 && (disableRule.assetPair == null || inputRequest.assetPair == disableRule.assetPair)
                 && (disableRule.messageType == null || inputRequest.messageType == disableRule.messageType)
     }
