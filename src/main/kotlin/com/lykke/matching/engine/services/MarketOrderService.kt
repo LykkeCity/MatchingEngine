@@ -58,7 +58,8 @@ class MarketOrderService @Autowired constructor(
         private val marketOrderValidator: MarketOrderValidator,
         private val applicationSettingsHolder: ApplicationSettingsHolder,
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-        private val messageSender: MessageSender): AbstractService {
+        private val messageSender: MessageSender,
+        private val disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder): AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
         private val STATS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.stats")
@@ -73,10 +74,20 @@ class MarketOrderService @Autowired constructor(
         if (messageWrapper.parsedMessage == null) {
             parseMessage(messageWrapper)
         }
+
+        val parsedMessage = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
+
+        val assetPair = assetsPairsHolder.getAssetPair(parsedMessage.assetPairId)
+
         val now = Date()
         val feeInstruction: FeeInstruction?
         val feeInstructions: List<NewFeeInstruction>?
-        val parsedMessage = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
+
+        if (disabledFunctionalityRulesHolder.isDisabled(DisableFunctionalityRule(null, assetPair, MessageType.MARKET_ORDER))) {
+            writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+            return
+        }
+
         feeInstruction = if (parsedMessage.hasFee()) FeeInstruction.create(parsedMessage.fee) else null
         feeInstructions = NewFeeInstruction.create(parsedMessage.feesList)
         LOGGER.debug("Got market order messageId: ${messageWrapper.messageId}, " +
@@ -104,7 +115,6 @@ class MarketOrderService @Autowired constructor(
             return
         }
 
-        val assetPair = getAssetPair(order)
 
         val executionContext = executionContextFactory.create(messageWrapper.messageId!!,
                 messageWrapper.id!!,
@@ -202,7 +212,6 @@ class MarketOrderService @Autowired constructor(
     private fun getOrderBook(order: MarketOrder) =
             genericLimitOrderService.getOrderBook(order.assetPairId).getOrderBook(!order.isBuySide())
 
-    private fun getAssetPair(order: MarketOrder) = assetsPairsHolder.getAssetPair(order.assetPairId)
 
     private fun parse(array: ByteArray): ProtocolMessages.MarketOrder {
         return ProtocolMessages.MarketOrder.parseFrom(array)

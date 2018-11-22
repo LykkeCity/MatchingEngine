@@ -10,7 +10,6 @@ import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.parsers.data.CashInOutParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
-import com.lykke.matching.engine.messages.MessageProcessor
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.DUPLICATE
 import com.lykke.matching.engine.messages.MessageStatus.RUNTIME

@@ -53,8 +53,11 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
     }
 
     private fun isRuleMatch(inputRequest: DisableFunctionalityRule, disableRule: DisableFunctionalityRule): Boolean {
-        return (inputRequest.assetId == disableRule.assetId || disableRule.assetId == null)
-                && (inputRequest.assetPairId == disableRule.assetPairId || disableRule.assetPairId == null)
-                && (inputRequest.messageType == disableRule.messageType || disableRule.messageType == null)
+        return (disableRule.asset == null ||
+                inputRequest.asset == disableRule.asset
+                || inputRequest.assetPair?.baseAssetId == disableRule.asset?.assetId
+                || inputRequest.assetPair?.quotingAssetId == disableRule.asset?.assetId)
+                && (disableRule.assetPair == null || inputRequest.assetPair == disableRule.assetPair)
+                && (disableRule.messageType == null || inputRequest.messageType == disableRule.messageType)
     }
 }
