@@ -60,7 +60,7 @@ class BalanceUpdatesListener {
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == BalanceUpdatesListener::class.java.simpleName) {
             failed = true
-            logFail(rabbitFailureEvent.publisherName)
+            logRmqFail(rabbitFailureEvent.publisherName)
 
             rabbitFailureEvent.failedEvent?.let {
                 balanceUpdateQueue.putFirst(it as BalanceUpdate)
@@ -73,7 +73,7 @@ class BalanceUpdatesListener {
     fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
         if (rabbitRecoverEvent.publisherName == BalanceUpdatesListener::class.java.simpleName && failed) {
             failed = false
-            logRecover(rabbitRecoverEvent.publisherName)
+            logRmqRecover(rabbitRecoverEvent.publisherName)
             applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
         }
     }

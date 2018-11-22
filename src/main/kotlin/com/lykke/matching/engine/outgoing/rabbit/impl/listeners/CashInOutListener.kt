@@ -60,7 +60,7 @@ class CashInOutListener {
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == CashInOutListener::class.java.simpleName) {
             failed = true
-            logFail(rabbitFailureEvent.publisherName)
+            logRmqFail(rabbitFailureEvent.publisherName)
             rabbitFailureEvent.failedEvent?.let {
                 rabbitCashInOutQueue.putFirst(it as CashOperation)
             }
@@ -72,7 +72,7 @@ class CashInOutListener {
     fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
         if (rabbitRecoverEvent.publisherName == CashInOutListener::class.java.simpleName && failed) {
             failed = false
-            logRecover(rabbitRecoverEvent.publisherName)
+            logRmqRecover(rabbitRecoverEvent.publisherName)
             applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
         }
     }

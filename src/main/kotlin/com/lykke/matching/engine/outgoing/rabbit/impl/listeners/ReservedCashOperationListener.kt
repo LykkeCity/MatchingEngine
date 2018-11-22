@@ -60,7 +60,7 @@ class ReservedCashOperationListener {
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == ReservedCashOperationListener::class.java.simpleName) {
             failed =  true
-            logFail(rabbitFailureEvent.publisherName)
+            logRmqFail(rabbitFailureEvent.publisherName)
             rabbitFailureEvent.failedEvent?.let {
                 reservedCashOperationQueue.putFirst(it as ReservedCashOperation)
             }
@@ -72,7 +72,7 @@ class ReservedCashOperationListener {
     fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
         if (rabbitRecoverEvent.publisherName == ReservedCashOperationListener::class.java.simpleName && failed) {
             failed = false
-            logRecover(rabbitRecoverEvent.publisherName)
+            logRmqRecover(rabbitRecoverEvent.publisherName)
             applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
         }
     }

@@ -49,7 +49,7 @@ class TrustedClientsLimitOrdersListener {
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if (rabbitFailureEvent.publisherName == TrustedClientsLimitOrdersListener::class.java.simpleName) {
             failed = true
-            logFail(rabbitFailureEvent.publisherName)
+            logRmqFail(rabbitFailureEvent.publisherName)
             rabbitFailureEvent.failedEvent?.let {
                 trustedClientsLimitOrdersQueue.putFirst(it as LimitOrdersReport)
             }
@@ -61,7 +61,7 @@ class TrustedClientsLimitOrdersListener {
     fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
         if (rabbitRecoverEvent.publisherName == TrustedClientsLimitOrdersListener::class.java.simpleName && failed) {
             failed = false
-            logRecover(rabbitRecoverEvent.publisherName)
+            logRmqRecover(rabbitRecoverEvent.publisherName)
             applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
         }
     }
