@@ -67,7 +67,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
         val setting = toSetting(settingDto)
         settingsDatabaseAccessor.createOrUpdateSetting(settingsGroup, setting)
-        addHistoryRecord(settingsGroup, commentWithOperationPrefix, settingDto.user!!, setting)
+        addHistoryRecord(settingsGroup.settingGroupName, commentWithOperationPrefix, settingDto.user!!, setting)
         updateSettingInCache(settingDto, settingsGroup)
 
         applicationEventPublisher.publishEvent(SettingChangedEvent(settingsGroup,
@@ -84,7 +84,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
         settingsDatabaseAccessor.deleteSettingsGroup(settingsGroup)
         val commentWithPrefix = getCommentWithOperationPrefix(SettingOperation.DELETE, deleteSettingRequestDto.comment)
-        settingsGroupToBeDeleted.settings.forEach { addHistoryRecord(settingsGroup, commentWithPrefix, deleteSettingRequestDto.user, it) }
+        settingsGroupToBeDeleted.settings.forEach { addHistoryRecord(settingsGroup.settingGroupName, commentWithPrefix, deleteSettingRequestDto.user, it) }
         applicationSettingsCache.deleteSettingGroup(settingsGroup)
 
         applicationEventPublisher.publishEvent(DeleteSettingGroupEvent(settingsGroup,
@@ -99,7 +99,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
                 ?: throw SettingNotFoundException("Setting with name '$settingName' not found")
 
         settingsDatabaseAccessor.deleteSetting(settingsGroup, settingName)
-        addHistoryRecord(settingsGroup,
+        addHistoryRecord(settingsGroup.settingGroupName,
                 getCommentWithOperationPrefix(SettingOperation.DELETE, deleteSettingRequestDto.comment),
                 deleteSettingRequestDto.user, settingToBeDeleted)
         applicationSettingsCache.deleteSetting(settingsGroup, settingName)
@@ -116,8 +116,8 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         applicationSettingsCache.createOrUpdateSettingValue(settingsGroup, settingDto.name, settingDto.value, settingDto.enabled!!)
     }
 
-    private fun addHistoryRecord(settingGroup: AvailableSettingGroup, comment: String, user: String, setting: Setting) {
-        applicationSettingsHistoryDatabaseAccessor.save(toSettingHistoryRecord(settingGroup, setting, comment, user))
+    private fun addHistoryRecord(settingGroupName: String, comment: String, user: String, setting: Setting) {
+        applicationSettingsHistoryDatabaseAccessor.save(toSettingHistoryRecord(settingGroupName, setting, comment, user))
     }
 
     private fun toSettingGroupDto(settingGroup: SettingsGroup): SettingsGroupDto {

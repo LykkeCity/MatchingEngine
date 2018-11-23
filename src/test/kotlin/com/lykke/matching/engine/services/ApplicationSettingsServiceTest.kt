@@ -116,7 +116,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
 
         argumentCaptor<SettingHistoryRecord>().apply {
             verify(settingsHistoryDatabaseAccessor).save(capture())
-            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS, firstValue.settingGroup)
+            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, firstValue.settingGroupName)
             assertEquals("settingName", firstValue.name)
             assertEquals("test", firstValue.value)
             assertEquals("testUser", firstValue.user)
@@ -177,7 +177,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         argumentCaptor<SettingHistoryRecord>().apply {
             verify(settingsHistoryDatabaseAccessor).save(capture())
 
-            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS, firstValue.settingGroup)
+            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, firstValue.settingGroupName)
             assertEquals("settingName", firstValue.name)
             assertEquals("testClient", firstValue.value)
             assertEquals("testUser", firstValue.user)
@@ -213,7 +213,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
 
         argumentCaptor<SettingHistoryRecord>().apply {
             verify(settingsHistoryDatabaseAccessor).save(capture())
-            assertEquals(AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH, firstValue.settingGroup)
+            assertEquals(AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH.settingGroupName, firstValue.settingGroupName)
             assertEquals("stop", firstValue.name)
             assertEquals("stop", firstValue.value)
             assertEquals("testUser", firstValue.user)
