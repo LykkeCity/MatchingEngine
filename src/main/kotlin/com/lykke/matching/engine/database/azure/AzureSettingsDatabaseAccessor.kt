@@ -2,6 +2,7 @@ package com.lykke.matching.engine.database.azure
 
 import com.lykke.matching.engine.daos.azure.settings.AzureAppSetting
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
+import com.lykke.matching.engine.daos.setting.InvalidSettingGroupException
 import com.lykke.matching.engine.daos.setting.Setting
 import com.lykke.matching.engine.daos.setting.SettingsGroup
 import com.lykke.matching.engine.database.SettingsDatabaseAccessor
@@ -117,11 +118,23 @@ class AzureSettingsDatabaseAccessor(connectionString: String, configTableName: S
         if (CollectionUtils.isEmpty(settings)) {
             return null
         }
-        return SettingsGroup(AvailableSettingGroup.getBySettingsGroupName(settings.first().partitionKey), toSettings(settings))
+
+        val settingGroupName = settings.first().partitionKey
+
+        return try {
+            SettingsGroup(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), toSettings(settings))
+        } catch (e: InvalidSettingGroupException) {
+            LOGGER.error("Not supported setting group was supplied, $settingGroupName")
+            null
+        }
     }
 
     private fun toSettingsGroup(groupToSettings: Map<String, List<AzureAppSetting>>): Set<SettingsGroup> {
-        return groupToSettings.map { entry -> SettingsGroup(AvailableSettingGroup.getBySettingsGroupName(entry.key), toSettings(entry.value)) }.toSet()
+        return groupToSettings
+                .map { entry -> toSettingsGroup(entry.value) }
+                .filter { it != null }
+                .map { it!! }
+                .toSet()
     }
 
     private fun toSetting(azureSetting: AzureAppSetting): Setting {

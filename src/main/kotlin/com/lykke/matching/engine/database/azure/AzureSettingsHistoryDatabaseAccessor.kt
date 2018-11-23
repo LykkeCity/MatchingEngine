@@ -1,7 +1,6 @@
 package com.lykke.matching.engine.database.azure
 
 import com.lykke.matching.engine.daos.azure.settings.AzureAppSettingHistory
-import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.SettingHistoryRecord
 import com.lykke.matching.engine.database.SettingsHistoryDatabaseAccessor
 import com.microsoft.azure.storage.table.CloudTable
@@ -20,14 +19,14 @@ class AzureSettingsHistoryDatabaseAccessor(connectionString: String, configTable
         try {
             historyTable.execute(TableOperation.insertOrMerge(toAzureSettingHistoryRecord(settingHistoryRecord)))
         } catch (e: Exception) {
-            throw RuntimeException("Not able to persist setting to the history, group: ${settingHistoryRecord.settingGroup.settingGroupName}, " +
+            throw RuntimeException("Not able to persist setting to the history, group: ${settingHistoryRecord.settingGroupName}, " +
                     "name: ${settingHistoryRecord.name}")
         }
     }
 
-    override fun get(settingGroupName: AvailableSettingGroup, settingName: String): List<SettingHistoryRecord> {
+    override fun get(settingGroupName: String, settingName: String): List<SettingHistoryRecord> {
         try {
-            val partitionFilter = TableQuery.generateFilterCondition(PARTITION_KEY, TableQuery.QueryComparisons.EQUAL, settingGroupName.settingGroupName)
+            val partitionFilter = TableQuery.generateFilterCondition(PARTITION_KEY, TableQuery.QueryComparisons.EQUAL, settingGroupName)
             val nameFilter = TableQuery.generateFilterCondition(NAME_COLUMN, TableQuery.QueryComparisons.EQUAL, settingName)
 
             val query = TableQuery.from(AzureAppSettingHistory::class.java)
@@ -41,7 +40,7 @@ class AzureSettingsHistoryDatabaseAccessor(connectionString: String, configTable
 
     private fun toSettingHistoryRecord(azureAppSettingHistory: AzureAppSettingHistory): SettingHistoryRecord {
         return azureAppSettingHistory.let {
-            SettingHistoryRecord(AvailableSettingGroup.getBySettingsGroupName(it.partitionKey),
+            SettingHistoryRecord(it.partitionKey,
                     it.settingName,
                     it.value,
                     it.enabled,
@@ -52,7 +51,7 @@ class AzureSettingsHistoryDatabaseAccessor(connectionString: String, configTable
     }
 
     private fun toAzureSettingHistoryRecord(settingHistoryRecord: SettingHistoryRecord): AzureAppSettingHistory {
-        return AzureAppSettingHistory(settingHistoryRecord.settingGroup.settingGroupName,
+        return AzureAppSettingHistory(settingHistoryRecord.settingGroupName,
                 settingHistoryRecord.name,
                 settingHistoryRecord.value,
                 settingHistoryRecord.comment,

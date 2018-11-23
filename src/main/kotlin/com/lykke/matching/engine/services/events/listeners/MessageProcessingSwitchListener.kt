@@ -50,9 +50,9 @@ class MessageProcessingSwitchListener(val applicationSettingsCache: ApplicationS
     }
 
     @EventListener
-    private fun messageProcessingSwtichGroupRemoved(deleteSettingGroupEvent: DeleteSettingGroupEvent) {
+    private fun messageProcessingSwitchGroupRemoved(deleteSettingGroupEvent: DeleteSettingGroupEvent) {
         if (deleteSettingGroupEvent.settingGroup != AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH ||
-                deleteSettingGroupEvent.deletedSettings.find { it.enabled } == null) {
+                !deleteSettingGroupEvent.deletedSettings.any { it.enabled }) {
             return
         }
 

@@ -52,9 +52,9 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
     }
 
     @Synchronized
-    override fun getHistoryRecords(settingsGroup: AvailableSettingGroup, settingName: String): List<SettingDto> {
+    override fun getHistoryRecords(settingsGroupName: String, settingName: String): List<SettingDto> {
         return applicationSettingsHistoryDatabaseAccessor
-                .get(settingsGroup, settingName)
+                .get(settingsGroupName, settingName)
                 .map(::toSettingDto)
     }
 
@@ -117,8 +117,8 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         }
     }
 
-    private fun addHistoryRecord(settingGroupName: AvailableSettingGroup, comment: String, user: String, setting: Setting) {
-        applicationSettingsHistoryDatabaseAccessor.save(toSettingHistoryRecord(settingGroupName, setting, comment, user))
+    private fun addHistoryRecord(settingGroup: AvailableSettingGroup, comment: String, user: String, setting: Setting) {
+        applicationSettingsHistoryDatabaseAccessor.save(toSettingHistoryRecord(settingGroup.settingGroupName, setting, comment, user))
     }
 
     private fun toSettingGroupDto(settingGroup: SettingsGroup): SettingsGroupDto {
@@ -140,12 +140,12 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         return Setting(settingDto.name, settingDto.value, settingDto.enabled!!)
     }
 
-    private fun toSettingHistoryRecord(settingsGroup: AvailableSettingGroup,
+    private fun toSettingHistoryRecord(settingsGroupName: String,
                                        setting: Setting,
                                        comment: String,
                                        user: String): SettingHistoryRecord {
         return setting.let {
-            SettingHistoryRecord(settingsGroup, it.name, it.value, it.enabled, comment, user)
+            SettingHistoryRecord(settingsGroupName, it.name, it.value, it.enabled, comment, user)
         }
     }
 

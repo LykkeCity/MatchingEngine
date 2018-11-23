@@ -112,7 +112,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
 
         argumentCaptor<SettingHistoryRecord>().apply {
             verify(settingsHistoryDatabaseAccessor).save(capture())
-            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS, firstValue.settingGroup)
+            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, firstValue.settingGroupName)
             assertEquals("settingName", firstValue.name)
             assertEquals("test", firstValue.value)
             assertEquals("testUser", firstValue.user)
@@ -139,13 +139,13 @@ class ApplicationSettingsServiceTest : AbstractTest() {
 
         argumentCaptor<SettingHistoryRecord>().apply {
             verify(settingsHistoryDatabaseAccessor, times(2)).save(capture())
-            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS, firstValue.settingGroup)
+            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, firstValue.settingGroupName)
             assertEquals("settingName1", firstValue.name)
             assertEquals("testClient1", firstValue.value)
             assertEquals("testUser", firstValue.user)
             assertEquals("[DELETE] delete", firstValue.comment)
 
-            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS, secondValue.settingGroup)
+            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, secondValue.settingGroupName)
             assertEquals("settingName2", secondValue.name)
             assertEquals("testClient2", secondValue.value)
             assertEquals("testUser", secondValue.user)
@@ -172,7 +172,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         argumentCaptor<SettingHistoryRecord>().apply {
             verify(settingsHistoryDatabaseAccessor).save(capture())
 
-            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS, firstValue.settingGroup)
+            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, firstValue.settingGroupName)
             assertEquals("settingName", firstValue.name)
             assertEquals("testClient", firstValue.value)
             assertEquals("testUser", firstValue.user)
@@ -208,7 +208,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
 
         argumentCaptor<SettingHistoryRecord>().apply {
             verify(settingsHistoryDatabaseAccessor).save(capture())
-            assertEquals(AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH, firstValue.settingGroup)
+            assertEquals(AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH.settingGroupName, firstValue.settingGroupName)
             assertEquals("stop", firstValue.name)
             assertEquals("stop", firstValue.value)
             assertEquals("testUser", firstValue.user)
