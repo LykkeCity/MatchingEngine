@@ -17,6 +17,7 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.*
+import java.lang.Exception
 import java.util.stream.Collectors
 import javax.servlet.http.HttpServletRequest
 import javax.validation.Valid
@@ -99,9 +100,9 @@ class SettingsController {
     )
     @GetMapping("/{settingGroupName}/setting/{settingName}/history", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getHistoryRecords(@PathVariable("settingGroupName") settingGroupName: String,
-                         @PathVariable("settingName") settingName: String): List<SettingDto> {
+                          @PathVariable("settingName") settingName: String): List<SettingDto> {
         return applicationSettingsService
-                .getHistoryRecords(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), settingName)
+                .getHistoryRecords(settingGroupName, settingName)
                 .sortedByDescending { it.timestamp }
     }
 
