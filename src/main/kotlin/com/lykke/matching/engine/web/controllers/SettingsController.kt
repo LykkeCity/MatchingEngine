@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.InvalidSettingGroupException
 import com.lykke.matching.engine.daos.setting.SettingNotFoundException
 import com.lykke.matching.engine.services.ApplicationSettingsService
+import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
 import com.lykke.matching.engine.web.dto.SettingDto
 import com.lykke.matching.engine.web.dto.SettingsGroupDto
@@ -37,7 +38,6 @@ class SettingsController {
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),
             ApiResponse(code = 400, message = "Supplied group name is not supported"),
-            ApiResponse(code = 404, message = "Setting not found"),
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
     @GetMapping("/{settingGroupName}", produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -46,26 +46,6 @@ class SettingsController {
 
         return if (settingsGroup != null) {
             ResponseEntity.ok(settingsGroup)
-        } else {
-            ResponseEntity.status(HttpStatus.NOT_FOUND).body(null)
-        }
-    }
-
-    @ApiOperation("Get setting for given setting group and setting name")
-    @ApiResponses(
-            ApiResponse(code = 200, message = "Success"),
-            ApiResponse(code = 400, message = "Supplied group name is not supported"),
-            ApiResponse(code = 404, message = "Setting not found"),
-            ApiResponse(code = 500, message = "Internal server error occurred")
-    )
-    @GetMapping("/{settingGroupName}/setting/{settingName}", produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun getSetting(@PathVariable("settingGroupName") settingGroupName: String,
-                   @PathVariable("settingName") settingName: String,
-                   @RequestParam("enabled", required = false) enabled: Boolean? = null): ResponseEntity<SettingDto> {
-        val setting = applicationSettingsService.getSetting(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), settingName, enabled)
-
-        return if (setting != null) {
-            ResponseEntity.ok(setting)
         } else {
             ResponseEntity.status(HttpStatus.NOT_FOUND).body(null)
         }
@@ -81,7 +61,31 @@ class SettingsController {
         return applicationSettingsService.getAllSettingGroups(enabled)
     }
 
+    @ApiOperation("Get setting for given setting group and setting name")
+    @ApiResponses(
+            ApiResponse(code = 200, message = "Success"),
+            ApiResponse(code = 400, message = "Supplied group name is not supported"),
+            ApiResponse(code = 404, message = "Supplied setting was not found"),
+            ApiResponse(code = 500, message = "Internal server error occurred")
+    )
+    @GetMapping("/{settingGroupName}/setting/{settingName}", produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun getSetting(@PathVariable("settingGroupName") settingGroupName: String,
+                   @PathVariable("settingName") settingName: String,
+                   @RequestParam("enabled", required = false) enabled: Boolean? = null): ResponseEntity<SettingDto> {
+        val setting = applicationSettingsService.getSetting(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), settingName, enabled)
+
+        return if (setting != null) {
+            ResponseEntity.ok(setting)
+        } else {
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(null)
+        }
+    }
+
     @ApiOperation("Get list of supported setting groups")
+    @ApiResponses(
+            ApiResponse(code = 200, message = "Success"),
+            ApiResponse(code = 500, message = "Internal server error occurred")
+    )
     @GetMapping("/supported", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getSupportedSettings(): Set<String> {
         return AvailableSettingGroup.values().map { it.settingGroupName }.toSet()
@@ -90,21 +94,14 @@ class SettingsController {
     @ApiOperation("Get history records for given setting")
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),
-            ApiResponse(code = 400, message = "Supplied group name is not supported"),
-            ApiResponse(code = 404, message = "Setting not found"),
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
     @GetMapping("/{settingGroupName}/setting/{settingName}/history", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getHistoryRecords(@PathVariable("settingGroupName") settingGroupName: String,
-                         @PathVariable("settingName") settingName: String): ResponseEntity<List<SettingDto>> {
-        val historyRecords = applicationSettingsService
-                .getHistoryRecords(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), settingName)
-
-        return if(historyRecords.isEmpty())
-            ResponseEntity.status(HttpStatus.NOT_FOUND).body(null)
-        else
-            ResponseEntity.ok(historyRecords
-                    .sortedByDescending { it.timestamp })
+                          @PathVariable("settingName") settingName: String): List<SettingDto> {
+        return applicationSettingsService
+                .getHistoryRecords(settingGroupName, settingName)
+                .sortedByDescending { it.timestamp }
     }
 
     @ApiOperation("Create or update setting")
@@ -152,6 +149,16 @@ class SettingsController {
     }
 
     @ExceptionHandler
+    private fun handleApplicationValidationException(request: HttpServletRequest, exception: SettingNotFoundException): ResponseEntity<*> {
+        return ResponseEntity(exception.message, HttpStatus.NOT_FOUND)
+    }
+
+    @ExceptionHandler
+    private fun handleApplicationValidationException(request: HttpServletRequest, exception: ValidationException): ResponseEntity<*> {
+        return ResponseEntity(exception.message, HttpStatus.BAD_REQUEST)
+    }
+
+    @ExceptionHandler
     private fun handleValidationException(request: HttpServletRequest, exception: MethodArgumentNotValidException): ResponseEntity<String> {
         return ResponseEntity(exception
                 .bindingResult
@@ -164,10 +171,5 @@ class SettingsController {
     @ExceptionHandler
     private fun handleInvalidSettingGroup(request: HttpServletRequest, exception: InvalidSettingGroupException): ResponseEntity<String> {
         return ResponseEntity(exception.message, HttpStatus.BAD_REQUEST)
-    }
-
-    @ExceptionHandler
-    private fun handleSettingNotFound(request: HttpServletRequest, exception: SettingNotFoundException): ResponseEntity<String> {
-        return ResponseEntity(exception.message, HttpStatus.NOT_FOUND)
     }
 }

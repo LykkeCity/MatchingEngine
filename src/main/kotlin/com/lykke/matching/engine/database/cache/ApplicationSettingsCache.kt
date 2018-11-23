@@ -20,7 +20,7 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
         val settingGroups = settingsDatabaseAccessor.getAllSettingGroups()
 
         AvailableSettingGroup.values().forEach { settingGroup ->
-            val dbSettings = settingGroups.find { it.name == settingGroup.settingGroupName }?.let {
+            val dbSettings = settingGroups.find { it.settingGroup == settingGroup }?.let {
                 HashSet(it.settings)
             }
 
