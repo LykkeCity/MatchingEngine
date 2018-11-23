@@ -94,10 +94,8 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
     @Synchronized
     override fun deleteSetting(settingsGroup: AvailableSettingGroup, settingName: String, deleteSettingRequestDto: DeleteSettingRequestDto) {
-        val deletedSetting = settingsDatabaseAccessor.getSetting(settingsGroup, settingName) ?: return
-
         val settingToBeDeleted = settingsDatabaseAccessor.getSetting(settingsGroup, settingName) ?:
-        throw SettingNotFoundException("Setting with name '$settingName' not found" )
+        throw SettingNotFoundException("Setting with name '$settingName' is not found" )
 
         settingsDatabaseAccessor.deleteSetting(settingsGroup, settingName)
         addHistoryRecord(settingsGroup,
@@ -107,7 +105,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
 
         applicationEventPublisher.publishEvent(DeleteSettingEvent(settingsGroup,
-                deletedSetting,
+                settingToBeDeleted,
                 deleteSettingRequestDto.comment,
                 deleteSettingRequestDto.user))
     }

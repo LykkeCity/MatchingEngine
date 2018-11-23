@@ -2,6 +2,7 @@ package com.lykke.matching.engine.web.controllers
 
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.InvalidSettingGroupException
+import com.lykke.matching.engine.daos.setting.SettingNotFoundException
 import com.lykke.matching.engine.services.ApplicationSettingsService
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
@@ -17,7 +18,6 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.*
-import java.lang.Exception
 import java.util.stream.Collectors
 import javax.servlet.http.HttpServletRequest
 import javax.validation.Valid
@@ -94,8 +94,6 @@ class SettingsController {
     @ApiOperation("Get history records for given setting")
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),
-            ApiResponse(code = 400, message = "Supplied group name is not supported"),
-            ApiResponse(code = 404, message = "Setting not found"),
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
     @GetMapping("/{settingGroupName}/setting/{settingName}/history", produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -148,6 +146,11 @@ class SettingsController {
                       @Valid
                       deleteRequest: DeleteSettingRequestDto) {
         applicationSettingsService.deleteSetting(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), settingName, deleteRequest)
+    }
+
+    @ExceptionHandler
+    private fun handleApplicationValidationException(request: HttpServletRequest, exception: SettingNotFoundException): ResponseEntity<*> {
+        return ResponseEntity(exception.message, HttpStatus.NOT_FOUND)
     }
 
     @ExceptionHandler
