@@ -1,3 +1,3 @@
 package com.lykke.matching.engine.daos.setting
 
-class SettingsGroup(val name: String, val settings: Set<Setting>)
+class SettingsGroup(val settingGroup: AvailableSettingGroup, val settings: Set<Setting>)
