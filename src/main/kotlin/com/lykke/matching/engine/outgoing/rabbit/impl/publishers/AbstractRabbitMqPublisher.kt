@@ -2,7 +2,7 @@ package com.lykke.matching.engine.outgoing.rabbit.impl.publishers
 
 import com.lykke.matching.engine.logging.DatabaseLogger
 import com.lykke.matching.engine.outgoing.rabbit.events.RabbitFailureEvent
-import com.lykke.matching.engine.outgoing.rabbit.events.RabbitRecoverEvent
+import com.lykke.matching.engine.outgoing.rabbit.events.RabbitReadyEvent
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.utils.logging.MetricsLogger
@@ -29,7 +29,7 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
                                             private val applicationEventPublisher: ApplicationEventPublisher,
 
                                             /** null if do not need to log */
-                                               private val messageDatabaseLogger: DatabaseLogger<T>? = null) : Thread() {
+                                           private val messageDatabaseLogger: DatabaseLogger<T>? = null) : Thread() {
 
     companion object {
         private const val LOG_COUNT = 1000
@@ -55,7 +55,7 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
             channel!!.exchangeDeclare(exchangeName, exchangeType, true)
 
             LOGGER.info("Connected to RabbitMQ: ${factory.host}:${factory.port}, exchange: $exchangeName")
-            publishRecoverEvent()
+            publishRabbitReadyEvent()
             return true
         } catch (e: Exception) {
             publishFailureEvent(null)
@@ -96,8 +96,8 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
         }
     }
 
-    private fun publishRecoverEvent() {
-        applicationEventPublisher.publishEvent(RabbitRecoverEvent(queueName))
+    private fun publishRabbitReadyEvent() {
+        applicationEventPublisher.publishEvent(RabbitReadyEvent(queueName))
     }
 
     private fun publishFailureEvent(event: T?) {

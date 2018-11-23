@@ -3,7 +3,7 @@ package com.lykke.matching.engine.outgoing.rabbit.impl.listeners
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.outgoing.rabbit.events.RabbitFailureEvent
-import com.lykke.matching.engine.outgoing.rabbit.events.RabbitRecoverEvent
+import com.lykke.matching.engine.outgoing.rabbit.events.RabbitReadyEvent
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.monitoring.HealthMonitorEvent
 import com.lykke.matching.engine.utils.monitoring.MonitoredComponent
@@ -58,11 +58,11 @@ class TrustedClientsLimitOrdersListener {
     }
 
     @EventListener
-    fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
-        if (rabbitRecoverEvent.publisherName == TrustedClientsLimitOrdersListener::class.java.simpleName && failed) {
+    fun onReady(rabbitReadyEvent: RabbitReadyEvent) {
+        if (rabbitReadyEvent.publisherName == TrustedClientsLimitOrdersListener::class.java.simpleName && failed) {
             failed = false
-            logRmqRecover(rabbitRecoverEvent.publisherName)
-            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
+            logRmqRecover(rabbitReadyEvent.publisherName)
+            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitReadyEvent.publisherName))
         }
     }
 }
