@@ -13,7 +13,8 @@ import org.springframework.stereotype.Service
 import java.util.concurrent.BlockingQueue
 
 @Service("rabbitMqService")
- class RabbitMqServiceImpl(private val gson: Gson,
+@Profile("default")
+class RabbitMqServiceImpl(private val gson: Gson,
                           private val applicationEventPublisher: ApplicationEventPublisher) : RabbitMqService<Event<*>> {
     override fun startPublisher(config: RabbitConfig, publisherName: String,
                                 queue: BlockingQueue<out Event<*>>, appName: String,
