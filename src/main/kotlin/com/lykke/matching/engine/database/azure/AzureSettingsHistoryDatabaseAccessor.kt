@@ -20,7 +20,7 @@ class AzureSettingsHistoryDatabaseAccessor(connectionString: String, configTable
         try {
             historyTable.execute(TableOperation.insertOrMerge(toAzureSettingHistoryRecord(settingHistoryRecord)))
         } catch (e: Exception) {
-            throw RuntimeException("Not able to persist setting to the history, group: ${settingHistoryRecord.settingGroup.settingGroupName}, " +
+            throw RuntimeException("Not able to persist setting to the history, group: ${settingHistoryRecord.settingGroupName}, " +
                     "name: ${settingHistoryRecord.name}")
         }
     }
@@ -41,7 +41,7 @@ class AzureSettingsHistoryDatabaseAccessor(connectionString: String, configTable
 
     private fun toSettingHistoryRecord(azureAppSettingHistory: AzureAppSettingHistory): SettingHistoryRecord {
         return azureAppSettingHistory.let {
-            SettingHistoryRecord(AvailableSettingGroup.getBySettingsGroupName(it.partitionKey),
+            SettingHistoryRecord(it.partitionKey,
                     it.settingName,
                     it.value,
                     it.enabled,
@@ -52,7 +52,7 @@ class AzureSettingsHistoryDatabaseAccessor(connectionString: String, configTable
     }
 
     private fun toAzureSettingHistoryRecord(settingHistoryRecord: SettingHistoryRecord): AzureAppSettingHistory {
-        return AzureAppSettingHistory(settingHistoryRecord.settingGroup.settingGroupName,
+        return AzureAppSettingHistory(settingHistoryRecord.settingGroupName,
                 settingHistoryRecord.name,
                 settingHistoryRecord.value,
                 settingHistoryRecord.comment,

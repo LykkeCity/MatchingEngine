@@ -93,15 +93,13 @@ class SettingsController {
     @ApiOperation("Get history records for given setting")
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),
-            ApiResponse(code = 400, message = "Supplied group name is not supported"),
-            ApiResponse(code = 404, message = "Setting not found"),
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
     @GetMapping("/{settingGroupName}/setting/{settingName}/history", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getHistoryRecords(@PathVariable("settingGroupName") settingGroupName: String,
-                         @PathVariable("settingName") settingName: String): List<SettingDto> {
+                          @PathVariable("settingName") settingName: String): List<SettingDto> {
         return applicationSettingsService
-                .getHistoryRecords(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), settingName)
+                .getHistoryRecords(settingGroupName, settingName)
                 .sortedByDescending { it.timestamp }
     }
 
@@ -147,6 +145,11 @@ class SettingsController {
                       @Valid
                       deleteRequest: DeleteSettingRequestDto) {
         applicationSettingsService.deleteSetting(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), settingName, deleteRequest)
+    }
+
+    @ExceptionHandler
+    private fun handleApplicationValidationException(request: HttpServletRequest, exception: SettingNotFoundException): ResponseEntity<*> {
+        return ResponseEntity(exception.message, HttpStatus.NOT_FOUND)
     }
 
     @ExceptionHandler

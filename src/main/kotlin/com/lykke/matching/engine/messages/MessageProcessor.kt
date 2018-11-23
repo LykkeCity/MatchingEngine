@@ -12,6 +12,7 @@ import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.incoming.MessageRouter

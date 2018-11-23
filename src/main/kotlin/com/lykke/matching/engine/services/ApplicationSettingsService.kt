@@ -9,7 +9,7 @@ interface ApplicationSettingsService {
     fun getAllSettingGroups(enabled: Boolean? = null): Set<SettingsGroupDto>
     fun getSettingsGroup(settingsGroup: AvailableSettingGroup, enabled: Boolean? = null): SettingsGroupDto?
     fun getSetting(settingsGroup: AvailableSettingGroup, settingName: String, enabled: Boolean? = null): SettingDto?
-    fun getHistoryRecords(settingsGroup: AvailableSettingGroup, settingName: String): List<SettingDto>
+    fun getHistoryRecords(settingsGroupName: String, settingName: String): List<SettingDto>
 
     fun createOrUpdateSetting(settingsGroup: AvailableSettingGroup, settingDto: SettingDto)
 
