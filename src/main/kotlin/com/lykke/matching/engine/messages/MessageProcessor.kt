@@ -16,18 +16,12 @@ import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
-import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.QuotesUpdateHandler
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
-import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
-import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
-import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
-import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
@@ -121,20 +115,15 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         val genericStopLimitOrderService = applicationContext.getBean(GenericStopLimitOrderService::class.java)
 
         this.multiLimitOrderService = applicationContext.getBean(MultiLimitOrderService::class.java)
+        this.singleLimitOrderService = applicationContext.getBean(SingleLimitOrderService::class.java)
 
         val genericLimitOrdersCancellerFactory = applicationContext.getBean(GenericLimitOrdersCancellerFactory::class.java)
-        val executionContextFactory = applicationContext.getBean(ExecutionContextFactory::class.java)
 
         this.cashOperationService = applicationContext.getBean(CashOperationService::class.java)
         this.cashInOutOperationService = applicationContext.getBean(CashInOutOperationService::class.java)
         this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
         this.cashTransferOperationService = applicationContext.getBean(CashTransferOperationService::class.java)
         this.cashSwapOperationService = applicationContext.getBean(CashSwapOperationService::class.java)
-        this.singleLimitOrderService = SingleLimitOrderService(executionContextFactory,
-                applicationContext.getBean(GenericLimitOrdersProcessor::class.java),
-                applicationContext.getBean(StopOrderBookProcessor::class.java),
-                applicationContext.getBean(ExecutionDataApplyService::class.java),
-                applicationContext.getBean(PreviousLimitOrdersProcessor::class.java))
 
         this.marketOrderService = applicationContext.getBean(MarketOrderService::class.java)
 
@@ -165,7 +154,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         }
 
         this.quotesUpdateHandler = applicationContext.getBean(QuotesUpdateHandler::class.java)
-        val connectionsHolder = applicationContext.getBean(ConnectionsHolder::class.java)
 
         processedMessagesCache = applicationContext.getBean(ProcessedMessagesCache::class.java)
         servicesMap = initServicesMap()
