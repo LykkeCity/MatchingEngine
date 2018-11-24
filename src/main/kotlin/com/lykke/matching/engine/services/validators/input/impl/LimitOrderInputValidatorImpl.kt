@@ -4,8 +4,8 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.process.context.StopLimitOrderContext
@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
-class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSettingsCache) : LimitOrderInputValidator {
+class LimitOrderInputValidatorImpl(val applicationSettingsHolder: ApplicationSettingsHolder) : LimitOrderInputValidator {
     override fun validateLimitOrder(singleLimitOrderParsedData: SingleLimitOrderParsedData) {
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
@@ -84,7 +84,7 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
             throw OrderFatalValidationException("Unable to find asset pair $assetPairId")
         }
 
-        if (applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId) || applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId)) {
+        if (applicationSettingsHolder.isAssetDisabled(assetPair.baseAssetId) || applicationSettingsHolder.isAssetDisabled(assetPair.quotingAssetId)) {
             throw OrderValidationException(OrderStatus.DisabledAsset, "disabled asset")
         }
     }

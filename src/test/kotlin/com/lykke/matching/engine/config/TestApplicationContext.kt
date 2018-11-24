@@ -88,20 +88,26 @@ open class TestApplicationContext {
 
         return threadPoolTaskExecutor
     }
+
     @Bean
     open fun balanceHolder(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
                            persistenceManager: PersistenceManager,
                            balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
                            balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
-                           applicationSettingsCache: ApplicationSettingsCache,
+                           applicationSettingsHolder: ApplicationSettingsHolder,
                            backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor): BalancesHolder {
         return BalancesHolder(balancesDatabaseAccessorsHolder, persistenceManager, assetHolder(backOfficeDatabaseAccessor),
-                balanceUpdateNotificationQueue, balanceUpdateQueue, applicationSettingsCache)
+                balanceUpdateNotificationQueue, balanceUpdateQueue, applicationSettingsHolder)
     }
 
     @Bean
     open fun assetHolder(backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor): AssetsHolder {
         return AssetsHolder(assetCache(backOfficeDatabaseAccessor))
+    }
+
+    @Bean
+    open fun applicationSettingsHolder(applicationSettingsCache: ApplicationSettingsCache): ApplicationSettingsHolder {
+        return ApplicationSettingsHolder(applicationSettingsCache)
     }
 
     @Bean
@@ -120,14 +126,14 @@ open class TestApplicationContext {
                                          stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
                                          testReservedVolumesDatabaseAccessor: TestReservedVolumesDatabaseAccessor,
                                          assetHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder,
-                                         balancesHolder: BalancesHolder, applicationSettingsCache: ApplicationSettingsCache,
+                                         balancesHolder: BalancesHolder, applicationSettingsHolder: ApplicationSettingsHolder,
                                          balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
                                          messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                          messageSender: MessageSender): ReservedVolumesRecalculator {
 
         return ReservedVolumesRecalculator(testOrderDatabaseAccessorHolder, stopOrdersDatabaseAccessorsHolder,
                 testReservedVolumesDatabaseAccessor, assetHolder,
-                assetsPairsHolder, balancesHolder, applicationSettingsCache,
+                assetsPairsHolder, balancesHolder, applicationSettingsHolder,
                 false, balanceUpdateNotificationQueue, messageSequenceNumberHolder, messageSender)
     }
 
@@ -162,8 +168,9 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun applicationSettingsCache(configDatabaseAccessor: SettingsDatabaseAccessor): ApplicationSettingsCache {
-        return ApplicationSettingsCache(configDatabaseAccessor)
+    open fun applicationSettingsCache(configDatabaseAccessor: SettingsDatabaseAccessor,
+                                      applicationEventPublisher: ApplicationEventPublisher): ApplicationSettingsCache {
+        return ApplicationSettingsCache(configDatabaseAccessor, applicationEventPublisher)
     }
 
     @Bean
@@ -216,8 +223,8 @@ open class TestApplicationContext {
     @Bean
     open fun cashOperationValidator(balancesHolder: BalancesHolder,
                                     assetsHolder: AssetsHolder,
-                                    applicationSettingsCache: ApplicationSettingsCache): CashOperationValidator {
-        return CashOperationValidatorImpl(balancesHolder, assetsHolder, applicationSettingsCache)
+                                    applicationSettingsHolder: ApplicationSettingsHolder): CashOperationValidator {
+        return CashOperationValidatorImpl(balancesHolder, assetsHolder, applicationSettingsHolder)
     }
 
     @Bean
@@ -231,13 +238,13 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashInOutOperationInputValidator(applicationSettingsCache: ApplicationSettingsCache): CashInOutOperationInputValidator {
-        return CashInOutOperationInputValidatorImpl(applicationSettingsCache)
+    open fun cashInOutOperationInputValidator(applicationSettingsHolder: ApplicationSettingsHolder): CashInOutOperationInputValidator {
+        return CashInOutOperationInputValidatorImpl(applicationSettingsHolder)
     }
 
     @Bean
-    open fun cashTransferOperationInputValidator(applicationSettingsCache: ApplicationSettingsCache): CashTransferOperationInputValidator {
-        return CashTransferOperationInputValidatorImpl(applicationSettingsCache)
+    open fun cashTransferOperationInputValidator(applicationSettingsHolder: ApplicationSettingsHolder): CashTransferOperationInputValidator {
+        return CashTransferOperationInputValidatorImpl(applicationSettingsHolder)
     }
 
     @Bean
@@ -258,11 +265,10 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun marketOrderValidator(limitOrderInputValidator: LimitOrderInputValidator,
-                                  assetsPairsHolder: AssetsPairsHolder,
+    open fun marketOrderValidator(assetsPairsHolder: AssetsPairsHolder,
                                   assetsHolder: AssetsHolder,
-                                  assetSettingsCache: ApplicationSettingsCache): MarketOrderValidator {
-        return MarketOrderValidatorImpl(limitOrderInputValidator, assetsPairsHolder, assetsHolder, assetSettingsCache)
+                                  applicationSettingsHolder: ApplicationSettingsHolder): MarketOrderValidator {
+        return MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder)
     }
 
     @Bean
@@ -336,7 +342,7 @@ open class TestApplicationContext {
                                     assetsHolder: AssetsHolder,
                                     assetsPairsHolder: AssetsPairsHolder,
                                     balancesHolder: BalancesHolder,
-                                    applicationSettingsCache: ApplicationSettingsCache): MultiLimitOrderService {
+                                    applicationSettingsHolder: ApplicationSettingsHolder): MultiLimitOrderService {
         return MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
@@ -345,7 +351,7 @@ open class TestApplicationContext {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                applicationSettingsCache)
+                applicationSettingsHolder)
     }
 
     @Bean
@@ -360,7 +366,7 @@ open class TestApplicationContext {
                                 marketOrderValidator: MarketOrderValidator,
                                 messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                 messageSender: MessageSender,
-                                applicationSettingsCache: ApplicationSettingsCache): MarketOrderService {
+                                applicationSettingsHolder: ApplicationSettingsHolder): MarketOrderService {
         return MarketOrderService(matchingEngine,
                 executionContextFactory,
                 stopOrderBookProcessor,
@@ -370,7 +376,7 @@ open class TestApplicationContext {
                 assetsPairsHolder,
                 rabbitSwapQueue,
                 marketOrderValidator,
-                applicationSettingsCache,
+                applicationSettingsHolder,
                 messageSequenceNumberHolder,
                 messageSender)
     }
@@ -511,8 +517,8 @@ open class TestApplicationContext {
 
     @Bean
     open fun messageProcessingStatusHolder(generalHealthMonitor: HealthMonitor,
-                                           applicationSettingsCache: ApplicationSettingsCache): MessageProcessingStatusHolder {
-        return MessageProcessingStatusHolder(generalHealthMonitor, applicationSettingsCache)
+                                           applicationSettingsHolder: ApplicationSettingsHolder): MessageProcessingStatusHolder {
+        return MessageProcessingStatusHolder(generalHealthMonitor, applicationSettingsHolder)
     }
 
     @Bean
@@ -559,15 +565,15 @@ open class TestApplicationContext {
 
     @Bean
     open fun singleLimitOrderContextParser(assetsPairsHolder: AssetsPairsHolder, assetsHolder: AssetsHolder,
-                                           applicationSettingsCache: ApplicationSettingsCache,
+                                           applicationSettingsHolder: ApplicationSettingsHolder,
                                            @Qualifier("singleLimitOrderContextPreprocessorLogger")
                                            logger: ThrottlingLogger): SingleLimitOrderContextParser {
-        return SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsCache, logger)
+        return SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsHolder, logger)
     }
 
     @Bean
-    open fun limitOrderInputValidator(applicationSettingsCache: ApplicationSettingsCache): LimitOrderInputValidator {
-        return LimitOrderInputValidatorImpl(applicationSettingsCache)
+    open fun limitOrderInputValidator(applicationSettingsHolder: ApplicationSettingsHolder): LimitOrderInputValidator {
+        return LimitOrderInputValidatorImpl(applicationSettingsHolder)
     }
 
 
@@ -633,7 +639,7 @@ open class TestApplicationContext {
     @Bean
     open fun multiLimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService,
                                           genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
-                                          applicationSettingsCache: ApplicationSettingsCache): MultiLimitOrderCancelService {
-        return MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
+                                          applicationSettingsHolder: ApplicationSettingsHolder): MultiLimitOrderCancelService {
+        return MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsHolder)
     }
 }

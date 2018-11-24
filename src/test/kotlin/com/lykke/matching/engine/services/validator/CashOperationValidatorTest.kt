@@ -6,12 +6,10 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.CashOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
-import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -53,9 +51,6 @@ class CashOperationValidatorTest {
 
     @Autowired
     private lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
-
-    @Autowired
-    private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @Autowired
     private lateinit var applicationSettingsCache: ApplicationSettingsCache
@@ -103,8 +98,7 @@ class CashOperationValidatorTest {
     @Test(expected = ValidationException::class)
     fun testAssetDisabled() {
         //given
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS, getSetting(ASSET_ID))
-        applicationSettingsCache.update()
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.DISABLED_ASSETS, ASSET_ID, ASSET_ID, true)
 
         val cashOperationBuilder = getDefaultCashOperationBuilder()
         cashOperationBuilder.amount = -1.0

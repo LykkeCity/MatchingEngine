@@ -5,14 +5,15 @@ import com.lykke.matching.engine.daos.setting.Setting
 import com.lykke.matching.engine.daos.setting.SettingsGroup
 import com.lykke.matching.engine.database.SettingsDatabaseAccessor
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import org.springframework.util.CollectionUtils
-import java.math.BigDecimal
 import javax.annotation.PostConstruct
 
 @Component
-class ApplicationSettingsCache @Autowired constructor(private val settingsDatabaseAccessor: SettingsDatabaseAccessor) : DataCache() {
-    private val settingsByGroupName = HashMap<String, MutableSet<Setting>>()
+class ApplicationSettingsCache @Autowired constructor(private val settingsDatabaseAccessor: SettingsDatabaseAccessor,
+                                                      private val applicationEventPublisher: ApplicationEventPublisher) : DataCache() {
+    private val settingsByGroup = HashMap<AvailableSettingGroup, MutableSet<Setting>>()
 
     @PostConstruct
     @Synchronized
@@ -25,82 +26,63 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
             }
 
             if (CollectionUtils.isEmpty(dbSettings)) {
-                settingsByGroupName.remove(settingGroup.settingGroupName)
+                settingsByGroup.remove(settingGroup)
             } else {
-                settingsByGroupName[settingGroup.settingGroupName] = dbSettings!!
+                settingsByGroup[settingGroup] = dbSettings!!
             }
         }
     }
 
     @Synchronized
-    fun isTrustedClient(client: String): Boolean {
-        return getSettingsForSettingGroup(AvailableSettingGroup.TRUSTED_CLIENTS)?.find { it.enabled && it.value == client } != null
-    }
-
-    @Synchronized
-    fun isAssetDisabled(asset: String): Boolean {
-        return getSettingsForSettingGroup(AvailableSettingGroup.DISABLED_ASSETS)?.find { it.enabled && it.value == asset } != null
-    }
-
-    @Synchronized
-    fun marketOrderPriceDeviationThreshold(assetPairId: String): BigDecimal? {
-        return getSettingsForSettingGroup(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD)
-                ?.find { it.enabled && it.name == assetPairId }
-                ?.value
-                ?.toBigDecimal()
-    }
-
-    @Synchronized
-    fun limitOrderPriceDeviationThreshold(assetPairId: String): BigDecimal? {
-        return getSettingsForSettingGroup(AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD)
-                ?.find { it.enabled && it.name == assetPairId }
-                ?.value
-                ?.toBigDecimal()
-    }
-
-    @Synchronized
     fun createOrUpdateSettingValue(settingGroup: AvailableSettingGroup, settingName: String, value: String, enabled: Boolean) {
         deleteSetting(settingGroup, settingName)
-        val settings = settingsByGroupName.getOrPut(settingGroup.settingGroupName) { HashSet() }
-        settings.add(Setting(settingName, value, enabled))
+        val settings = settingsByGroup.getOrPut(settingGroup) { HashSet() }
+        val setting = Setting(settingName, value, enabled)
+        settings.add(setting)
+        applicationEventPublisher.publishEvent(ApplicationSettingCreateOrUpdateEvent(settingGroup, setting))
     }
 
     @Synchronized
     fun deleteSetting(settingGroup: AvailableSettingGroup, settingName: String) {
         val settings = getSettingsForSettingGroup(settingGroup)
-        settings?.removeIf { it.name == settingName }
+        val setting = settings?.find { it.name == settingName } ?: return
+        settings.remove(setting)
+
         if (CollectionUtils.isEmpty(settings)) {
-            settingsByGroupName.remove(settingGroup.settingGroupName)
+            settingsByGroup.remove(settingGroup)
         }
+
+        applicationEventPublisher.publishEvent(ApplicationSettingDeleteEvent(settingGroup, setting))
     }
 
     @Synchronized
     fun deleteSettingGroup(settingGroup: AvailableSettingGroup) {
-        settingsByGroupName.remove(settingGroup.settingGroupName)
+        settingsByGroup.remove(settingGroup)
+        applicationEventPublisher.publishEvent(settingGroup)
     }
 
     @Synchronized
     fun getAllSettingGroups(enabled: Boolean?): Set<SettingsGroup> {
-        return settingsByGroupName
+        return settingsByGroup
                 .map { entry -> SettingsGroup(entry.key, entry.value.filter { enabled == null || it.enabled == enabled }.toSet()) }
                 .toSet()
     }
 
     @Synchronized
-    fun getSettingsGroup(settingGroupName: String, enabled: Boolean? = null): SettingsGroup? {
-        return settingsByGroupName[settingGroupName]?.filter { enabled == null || it.enabled == enabled }?.let {
-            SettingsGroup(settingGroupName, it.toSet())
+    fun getSettingsGroup(settingGroup: AvailableSettingGroup, enabled: Boolean? = null): SettingsGroup? {
+        return settingsByGroup[settingGroup]?.filter { enabled == null || it.enabled == enabled }?.let {
+            SettingsGroup(settingGroup, it.toSet())
         }
     }
 
     @Synchronized
-    fun getSetting(settingGroupName: String, settingName: String, enabled: Boolean? = null): Setting? {
-        return getSettingsGroup(settingGroupName, enabled)?.let {
+    fun getSetting(settingGroup: AvailableSettingGroup, settingName: String, enabled: Boolean? = null): Setting? {
+        return getSettingsGroup(settingGroup, enabled)?.let {
             it.settings.find { it.name == settingName }
         }
     }
 
     private fun getSettingsForSettingGroup(settingGroup: AvailableSettingGroup): MutableSet<Setting>? {
-        return settingsByGroupName[settingGroup.settingGroupName]
+        return settingsByGroup[settingGroup]
     }
 }
