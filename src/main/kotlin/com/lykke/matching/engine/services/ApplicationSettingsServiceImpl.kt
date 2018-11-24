@@ -39,14 +39,14 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
     @Synchronized
     override fun getSettingsGroup(settingsGroup: AvailableSettingGroup, enabled: Boolean?): SettingsGroupDto? {
-        return applicationSettingsCache.getSettingsGroup(settingsGroup.settingGroupName, enabled)?.let {
+        return applicationSettingsCache.getSettingsGroup(settingsGroup, enabled)?.let {
             toSettingGroupDto(it)
         }
     }
 
     @Synchronized
     override fun getSetting(settingsGroup: AvailableSettingGroup, settingName: String, enabled: Boolean?): SettingDto? {
-        return applicationSettingsCache.getSetting(settingsGroup.settingGroupName, settingName, enabled)?.let {
+        return applicationSettingsCache.getSetting(settingsGroup, settingName, enabled)?.let {
             toSettingDto(it)
         }
     }
@@ -79,7 +79,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
     @Synchronized
     override fun deleteSettingsGroup(settingsGroup: AvailableSettingGroup, deleteSettingRequestDto: DeleteSettingRequestDto) {
-        val settingsGroupToBeDeleted = applicationSettingsCache.getSettingsGroup(settingsGroup.settingGroupName)
+        val settingsGroupToBeDeleted = applicationSettingsCache.getSettingsGroup(settingsGroup)
                 ?: return
 
         settingsDatabaseAccessor.deleteSettingsGroup(settingsGroup)
@@ -94,7 +94,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
     @Synchronized
     override fun deleteSetting(settingsGroup: AvailableSettingGroup, settingName: String, deleteSettingRequestDto: DeleteSettingRequestDto) {
-        val settingToBeDeleted = applicationSettingsCache.getSetting(settingsGroup.settingGroupName, settingName)
+        val settingToBeDeleted = applicationSettingsCache.getSetting(settingsGroup, settingName)
                 ?: throw SettingNotFoundException("Setting with name '$settingName' is not found")
 
         settingsDatabaseAccessor.deleteSetting(settingsGroup, settingName)

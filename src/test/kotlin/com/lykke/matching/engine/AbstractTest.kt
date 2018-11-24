@@ -55,7 +55,7 @@ abstract class AbstractTest {
     private lateinit var assetsCache: AssetsCache
 
     @Autowired
-    protected lateinit var applicationSettingsCache: ApplicationSettingsCache
+    protected lateinit var applicationSettingsHolder: ApplicationSettingsHolder
 
     @Autowired
     protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
@@ -174,7 +174,6 @@ abstract class AbstractTest {
         clearMessageQueues()
         assetsCache.update()
         assetPairsCache.update()
-        applicationSettingsCache.update()
 
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
         singleLimitOrderService = SingleLimitOrderService(executionContextFactory,
@@ -183,7 +182,7 @@ abstract class AbstractTest {
                 executionDataApplyService,
                 previousLimitOrdersProcessor)
 
-        multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
+        multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsHolder)
     }
 
     protected fun clearMessageQueues() {

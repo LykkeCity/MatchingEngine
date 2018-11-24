@@ -5,7 +5,7 @@ import com.lykke.matching.engine.daos.setting.Setting
 import com.lykke.matching.engine.daos.setting.SettingsGroup
 import com.lykke.matching.engine.database.cache.ApplicationGroupDeleteEvent
 import com.lykke.matching.engine.database.cache.ApplicationSettingDeleteEvent
-import com.lykke.matching.engine.database.cache.ApplicationSettingUpdateEvent
+import com.lykke.matching.engine.database.cache.ApplicationSettingCreateOrUpdateEvent
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
@@ -14,8 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.annotation.PostConstruct
 
 @Component
-class ApplicationSettingsHolder {
-    private lateinit var applicationSettingsCache: ApplicationSettingsCache
+class ApplicationSettingsHolder(val applicationSettingsCache: ApplicationSettingsCache) {
 
     @Volatile
     private var trustedClients: MutableMap<String, String> = ConcurrentHashMap()
@@ -65,7 +64,7 @@ class ApplicationSettingsHolder {
     }
 
     @EventListener
-    private fun onSettingCreate(event: ApplicationSettingUpdateEvent) {
+    private fun onSettingCreate(event: ApplicationSettingCreateOrUpdateEvent) {
         val settingValueByName = getSettingNameToValueByGroup(event.settingGroup)
         settingValueByName.remove(event.setting.name)
         settingValueByName[event.setting.name] = event.setting.value
@@ -90,7 +89,7 @@ class ApplicationSettingsHolder {
     }
 
     private fun getSettingValueByName(settingGroups: Set<SettingsGroup>, availableSettingGroups: AvailableSettingGroup): MutableMap<String, String> {
-        val group = settingGroups.find { it.name == availableSettingGroups.settingGroupName } ?: return ConcurrentHashMap()
+        val group = settingGroups.find { it.settingGroup == availableSettingGroups } ?: return ConcurrentHashMap()
 
         return getSettingValueByName(group.settings)
     }

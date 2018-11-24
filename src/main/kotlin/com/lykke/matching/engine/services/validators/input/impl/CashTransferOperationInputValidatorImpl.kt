@@ -3,8 +3,8 @@ package com.lykke.matching.engine.services.validators.input.impl
 import com.lykke.matching.engine.daos.context.CashTransferContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.daos.v2.FeeInstruction
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.incoming.parsers.data.CashTransferParsedData
 import com.lykke.matching.engine.services.validators.input.CashTransferOperationInputValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-class CashTransferOperationInputValidatorImpl @Autowired constructor(private val applicationSettingsCache: ApplicationSettingsCache)
+class CashTransferOperationInputValidatorImpl @Autowired constructor(private val applicationSettingsHolder: ApplicationSettingsHolder)
     : CashTransferOperationInputValidator {
 
     companion object {
@@ -44,7 +44,7 @@ class CashTransferOperationInputValidatorImpl @Autowired constructor(private val
     private fun isAssetEnabled(cashTransferParsedData: CashTransferParsedData) {
         val cashTransferContext = getCashTransferContext(cashTransferParsedData)
 
-        if (applicationSettingsCache.isAssetDisabled(cashTransferContext.transferOperation.asset!!.assetId)) {
+        if (applicationSettingsHolder.isAssetDisabled(cashTransferContext.transferOperation.asset!!.assetId)) {
             val transferOperation = cashTransferContext.transferOperation
             LOGGER.info("Cash transfer operation (${transferOperation.externalId}) from client ${transferOperation.fromClientId} " +
                     "to client ${transferOperation.toClientId}, asset ${cashTransferParsedData.assetId}, " +
