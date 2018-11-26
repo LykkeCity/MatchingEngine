@@ -6,7 +6,6 @@ import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.SettingHistoryRecord
 import com.lykke.matching.engine.database.SettingsHistoryDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
-import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.notification.SettingsListener
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.getSetting
@@ -143,7 +142,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         assertFalse(applicationSettingsCache.isTrustedClient("testClient"))
 
         argumentCaptor<SettingHistoryRecord>().apply {
-            verify(settingsHistoryDatabaseAccessor, times(2)).save(eq(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName), capture())
+            verify(settingsHistoryDatabaseAccessor, times(2)).save(capture())
             val values = allValues.sortedBy { it.name }
             assertEquals("settingName1", values.get(0).name)
             assertEquals("testClient1", values.get(0).value)

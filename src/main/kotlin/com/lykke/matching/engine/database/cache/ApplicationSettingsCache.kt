@@ -14,7 +14,7 @@ import javax.annotation.PostConstruct
 @Component
 class ApplicationSettingsCache @Autowired constructor(private val settingsDatabaseAccessor: SettingsDatabaseAccessor,
                                                       private val applicationEventPublisher: ApplicationEventPublisher) : DataCache() {
-    private val settingsByGroupName = HashMap<String, MutableSet<Setting>>()
+    private val settingsByGroup = HashMap<AvailableSettingGroup, MutableSet<Setting>>()
 
     @PostConstruct
     @Synchronized
@@ -22,14 +22,14 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
         val settingGroups = settingsDatabaseAccessor.getAllSettingGroups()
 
         AvailableSettingGroup.values().forEach { settingGroup ->
-            val dbSettings = settingGroups.find { it.name == settingGroup.settingGroupName }?.let {
+            val dbSettings = settingGroups.find { it.settingGroup == settingGroup }?.let {
                 HashSet(it.settings)
             }
 
             if (CollectionUtils.isEmpty(dbSettings)) {
-                settingsByGroupName.remove(settingGroup.settingGroupName)
+                settingsByGroup.remove(settingGroup)
             } else {
-                settingsByGroupName[settingGroup.settingGroupName] = dbSettings!!
+                settingsByGroup[settingGroup] = dbSettings!!
             }
         }
     }
@@ -60,10 +60,15 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
                 ?.toBigDecimal()
     }
 
+    fun isMessageProcessingEnabled(): Boolean {
+        return getSettingsForSettingGroup(AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH)
+                ?.find { it.enabled } == null
+    }
+
     @Synchronized
     fun createOrUpdateSettingValue(settingGroup: AvailableSettingGroup, settingName: String, value: String, enabled: Boolean) {
         deleteSetting(settingGroup, settingName)
-        val settings = settingsByGroupName.getOrPut(settingGroup.settingGroupName) { HashSet() }
+        val settings = settingsByGroup.getOrPut(settingGroup) { HashSet() }
         val settingToAdd = Setting(settingName, value, enabled)
         settings.add(settingToAdd)
         applicationEventPublisher.publishEvent(ApplicationSettingUpdateEvent(settingGroup, settingToAdd))
@@ -78,38 +83,38 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
             applicationEventPublisher.publishEvent(ApplicationSettingDeleteEvent(settingGroup, settingToRemove))
         }
         if (CollectionUtils.isEmpty(settings)) {
-            settingsByGroupName.remove(settingGroup.settingGroupName)
+            settingsByGroup.remove(settingGroup)
         }
     }
 
     @Synchronized
     fun deleteSettingGroup(settingGroup: AvailableSettingGroup) {
-        settingsByGroupName.remove(settingGroup.settingGroupName)
+        settingsByGroup.remove(settingGroup)
         applicationEventPublisher.publishEvent(ApplicationGroupDeleteEvent(settingGroup))
     }
 
     @Synchronized
     fun getAllSettingGroups(enabled: Boolean?): Set<SettingsGroup> {
-        return settingsByGroupName
+        return settingsByGroup
                 .map { entry -> SettingsGroup(entry.key, entry.value.filter { enabled == null || it.enabled == enabled }.toSet()) }
                 .toSet()
     }
 
     @Synchronized
-    fun getSettingsGroup(settingGroupName: String, enabled: Boolean? = null): SettingsGroup? {
-        return settingsByGroupName[settingGroupName]?.filter { enabled == null || it.enabled == enabled }?.let {
-            SettingsGroup(settingGroupName, it.toSet())
+    fun getSettingsGroup(settingGroup: AvailableSettingGroup, enabled: Boolean? = null): SettingsGroup? {
+        return settingsByGroup[settingGroup]?.filter { enabled == null || it.enabled == enabled }?.let {
+            SettingsGroup(settingGroup, it.toSet())
         }
     }
 
     @Synchronized
-    fun getSetting(settingGroupName: String, settingName: String, enabled: Boolean? = null): Setting? {
+    fun getSetting(settingGroupName: AvailableSettingGroup, settingName: String, enabled: Boolean? = null): Setting? {
         return getSettingsGroup(settingGroupName, enabled)?.let {
             it.settings.find { it.name == settingName }
         }
     }
 
     private fun getSettingsForSettingGroup(settingGroup: AvailableSettingGroup): MutableSet<Setting>? {
-        return settingsByGroupName[settingGroup.settingGroupName]
+        return settingsByGroup[settingGroup]
     }
 }

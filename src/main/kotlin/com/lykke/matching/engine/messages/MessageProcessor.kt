@@ -18,10 +18,6 @@ import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocesso
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.QuotesUpdateHandler
-import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
-import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
-import com.lykke.matching.engine.order.process.StopOrderBookProcessor
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
@@ -119,9 +115,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         this.multiLimitOrderService = applicationContext.getBean(MultiLimitOrderService::class.java)
         this.singleLimitOrderService = applicationContext.getBean(SingleLimitOrderService::class.java)
-
-        val executionContextFactory = applicationContext.getBean(ExecutionContextFactory::class.java)
-        val genericLimitOrdersCancellerFactory = applicationContext.getBean(GenericLimitOrdersCancellerFactory::class.java)
 
         this.cashOperationService = applicationContext.getBean(CashOperationService::class.java)
         this.cashInOutOperationService = applicationContext.getBean(CashInOutOperationService::class.java)

@@ -29,7 +29,7 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
 
     @PostConstruct
     private fun init() {
-        applicationSettingsCache.getSettingsGroup(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES.settingGroupName, true)?.settings?.forEach {
+        applicationSettingsCache.getSettingsGroup(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES, true)?.settings?.forEach {
             disabledFunctionalityRules.add(conf.asObject(it.value.toByteArray()) as DisableFunctionalityRule)
         }
     }

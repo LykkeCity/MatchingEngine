@@ -162,8 +162,9 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun applicationSettingsCache(configDatabaseAccessor: SettingsDatabaseAccessor): ApplicationSettingsCache {
-        return ApplicationSettingsCache(configDatabaseAccessor)
+    open fun applicationSettingsCache(configDatabaseAccessor: SettingsDatabaseAccessor,
+                                      applicationEventPublisher: ApplicationEventPublisher): ApplicationSettingsCache {
+        return ApplicationSettingsCache(configDatabaseAccessor, applicationEventPublisher)
     }
 
     @Bean
@@ -285,8 +286,10 @@ open class TestApplicationContext {
     open fun reservedCashInOutOperation(balancesHolder: BalancesHolder,
                                         assetsHolder: AssetsHolder,
                                         reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
-                                        reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator): ReservedCashInOutOperationService {
-        return ReservedCashInOutOperationService(assetsHolder, balancesHolder, reservedCashOperationQueue, reservedCashInOutOperationValidator)
+                                        reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
+                                        disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder): ReservedCashInOutOperationService {
+        return ReservedCashInOutOperationService(assetsHolder, balancesHolder, reservedCashOperationQueue,
+                reservedCashInOutOperationValidator, disabledFunctionalityRulesHolder)
     }
 
     @Bean
@@ -310,6 +313,11 @@ open class TestApplicationContext {
     @Bean
     open fun applicationSettingsHistoryDatabaseAccessor(): SettingsHistoryDatabaseAccessor {
         return Mockito.mock(SettingsHistoryDatabaseAccessor::class.java)
+    }
+
+    @Bean
+    open fun disabledFunctionalityRulesHolder(applicationSettingsCache: ApplicationSettingsCache): DisabledFunctionalityRulesHolder {
+        return DisabledFunctionalityRulesHolder(applicationSettingsCache)
     }
 
     @Bean
@@ -349,7 +357,8 @@ open class TestApplicationContext {
                                     assetsHolder: AssetsHolder,
                                     assetsPairsHolder: AssetsPairsHolder,
                                     balancesHolder: BalancesHolder,
-                                    applicationSettingsCache: ApplicationSettingsCache): MultiLimitOrderService {
+                                    applicationSettingsCache: ApplicationSettingsCache,
+                                    disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder): MultiLimitOrderService {
         return MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
@@ -358,7 +367,8 @@ open class TestApplicationContext {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                applicationSettingsCache)
+                applicationSettingsCache,
+                disabledFunctionalityRulesHolder)
     }
 
     @Bean
@@ -373,7 +383,8 @@ open class TestApplicationContext {
                                 marketOrderValidator: MarketOrderValidator,
                                 messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                 messageSender: MessageSender,
-                                applicationSettingsCache: ApplicationSettingsCache): MarketOrderService {
+                                applicationSettingsCache: ApplicationSettingsCache,
+                                disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder): MarketOrderService {
         return MarketOrderService(matchingEngine,
                 executionContextFactory,
                 stopOrderBookProcessor,
@@ -385,7 +396,8 @@ open class TestApplicationContext {
                 marketOrderValidator,
                 applicationSettingsCache,
                 messageSequenceNumberHolder,
-                messageSender)
+                messageSender,
+                disabledFunctionalityRulesHolder)
     }
 
     @Bean
@@ -504,12 +516,14 @@ open class TestApplicationContext {
     open fun cashInOutPreprocessor(applicationContext: ApplicationContext,
                                    persistenceManager: PersistenceManager,
                                    processedMessagesCache: ProcessedMessagesCache,
-                                   messageProcessingStatusHolder: MessageProcessingStatusHolder): CashInOutPreprocessor {
+                                   messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                   disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder): CashInOutPreprocessor {
         return CashInOutPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(),
                 Mockito.mock(CashOperationIdDatabaseAccessor::class.java),
                 persistenceManager,
                 processedMessagesCache,
-                messageProcessingStatusHolder)
+                messageProcessingStatusHolder,
+                disabledFunctionalityRulesHolder)
     }
 
     @Bean
@@ -646,7 +660,10 @@ open class TestApplicationContext {
     @Bean
     open fun multiLimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService,
                                           genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
-                                          applicationSettingsCache: ApplicationSettingsCache): MultiLimitOrderCancelService {
-        return MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
+                                          applicationSettingsCache: ApplicationSettingsCache,
+                                          disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder,
+                                          assetsPairsHolder: AssetsPairsHolder): MultiLimitOrderCancelService {
+        return MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory,
+                applicationSettingsCache, disabledFunctionalityRulesHolder, assetsPairsHolder)
     }
 }

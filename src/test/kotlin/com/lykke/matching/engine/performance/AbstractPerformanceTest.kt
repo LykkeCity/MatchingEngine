@@ -15,6 +15,7 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.DisabledFunctionalityRulesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
@@ -49,6 +50,7 @@ import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorIm
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.utils.logging.ThrottlingLogger
+import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.LinkedBlockingQueue
 
 abstract class AbstractPerformanceTest {
@@ -82,7 +84,9 @@ abstract class AbstractPerformanceTest {
 
     protected val secondaryStopOrdersDatabaseAccessor = TestFileStopOrderDatabaseAccessor()
     protected val primaryStopOrdersDatabaseAccessor = TestStopOrderBookDatabaseAccessor(secondaryStopOrdersDatabaseAccessor)
+
     private var stopOrdersDatabaseAccessorsHolder = StopOrdersDatabaseAccessorsHolder(primaryStopOrdersDatabaseAccessor, secondaryStopOrdersDatabaseAccessor)
+    private var disabledFunctionalityRulesHolder =  DisabledFunctionalityRulesHolder(applicationSettingsCache)
 
     protected lateinit var assetPairsCache: AssetPairsCache
     protected lateinit var applicationSettingsCache: ApplicationSettingsCache
@@ -139,7 +143,7 @@ abstract class AbstractPerformanceTest {
     open fun initServices() {
         clearMessageQueues()
         testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
-        applicationSettingsCache = ApplicationSettingsCache(testSettingsDatabaseAccessor)
+        applicationSettingsCache = ApplicationSettingsCache(testSettingsDatabaseAccessor, ApplicationEventPublisher {  })
 
         assetCache = AssetsCache(testBackOfficeDatabaseAccessor)
         assetsHolder = AssetsHolder(assetCache)
@@ -245,7 +249,8 @@ abstract class AbstractPerformanceTest {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                applicationSettingsCache)
+                applicationSettingsCache,
+                disabledFunctionalityRulesHolder)
 
         val marketOrderValidator = MarketOrderValidatorImpl(limitOrderInputValidator, assetsPairsHolder, assetsHolder, applicationSettingsCache)
         marketOrderService = MarketOrderService(matchingEngine,
@@ -259,7 +264,8 @@ abstract class AbstractPerformanceTest {
                 marketOrderValidator,
                 applicationSettingsCache,
                 messageSequenceNumberHolder,
-                notificationSender)
+                notificationSender,
+                disabledFunctionalityRulesHolder)
 
     }
 }

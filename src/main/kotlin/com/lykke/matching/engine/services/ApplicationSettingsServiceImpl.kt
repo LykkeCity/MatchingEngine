@@ -39,14 +39,14 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
     @Synchronized
     override fun getSettingsGroup(settingsGroup: AvailableSettingGroup, enabled: Boolean?): SettingsGroupDto? {
-        return applicationSettingsCache.getSettingsGroup(settingsGroup.settingGroupName, enabled)?.let {
+        return applicationSettingsCache.getSettingsGroup(settingsGroup, enabled)?.let {
             toSettingGroupDto(it)
         }
     }
 
     @Synchronized
     override fun getSetting(settingsGroup: AvailableSettingGroup, settingName: String, enabled: Boolean?): SettingDto? {
-        return applicationSettingsCache.getSetting(settingsGroup.settingGroupName, settingName, enabled)?.let {
+        return applicationSettingsCache.getSetting(settingsGroup, settingName, enabled)?.let {
             toSettingDto(it)
         }
     }
