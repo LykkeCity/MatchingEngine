@@ -19,7 +19,6 @@ import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreproce
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.QuotesUpdateHandler
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
@@ -106,7 +105,6 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
 
         this.multiLimitOrderService = applicationContext.getBean(MultiLimitOrderService::class.java)
 
-        val genericLimitOrdersCancellerFactory = applicationContext.getBean(GenericLimitOrdersCancellerFactory::class.java)
         val executionContextFactory = applicationContext.getBean(ExecutionContextFactory::class.java)
 
         this.cashOperationService = applicationContext.getBean(CashOperationService::class.java)
@@ -126,7 +124,7 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
 
         this.limitOrderMassCancelService = applicationContext.getBean(LimitOrderMassCancelService::class.java)
 
-        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsHolder)
+        this.multiLimitOrderCancelService = applicationContext.getBean(MultiLimitOrderCancelService::class.java)
         this.balanceUpdateService = applicationContext.getBean(BalanceUpdateService::class.java)
         this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
 
