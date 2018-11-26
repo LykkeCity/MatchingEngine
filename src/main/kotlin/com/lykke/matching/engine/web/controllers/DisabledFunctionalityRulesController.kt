@@ -7,6 +7,8 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.services.ApplicationSettingsService
+import com.lykke.matching.engine.services.validators.impl.ValidationException
+import com.lykke.matching.engine.services.validators.settings.impl.DisabledFunctionalitySettingValidator
 import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
 import com.lykke.matching.engine.web.dto.DisabledFunctionalityRuleDto
 import com.lykke.matching.engine.web.dto.SettingDto
@@ -50,6 +52,9 @@ class DisabledFunctionalityRulesController {
     @Autowired
     private lateinit var assetsHolder: AssetsHolder
 
+    @Autowired
+    private lateinit var disabledFunctionalitySettingValidator: DisabledFunctionalitySettingValidator
+
     @PostMapping(consumes = [MediaType.APPLICATION_JSON_VALUE])
     @ApiOperation("Create disable functionality rule")
     @ApiResponses(
@@ -60,6 +65,8 @@ class DisabledFunctionalityRulesController {
     fun create(@Valid
                @RequestBody
                disabledFunctionalityRuleDto: DisabledFunctionalityRuleDto) {
+        disabledFunctionalitySettingValidator.validate(disabledFunctionalityRuleDto)
+
         applicationSettingsService.createOrUpdateSetting(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES,
                 SettingDto(name = UUID.randomUUID().toString(),
                         value = conf.asJsonString(toDisabledFunctionalityRule(disabledFunctionalityRuleDto)),
@@ -186,5 +193,10 @@ class DisabledFunctionalityRulesController {
                 timestamp = timestamp,
                 comment = comment,
                 user = user)
+    }
+
+    @ExceptionHandler
+    private fun handleValidationException(request: HttpServletRequest, exception: ValidationException): ResponseEntity<*> {
+        return ResponseEntity(exception.message, HttpStatus.BAD_REQUEST)
     }
 }
