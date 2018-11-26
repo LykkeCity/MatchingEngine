@@ -14,11 +14,9 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
-import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
@@ -111,8 +109,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.multiLimitOrderService = applicationContext.getBean(MultiLimitOrderService::class.java)
         this.singleLimitOrderService = applicationContext.getBean(SingleLimitOrderService::class.java)
 
-        val genericLimitOrdersCancellerFactory = applicationContext.getBean(GenericLimitOrdersCancellerFactory::class.java)
-
         this.cashInOutOperationService = applicationContext.getBean(CashInOutOperationService::class.java)
         this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
         this.cashTransferOperationService = applicationContext.getBean(CashTransferOperationService::class.java)
@@ -123,7 +119,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         this.limitOrderMassCancelService = applicationContext.getBean(LimitOrderMassCancelService::class.java)
 
-        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
+        this.multiLimitOrderCancelService = applicationContext.getBean(MultiLimitOrderCancelService::class.java)
 
         this.tradesInfoService = applicationContext.getBean(TradesInfoService::class.java)
 
