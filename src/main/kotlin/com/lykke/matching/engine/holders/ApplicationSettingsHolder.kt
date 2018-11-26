@@ -32,7 +32,7 @@ class ApplicationSettingsHolder(val applicationSettingsCache: ApplicationSetting
     private var messageProcessingSwitch: MutableMap<String, String> = ConcurrentHashMap()
 
     @PostConstruct
-    private fun init() {
+    fun update() {
         val allSettingGroups = applicationSettingsCache.getAllSettingGroups(true)
 
         trustedClients = getSettingValueByName(allSettingGroups, AvailableSettingGroup.TRUSTED_CLIENTS)

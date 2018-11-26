@@ -58,7 +58,7 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
     @Synchronized
     fun deleteSettingGroup(settingGroup: AvailableSettingGroup) {
         settingsByGroup.remove(settingGroup)
-        applicationEventPublisher.publishEvent(settingGroup)
+        applicationEventPublisher.publishEvent(ApplicationGroupDeleteEvent(settingGroup))
     }
 
     @Synchronized

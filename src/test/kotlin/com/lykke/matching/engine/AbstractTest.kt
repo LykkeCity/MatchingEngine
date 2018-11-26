@@ -58,6 +58,9 @@ abstract class AbstractTest {
     protected lateinit var applicationSettingsHolder: ApplicationSettingsHolder
 
     @Autowired
+    protected lateinit var applicationSettingsCache: ApplicationSettingsCache
+
+    @Autowired
     protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
     @Autowired
@@ -174,6 +177,8 @@ abstract class AbstractTest {
         clearMessageQueues()
         assetsCache.update()
         assetPairsCache.update()
+        applicationSettingsCache.update()
+        applicationSettingsHolder.update()
 
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
         singleLimitOrderService = SingleLimitOrderService(executionContextFactory,
