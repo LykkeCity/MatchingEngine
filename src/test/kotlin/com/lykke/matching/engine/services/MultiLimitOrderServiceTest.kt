@@ -6,9 +6,8 @@ import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.SettingsDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
@@ -21,6 +20,7 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitO
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
+import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -64,12 +64,11 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         @Bean
         @Primary
-        open fun applicationSettingsCache(settingsDatabaseAccessor: SettingsDatabaseAccessor,
-                                          applicationEventPublisher: ApplicationEventPublisher): ApplicationSettingsCache {
-            val applicationSettingsCache = ApplicationSettingsCache(settingsDatabaseAccessor, applicationEventPublisher)
-            applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "Client1", "Client1", true)
-            applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "Client5", "Client5", true)
-            return applicationSettingsCache
+        open fun testSettingsDatabaseAccessor(): TestSettingsDatabaseAccessor {
+            val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client1"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client5"))
+            return testSettingsDatabaseAccessor
         }
     }
 
@@ -78,9 +77,6 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Autowired
     private lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
-
-    @Autowired
-    private lateinit var applicationSettingsCache: ApplicationSettingsCache
 
     @Before
     fun setUp() {
@@ -1369,5 +1365,4 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertOrderBookSize("LKK1YLKK", true, 0)
         assertBalance("Client1", "LKK", 1.0, 0.0)
     }
-
 }

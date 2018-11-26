@@ -88,6 +88,7 @@ abstract class AbstractPerformanceTest {
 
     protected lateinit var assetPairsCache: AssetPairsCache
     protected lateinit var applicationSettingsHolder: ApplicationSettingsHolder
+    protected lateinit var applicationSettingsCache: ApplicationSettingsCache
     protected lateinit var persistenceManager: PersistenceManager
 
     protected var rabbitEventsQueue = LinkedBlockingQueue<Event<*>>()
@@ -141,7 +142,8 @@ abstract class AbstractPerformanceTest {
     open fun initServices() {
         clearMessageQueues()
         testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
-        applicationSettingsHolder = ApplicationSettingsHolder(ApplicationSettingsCache(testSettingsDatabaseAccessor, ApplicationEventPublisher {}))
+        applicationSettingsCache = ApplicationSettingsCache(testSettingsDatabaseAccessor, ApplicationEventPublisher {})
+        applicationSettingsHolder = ApplicationSettingsHolder(applicationSettingsCache)
 
         assetCache = AssetsCache(testBackOfficeDatabaseAccessor)
         assetsHolder = AssetsHolder(assetCache)
