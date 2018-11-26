@@ -66,7 +66,6 @@ class ApplicationSettingsHolder(val applicationSettingsCache: ApplicationSetting
     @EventListener
     private fun onSettingCreate(event: ApplicationSettingCreateOrUpdateEvent) {
         val settingValueByName = getSettingNameToValueByGroup(event.settingGroup)
-        settingValueByName.remove(event.setting.name)
         settingValueByName[event.setting.name] = event.setting.value
     }
 
@@ -88,8 +87,8 @@ class ApplicationSettingsHolder(val applicationSettingsCache: ApplicationSetting
         return result
     }
 
-    private fun getSettingValueByName(settingGroups: Set<SettingsGroup>, availableSettingGroups: AvailableSettingGroup): MutableMap<String, String> {
-        val group = settingGroups.find { it.settingGroup == availableSettingGroups } ?: return ConcurrentHashMap()
+    private fun getSettingValueByName(settingGroups: Set<SettingsGroup>, availableSettingGroup: AvailableSettingGroup): MutableMap<String, String> {
+        val group = settingGroups.find { it.settingGroup == availableSettingGroup } ?: return ConcurrentHashMap()
 
         return getSettingValueByName(group.settings)
     }
