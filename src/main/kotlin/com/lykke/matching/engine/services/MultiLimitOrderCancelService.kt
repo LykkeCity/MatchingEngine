@@ -1,18 +1,25 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.daos.DisableFunctionalityRule
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.holders.DisabledFunctionalityRulesHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import org.apache.log4j.Logger
+import org.springframework.stereotype.Component
 import java.util.Date
 
+@Component
 class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOrderService,
                                    private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
-                                   private val settings: ApplicationSettingsCache): AbstractService {
+                                   private val settings: ApplicationSettingsCache,
+                                   private val disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder,
+                                   private val assetsPairsHolder: AssetsPairsHolder) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderCancelService::class.java.name)
@@ -23,6 +30,13 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
         LOGGER.debug("Got multi limit order cancel " +
                 "message id: ${messageWrapper.messageId}, id: ${message.uid}, ${message.clientId}, " +
                 "assetPair: ${message.assetPairId}, isBuy: ${message.isBuy}")
+
+        if (disabledFunctionalityRulesHolder.isDisabled(DisableFunctionalityRule(null,
+                        assetsPairsHolder.getAssetPair(message.assetPairId),
+                        MessageType.MULTI_LIMIT_ORDER_CANCEL))) {
+            writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+            return
+        }
 
         val now = Date()
         val ordersToCancel = limitOrderService.searchOrders(message.clientId, message.assetPairId, message.isBuy)
@@ -58,7 +72,7 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        messageWrapper.messageId = if(message.hasMessageId()) message.messageId else message.uid.toString()
+        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid.toString()
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
         messageWrapper.id = message.uid
