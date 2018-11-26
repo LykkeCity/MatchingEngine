@@ -127,7 +127,7 @@ class DisabledFunctionalityRulesController {
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
     fun history(@PathVariable("id") id: String): ResponseEntity<List<DisabledFunctionalityRuleDto>> {
-        val historyRecords = applicationSettingsService.getHistoryRecords(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES, id)
+        val historyRecords = applicationSettingsService.getHistoryRecords(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES.settingGroupName, id)
         if (CollectionUtils.isEmpty(historyRecords)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null)
         }
