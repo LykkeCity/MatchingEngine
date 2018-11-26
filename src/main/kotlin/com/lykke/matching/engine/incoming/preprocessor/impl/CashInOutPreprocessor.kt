@@ -7,9 +7,11 @@ import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.DisabledFunctionalityRulesHolder
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.parsers.data.CashInOutParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
+import com.lykke.matching.engine.messages.MessageProcessor
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.DUPLICATE
 import com.lykke.matching.engine.messages.MessageStatus.RUNTIME
@@ -33,6 +35,7 @@ class CashInOutPreprocessor(
         private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
         private val cashInOutOperationPreprocessorPersistenceManager: PersistenceManager,
         private val processedMessagesCache: ProcessedMessagesCache,
+        private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
         private val disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
 
     companion object {
@@ -48,6 +51,19 @@ class CashInOutPreprocessor(
 
     override fun preProcess(messageWrapper: MessageWrapper) {
         val parsedData = cashInOutContextParser.parse(messageWrapper)
+
+        if (!messageProcessingStatusHolder.isMessageSwitchEnabled()) {
+            writeResponse(parsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+            return
+        }
+
+        if (!messageProcessingStatusHolder.isHealthStatusOk()) {
+            writeResponse(parsedData.messageWrapper, MessageStatus.RUNTIME)
+            val errorMessage = "Message processing is disabled"
+            LOGGER.error(errorMessage)
+            METRICS_LOGGER.logError(errorMessage)
+            return
+        }
 
         if (!validateData(parsedData)) {
             return
