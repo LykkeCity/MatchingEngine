@@ -23,7 +23,6 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderType
-import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -46,6 +45,7 @@ import java.math.BigDecimal
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (MarketOrderServiceTest.Config::class)])
@@ -844,7 +844,7 @@ class MarketOrderServiceTest: AbstractTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", price = 1.1, volume = -1.0))
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", price = 1.2, volume = -1.0))
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting("0.0", "EURUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, getSetting("0.0", "EURUSD"))
         applicationSettingsCache.update()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = 2.0)))
@@ -852,7 +852,7 @@ class MarketOrderServiceTest: AbstractTest() {
         assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
         assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting("0.04", "EURUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, getSetting("0.04", "EURUSD"))
         applicationSettingsCache.update()
 
         clearMessageQueues()
@@ -861,7 +861,7 @@ class MarketOrderServiceTest: AbstractTest() {
         assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
         assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting("0.05", "EURUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, getSetting("0.05", "EURUSD"))
         applicationSettingsCache.update()
 
         clearMessageQueues()
@@ -877,7 +877,7 @@ class MarketOrderServiceTest: AbstractTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", price = 1.0, volume = 1.0))
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", price = 0.9, volume = 1.0))
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting("0.0", "EURUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, getSetting("0.0", "EURUSD"))
         applicationSettingsCache.update()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = -2.0)))
@@ -885,7 +885,7 @@ class MarketOrderServiceTest: AbstractTest() {
         assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
         assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting( "0.04", "EURUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, getSetting( "0.04", "EURUSD"))
         applicationSettingsCache.update()
 
         clearMessageQueues()
@@ -894,7 +894,7 @@ class MarketOrderServiceTest: AbstractTest() {
         assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
         assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting( "0.05", "EURUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, getSetting( "0.05", "EURUSD"))
         applicationSettingsCache.update()
 
         clearMessageQueues()

@@ -9,6 +9,7 @@ enum class MessageStatus(val type: Int){
     DUPLICATE(430),
     BAD_REQUEST(400),
     RUNTIME(500),
+    MESSAGE_PROCESSING_DISABLED(1),
 
     // order status
     REPLACED(421),
