@@ -65,7 +65,7 @@ class MarketOrderValidatorTest {
         @Primary
         open fun test(): TestSettingsDatabaseAccessor {
             val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS.settingGroupName, getSetting("BTC"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS, getSetting("BTC"))
             return testSettingsDatabaseAccessor
         }
     }

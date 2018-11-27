@@ -9,17 +9,12 @@ import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
-import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
-import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
-import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.order.ExecutionDataApplyService
-import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
@@ -83,6 +78,9 @@ abstract class AbstractTest {
 
     @Autowired
     protected lateinit var genericLimitOrderService: GenericLimitOrderService
+
+    @Autowired
+    protected lateinit var singleLimitOrderService: SingleLimitOrderService
 
     @Autowired
     protected lateinit var multiLimitOrderService: MultiLimitOrderService
@@ -150,20 +148,8 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var cashInOutOperationService: CashInOutOperationService
 
-    @Autowired
-    protected lateinit var executionContextFactory: ExecutionContextFactory
-
-    @Autowired
-    protected lateinit var genericLimitOrdersProcessor: GenericLimitOrdersProcessor
-    @Autowired
-    protected lateinit var stopOrderBookProcessor: StopOrderBookProcessor
-    @Autowired
-    protected lateinit var executionDataApplyService: ExecutionDataApplyService
-    @Autowired
-    protected lateinit var previousLimitOrdersProcessor: PreviousLimitOrdersProcessor
-
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
-    protected lateinit var singleLimitOrderService: SingleLimitOrderService
+
     protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
 
     private var initialized = false
@@ -177,11 +163,6 @@ abstract class AbstractTest {
         applicationSettingsCache.update()
 
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
-        singleLimitOrderService = SingleLimitOrderService(executionContextFactory,
-                genericLimitOrdersProcessor,
-                stopOrderBookProcessor,
-                executionDataApplyService,
-                previousLimitOrdersProcessor)
 
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
     }

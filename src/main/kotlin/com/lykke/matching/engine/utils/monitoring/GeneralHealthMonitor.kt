@@ -6,7 +6,7 @@ import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
-@Component("GeneralHealthMonitor")
+@Component
 class GeneralHealthMonitor: HealthMonitor {
 
     companion object {
