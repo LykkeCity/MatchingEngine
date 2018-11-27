@@ -31,6 +31,7 @@ import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.DisabledFunctionalityRulesHolder
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
@@ -60,7 +61,7 @@ class MarketOrderService @Autowired constructor(
         private val settings: ApplicationSettingsCache,
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
         private val messageSender: MessageSender,
-        private val disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder): AbstractService {
+        private val messageProcessingStatusHolder: MessageProcessingStatusHolder): AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
         private val STATS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.stats")
@@ -84,7 +85,7 @@ class MarketOrderService @Autowired constructor(
         val feeInstruction: FeeInstruction?
         val feeInstructions: List<NewFeeInstruction>?
 
-        if (disabledFunctionalityRulesHolder.isDisabled(DisableFunctionalityRule(null, assetPair.assetPairId, MessageType.MARKET_ORDER))) {
+        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(DisabledFunctionalityRule(null, assetPair.assetPairId, MessageType.MARKET_ORDER))) {
             writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }

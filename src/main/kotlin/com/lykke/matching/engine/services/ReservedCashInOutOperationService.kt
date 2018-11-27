@@ -2,10 +2,11 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.balance.BalanceException
-import com.lykke.matching.engine.daos.DisableFunctionalityRule
+import com.lykke.matching.engine.daos.DisabledFunctionalityRule
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.DisabledFunctionalityRulesHolder
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -29,7 +30,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                                                                 private val balancesHolder: BalancesHolder,
                                                                 private val reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                                                 private val reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
-                                                                private val disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder) : AbstractService {
+                                                                private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(ReservedCashInOutOperationService::class.java.name)
@@ -41,7 +42,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         }
         val message = getMessage(messageWrapper)
         val asset = assetsHolder.getAsset(message.assetId)
-        if (disabledFunctionalityRulesHolder.isDisabled(DisableFunctionalityRule(asset.assetId, null, MessageType.RESERVED_CASH_IN_OUT_OPERATION))) {
+        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(DisabledFunctionalityRule(asset.assetId, null, MessageType.RESERVED_CASH_IN_OUT_OPERATION))) {
             writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }

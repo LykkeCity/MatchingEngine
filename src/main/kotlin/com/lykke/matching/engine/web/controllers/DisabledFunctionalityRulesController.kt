@@ -64,7 +64,7 @@ class DisabledFunctionalityRulesController {
 
 
     @GetMapping("/all", produces = [MediaType.APPLICATION_JSON_VALUE])
-    @ApiOperation("Get all disable functionality ")
+    @ApiOperation("Get all disable functionality rules")
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),
             ApiResponse(code = 500, message = "Internal server error occurred")
@@ -84,7 +84,7 @@ class DisabledFunctionalityRulesController {
     }
 
     @GetMapping("/history/{id}", produces = [MediaType.APPLICATION_JSON_VALUE])
-    @ApiOperation("History of modification of disabled functionality rule")
+    @ApiOperation("Gat modification history of disable functionality rule")
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),
             ApiResponse(code = 404, message = "History for supplied rule id is not found"),
@@ -100,10 +100,10 @@ class DisabledFunctionalityRulesController {
     }
 
     @DeleteMapping("/{id}")
-    @ApiOperation("Delete disabled functionality rule")
+    @ApiOperation("Delete disable functionality rule")
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),
-            ApiResponse(code = 404, message = "Rule was not found"),
+            ApiResponse(code = 404, message = "Rule is not found"),
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
     fun delete(@PathVariable("id") id: String,

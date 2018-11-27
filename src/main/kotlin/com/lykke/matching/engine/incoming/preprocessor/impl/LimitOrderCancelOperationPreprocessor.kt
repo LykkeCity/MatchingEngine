@@ -1,9 +1,11 @@
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
+import com.lykke.matching.engine.daos.DisabledFunctionalityRule
 import com.lykke.matching.engine.daos.context.LimitOrderCancelOperationContext
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
@@ -26,7 +28,8 @@ class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContext
                                             val limitOrderCancelInputQueue: BlockingQueue<MessageWrapper>,
                                             val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
                                             val limitOrderCancelOperationPreprocessorPersistenceManager: PersistenceManager,
-                                            val processedMessagesCache: ProcessedMessagesCache) : MessagePreprocessor, Thread(LimitOrderCancelOperationPreprocessor::class.java.name) {
+                                            val processedMessagesCache: ProcessedMessagesCache,
+                                            val messageProcessingStatusHolder: MessageProcessingStatusHolder) : MessagePreprocessor, Thread(LimitOrderCancelOperationPreprocessor::class.java.name) {
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(LimitOrderCancelOperationPreprocessor::class.java.name)
@@ -36,6 +39,11 @@ class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContext
     override fun preProcess(messageWrapper: MessageWrapper) {
         val parsedData = limitOrderCancelOperationContextParser.parse(messageWrapper)
         val parsedMessageWrapper = parsedData.messageWrapper
+
+        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(DisabledFunctionalityRule(null, null, MessageType.LIMIT_ORDER_CANCEL))) {
+            writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+            return
+        }
 
         if (!validateData(parsedData)) {
             return

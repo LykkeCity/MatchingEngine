@@ -1,20 +1,20 @@
 
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
+import com.lykke.matching.engine.daos.DisabledFunctionalityRule
 import com.lykke.matching.engine.daos.context.CashInOutContext
 import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
-import com.lykke.matching.engine.holders.DisabledFunctionalityRulesHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.parsers.data.CashInOutParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
-import com.lykke.matching.engine.messages.MessageProcessor
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.DUPLICATE
 import com.lykke.matching.engine.messages.MessageStatus.RUNTIME
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.impl.ValidationException
@@ -35,8 +35,7 @@ class CashInOutPreprocessor(
         private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
         private val cashInOutOperationPreprocessorPersistenceManager: PersistenceManager,
         private val processedMessagesCache: ProcessedMessagesCache,
-        private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-        private val disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
+        private val messageProcessingStatusHolder: MessageProcessingStatusHolder): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(CashInOutPreprocessor::class.java.name)
@@ -52,7 +51,7 @@ class CashInOutPreprocessor(
     override fun preProcess(messageWrapper: MessageWrapper) {
         val parsedData = cashInOutContextParser.parse(messageWrapper)
 
-        if (!messageProcessingStatusHolder.isMessageSwitchEnabled()) {
+        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(DisabledFunctionalityRule(parsedData.assetId, null, MessageType.CASH_IN_OUT_OPERATION))) {
             writeResponse(parsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }
