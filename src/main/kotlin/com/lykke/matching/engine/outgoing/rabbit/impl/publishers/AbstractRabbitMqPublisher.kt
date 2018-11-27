@@ -151,7 +151,7 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
         }
 
         override fun handleUnblocked() {
-            publishRecoverEvent()
+            publishRabbitReadyEvent()
         }
     }
 }
