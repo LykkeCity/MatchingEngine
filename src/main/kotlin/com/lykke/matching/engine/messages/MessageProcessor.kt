@@ -11,24 +11,19 @@ import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
-import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.QuotesUpdateHandler
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
-import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
-import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
-import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
-import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.utils.config.Config
-import com.lykke.matching.engine.utils.monitoring.GeneralHealthMonitor
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.context.ApplicationContext
@@ -82,6 +77,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val servicesMap: Map<MessageType, AbstractService>
     private val processedMessagesCache: ProcessedMessagesCache
 
+    private var currentTransactionDataHolder: CurrentTransactionDataHolder
+
     private var bestPriceBuilder: Timer? = null
     private var candlesBuilder: Timer? = null
     private var hoursCandlesBuilder: Timer? = null
@@ -93,12 +90,12 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
     private val reservedBalanceUpdateService: ReservedBalanceUpdateService
     private val reservedCashInOutOperationService: ReservedCashInOutOperationService
-    private val healthMonitor: GeneralHealthMonitor
+    private val messageProcessingStatusHolder: MessageProcessingStatusHolder
     private val messageSequenceNumberHolder: MessageSequenceNumberHolder
 
     init {
         val isLocalProfile = applicationContext.environment.acceptsProfiles("local")
-        healthMonitor = applicationContext.getBean(GeneralHealthMonitor::class.java)
+        messageProcessingStatusHolder = applicationContext.getBean(MessageProcessingStatusHolder::class.java)
         performanceStatsHolder = applicationContext.getBean(PerformanceStatsHolder::class.java)
 
         messageSequenceNumberHolder = applicationContext.getBean(MessageSequenceNumberHolder::class.java)
@@ -114,6 +111,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         balanceUpdateHandler = applicationContext.getBean(BalanceUpdateHandler::class.java)
 
+        this.currentTransactionDataHolder = applicationContext.getBean(CurrentTransactionDataHolder::class.java)
+
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
         this.applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
 
@@ -121,20 +120,15 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         val genericStopLimitOrderService = applicationContext.getBean(GenericStopLimitOrderService::class.java)
 
         this.multiLimitOrderService = applicationContext.getBean(MultiLimitOrderService::class.java)
+        this.singleLimitOrderService = applicationContext.getBean(SingleLimitOrderService::class.java)
 
         val genericLimitOrdersCancellerFactory = applicationContext.getBean(GenericLimitOrdersCancellerFactory::class.java)
-        val executionContextFactory = applicationContext.getBean(ExecutionContextFactory::class.java)
 
         this.cashOperationService = applicationContext.getBean(CashOperationService::class.java)
         this.cashInOutOperationService = applicationContext.getBean(CashInOutOperationService::class.java)
         this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
         this.cashTransferOperationService = applicationContext.getBean(CashTransferOperationService::class.java)
         this.cashSwapOperationService = applicationContext.getBean(CashSwapOperationService::class.java)
-        this.singleLimitOrderService = SingleLimitOrderService(executionContextFactory,
-                applicationContext.getBean(GenericLimitOrdersProcessor::class.java),
-                applicationContext.getBean(StopOrderBookProcessor::class.java),
-                applicationContext.getBean(ExecutionDataApplyService::class.java),
-                applicationContext.getBean(PreviousLimitOrdersProcessor::class.java))
 
         this.marketOrderService = applicationContext.getBean(MarketOrderService::class.java)
 
@@ -165,7 +159,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         }
 
         this.quotesUpdateHandler = applicationContext.getBean(QuotesUpdateHandler::class.java)
-        val connectionsHolder = applicationContext.getBean(ConnectionsHolder::class.java)
 
         processedMessagesCache = applicationContext.getBean(ProcessedMessagesCache::class.java)
         servicesMap = initServicesMap()
@@ -206,6 +199,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 return
             }
 
+            currentTransactionDataHolder.setMessageType(messageType)
+
             val service = servicesMap[messageType]
 
             if (service == null) {
@@ -228,7 +223,13 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 service.parseMessage(message)
             }
 
-            if (!healthMonitor.ok()) {
+
+            if (!messageProcessingStatusHolder.isMessageSwitchEnabled()) {
+                service.writeResponse(message, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+                return
+            }
+
+            if (!messageProcessingStatusHolder.isHealthStatusOk()) {
                 service.writeResponse(message, MessageStatus.RUNTIME)
                 val errorMessage = "Message processing is disabled"
                 LOGGER.error(errorMessage)
@@ -257,11 +258,30 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
             val endTime = System.nanoTime()
 
-            performanceStatsHolder.addMessage(message.type, endTime - message.startTimestamp, endTime - startTime)
+            recordPerformanceStats(message, startTime, endTime)
         } catch (exception: Exception) {
             LOGGER.error("[${message.sourceIp}]: Got error during message processing: ${exception.message}", exception)
             METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message processing", exception)
         }
+    }
+
+    private fun recordPerformanceStats(messageWrapper: MessageWrapper, startMessageProcessingTime: Long, endMessageProcessingTime: Long) {
+        val totalTime = endMessageProcessingTime - messageWrapper.startTimestamp
+        val processingTime = endMessageProcessingTime - startMessageProcessingTime
+
+        val inputQueueTime = messageWrapper.messagePreProcessorStartTimestamp?.let {
+            it - messageWrapper.startTimestamp
+        }
+
+        val preProcessingTime = messageWrapper.messagePreProcessorStartTimestamp?.let {
+            messageWrapper.messagePreProcessorEndTimestamp!! - it
+        }
+
+        val preProcessedMessageQueueStartTime = messageWrapper.messagePreProcessorEndTimestamp
+                ?: messageWrapper.startTimestamp
+        val preProcessedMessageQueueTime = startMessageProcessingTime - preProcessedMessageQueueStartTime
+
+        performanceStatsHolder.addMessage(messageWrapper.type, inputQueueTime, preProcessedMessageQueueTime, preProcessingTime, processingTime, totalTime)
     }
 
     private fun initServicesMap(): Map<MessageType, AbstractService> {
@@ -272,10 +292,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         result[MessageType.CASH_SWAP_OPERATION] = cashSwapOperationService
         result[MessageType.RESERVED_CASH_IN_OUT_OPERATION] = reservedCashInOutOperationService
         result[MessageType.LIMIT_ORDER] = singleLimitOrderService
-        result[MessageType.OLD_LIMIT_ORDER] = singleLimitOrderService
         result[MessageType.MARKET_ORDER] = marketOrderService
         result[MessageType.LIMIT_ORDER_CANCEL] = limitOrderCancelService
-        result[MessageType.OLD_LIMIT_ORDER_CANCEL] = limitOrderCancelService
         result[MessageType.LIMIT_ORDER_MASS_CANCEL] = limitOrderMassCancelService
         result[MessageType.MULTI_LIMIT_ORDER_CANCEL] = multiLimitOrderCancelService
         result[MessageType.OLD_BALANCE_UPDATE] = balanceUpdateService

@@ -3,6 +3,7 @@ package com.lykke.matching.engine.utils.order
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.ValidationException
+import com.lykke.matching.engine.services.validators.impl.ValidationException.Validation.*
 
 class MessageStatusUtils {
     companion object {
@@ -39,19 +40,19 @@ class MessageStatusUtils {
 
         fun toMessageStatus(validationErrorType: ValidationException.Validation): MessageStatus {
             return when (validationErrorType) {
-                ValidationException.Validation.GENERIC_VALIDATION_FAILURE -> MessageStatus.BAD_REQUEST
-                ValidationException.Validation.DISABLED_ASSET -> MessageStatus.DISABLED_ASSET
-                ValidationException.Validation.INVALID_VOLUME_ACCURACY -> MessageStatus.INVALID_VOLUME_ACCURACY
-                ValidationException.Validation.INVALID_PRICE_ACCURACY -> MessageStatus.INVALID_PRICE_ACCURACY
-                ValidationException.Validation.LOW_BALANCE -> MessageStatus.LOW_BALANCE
-                ValidationException.Validation.INVALID_FEE -> MessageStatus.INVALID_FEE
-                ValidationException.Validation.RESERVED_VOLUME_HIGHER_THAN_BALANCE -> MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE
-                ValidationException.Validation.NO_LIQUIDITY -> MessageStatus.NO_LIQUIDITY
-                ValidationException.Validation.TOO_SMALL_VOLUME -> MessageStatus.TOO_SMALL_VOLUME
-                ValidationException.Validation.UNKNOWN_ASSET -> MessageStatus.UNKNOWN_ASSET
-                ValidationException.Validation.BALANCE_LOWER_THAN_RESERVED -> MessageStatus.BALANCE_LOWER_THAN_RESERVED
-                ValidationException.Validation.NEGATIVE_OVERDRAFT_LIMIT -> MessageStatus.NEGATIVE_OVERDRAFT_LIMIT
-                ValidationException.Validation.LIMIT_ORDER_NOT_FOUND -> MessageStatus.LIMIT_ORDER_NOT_FOUND
+                DISABLED_ASSET -> MessageStatus.DISABLED_ASSET
+                INVALID_VOLUME_ACCURACY -> MessageStatus.INVALID_VOLUME_ACCURACY
+                INVALID_PRICE_ACCURACY -> MessageStatus.INVALID_PRICE_ACCURACY
+                LOW_BALANCE -> MessageStatus.LOW_BALANCE
+                INVALID_FEE -> MessageStatus.INVALID_FEE
+                RESERVED_VOLUME_HIGHER_THAN_BALANCE -> MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE
+                NO_LIQUIDITY -> MessageStatus.NO_LIQUIDITY
+                TOO_SMALL_VOLUME -> MessageStatus.TOO_SMALL_VOLUME
+                UNKNOWN_ASSET -> MessageStatus.UNKNOWN_ASSET
+                BALANCE_LOWER_THAN_RESERVED -> MessageStatus.BALANCE_LOWER_THAN_RESERVED
+                NEGATIVE_OVERDRAFT_LIMIT -> MessageStatus.NEGATIVE_OVERDRAFT_LIMIT
+                GENERIC_VALIDATION_FAILURE -> MessageStatus.BAD_REQUEST
+                LIMIT_ORDER_NOT_FOUND -> MessageStatus.LIMIT_ORDER_NOT_FOUND
             }
         }
     }

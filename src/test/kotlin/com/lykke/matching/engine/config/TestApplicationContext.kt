@@ -4,6 +4,7 @@ import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.spring.QueueConfig
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
@@ -55,14 +56,18 @@ import com.lykke.matching.engine.services.validators.input.impl.CashInOutOperati
 import com.lykke.matching.engine.services.validators.input.impl.CashTransferOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.input.LimitOrderCancelOperationInputValidatorImpl
+import com.lykke.matching.engine.services.validators.settings.SettingValidator
+import com.lykke.matching.engine.services.validators.settings.impl.MessageProcessingSwitchSettingValidator
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
+import com.lykke.matching.engine.utils.monitoring.HealthMonitor
 import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import com.lykke.utils.logging.ThrottlingLogger
 import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
@@ -296,15 +301,16 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun applicationSettingsHistoryDatabaseAccessor(): SettingsHistoryDatabaseAccessor {
-        return Mockito.mock(SettingsHistoryDatabaseAccessor::class.java)
+    open fun applicationSettingsService(settingsDatabaseAccessor: SettingsDatabaseAccessor,
+                                        applicationSettingsCache: ApplicationSettingsCache,
+                                        settingsHistoryDatabaseAccessor: SettingsHistoryDatabaseAccessor,
+                                        applicationEventPublisher: ApplicationEventPublisher): ApplicationSettingsService {
+        return ApplicationSettingsServiceImpl(settingsDatabaseAccessor, applicationSettingsCache, settingsHistoryDatabaseAccessor, applicationEventPublisher)
     }
 
     @Bean
-    open fun applicationSettingsService(settingsDatabaseAccessor: SettingsDatabaseAccessor,
-                                        applicationSettingsCache: ApplicationSettingsCache,
-                                        settingsHistoryDatabaseAccessor: SettingsHistoryDatabaseAccessor): ApplicationSettingsService {
-        return ApplicationSettingsServiceImpl(settingsDatabaseAccessor, applicationSettingsCache, settingsHistoryDatabaseAccessor)
+    open fun applicationSettingsHistoryDatabaseAccessor(): SettingsHistoryDatabaseAccessor {
+        return Mockito.mock(SettingsHistoryDatabaseAccessor::class.java)
     }
 
     @Bean
@@ -320,6 +326,19 @@ open class TestApplicationContext {
                 balancesHolder,
                 quotesUpdateQueue,
                 tradeInfoQueue)
+    }
+
+    @Bean
+    open fun singleLimitOrderService(executionContextFactory: ExecutionContextFactory,
+                                     genericLimitOrdersProcessor: GenericLimitOrdersProcessor,
+                                     stopOrderBookProcessor: StopOrderBookProcessor,
+                                     executionDataApplyService: ExecutionDataApplyService,
+                                     previousLimitOrdersProcessor: PreviousLimitOrdersProcessor): SingleLimitOrderService {
+        return SingleLimitOrderService(executionContextFactory,
+                genericLimitOrdersProcessor,
+                stopOrderBookProcessor,
+                executionDataApplyService,
+                previousLimitOrdersProcessor)
     }
 
     @Bean
@@ -483,9 +502,15 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashInOutPreprocessor(applicationContext: ApplicationContext, persistenceManager: PersistenceManager, processedMessagesCache: ProcessedMessagesCache): CashInOutPreprocessor {
+    open fun cashInOutPreprocessor(applicationContext: ApplicationContext,
+                                   persistenceManager: PersistenceManager,
+                                   processedMessagesCache: ProcessedMessagesCache,
+                                   messageProcessingStatusHolder: MessageProcessingStatusHolder): CashInOutPreprocessor {
         return CashInOutPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(),
-                Mockito.mock(CashOperationIdDatabaseAccessor::class.java), persistenceManager, processedMessagesCache)
+                Mockito.mock(CashOperationIdDatabaseAccessor::class.java),
+                persistenceManager,
+                processedMessagesCache,
+                messageProcessingStatusHolder)
     }
 
     @Bean
@@ -494,8 +519,22 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashTransferPreprocessor(applicationContext: ApplicationContext, persistenceManager: PersistenceManager, processedMessagesCache: ProcessedMessagesCache): CashTransferPreprocessor {
-        return CashTransferPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(), Mockito.mock(CashOperationIdDatabaseAccessor::class.java), persistenceManager, processedMessagesCache)
+    open fun HealthMonitor(): HealthMonitor {
+        return Mockito.mock(HealthMonitor::class.java)
+    }
+
+    @Bean
+    open fun messageProcessingStatusHolder(generalHealthMonitor: HealthMonitor,
+                                           applicationSettingsCache: ApplicationSettingsCache): MessageProcessingStatusHolder {
+        return MessageProcessingStatusHolder(generalHealthMonitor, applicationSettingsCache)
+    }
+
+    @Bean
+    open fun cashTransferPreprocessor(applicationContext: ApplicationContext, persistenceManager: PersistenceManager,
+                                      processedMessagesCache: ProcessedMessagesCache, messageProcessingStatusHolder: MessageProcessingStatusHolder): CashTransferPreprocessor {
+        return CashTransferPreprocessor(LinkedBlockingQueue(),
+                LinkedBlockingQueue(), Mockito.mock(CashOperationIdDatabaseAccessor::class.java),
+                persistenceManager, processedMessagesCache, messageProcessingStatusHolder)
     }
 
     @Bean
@@ -515,6 +554,21 @@ open class TestApplicationContext {
                                           messageSender: MessageSender): CashTransferOperationService {
         return CashTransferOperationService(balancesHolder, notification, dbTransferOperationQueue, feeProcessor,
                 cashTransferOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
+    }
+
+    @Bean
+    open fun settingsListener(): SettingsListener {
+        return SettingsListener()
+    }
+
+    @Bean
+    open fun messageProcessingSwitchSettingValidator(): SettingValidator {
+        return MessageProcessingSwitchSettingValidator()
+    }
+
+    @Bean
+    open fun settingValidators(settingValidators: List<SettingValidator>): Map<AvailableSettingGroup, List<SettingValidator>> {
+        return settingValidators.groupBy { it.getSettingGroup() }
     }
 
     @Bean

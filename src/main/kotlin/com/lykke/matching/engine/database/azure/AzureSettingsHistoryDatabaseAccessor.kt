@@ -15,11 +15,12 @@ class AzureSettingsHistoryDatabaseAccessor(connectionString: String, configTable
 
     private val historyTable: CloudTable = getOrCreateTable(connectionString, configTableName)
 
-    override fun save(settingGroupName: String, settingHistoryRecord: SettingHistoryRecord) {
+    override fun save(settingHistoryRecord: SettingHistoryRecord) {
         try {
-            historyTable.execute(TableOperation.insertOrMerge(toAzureSettingHistoryRecord(settingGroupName, settingHistoryRecord)))
+            historyTable.execute(TableOperation.insertOrMerge(toAzureSettingHistoryRecord(settingHistoryRecord)))
         } catch (e: Exception) {
-            throw RuntimeException("Not able to persist setting to the history, group: $settingGroupName, name: ${settingHistoryRecord.name}")
+            throw RuntimeException("Not able to persist setting to the history, group: ${settingHistoryRecord.settingGroupName}, " +
+                    "name: ${settingHistoryRecord.name}")
         }
     }
 
@@ -39,12 +40,18 @@ class AzureSettingsHistoryDatabaseAccessor(connectionString: String, configTable
 
     private fun toSettingHistoryRecord(azureAppSettingHistory: AzureAppSettingHistory): SettingHistoryRecord {
         return azureAppSettingHistory.let {
-            SettingHistoryRecord(it.settingName, it.value, it.enabled, it.comment, it.user, it.timestamp)
+            SettingHistoryRecord(it.partitionKey,
+                    it.settingName,
+                    it.value,
+                    it.enabled,
+                    it.comment,
+                    it.user,
+                    it.timestamp)
         }
     }
 
-    private fun toAzureSettingHistoryRecord(settingGroupName: String, settingHistoryRecord: SettingHistoryRecord): AzureAppSettingHistory {
-        return AzureAppSettingHistory(settingGroupName,
+    private fun toAzureSettingHistoryRecord(settingHistoryRecord: SettingHistoryRecord): AzureAppSettingHistory {
+        return AzureAppSettingHistory(settingHistoryRecord.settingGroupName,
                 settingHistoryRecord.name,
                 settingHistoryRecord.value,
                 settingHistoryRecord.comment,
