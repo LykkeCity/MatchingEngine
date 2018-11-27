@@ -336,7 +336,7 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
         val executionPrice = calculateExecutionPrice(order, assetPair, totalLimitPrice, totalVolume)
         if (!checkMaxVolume(order, assetPair, executionPrice)) {
             order.updateStatus(OrderStatus.InvalidVolume, now)
-            executionContext.info("Too large volume of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxValue=${assetPair.maxValue}, straight=${order.isStraight()}")
+            executionContext.info("Too large volume of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxVolume=${assetPair.maxVolume}, straight=${order.isStraight()}")
             return MatchingResult(orderWrapper, cancelledLimitOrders)
         }
         if (!checkMaxValue(order, assetPair, executionPrice)) {
