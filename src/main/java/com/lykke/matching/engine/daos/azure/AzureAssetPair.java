@@ -36,7 +36,6 @@ public class AzureAssetPair extends TableServiceEntity {
         this.minInvertedVolume = minInvertedVolume;
         this.maxVolume = maxVolume;
         this.maxValue = maxValue;
-        this.maxValue = maxValue;
         this.midPriceDeviationThreshold = midPriceDeviationThreshold;
         this.marketOrderPriceDeviationThreshold = marketOrderPriceDeviationThreshold;
     }
