@@ -6,7 +6,7 @@ import com.lykke.matching.engine.utils.monitoring.HealthMonitor
 import org.springframework.stereotype.Component
 
 @Component
-class MessageProcessingStatusHolder(private val generalHealthMonitor: HealthMonitor,
+open class MessageProcessingStatusHolder(private val generalHealthMonitor: HealthMonitor,
                                     private val applicationSettingsCache: ApplicationSettingsCache,
                                     private val disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder) {
     fun isMessageProcessingEnabled(disabledFunctionalityRule: DisabledFunctionalityRule? = null): Boolean {

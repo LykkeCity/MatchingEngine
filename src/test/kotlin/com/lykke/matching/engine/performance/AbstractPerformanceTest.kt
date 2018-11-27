@@ -15,7 +15,7 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.holders.DisabledFunctionalityRulesHolder
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
@@ -50,6 +50,7 @@ import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorIm
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.utils.logging.ThrottlingLogger
+import org.mockito.Mockito
 import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -86,7 +87,7 @@ abstract class AbstractPerformanceTest {
     protected val primaryStopOrdersDatabaseAccessor = TestStopOrderBookDatabaseAccessor(secondaryStopOrdersDatabaseAccessor)
 
     private var stopOrdersDatabaseAccessorsHolder = StopOrdersDatabaseAccessorsHolder(primaryStopOrdersDatabaseAccessor, secondaryStopOrdersDatabaseAccessor)
-    private var disabledFunctionalityRulesHolder =  DisabledFunctionalityRulesHolder(applicationSettingsCache)
+    private var messageProcessingStatusHolder = Mockito.mock(MessageProcessingStatusHolder::class.java)
 
     protected lateinit var assetPairsCache: AssetPairsCache
     protected lateinit var applicationSettingsCache: ApplicationSettingsCache
@@ -250,7 +251,7 @@ abstract class AbstractPerformanceTest {
                 assetsPairsHolder,
                 balancesHolder,
                 applicationSettingsCache,
-                disabledFunctionalityRulesHolder)
+                messageProcessingStatusHolder)
 
         val marketOrderValidator = MarketOrderValidatorImpl(limitOrderInputValidator, assetsPairsHolder, assetsHolder, applicationSettingsCache)
         marketOrderService = MarketOrderService(matchingEngine,
@@ -265,7 +266,7 @@ abstract class AbstractPerformanceTest {
                 applicationSettingsCache,
                 messageSequenceNumberHolder,
                 notificationSender,
-                disabledFunctionalityRulesHolder)
+                messageProcessingStatusHolder)
 
     }
 }

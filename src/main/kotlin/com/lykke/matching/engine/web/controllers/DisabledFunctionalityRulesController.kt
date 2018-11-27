@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -48,7 +47,7 @@ class DisabledFunctionalityRulesController {
         disabledFunctionalityRulesService.create(disabledFunctionalityRuleDto)
     }
 
-    @PutMapping("/{id}", consumes = [MediaType.APPLICATION_JSON_VALUE])
+    @PostMapping("/{id}", consumes = [MediaType.APPLICATION_JSON_VALUE])
     @ApiOperation("Update disable functionality rule")
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),
@@ -84,7 +83,7 @@ class DisabledFunctionalityRulesController {
     }
 
     @GetMapping("/history/{id}", produces = [MediaType.APPLICATION_JSON_VALUE])
-    @ApiOperation("Gat modification history of disable functionality rule")
+    @ApiOperation("Get modification history of disable functionality rule")
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),
             ApiResponse(code = 404, message = "History for supplied rule id is not found"),

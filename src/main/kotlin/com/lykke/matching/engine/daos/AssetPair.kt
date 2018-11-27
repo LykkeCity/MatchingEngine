@@ -1,9 +1,8 @@
 package com.lykke.matching.engine.daos
 
-import java.io.Serializable
 import java.math.BigDecimal
 
-data class AssetPair(
+class AssetPair(
         val assetPairId: String,
         val baseAssetId: String,
         val quotingAssetId: String,
