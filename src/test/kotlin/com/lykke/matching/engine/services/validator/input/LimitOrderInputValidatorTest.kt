@@ -60,7 +60,7 @@ class LimitOrderInputValidatorTest {
         @Primary
         open fun testSettingsDatabaseAccessor(): TestSettingsDatabaseAccessor {
             val testConfigDatabaseAccessor = TestSettingsDatabaseAccessor()
-            testConfigDatabaseAccessor.createOrUpdateSetting (AvailableSettingGroup.DISABLED_ASSETS.settingGroupName, getSetting("JPY"))
+            testConfigDatabaseAccessor.createOrUpdateSetting (AvailableSettingGroup.DISABLED_ASSETS, getSetting("JPY"))
             return testConfigDatabaseAccessor
         }
     }

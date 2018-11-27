@@ -45,11 +45,6 @@ class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContext
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
-        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
-            return
-        }
-
         val builder = ProtocolMessages.NewResponse.newBuilder().setStatus(status.type)
 
         message?.let {
