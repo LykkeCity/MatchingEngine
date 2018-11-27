@@ -664,6 +664,6 @@ open class TestApplicationContext {
                                           disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder,
                                           assetsPairsHolder: AssetsPairsHolder): MultiLimitOrderCancelService {
         return MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory,
-                applicationSettingsCache, disabledFunctionalityRulesHolder, assetsPairsHolder)
+                applicationSettingsCache, disabledFunctionalityRulesHolder)
     }
 }

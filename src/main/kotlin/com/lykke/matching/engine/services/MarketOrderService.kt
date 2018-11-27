@@ -84,7 +84,7 @@ class MarketOrderService @Autowired constructor(
         val feeInstruction: FeeInstruction?
         val feeInstructions: List<NewFeeInstruction>?
 
-        if (disabledFunctionalityRulesHolder.isDisabled(DisableFunctionalityRule(null, assetPair, MessageType.MARKET_ORDER))) {
+        if (disabledFunctionalityRulesHolder.isDisabled(DisableFunctionalityRule(null, assetPair.assetPairId, MessageType.MARKET_ORDER))) {
             writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }

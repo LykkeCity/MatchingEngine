@@ -66,7 +66,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
             return
         }
 
-        if (disabledFunctionalityRulesHolder.isDisabled(DisableFunctionalityRule(null, assetPair, MessageType.MULTI_LIMIT_ORDER))) {
+        if (disabledFunctionalityRulesHolder.isDisabled(DisableFunctionalityRule(null, assetPair.assetPairId, MessageType.MULTI_LIMIT_ORDER))) {
             writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }

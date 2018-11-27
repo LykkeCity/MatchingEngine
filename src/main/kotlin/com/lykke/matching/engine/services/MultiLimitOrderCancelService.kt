@@ -18,8 +18,7 @@ import java.util.Date
 class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOrderService,
                                    private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                    private val settings: ApplicationSettingsCache,
-                                   private val disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder,
-                                   private val assetsPairsHolder: AssetsPairsHolder) : AbstractService {
+                                   private val disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderCancelService::class.java.name)
@@ -32,7 +31,7 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
                 "assetPair: ${message.assetPairId}, isBuy: ${message.isBuy}")
 
         if (disabledFunctionalityRulesHolder.isDisabled(DisableFunctionalityRule(null,
-                        assetsPairsHolder.getAssetPair(message.assetPairId),
+                        message.assetPairId,
                         MessageType.MULTI_LIMIT_ORDER_CANCEL))) {
             writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return

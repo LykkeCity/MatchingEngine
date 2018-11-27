@@ -41,7 +41,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         }
         val message = getMessage(messageWrapper)
         val asset = assetsHolder.getAsset(message.assetId)
-        if (disabledFunctionalityRulesHolder.isDisabled(DisableFunctionalityRule(asset, null, MessageType.RESERVED_CASH_IN_OUT_OPERATION))) {
+        if (disabledFunctionalityRulesHolder.isDisabled(DisableFunctionalityRule(asset.assetId, null, MessageType.RESERVED_CASH_IN_OUT_OPERATION))) {
             writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }
