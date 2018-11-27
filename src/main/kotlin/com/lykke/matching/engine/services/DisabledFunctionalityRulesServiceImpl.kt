@@ -2,6 +2,8 @@ package com.lykke.matching.engine.services
 
 import com.google.gson.Gson
 import com.lykke.matching.engine.daos.DisabledFunctionalityRule
+import com.lykke.matching.engine.daos.converters.DisabledFunctionalityRulesConverter.Companion.toDisabledFunctionalityRule
+import com.lykke.matching.engine.daos.converters.DisabledFunctionalityRulesConverter.Companion.toDisabledFunctionalityRuleDto
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.services.validators.settings.impl.DisabledFunctionalitySettingValidator
@@ -36,6 +38,8 @@ class DisabledFunctionalityRulesServiceImpl : DisabledFunctionalityRulesService 
     }
 
     override fun update(id: String, rule: DisabledFunctionalityRuleDto) {
+        disabledFunctionalitySettingValidator.validate(rule)
+
         applicationSettingsService.createOrUpdateSetting(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES,
                 SettingDto(name = id,
                         value = gson.toJson(toDisabledFunctionalityRule(rule)),
@@ -50,7 +54,7 @@ class DisabledFunctionalityRulesServiceImpl : DisabledFunctionalityRulesService 
 
         settingsGroup?.let { settingsGroup ->
             settingsGroup.settings.forEach { setting ->
-                result.add(toDisabledFunctionalityRuleDto(gson.fromJson(setting.value, DisabledFunctionalityRule::class.java), setting.name, setting.timestamp, enabled))
+                result.add(toDisabledFunctionalityRuleDto(gson.fromJson(setting.value, DisabledFunctionalityRule::class.java), setting.name, setting.timestamp, setting.enabled))
             }
         }
 
@@ -79,30 +83,5 @@ class DisabledFunctionalityRulesServiceImpl : DisabledFunctionalityRulesService 
 
     override fun delete(id: String, deleteRequest: DeleteSettingRequestDto) {
         applicationSettingsService.deleteSetting(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES, id, deleteRequest)
-    }
-
-    fun toDisabledFunctionalityRule(disabledFunctionalityRuleDto: DisabledFunctionalityRuleDto): DisabledFunctionalityRule {
-        return disabledFunctionalityRuleDto.let { rule ->
-            DisabledFunctionalityRule(rule.assetId,
-                    rule.assetPairId,
-                    rule.messageTypeId?.let { MessageType.valueOf(it.toByte()) })
-        }
-    }
-
-    fun toDisabledFunctionalityRuleDto(rule: DisabledFunctionalityRule,
-                                       id: String?,
-                                       timestamp: Date?,
-                                       enabled: Boolean?,
-                                       comment: String? = null,
-                                       user: String? = null): DisabledFunctionalityRuleDto {
-        return DisabledFunctionalityRuleDto(
-                id = id,
-                assetId = rule.assetId,
-                assetPairId = rule.assetPairId,
-                messageTypeId = rule.messageType!!.type.toInt(),
-                enabled = enabled,
-                timestamp = timestamp,
-                comment = comment,
-                user = user)
     }
 }

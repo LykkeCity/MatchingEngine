@@ -10,6 +10,7 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
+import org.springframework.util.StringUtils
 import java.util.concurrent.ConcurrentHashMap
 import javax.annotation.PostConstruct
 
@@ -69,15 +70,21 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
     }
 
     private fun isRuleMatch(inputRequest: DisabledFunctionalityRule, disableRule: DisabledFunctionalityRule): Boolean {
-        val assetsPair = inputRequest.assetPairId?.let {
-            assetsPairsHolder.getAssetPair(inputRequest.assetPairId)
+        return (StringUtils.isEmpty(disableRule.assetId) || StringUtils.isEmpty(inputRequest.assetId) || inputRequest.assetId == disableRule.assetId)
+                && isAssetPairMatch(inputRequest.assetPairId, disableRule)
+                && (disableRule.messageType == null || inputRequest.messageType == null || inputRequest.messageType == disableRule.messageType)
+    }
+
+    private fun isAssetPairMatch(assetPairId: String?, disableRule: DisabledFunctionalityRule): Boolean {
+        if (StringUtils.isEmpty(assetPairId) || StringUtils.isEmpty(disableRule.assetId)) {
+            return true
         }
 
-        return (disableRule.assetId == null ||
-                inputRequest.assetId == disableRule.assetId
-                || assetsPair?.baseAssetId == disableRule.assetId
-                || assetsPair?.quotingAssetId == disableRule.assetId)
-                && (disableRule.assetPairId == null || inputRequest.assetPairId == disableRule.assetPairId)
-                && (disableRule.messageType == null || inputRequest.messageType == disableRule.messageType)
+        val assetPair = assetsPairsHolder.getAssetPair(assetPairId!!)
+
+        return assetPair.baseAssetId == disableRule.assetId
+                || assetPair.quotingAssetId == disableRule.assetId
+                || assetPairId == disableRule.assetPairId
     }
+
 }

@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.daos
 
-data class Asset(
+class Asset(
         val assetId: String,
         val accuracy: Int
 ){

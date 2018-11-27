@@ -2,6 +2,8 @@ package com.lykke.matching.engine.services.validators.settings.impl
 
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
+import com.lykke.matching.engine.daos.DisabledFunctionalityRule
+import com.lykke.matching.engine.daos.converters.DisabledFunctionalityRulesConverter.Companion.toDisabledFunctionalityRuleDto
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -16,7 +18,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class DisabledFunctionalitySettingValidator(val assetsHolder: AssetsHolder,
-                                            val assetsPairsHolder: AssetsPairsHolder): SettingValidator {
+                                            val assetsPairsHolder: AssetsPairsHolder) : SettingValidator {
 
     @Autowired
     private lateinit var gson: Gson
@@ -34,9 +36,9 @@ class DisabledFunctionalitySettingValidator(val assetsHolder: AssetsHolder,
 
     override fun validate(setting: SettingDto) {
         try {
-            val rule = gson.fromJson(setting.value, DisabledFunctionalityRuleDto::class.java)
-            validate(rule)
-        } catch(e: JsonSyntaxException) {
+            val rule = gson.fromJson(setting.value, DisabledFunctionalityRule::class.java)
+            validate(toDisabledFunctionalityRuleDto(rule))
+        } catch (e: JsonSyntaxException) {
             throw ValidationException(validationMessage = "Invalid json was supplied: ${e.message}")
         }
     }
@@ -50,18 +52,22 @@ class DisabledFunctionalitySettingValidator(val assetsHolder: AssetsHolder,
     }
 
     private fun validateAssetExist(rule: DisabledFunctionalityRuleDto) {
-        rule.assetId?.let {
-            if (assetsHolder.getAssetAllowNulls(it) == null) {
-                throw ValidationException(validationMessage = "Provided asset does not exist")
-            }
+        if (StringUtils.isEmpty(rule.assetId)) {
+            return
+        }
+
+        if (assetsHolder.getAssetAllowNulls(rule.assetId!!) == null) {
+            throw ValidationException(validationMessage = "Provided asset does not exist")
         }
     }
 
     private fun validateAssetPairIdExist(rule: DisabledFunctionalityRuleDto) {
-        rule.assetPairId?.let {
-            if (assetsPairsHolder.getAssetPairAllowNulls(it) == null) {
-                throw ValidationException(validationMessage = "Provided asset pair does not exist")
-            }
+        if (StringUtils.isEmpty(rule.assetPairId)) {
+            return
+        }
+
+        if (assetsPairsHolder.getAssetPairAllowNulls(rule.assetPairId!!) == null) {
+            throw ValidationException(validationMessage = "Provided asset pair does not exist")
         }
     }
 

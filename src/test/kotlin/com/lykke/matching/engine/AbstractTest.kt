@@ -151,9 +151,6 @@ abstract class AbstractTest {
     protected lateinit var limitOrderMassCancelService: LimitOrderMassCancelService
 
     @Autowired
-    protected lateinit var disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder
-
-    @Autowired
     protected lateinit var cashInOutOperationService: CashInOutOperationService
 
     @Autowired
@@ -167,6 +164,9 @@ abstract class AbstractTest {
     protected lateinit var executionDataApplyService: ExecutionDataApplyService
     @Autowired
     protected lateinit var previousLimitOrdersProcessor: PreviousLimitOrdersProcessor
+
+    @Autowired
+    protected lateinit var messageProcessingStatusHolder: MessageProcessingStatusHolder
 
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
@@ -192,7 +192,8 @@ abstract class AbstractTest {
 
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService,
                 genericLimitOrdersCancellerFactory,
-                applicationSettingsHolder)
+                applicationSettingsHolder,
+                messageProcessingStatusHolder)
     }
 
     protected fun clearMessageQueues() {

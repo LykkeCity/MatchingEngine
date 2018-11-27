@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.config
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
+import com.lykke.matching.engine.config.spring.JsonConfig
 import com.lykke.matching.engine.config.spring.QueueConfig
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
@@ -60,6 +61,7 @@ import com.lykke.matching.engine.services.validators.input.impl.CashTransferOper
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.input.LimitOrderCancelOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.settings.SettingValidator
+import com.lykke.matching.engine.services.validators.settings.impl.DisabledFunctionalitySettingValidator
 import com.lykke.matching.engine.services.validators.settings.impl.MessageProcessingSwitchSettingValidator
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
@@ -81,7 +83,7 @@ import java.util.concurrent.Executor
 import java.util.concurrent.LinkedBlockingQueue
 
 @Configuration
-@Import(QueueConfig::class, TestExecutionContext::class)
+@Import(QueueConfig::class, TestExecutionContext::class, JsonConfig::class)
 open class TestApplicationContext {
 
     @Bean
@@ -258,6 +260,11 @@ open class TestApplicationContext {
     }
 
     @Bean
+    open fun disabledFunctionality(assetsHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder): DisabledFunctionalitySettingValidator {
+        return DisabledFunctionalitySettingValidator(assetsHolder, assetsPairsHolder)
+    }
+
+    @Bean
     open fun cashInOutOperationService(balancesHolder: BalancesHolder,
                                        rabbitCashInOutQueue: BlockingQueue<CashOperation>,
                                        feeProcessor: FeeProcessor,
@@ -282,7 +289,7 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun assetPairsCache(testDictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor): AssetPairsCache {
+    open fun assetPairsCache(testDictionariesDatabaseAccessor: DictionariesDatabaseAccessor): AssetPairsCache {
         return AssetPairsCache(testDictionariesDatabaseAccessor)
     }
 
@@ -302,9 +309,9 @@ open class TestApplicationContext {
                                         assetsHolder: AssetsHolder,
                                         reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                         reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
-                                        disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder): ReservedCashInOutOperationService {
+                                        messageProcessingStatusHolder: MessageProcessingStatusHolder): ReservedCashInOutOperationService {
         return ReservedCashInOutOperationService(assetsHolder, balancesHolder, reservedCashOperationQueue,
-                reservedCashInOutOperationValidator, disabledFunctionalityRulesHolder)
+                reservedCashInOutOperationValidator, messageProcessingStatusHolder)
     }
 
     @Bean
@@ -360,7 +367,7 @@ open class TestApplicationContext {
                                     assetsPairsHolder: AssetsPairsHolder,
                                     balancesHolder: BalancesHolder,
                                     applicationSettingsHolder: ApplicationSettingsHolder,
-                                    disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder): MultiLimitOrderService {
+                                    messageProcessingStatusHolder: MessageProcessingStatusHolder): MultiLimitOrderService {
         return MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
@@ -370,7 +377,7 @@ open class TestApplicationContext {
                 assetsPairsHolder,
                 balancesHolder,
                 applicationSettingsHolder,
-                disabledFunctionalityRulesHolder)
+                messageProcessingStatusHolder)
     }
 
     @Bean
@@ -386,7 +393,7 @@ open class TestApplicationContext {
                                 messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                 messageSender: MessageSender,
                                 applicationSettingsHolder: ApplicationSettingsHolder,
-                                disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder): MarketOrderService {
+                                messageProcessingStatusHolder: MessageProcessingStatusHolder): MarketOrderService {
         return MarketOrderService(matchingEngine,
                 executionContextFactory,
                 stopOrderBookProcessor,
@@ -399,7 +406,7 @@ open class TestApplicationContext {
                 applicationSettingsHolder,
                 messageSequenceNumberHolder,
                 messageSender,
-                disabledFunctionalityRulesHolder)
+                messageProcessingStatusHolder)
     }
 
     @Bean
@@ -518,14 +525,12 @@ open class TestApplicationContext {
     open fun cashInOutPreprocessor(applicationContext: ApplicationContext,
                                    persistenceManager: PersistenceManager,
                                    processedMessagesCache: ProcessedMessagesCache,
-                                   messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                                   disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder): CashInOutPreprocessor {
+                                   messageProcessingStatusHolder: MessageProcessingStatusHolder): CashInOutPreprocessor {
         return CashInOutPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(),
                 Mockito.mock(CashOperationIdDatabaseAccessor::class.java),
                 persistenceManager,
                 processedMessagesCache,
-                messageProcessingStatusHolder,
-                disabledFunctionalityRulesHolder)
+                messageProcessingStatusHolder)
     }
 
     @Bean
@@ -540,8 +545,9 @@ open class TestApplicationContext {
 
     @Bean
     open fun messageProcessingStatusHolder(generalHealthMonitor: HealthMonitor,
-                                           applicationSettingsHolder: ApplicationSettingsHolder): MessageProcessingStatusHolder {
-        return MessageProcessingStatusHolder(generalHealthMonitor, applicationSettingsHolder)
+                                           applicationSettingsHolder: ApplicationSettingsHolder,
+                                           disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder): MessageProcessingStatusHolder {
+        return MessageProcessingStatusHolder(generalHealthMonitor, applicationSettingsHolder, disabledFunctionalityRulesHolder)
     }
 
     @Bean
@@ -622,8 +628,8 @@ open class TestApplicationContext {
                                      cancellerFactory: GenericLimitOrdersCancellerFactory,
                                      validator: LimitOrderCancelOperationBusinessValidator,
                                      limitOrdersCancelHelper: LimitOrdersCancelHelper,
-                                     persistenceManager: PersistenceManager): LimitOrderCancelService {
-        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelHelper, persistenceManager)
+                                     messageProcessingStatusHolder: MessageProcessingStatusHolder): LimitOrderCancelService {
+        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelHelper, messageProcessingStatusHolder)
     }
 
     @Bean
@@ -648,10 +654,10 @@ open class TestApplicationContext {
     open fun multiLimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService,
                                           genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                           applicationSettingsHolder: ApplicationSettingsHolder,
-                                          disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder,
+                                          messageProcessingStatusHolder: MessageProcessingStatusHolder,
                                           assetsPairsHolder: AssetsPairsHolder): MultiLimitOrderCancelService {
         return MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsHolder,
-                disabledFunctionalityRulesHolder, assetsPairsHolder)
+                messageProcessingStatusHolder)
     }
 
     @Bean
@@ -667,5 +673,10 @@ open class TestApplicationContext {
     @Bean
     open fun settingValidators(settingValidators: List<SettingValidator>): Map<AvailableSettingGroup, List<SettingValidator>> {
         return settingValidators.groupBy { it.getSettingGroup() }
+    }
+
+    @Bean
+    open fun disabledFunctionalityRulesService(): DisabledFunctionalityRulesService {
+        return DisabledFunctionalityRulesServiceImpl()
     }
 }
