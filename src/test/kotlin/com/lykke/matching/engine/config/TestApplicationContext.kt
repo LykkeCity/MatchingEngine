@@ -632,6 +632,16 @@ open class TestApplicationContext {
     }
 
     @Bean
+    open fun singleLimitOrderPreprocessor(limitOrderInputQueue: BlockingQueue<MessageWrapper>,
+                                          preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                                          @Qualifier("singleLimitOrderContextPreprocessorLogger")
+                                          logger: ThrottlingLogger): SingleLimitOrderPreprocessor {
+        return SingleLimitOrderPreprocessor(limitOrderInputQueue,
+                preProcessedMessageQueue,
+                logger)
+    }
+
+    @Bean
     open fun expiryOrdersQueue() = ExpiryOrdersQueue()
 
     @Bean
@@ -673,15 +683,5 @@ open class TestApplicationContext {
                                 midPriceHolder: MidPriceHolder,
                                 assetsHolder: AssetsHolder): ExecutionContextFactory {
         return ExecutionContextFactory(balancesHolder, genericLimitOrderService, genericStopLimitOrderService, midPriceHolder, assetsHolder)
-    }
-
-    @Bean
-    open fun singleLimitOrderPreprocessor(limitOrderInputQueue: BlockingQueue<MessageWrapper>,
-                                          preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
-                                          @Qualifier("singleLimitOrderContextPreprocessorLogger")
-                                          logger: ThrottlingLogger): SingleLimitOrderPreprocessor {
-        return SingleLimitOrderPreprocessor(limitOrderInputQueue,
-                preProcessedMessageQueue,
-                logger)
     }
 }
