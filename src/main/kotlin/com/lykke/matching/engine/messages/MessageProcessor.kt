@@ -100,6 +100,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         this.currentTransactionDataHolder = applicationContext.getBean(CurrentTransactionDataHolder::class.java)
 
+        this.currentTransactionDataHolder = applicationContext.getBean(CurrentTransactionDataHolder::class.java)
+
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
         this.applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
 
