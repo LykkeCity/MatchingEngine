@@ -7,10 +7,7 @@ import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
-import com.rabbitmq.client.BuiltinExchangeType
-import com.rabbitmq.client.Channel
-import com.rabbitmq.client.Connection
-import com.rabbitmq.client.ConnectionFactory
+import com.rabbitmq.client.*
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.BlockingQueue
@@ -29,7 +26,7 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
                                             private val applicationEventPublisher: ApplicationEventPublisher,
 
                                             /** null if do not need to log */
-                                               private val messageDatabaseLogger: DatabaseLogger<T>? = null) : Thread() {
+                                            private val messageDatabaseLogger: DatabaseLogger<T>? = null) : Thread() {
 
     companion object {
         private const val LOG_COUNT = 1000
@@ -43,6 +40,10 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
     private var totalPersistTime: Double = 0.0
     private var totalTime: Double = 0.0
 
+
+    @Volatile
+    private  var currentlyPublishedItem: T? = null
+
     private fun connect(): Boolean {
         val factory = ConnectionFactory()
         factory.setUri(uri)
@@ -51,6 +52,8 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
 
         try {
             this.connection = factory.newConnection(CONNECTION_NAME_FORMAT.format(appName, appVersion, exchangeName))
+            (this.connection as Connection).addBlockedListener(RmqBlockListener())
+
             this.channel = connection!!.createChannel()
             channel!!.exchangeDeclare(exchangeName, exchangeType, true)
 
@@ -117,6 +120,7 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
         tryConnectUntilSuccess()
         while (true) {
             val item = queue.take()
+            currentlyPublishedItem = item
             publish(item)
         }
     }
@@ -137,6 +141,19 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
                     " Persist: ${PrintUtils.convertToString(totalPersistTime)}, ${NumberUtils.roundForPrint2(100 * totalPersistTime / totalTime)} %")
             totalPersistTime = 0.0
             totalTime = 0.0
+        }
+    }
+
+    inner class RmqBlockListener: BlockedListener {
+        override fun handleBlocked(reason: String?) {
+            val message = "Rabbit mq publisher for queue $queueName received socket block signal from broker, reason: $reason"
+            LOGGER.error(message)
+            METRICS_LOGGER.logError(message)
+            publishFailureEvent(currentlyPublishedItem)
+        }
+
+        override fun handleUnblocked() {
+            publishRecoverEvent()
         }
     }
 }

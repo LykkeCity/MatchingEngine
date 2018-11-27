@@ -11,22 +11,18 @@ import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
-import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.QuotesUpdateHandler
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
-import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
-import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
-import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
@@ -81,6 +77,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val servicesMap: Map<MessageType, AbstractService>
     private val processedMessagesCache: ProcessedMessagesCache
 
+    private var currentTransactionDataHolder: CurrentTransactionDataHolder
+
     private var bestPriceBuilder: Timer? = null
     private var candlesBuilder: Timer? = null
     private var hoursCandlesBuilder: Timer? = null
@@ -113,6 +111,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         balanceUpdateHandler = applicationContext.getBean(BalanceUpdateHandler::class.java)
 
+        this.currentTransactionDataHolder = applicationContext.getBean(CurrentTransactionDataHolder::class.java)
+
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
         this.applicationSettingsHolder = applicationContext.getBean(ApplicationSettingsHolder::class.java)
 
@@ -120,20 +120,15 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         val genericStopLimitOrderService = applicationContext.getBean(GenericStopLimitOrderService::class.java)
 
         this.multiLimitOrderService = applicationContext.getBean(MultiLimitOrderService::class.java)
+        this.singleLimitOrderService = applicationContext.getBean(SingleLimitOrderService::class.java)
 
         val genericLimitOrdersCancellerFactory = applicationContext.getBean(GenericLimitOrdersCancellerFactory::class.java)
-        val executionContextFactory = applicationContext.getBean(ExecutionContextFactory::class.java)
 
         this.cashOperationService = applicationContext.getBean(CashOperationService::class.java)
         this.cashInOutOperationService = applicationContext.getBean(CashInOutOperationService::class.java)
         this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
         this.cashTransferOperationService = applicationContext.getBean(CashTransferOperationService::class.java)
         this.cashSwapOperationService = applicationContext.getBean(CashSwapOperationService::class.java)
-        this.singleLimitOrderService = SingleLimitOrderService(executionContextFactory,
-                applicationContext.getBean(GenericLimitOrdersProcessor::class.java),
-                applicationContext.getBean(StopOrderBookProcessor::class.java),
-                applicationContext.getBean(ExecutionDataApplyService::class.java),
-                applicationContext.getBean(PreviousLimitOrdersProcessor::class.java))
 
         this.marketOrderService = applicationContext.getBean(MarketOrderService::class.java)
 
@@ -204,6 +199,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 return
             }
 
+            currentTransactionDataHolder.setMessageType(messageType)
+
             val service = servicesMap[messageType]
 
             if (service == null) {
@@ -261,11 +258,30 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
             val endTime = System.nanoTime()
 
-            performanceStatsHolder.addMessage(message.type, endTime - message.startTimestamp, endTime - startTime)
+            recordPerformanceStats(message, startTime, endTime)
         } catch (exception: Exception) {
             LOGGER.error("[${message.sourceIp}]: Got error during message processing: ${exception.message}", exception)
             METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message processing", exception)
         }
+    }
+
+    private fun recordPerformanceStats(messageWrapper: MessageWrapper, startMessageProcessingTime: Long, endMessageProcessingTime: Long) {
+        val totalTime = endMessageProcessingTime - messageWrapper.startTimestamp
+        val processingTime = endMessageProcessingTime - startMessageProcessingTime
+
+        val inputQueueTime = messageWrapper.messagePreProcessorStartTimestamp?.let {
+            it - messageWrapper.startTimestamp
+        }
+
+        val preProcessingTime = messageWrapper.messagePreProcessorStartTimestamp?.let {
+            messageWrapper.messagePreProcessorEndTimestamp!! - it
+        }
+
+        val preProcessedMessageQueueStartTime = messageWrapper.messagePreProcessorEndTimestamp
+                ?: messageWrapper.startTimestamp
+        val preProcessedMessageQueueTime = startMessageProcessingTime - preProcessedMessageQueueStartTime
+
+        performanceStatsHolder.addMessage(messageWrapper.type, inputQueueTime, preProcessedMessageQueueTime, preProcessingTime, processingTime, totalTime)
     }
 
     private fun initServicesMap(): Map<MessageType, AbstractService> {

@@ -21,6 +21,7 @@ import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocesso
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPreprocessor
 import com.lykke.matching.engine.matching.MatchingEngine
+import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
@@ -334,6 +335,19 @@ open class TestApplicationContext {
     }
 
     @Bean
+    open fun singleLimitOrderService(executionContextFactory: ExecutionContextFactory,
+                                     genericLimitOrdersProcessor: GenericLimitOrdersProcessor,
+                                     stopOrderBookProcessor: StopOrderBookProcessor,
+                                     executionDataApplyService: ExecutionDataApplyService,
+                                     previousLimitOrdersProcessor: PreviousLimitOrdersProcessor): SingleLimitOrderService {
+        return SingleLimitOrderService(executionContextFactory,
+                genericLimitOrdersProcessor,
+                stopOrderBookProcessor,
+                executionDataApplyService,
+                previousLimitOrdersProcessor)
+    }
+
+    @Bean
     open fun multiLimitOrderService(genericLimitOrdersProcessor: GenericLimitOrdersProcessor,
                                     executionContextFactory: ExecutionContextFactory,
                                     previousLimitOrdersProcessor: PreviousLimitOrdersProcessor,
@@ -641,5 +655,15 @@ open class TestApplicationContext {
                                           genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                           applicationSettingsHolder: ApplicationSettingsHolder): MultiLimitOrderCancelService {
         return MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsHolder)
+    }
+
+    @Bean
+    open fun singleLimitOrderPreprocessor(limitOrderInputQueue: BlockingQueue<MessageWrapper>,
+                                          preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                                          @Qualifier("singleLimitOrderContextPreprocessorLogger")
+                                          logger: ThrottlingLogger): SingleLimitOrderPreprocessor {
+        return SingleLimitOrderPreprocessor(limitOrderInputQueue,
+                preProcessedMessageQueue,
+                logger)
     }
 }
