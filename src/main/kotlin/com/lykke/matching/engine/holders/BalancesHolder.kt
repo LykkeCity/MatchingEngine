@@ -43,6 +43,10 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         initialBalancesCount = wallets.values.sumBy { it.balances.size }
     }
 
+    fun clientExists(clientId: String): Boolean {
+        return wallets.containsKey(clientId)
+    }
+
     fun getBalances(clientId: String): Map<String, AssetBalance> {
         val wallet = wallets[clientId]
         return wallet?.balances ?: emptyMap()
