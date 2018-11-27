@@ -1,10 +1,9 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.DisableFunctionalityRule
+import com.lykke.matching.engine.daos.DisabledFunctionalityRule
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.DisabledFunctionalityRulesHolder
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -18,8 +17,7 @@ import java.util.Date
 class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOrderService,
                                    private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                    private val applicationSettingsHolder: ApplicationSettingsHolder,
-                                   private val disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder,
-                                   private val assetsPairsHolder: AssetsPairsHolder) : AbstractService {
+                                   private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderCancelService::class.java.name)
@@ -31,7 +29,7 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
                 "message id: ${messageWrapper.messageId}, id: ${message.uid}, ${message.clientId}, " +
                 "assetPair: ${message.assetPairId}, isBuy: ${message.isBuy}")
 
-        if (disabledFunctionalityRulesHolder.isDisabled(DisableFunctionalityRule(null,
+        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(DisabledFunctionalityRule(null,
                         message.assetPairId,
                         MessageType.MULTI_LIMIT_ORDER_CANCEL))) {
             writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)

@@ -2,7 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.DisableFunctionalityRule
+import com.lykke.matching.engine.daos.DisabledFunctionalityRule
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.MultiLimitOrder
 import com.lykke.matching.engine.daos.order.LimitOrderType
@@ -20,8 +20,8 @@ import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.holders.DisabledFunctionalityRulesHolder
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
@@ -44,7 +44,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                              private val assetsPairsHolder: AssetsPairsHolder,
                              private val balancesHolder: BalancesHolder,
                              private val applicationSettingsHolder: ApplicationSettingsHolder,
-                             private val disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder) : AbstractService {
+                             private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
@@ -66,8 +66,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
             return
         }
 
-
-        if (disabledFunctionalityRulesHolder.isDisabled(DisableFunctionalityRule(null, assetPair, MessageType.MULTI_LIMIT_ORDER))) {
+        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(DisabledFunctionalityRule(null, assetPair.assetPairId, MessageType.MULTI_LIMIT_ORDER))) {
             writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }

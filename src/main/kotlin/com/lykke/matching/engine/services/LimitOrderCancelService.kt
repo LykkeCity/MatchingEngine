@@ -7,6 +7,7 @@ import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -24,6 +25,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                               private val genericStopLimitOrderService: GenericStopLimitOrderService,
                               private val validator: LimitOrderCancelOperationBusinessValidator,
                               private val limitOrdersCancelHelper: LimitOrdersCancelHelper,
+                              private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
                               private val persistenceManager: PersistenceManager) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
@@ -39,21 +41,26 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         }
 
         LOGGER.debug("Got limit order cancel request (id: ${context.uid}, orders: ${context.limitOrderIds})")
-        val typeToOrder = getLimitOrderTypeToLimitOrders(context.limitOrderIds)
+        val ordersByType = getLimitOrderTypeToLimitOrders(context.limitOrderIds)
 
         try {
-            validator.performValidation(typeToOrder, context)
+            validator.performValidation(ordersByType, context)
         } catch (e: ValidationException) {
             LOGGER.info("Business validation failed: ${context.messageId}, details: ${e.message}")
             writeResponse(messageWrapper, MessageStatusUtils.toMessageStatus(e.validationType))
             return
         }
 
+        if (isMessageProcessingDisabled(ordersByType)) {
+            writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+            return
+        }
+
         val updateSuccessful = limitOrdersCancelHelper.cancelOrders(LimitOrdersCancelHelper.CancelRequest(context.uid,
                 context.messageId,
                 context.messageType,
-                typeToOrder[LimitOrderType.LIMIT],
-                typeToOrder[LimitOrderType.STOP_LIMIT], now, context.processedMessage, false,
+                ordersByType[LimitOrderType.LIMIT],
+                ordersByType[LimitOrderType.STOP_LIMIT], now, context.processedMessage, false,
                 messageWrapper))
 
 
@@ -102,5 +109,16 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
             }
         }
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
+    }
+
+    private fun isMessageProcessingDisabled(ordersByType: Map<LimitOrderType, List<LimitOrder>>): Boolean {
+        return ordersByType
+                .values
+                .flatMap { it }
+                .map {it.assetPairId}
+                .toSet()
+                .any {
+                    !messageProcessingStatusHolder.isMessageProcessingEnabled(DisabledFunctionalityRule(null, it, MessageType.LIMIT_ORDER_CANCEL))
+                }
     }
 }

@@ -1,12 +1,12 @@
 package com.lykke.matching.engine.holders
 
-import com.lykke.matching.engine.daos.DisableFunctionalityRule
+import com.google.gson.Gson
+import com.lykke.matching.engine.daos.DisabledFunctionalityRule
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.cache.ApplicationGroupDeleteEvent
 import com.lykke.matching.engine.database.cache.ApplicationSettingDeleteEvent
 import com.lykke.matching.engine.database.cache.ApplicationSettingUpdateEvent
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import org.nustaq.serialization.FSTConfiguration
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
@@ -15,26 +15,28 @@ import javax.annotation.PostConstruct
 
 @Component
 class DisabledFunctionalityRulesHolder(val applicationSettingsCache: ApplicationSettingsCache) {
-    private val disabledFunctionalityRules = ConcurrentHashMap.newKeySet<DisableFunctionalityRule>()
-    private val conf = FSTConfiguration.createJsonConfiguration()
+    private val disabledFunctionalityRules = ConcurrentHashMap.newKeySet<DisabledFunctionalityRule>()
+
+    @Autowired
+    private lateinit var gson: Gson
 
     @Autowired
     private lateinit var assetsPairsHolder: AssetsPairsHolder
 
-    fun isDisabled(rule: DisableFunctionalityRule): Boolean {
+    fun isDisabled(rule: DisabledFunctionalityRule): Boolean {
         if (rule.isEmpty() || disabledFunctionalityRules.isEmpty()) {
             return false
         }
 
-        return disabledFunctionalityRules.count {
+        return disabledFunctionalityRules.any {
             isRuleMatch(rule, it)
-        } > 0
+        }
     }
 
     @PostConstruct
     private fun init() {
         applicationSettingsCache.getSettingsGroup(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES, true)?.settings?.forEach {
-            disabledFunctionalityRules.add(conf.asObject(it.value.toByteArray()) as DisableFunctionalityRule)
+            disabledFunctionalityRules.add(gson.fromJson(it.value, DisabledFunctionalityRule::class.java))
         }
     }
 
@@ -45,7 +47,7 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
             return
         }
 
-        disabledFunctionalityRules.add(conf.asObject(setting.value.toByteArray()) as DisableFunctionalityRule)
+        disabledFunctionalityRules.add(gson.fromJson(setting.value, DisabledFunctionalityRule::class.java))
     }
 
     @EventListener
@@ -54,7 +56,7 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
             return
         }
 
-        disabledFunctionalityRules.remove(conf.asObject(applicationSettingDeleteEvent.setting.value.toByteArray()) as DisableFunctionalityRule)
+        disabledFunctionalityRules.remove(gson.fromJson(applicationSettingDeleteEvent.setting.value, DisabledFunctionalityRule::class.java))
     }
 
     @EventListener
@@ -66,8 +68,8 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
         disabledFunctionalityRules.clear()
     }
 
-    private fun isRuleMatch(inputRequest: DisableFunctionalityRule, disableRule: DisableFunctionalityRule): Boolean {
-        var assetsPair = inputRequest.assetPairId?.let {
+    private fun isRuleMatch(inputRequest: DisabledFunctionalityRule, disableRule: DisabledFunctionalityRule): Boolean {
+        val assetsPair = inputRequest.assetPairId?.let {
             assetsPairsHolder.getAssetPair(inputRequest.assetPairId)
         }
 

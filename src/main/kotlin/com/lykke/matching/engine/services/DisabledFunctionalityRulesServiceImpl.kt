@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.services
 
 import com.google.gson.Gson
-import com.lykke.matching.engine.daos.DisableFunctionalityRule
+import com.lykke.matching.engine.daos.DisabledFunctionalityRule
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.services.validators.settings.impl.DisabledFunctionalitySettingValidator
@@ -48,9 +48,9 @@ class DisabledFunctionalityRulesServiceImpl : DisabledFunctionalityRulesService 
         val result = ArrayList<DisabledFunctionalityRuleDto>()
         val settingsGroup = applicationSettingsService.getSettingsGroup(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES, enabled)
 
-        settingsGroup?.let {
-            it.settings.forEach {
-                result.add(toDisabledFunctionalityRuleDto(gson.toJson(it.value.toByteArray()) as DisableFunctionalityRule, it.name, it.timestamp, enabled))
+        settingsGroup?.let { settingsGroup ->
+            settingsGroup.settings.forEach { setting ->
+                result.add(toDisabledFunctionalityRuleDto(gson.fromJson(setting.value, DisabledFunctionalityRule::class.java), setting.name, setting.timestamp, enabled))
             }
         }
 
@@ -59,7 +59,7 @@ class DisabledFunctionalityRulesServiceImpl : DisabledFunctionalityRulesService 
 
     override fun get(id: String, enabled: Boolean?): DisabledFunctionalityRuleDto? {
         return applicationSettingsService.getSetting(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES, id, enabled)?.let {
-            toDisabledFunctionalityRuleDto(gson.toJson(it.value.toByteArray()) as DisableFunctionalityRule, it.name, it.timestamp, it.enabled)
+            toDisabledFunctionalityRuleDto(gson.fromJson(it.value, DisabledFunctionalityRule::class.java), it.name, it.timestamp, it.enabled)
         }
     }
 
@@ -68,7 +68,7 @@ class DisabledFunctionalityRulesServiceImpl : DisabledFunctionalityRulesService 
 
         return historyRecords
                 .map {
-                    toDisabledFunctionalityRuleDto(gson.toJson(it.value.toByteArray()) as DisableFunctionalityRule,
+                    toDisabledFunctionalityRuleDto(gson.fromJson(it.value, DisabledFunctionalityRule::class.java),
                             it.name,
                             it.timestamp,
                             it.enabled,
@@ -81,15 +81,15 @@ class DisabledFunctionalityRulesServiceImpl : DisabledFunctionalityRulesService 
         applicationSettingsService.deleteSetting(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES, id, deleteRequest)
     }
 
-    fun toDisabledFunctionalityRule(disabledFunctionalityRuleDto: DisabledFunctionalityRuleDto): DisableFunctionalityRule {
+    fun toDisabledFunctionalityRule(disabledFunctionalityRuleDto: DisabledFunctionalityRuleDto): DisabledFunctionalityRule {
         return disabledFunctionalityRuleDto.let { rule ->
-            DisableFunctionalityRule(rule.assetId?.let { it },
-                    rule.assetPairId?.let { it },
+            DisabledFunctionalityRule(rule.assetId,
+                    rule.assetPairId,
                     rule.messageTypeId?.let { MessageType.valueOf(it.toByte()) })
         }
     }
 
-    fun toDisabledFunctionalityRuleDto(rule: DisableFunctionalityRule,
+    fun toDisabledFunctionalityRuleDto(rule: DisabledFunctionalityRule,
                                        id: String?,
                                        timestamp: Date?,
                                        enabled: Boolean?,

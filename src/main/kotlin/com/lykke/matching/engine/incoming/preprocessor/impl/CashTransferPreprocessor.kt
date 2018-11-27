@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
+import com.lykke.matching.engine.daos.DisabledFunctionalityRule
 import com.lykke.matching.engine.daos.context.CashTransferContext
 import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
@@ -12,6 +13,7 @@ import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.DUPLICATE
 import com.lykke.matching.engine.messages.MessageStatus.RUNTIME
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.impl.ValidationException
@@ -49,7 +51,7 @@ class CashTransferPreprocessor(
     override fun preProcess(messageWrapper: MessageWrapper) {
         val cashTransferParsedData = contextParser.parse(messageWrapper)
 
-        if (!messageProcessingStatusHolder.isMessageSwitchEnabled()) {
+        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(DisabledFunctionalityRule(cashTransferParsedData.assetId, null, MessageType.CASH_TRANSFER_OPERATION))) {
             writeResponse(cashTransferParsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }
