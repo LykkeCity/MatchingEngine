@@ -192,9 +192,7 @@ abstract class AbstractTest {
 
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService,
                 genericLimitOrdersCancellerFactory,
-                applicationSettingsHolder,
-                disabledFunctionalityRulesHolder,
-                AssetsPairsHolder(assetPairsCache))
+                applicationSettingsHolder)
     }
 
     protected fun clearMessageQueues() {

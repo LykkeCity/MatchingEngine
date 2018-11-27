@@ -2,9 +2,9 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.DisableFunctionalityRule
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.DisabledFunctionalityRulesHolder
-import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -32,7 +32,7 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
                 "assetPair: ${message.assetPairId}, isBuy: ${message.isBuy}")
 
         if (disabledFunctionalityRulesHolder.isDisabled(DisableFunctionalityRule(null,
-                        assetsPairsHolder.getAssetPair(message.assetPairId),
+                        message.assetPairId,
                         MessageType.MULTI_LIMIT_ORDER_CANCEL))) {
             writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return

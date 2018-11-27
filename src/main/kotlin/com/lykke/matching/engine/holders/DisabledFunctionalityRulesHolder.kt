@@ -7,6 +7,7 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingDeleteEvent
 import com.lykke.matching.engine.database.cache.ApplicationSettingUpdateEvent
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import org.nustaq.serialization.FSTConfiguration
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
@@ -16,6 +17,9 @@ import javax.annotation.PostConstruct
 class DisabledFunctionalityRulesHolder(val applicationSettingsCache: ApplicationSettingsCache) {
     private val disabledFunctionalityRules = ConcurrentHashMap.newKeySet<DisableFunctionalityRule>()
     private val conf = FSTConfiguration.createJsonConfiguration()
+
+    @Autowired
+    private lateinit var assetsPairsHolder: AssetsPairsHolder
 
     fun isDisabled(rule: DisableFunctionalityRule): Boolean {
         if (rule.isEmpty() || disabledFunctionalityRules.isEmpty()) {
@@ -63,11 +67,15 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
     }
 
     private fun isRuleMatch(inputRequest: DisableFunctionalityRule, disableRule: DisableFunctionalityRule): Boolean {
-        return (disableRule.asset == null ||
-                inputRequest.asset == disableRule.asset
-                || inputRequest.assetPair?.baseAssetId == disableRule.asset.assetId
-                || inputRequest.assetPair?.quotingAssetId == disableRule.asset.assetId)
-                && (disableRule.assetPair == null || inputRequest.assetPair == disableRule.assetPair)
+        var assetsPair = inputRequest.assetPairId?.let {
+            assetsPairsHolder.getAssetPair(inputRequest.assetPairId)
+        }
+
+        return (disableRule.assetId == null ||
+                inputRequest.assetId == disableRule.assetId
+                || assetsPair?.baseAssetId == disableRule.assetId
+                || assetsPair?.quotingAssetId == disableRule.assetId)
+                && (disableRule.assetPairId == null || inputRequest.assetPairId == disableRule.assetPairId)
                 && (disableRule.messageType == null || inputRequest.messageType == disableRule.messageType)
     }
 }

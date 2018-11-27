@@ -12,7 +12,7 @@ data class AssetPair(
         val minInvertedVolume: BigDecimal? = null,
         val maxVolume: BigDecimal? = null,
         val maxValue: BigDecimal? = null
-): Serializable {
+) {
     override fun toString(): String {
         return "AssetPair(" +
                 "assetPairId='$assetPairId', " +
