@@ -58,7 +58,9 @@ class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContext
         while (true) {
             val messageWrapper = limitOrderCancelInputQueue.take()
             try {
+                messageWrapper.messagePreProcessorStartTimestamp = System.nanoTime()
                 preProcess(messageWrapper)
+                messageWrapper.messagePreProcessorEndTimestamp = System.nanoTime()
             } catch (e: Exception) {
                 handlePreprocessingException(e, messageWrapper)
             }

@@ -72,11 +72,13 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
 
     override fun run() {
         while (true) {
-            val message = limitOrderInputQueue.take()
+            val messageWrapper = limitOrderInputQueue.take()
             try {
-                preProcess(message)
+                messageWrapper.messagePreProcessorStartTimestamp = System.nanoTime()
+                preProcess(messageWrapper)
+                messageWrapper.messagePreProcessorEndTimestamp = System.nanoTime()
             } catch (exception: Exception) {
-                handlePreprocessingException(exception, message)
+                handlePreprocessingException(exception, messageWrapper)
             }
         }
     }
