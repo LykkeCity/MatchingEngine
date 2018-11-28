@@ -39,7 +39,7 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
         val settings = settingsByGroup.getOrPut(settingGroup) { HashSet() }
         val settingToAdd = Setting(settingName, value, enabled)
         settings.add(settingToAdd)
-        applicationEventPublisher.publishEvent(ApplicationSettingUpdateEvent(settingGroup, settingToAdd))
+        applicationEventPublisher.publishEvent(ApplicationSettingCreateOrUpdateEvent(settingGroup, settingToAdd))
     }
 
     @Synchronized
@@ -50,11 +50,10 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
             settings.remove(settingToRemove)
             applicationEventPublisher.publishEvent(ApplicationSettingDeleteEvent(settingGroup, settingToRemove))
         }
+
         if (CollectionUtils.isEmpty(settings)) {
             settingsByGroup.remove(settingGroup)
         }
-
-        applicationEventPublisher.publishEvent(ApplicationSettingDeleteEvent(settingGroup, setting))
     }
 
     @Synchronized
