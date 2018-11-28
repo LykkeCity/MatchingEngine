@@ -5,7 +5,8 @@ import com.lykke.matching.engine.daos.DisabledFunctionalityRule
 import com.lykke.matching.engine.daos.converters.DisabledFunctionalityRulesConverter.Companion.toDisabledFunctionalityRule
 import com.lykke.matching.engine.daos.converters.DisabledFunctionalityRulesConverter.Companion.toDisabledFunctionalityRuleDto
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
-import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.daos.setting.DisabledFunctionalityRuleNotFoundException
+import com.lykke.matching.engine.daos.setting.SettingNotFoundException
 import com.lykke.matching.engine.services.validators.settings.impl.DisabledFunctionalitySettingValidator
 import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
 import com.lykke.matching.engine.web.dto.DisabledFunctionalityRuleDto
@@ -40,6 +41,10 @@ class DisabledFunctionalityRulesServiceImpl : DisabledFunctionalityRulesService 
     override fun update(id: String, rule: DisabledFunctionalityRuleDto) {
         disabledFunctionalitySettingValidator.validate(rule)
 
+        if (applicationSettingsService.getSetting(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES, id) == null) {
+            throw DisabledFunctionalityRuleNotFoundException(id)
+        }
+
         applicationSettingsService.createOrUpdateSetting(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES,
                 SettingDto(name = id,
                         value = gson.toJson(toDisabledFunctionalityRule(rule)),
@@ -61,14 +66,18 @@ class DisabledFunctionalityRulesServiceImpl : DisabledFunctionalityRulesService 
         return result
     }
 
-    override fun get(id: String, enabled: Boolean?): DisabledFunctionalityRuleDto? {
-        return applicationSettingsService.getSetting(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES, id, enabled)?.let {
+    override fun get(id: String): DisabledFunctionalityRuleDto? {
+        return applicationSettingsService.getSetting(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES, id)?.let {
             toDisabledFunctionalityRuleDto(gson.fromJson(it.value, DisabledFunctionalityRule::class.java), it.name, it.timestamp, it.enabled)
         }
     }
 
     override fun history(id: String): List<DisabledFunctionalityRuleDto> {
-        val historyRecords = applicationSettingsService.getHistoryRecords(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES.settingGroupName, id)
+        val historyRecords = try {
+            applicationSettingsService.getHistoryRecords(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES.settingGroupName, id)
+        } catch (e: SettingNotFoundException) {
+            throw DisabledFunctionalityRuleNotFoundException(id)
+        }
 
         return historyRecords
                 .map {
@@ -79,9 +88,14 @@ class DisabledFunctionalityRulesServiceImpl : DisabledFunctionalityRulesService 
                             it.user,
                             it.comment)
                 }
+                .sortedByDescending { it.timestamp }
     }
 
     override fun delete(id: String, deleteRequest: DeleteSettingRequestDto) {
-        applicationSettingsService.deleteSetting(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES, id, deleteRequest)
+        try {
+            applicationSettingsService.deleteSetting(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES, id, deleteRequest)
+        } catch(e: SettingNotFoundException) {
+            throw DisabledFunctionalityRuleNotFoundException(e.settingName)
+        }
     }
 }

@@ -7,7 +7,7 @@ interface DisabledFunctionalityRulesService {
     fun create(rule: DisabledFunctionalityRuleDto)
     fun update(id: String, rule: DisabledFunctionalityRuleDto)
     fun getAll(enabled: Boolean? = null): List<DisabledFunctionalityRuleDto>
-    fun get(id: String, enabled: Boolean? = null): DisabledFunctionalityRuleDto?
+    fun get(id: String): DisabledFunctionalityRuleDto?
     fun history(id: String): List<DisabledFunctionalityRuleDto>
     fun delete(id: String, deleteRequest: DeleteSettingRequestDto)
 }
