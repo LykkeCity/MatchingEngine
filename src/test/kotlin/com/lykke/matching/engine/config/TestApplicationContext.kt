@@ -283,13 +283,15 @@ open class TestApplicationContext {
                                         reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                         reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
                                         messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                        messageSender: MessageSender): ReservedCashInOutOperationService {
+                                        messageSender: MessageSender,
+                                        messageProcessingStatusHolder: MessageProcessingStatusHolder): ReservedCashInOutOperationService {
         return ReservedCashInOutOperationService(assetsHolder,
                 balancesHolder,
                 reservedCashOperationQueue,
                 reservedCashInOutOperationValidator,
                 messageSequenceNumberHolder,
-                messageSender)
+                messageSender,
+                messageProcessingStatusHolder)
     }
 
     @Bean

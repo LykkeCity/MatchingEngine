@@ -8,6 +8,8 @@ import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.holders.MidPriceHolder
+import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExecutionEventSender
@@ -49,10 +51,12 @@ open class TestExecutionContext {
     open fun executionContextFactory(balancesHolder: BalancesHolder,
                                      genericLimitOrderService: GenericLimitOrderService,
                                      genericStopLimitOrderService: GenericStopLimitOrderService,
+                                     midPriceHolder: MidPriceHolder,
                                      assetsHolder: AssetsHolder): ExecutionContextFactory {
         return ExecutionContextFactory(balancesHolder,
                 genericLimitOrderService,
                 genericStopLimitOrderService,
+                midPriceHolder,
                 assetsHolder)
     }
 
@@ -99,11 +103,13 @@ open class TestExecutionContext {
                                  limitOrderBusinessValidator: LimitOrderBusinessValidator,
                                  applicationSettingsHolder: ApplicationSettingsHolder,
                                  matchingEngine: MatchingEngine,
+                                 priveDeviationThresholdHolder: PriceDeviationThresholdHolder,
                                  matchingResultHandlingHelper: MatchingResultHandlingHelper): LimitOrderProcessor {
         return LimitOrderProcessor(limitOrderInputValidator,
                 limitOrderBusinessValidator,
                 applicationSettingsHolder,
                 matchingEngine,
+                priveDeviationThresholdHolder,
                 matchingResultHandlingHelper)
     }
 
