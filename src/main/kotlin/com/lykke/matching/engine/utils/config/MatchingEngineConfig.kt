@@ -40,5 +40,6 @@ data class MatchingEngineConfig(
         val writeBalancesToSecondaryDb: Boolean,
         val ordersMigration: Boolean,
         val writeOrdersToSecondaryDb: Boolean,
-        val referenceMidPricePeriod: Long
+        val referenceMidPricePeriod: Long,
+        val disableMarketHistory: Boolean?
 )

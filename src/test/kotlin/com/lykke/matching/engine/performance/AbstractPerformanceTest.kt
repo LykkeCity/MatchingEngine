@@ -35,6 +35,7 @@ import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputV
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.monitoring.OrderBookMidPriceChecker
 import com.lykke.utils.logging.ThrottlingLogger
+import java.util.Optional
 import java.util.concurrent.LinkedBlockingQueue
 
 abstract class AbstractPerformanceTest {
@@ -138,7 +139,7 @@ abstract class AbstractPerformanceTest {
 
         expiryOrdersQueue = ExpiryOrdersQueue()
         genericLimitOrderService = GenericLimitOrderService(ordersDatabaseAccessorsHolder,
-                tradeInfoQueue,
+                Optional.of(tradeInfoQueue),
                 expiryOrdersQueue)
 
         feeProcessor = FeeProcessor(assetsHolder, assetsPairsHolder, genericLimitOrderService)

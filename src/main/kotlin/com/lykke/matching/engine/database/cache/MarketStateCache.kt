@@ -5,17 +5,13 @@ import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.history.TickBlobHolder
 import com.lykke.utils.logging.PerformanceLogger
 import org.apache.log4j.Logger
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.function.Consumer
 import java.util.stream.Collectors
 import kotlin.collections.HashMap
 
-@Component
-class MarketStateCache @Autowired constructor (private val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor,
-                                                   @Value("\${application.tick.frequency}") private val frequency: Long) {
+class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor,
+                       private val frequency: Long) {
 
     companion object {
         private val performanceLogger = PerformanceLogger(Logger.getLogger("marketStateCache"), 10, "buildTicks: ")
