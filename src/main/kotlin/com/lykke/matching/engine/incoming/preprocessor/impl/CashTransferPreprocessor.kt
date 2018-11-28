@@ -68,7 +68,9 @@ class CashTransferPreprocessor(
             return
         }
 
-        performDeduplicationCheck(cashTransferParsedData)
+        if (!isMessageDuplicated(cashTransferParsedData)) {
+            preProcessedMessageQueue.put(messageWrapper)
+        }
     }
 
     fun validateData(cashTransferParsedData: CashTransferParsedData): Boolean {
@@ -103,7 +105,7 @@ class CashTransferPreprocessor(
         }
     }
 
-    private fun performDeduplicationCheck(cashTransferParsedData: CashTransferParsedData) {
+    private fun isMessageDuplicated(cashTransferParsedData: CashTransferParsedData): Boolean {
         val parsedMessageWrapper = cashTransferParsedData.messageWrapper
         val context = parsedMessageWrapper.context as CashTransferContext
 
@@ -111,9 +113,9 @@ class CashTransferPreprocessor(
             writeResponse(parsedMessageWrapper, DUPLICATE)
             LOGGER.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
             METRICS_LOGGER.logError("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
-        } else {
-            preProcessedMessageQueue.put(parsedMessageWrapper)
+            return true
         }
+        return false
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
@@ -135,11 +137,13 @@ class CashTransferPreprocessor(
 
     override fun run() {
         while (true) {
-            val message = cashTransferInputQueue.take()
+            val messageWrapper = cashTransferInputQueue.take()
             try {
-                preProcess(message)
+                messageWrapper.messagePreProcessorStartTimestamp = System.nanoTime()
+                preProcess(messageWrapper)
+                messageWrapper.messagePreProcessorEndTimestamp = System.nanoTime()
             } catch (exception: Exception) {
-                handlePreprocessingException(exception, message)
+                handlePreprocessingException(exception, messageWrapper)
             }
         }
     }

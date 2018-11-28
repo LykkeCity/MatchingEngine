@@ -5,11 +5,25 @@ import java.util.Date
 class TypePerformanceStats(
         val timestamp: Date,
         val type: String,
-        val totalTime: String,
+        val inputQueueTime: String?,
+        val preProcessingTime: String?,
+        val preProcessedMessageQueueTime: String,
         val processingTime: String,
-        val count: Long
+        val persistTime: String,
+        val totalTime: String,
+        val count: Long,
+        val persistCount: Long
 ) {
     override fun toString(): String {
-        return "TypePerformanceStats(timestamp=$timestamp, type='$type', totalTime='$totalTime', processingTime='$processingTime', count=$count)"
+        return "TypePerformanceStats(timestamp=$timestamp, " +
+                "type='$type', " +
+                "inputQueueTime='$inputQueueTime', " +
+                "preProcessingTime='$preProcessingTime', " +
+                "preProcessedMessageQueueTime='$preProcessedMessageQueueTime', " +
+                "processingTime='$processingTime', " +
+                "persistTime='$persistTime', " +
+                "totalTime='$totalTime', " +
+                "count=$count, " +
+                "persistCount=$persistCount)"
     }
 }

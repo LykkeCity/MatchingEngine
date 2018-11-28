@@ -11,6 +11,7 @@ import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
@@ -75,6 +76,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val servicesMap: Map<MessageType, AbstractService>
     private val processedMessagesCache: ProcessedMessagesCache
 
+    private var currentTransactionDataHolder: CurrentTransactionDataHolder
+
     private var bestPriceBuilder: Timer? = null
     private var candlesBuilder: Timer? = null
     private var hoursCandlesBuilder: Timer? = null
@@ -106,6 +109,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.backOfficeDatabaseAccessor = applicationContext.getBean(AzureBackOfficeDatabaseAccessor::class.java)
 
         balanceUpdateHandler = applicationContext.getBean(BalanceUpdateHandler::class.java)
+
+        this.currentTransactionDataHolder = applicationContext.getBean(CurrentTransactionDataHolder::class.java)
 
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
         this.applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
@@ -191,6 +196,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 return
             }
 
+            currentTransactionDataHolder.setMessageType(messageType)
+
             val service = servicesMap[messageType]
 
             if (service == null) {
@@ -248,11 +255,30 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
             val endTime = System.nanoTime()
 
-            performanceStatsHolder.addMessage(message.type, endTime - message.startTimestamp, endTime - startTime)
+            recordPerformanceStats(message, startTime, endTime)
         } catch (exception: Exception) {
             LOGGER.error("[${message.sourceIp}]: Got error during message processing: ${exception.message}", exception)
             METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message processing", exception)
         }
+    }
+
+    private fun recordPerformanceStats(messageWrapper: MessageWrapper, startMessageProcessingTime: Long, endMessageProcessingTime: Long) {
+        val totalTime = endMessageProcessingTime - messageWrapper.startTimestamp
+        val processingTime = endMessageProcessingTime - startMessageProcessingTime
+
+        val inputQueueTime = messageWrapper.messagePreProcessorStartTimestamp?.let {
+            it - messageWrapper.startTimestamp
+        }
+
+        val preProcessingTime = messageWrapper.messagePreProcessorStartTimestamp?.let {
+            messageWrapper.messagePreProcessorEndTimestamp!! - it
+        }
+
+        val preProcessedMessageQueueStartTime = messageWrapper.messagePreProcessorEndTimestamp
+                ?: messageWrapper.startTimestamp
+        val preProcessedMessageQueueTime = startMessageProcessingTime - preProcessedMessageQueueStartTime
+
+        performanceStatsHolder.addMessage(messageWrapper.type, inputQueueTime, preProcessedMessageQueueTime, preProcessingTime, processingTime, totalTime)
     }
 
     private fun initServicesMap(): Map<MessageType, AbstractService> {

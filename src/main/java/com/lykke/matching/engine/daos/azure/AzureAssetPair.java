@@ -13,11 +13,19 @@ public class AzureAssetPair extends TableServiceEntity {
     private Double minInvertedVolume;
     private Double maxVolume;
     private Double maxValue;
+    private Double marketOrderPriceDeviationThreshold;
 
     public AzureAssetPair() {
     }
 
-    public AzureAssetPair(String baseAssetId, String quotingAssetId, int accuracy, Double minVolume, Double minInvertedVolume, Double maxVolume, Double maxValue) {
+    public AzureAssetPair(String baseAssetId,
+                          String quotingAssetId,
+                          int accuracy,
+                          Double minVolume,
+                          Double minInvertedVolume,
+                          Double maxVolume,
+                          Double maxValue,
+                          Double marketOrderPriceDeviationThreshold) {
         super(ASSET_PAIR, baseAssetId + quotingAssetId);
         this.baseAssetId = baseAssetId;
         this.quotingAssetId = quotingAssetId;
@@ -26,6 +34,7 @@ public class AzureAssetPair extends TableServiceEntity {
         this.minInvertedVolume = minInvertedVolume;
         this.maxVolume = maxVolume;
         this.maxValue = maxValue;
+        this.marketOrderPriceDeviationThreshold = marketOrderPriceDeviationThreshold;
     }
 
     public String getBaseAssetId() {
@@ -88,6 +97,14 @@ public class AzureAssetPair extends TableServiceEntity {
         this.maxValue = maxValue;
     }
 
+    public Double getMarketOrderPriceDeviationThreshold() {
+        return marketOrderPriceDeviationThreshold;
+    }
+
+    public void setMarketOrderPriceDeviationThreshold(Double marketOrderPriceDeviationThreshold) {
+        this.marketOrderPriceDeviationThreshold = marketOrderPriceDeviationThreshold;
+    }
+
     @Override
     public String toString() {
         return "AssetPair(pairId=" + getAssetPairId() +
@@ -98,6 +115,7 @@ public class AzureAssetPair extends TableServiceEntity {
                 ", minInvertedVolume=" + minInvertedVolume +
                 ", maxVolume=" + maxVolume +
                 ", maxValue=" + maxValue +
+                ", marketOrderPriceDeviationThreshold=" + marketOrderPriceDeviationThreshold +
                 ")";
     }
 }
