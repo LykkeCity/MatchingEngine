@@ -4,8 +4,8 @@ import com.google.gson.Gson
 import com.lykke.matching.engine.daos.DisabledFunctionalityRule
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.cache.ApplicationGroupDeleteEvent
+import com.lykke.matching.engine.database.cache.ApplicationSettingCreateOrUpdateEvent
 import com.lykke.matching.engine.database.cache.ApplicationSettingDeleteEvent
-import com.lykke.matching.engine.database.cache.ApplicationSettingUpdateEvent
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.event.EventListener
@@ -42,7 +42,7 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
     }
 
     @EventListener
-    private fun onSettincCreate(applicationSettingUpdateEvent: ApplicationSettingUpdateEvent) {
+    private fun onSettincCreate(applicationSettingUpdateEvent: ApplicationSettingCreateOrUpdateEvent) {
         val setting = applicationSettingUpdateEvent.setting
         if (applicationSettingUpdateEvent.settingGroup != AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES) {
             return

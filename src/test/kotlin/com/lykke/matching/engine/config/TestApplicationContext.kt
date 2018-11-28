@@ -679,4 +679,16 @@ open class TestApplicationContext {
     open fun disabledFunctionalityRulesService(): DisabledFunctionalityRulesService {
         return DisabledFunctionalityRulesServiceImpl()
     }
+
+    @Bean
+    open fun singleLimitOrderPreprocessor(limitOrderInputQueue: BlockingQueue<MessageWrapper>,
+                                          preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                                          messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                          @Qualifier("singleLimitOrderContextPreprocessorLogger")
+                                          logger: ThrottlingLogger): SingleLimitOrderPreprocessor {
+        return SingleLimitOrderPreprocessor(limitOrderInputQueue,
+                preProcessedMessageQueue,
+                messageProcessingStatusHolder,
+                logger)
+    }
 }
