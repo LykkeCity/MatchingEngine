@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import org.springframework.util.CollectionUtils
-import java.math.BigDecimal
 import javax.annotation.PostConstruct
 
 @Component
@@ -35,37 +34,6 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
     }
 
     @Synchronized
-    fun isTrustedClient(client: String): Boolean {
-        return getSettingsForSettingGroup(AvailableSettingGroup.TRUSTED_CLIENTS)?.find { it.enabled && it.value == client } != null
-    }
-
-    @Synchronized
-    fun isAssetDisabled(asset: String): Boolean {
-        return getSettingsForSettingGroup(AvailableSettingGroup.DISABLED_ASSETS)?.find { it.enabled && it.value == asset } != null
-    }
-
-    @Synchronized
-    fun marketOrderPriceDeviationThreshold(assetPairId: String): BigDecimal? {
-        return getSettingsForSettingGroup(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD)
-                ?.find { it.enabled && it.name == assetPairId }
-                ?.value
-                ?.toBigDecimal()
-    }
-
-    @Synchronized
-    fun limitOrderPriceDeviationThreshold(assetPairId: String): BigDecimal? {
-        return getSettingsForSettingGroup(AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD)
-                ?.find { it.enabled && it.name == assetPairId }
-                ?.value
-                ?.toBigDecimal()
-    }
-
-    fun isMessageProcessingEnabled(): Boolean {
-        return getSettingsForSettingGroup(AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH)
-                ?.find { it.enabled } == null
-    }
-
-    @Synchronized
     fun createOrUpdateSettingValue(settingGroup: AvailableSettingGroup, settingName: String, value: String, enabled: Boolean) {
         deleteSetting(settingGroup, settingName)
         val settings = settingsByGroup.getOrPut(settingGroup) { HashSet() }
@@ -85,6 +53,8 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
         if (CollectionUtils.isEmpty(settings)) {
             settingsByGroup.remove(settingGroup)
         }
+
+        applicationEventPublisher.publishEvent(ApplicationSettingDeleteEvent(settingGroup, setting))
     }
 
     @Synchronized

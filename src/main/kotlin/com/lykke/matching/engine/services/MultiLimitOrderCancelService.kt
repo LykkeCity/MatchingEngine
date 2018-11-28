@@ -1,10 +1,9 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.DisabledFunctionalityRule
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.holders.DisabledFunctionalityRulesHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -17,7 +16,7 @@ import java.util.Date
 @Component
 class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOrderService,
                                    private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
-                                   private val settings: ApplicationSettingsCache,
+                                   private val applicationSettingsHolder: ApplicationSettingsHolder,
                                    private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : AbstractService {
 
     companion object {
@@ -75,7 +74,7 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
         messageWrapper.id = message.uid
-        messageWrapper.processedMessage = if (settings.isTrustedClient(message.clientId))
+        messageWrapper.processedMessage = if (applicationSettingsHolder.isTrustedClient(message.clientId))
             null
         else
             ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)

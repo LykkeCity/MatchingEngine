@@ -6,10 +6,10 @@ import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
@@ -69,7 +69,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val transferOperationSaveService: TransferOperationSaveService
 
     private val marketStateCache: MarketStateCache
-    private val applicationSettingsCache: ApplicationSettingsCache
+    private val applicationSettingsHolder: ApplicationSettingsHolder
 
     private val quotesUpdateHandler: QuotesUpdateHandler
 
@@ -113,7 +113,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.currentTransactionDataHolder = applicationContext.getBean(CurrentTransactionDataHolder::class.java)
 
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
-        this.applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
+        this.applicationSettingsHolder = applicationContext.getBean(ApplicationSettingsHolder::class.java)
 
         val genericLimitOrderService = applicationContext.getBean(GenericLimitOrderService::class.java)
         val genericStopLimitOrderService = applicationContext.getBean(GenericStopLimitOrderService::class.java)

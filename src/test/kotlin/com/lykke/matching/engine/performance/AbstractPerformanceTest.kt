@@ -8,6 +8,7 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
@@ -90,6 +91,7 @@ abstract class AbstractPerformanceTest {
     private var messageProcessingStatusHolder = Mockito.mock(MessageProcessingStatusHolder::class.java)
 
     protected lateinit var assetPairsCache: AssetPairsCache
+    protected lateinit var applicationSettingsHolder: ApplicationSettingsHolder
     protected lateinit var applicationSettingsCache: ApplicationSettingsCache
     protected lateinit var persistenceManager: PersistenceManager
 
@@ -144,7 +146,8 @@ abstract class AbstractPerformanceTest {
     open fun initServices() {
         clearMessageQueues()
         testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
-        applicationSettingsCache = ApplicationSettingsCache(testSettingsDatabaseAccessor, ApplicationEventPublisher {  })
+        applicationSettingsCache = ApplicationSettingsCache(testSettingsDatabaseAccessor, ApplicationEventPublisher {})
+        applicationSettingsHolder = ApplicationSettingsHolder(applicationSettingsCache)
 
         assetCache = AssetsCache(testBackOfficeDatabaseAccessor)
         assetsHolder = AssetsHolder(assetCache)
@@ -156,7 +159,7 @@ abstract class AbstractPerformanceTest {
                 persistenceManager,
                 assetsHolder,
                 balanceUpdateNotificationQueue, balanceUpdateQueue,
-                applicationSettingsCache)
+                applicationSettingsHolder)
 
         testBalanceHolderWrapper = TestBalanceHolderWrapper(BalanceUpdateHandlerTest(balanceUpdateQueue, balanceUpdateNotificationQueue), balancesHolder)
         assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
@@ -173,8 +176,8 @@ abstract class AbstractPerformanceTest {
 
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
-        val limitOrderInputValidator = LimitOrderInputValidatorImpl(applicationSettingsCache)
-        singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsCache, singleLimitOrderPreprocessorLogger)
+        val limitOrderInputValidator = LimitOrderInputValidatorImpl(applicationSettingsHolder)
+        singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsHolder, singleLimitOrderPreprocessorLogger)
         cashInOutContextParser = CashInOutContextParser(assetsHolder)
         cashTransferContextParser = CashTransferContextParser(assetsHolder)
 
@@ -205,24 +208,24 @@ abstract class AbstractPerformanceTest {
                 genericStopLimitOrderService,
                 assetsHolder)
 
-        val matchingResultHandlingHelper = MatchingResultHandlingHelper(applicationSettingsCache)
+        val matchingResultHandlingHelper = MatchingResultHandlingHelper(applicationSettingsHolder)
 
         val matchingEngine = MatchingEngine(genericLimitOrderService, feeProcessor)
 
         val limitOrderProcessor = LimitOrderProcessor(limitOrderInputValidator,
                 LimitOrderBusinessValidatorImpl(),
-                applicationSettingsCache,
+                applicationSettingsHolder,
                 matchingEngine,
                 matchingResultHandlingHelper)
 
         val stopOrderProcessor = StopLimitOrderProcessor(limitOrderInputValidator,
                 StopOrderBusinessValidatorImpl(),
-                applicationSettingsCache,
+                applicationSettingsHolder,
                 limitOrderProcessor)
 
         val genericLimitOrdersProcessor = GenericLimitOrdersProcessor(limitOrderProcessor, stopOrderProcessor)
 
-        val stopOrderBookProcessor = StopOrderBookProcessor(limitOrderProcessor, applicationSettingsCache)
+        val stopOrderBookProcessor = StopOrderBookProcessor(limitOrderProcessor, applicationSettingsHolder)
 
         genericLimitOrdersCancellerFactory = GenericLimitOrdersCancellerFactory(executionContextFactory,
                 stopOrderBookProcessor,
@@ -250,10 +253,10 @@ abstract class AbstractPerformanceTest {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                applicationSettingsCache,
+                applicationSettingsHolder,
                 messageProcessingStatusHolder)
 
-        val marketOrderValidator = MarketOrderValidatorImpl(limitOrderInputValidator, assetsPairsHolder, assetsHolder, applicationSettingsCache)
+        val marketOrderValidator = MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder)
         marketOrderService = MarketOrderService(matchingEngine,
                 executionContextFactory,
                 stopOrderBookProcessor,
@@ -263,7 +266,7 @@ abstract class AbstractPerformanceTest {
                 assetsPairsHolder,
                 rabbitSwapQueue,
                 marketOrderValidator,
-                applicationSettingsCache,
+                applicationSettingsHolder,
                 messageSequenceNumberHolder,
                 notificationSender,
                 messageProcessingStatusHolder)

@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.services.events.listeners
 
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.services.events.DeleteSettingEvent
 import com.lykke.matching.engine.services.events.DeleteSettingGroupEvent
 import com.lykke.matching.engine.services.events.SettingChangedEvent
@@ -12,7 +12,7 @@ import java.util.logging.Logger
 import javax.annotation.PostConstruct
 
 @Component
-class MessageProcessingSwitchListener(val applicationSettingsCache: ApplicationSettingsCache) {
+class MessageProcessingSwitchListener(val applicationSettingsHolder: ApplicationSettingsHolder) {
 
     private companion object {
         val LOGGER = Logger.getLogger(MessageProcessingSwitchListener::class.java.name)
@@ -31,7 +31,7 @@ class MessageProcessingSwitchListener(val applicationSettingsCache: ApplicationS
             return
         }
 
-        val action =  if (applicationSettingsCache.isMessageProcessingEnabled()) START_ACTION else STOP_ACTION
+        val action =  if (applicationSettingsHolder.isMessageProcessingEnabled()) START_ACTION else STOP_ACTION
         val message = getLogMessageMessage(action, settingChangedEvent.user, settingChangedEvent.comment)
         LOGGER.info(message)
         METRICS_LOGGER.logWarning(message)
@@ -63,7 +63,7 @@ class MessageProcessingSwitchListener(val applicationSettingsCache: ApplicationS
 
     @PostConstruct
     private fun logInitialSwitchStatus() {
-        if (!applicationSettingsCache.isMessageProcessingEnabled()) {
+        if (!applicationSettingsHolder.isMessageProcessingEnabled()) {
             val message = "ME started with message processing DISABLED, all incoming messages will be rejected " +
                     "for enabling message processing change setting group \"${AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH.settingGroupName}\""
             LOGGER.info(message)

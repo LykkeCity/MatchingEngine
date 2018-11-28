@@ -1,7 +1,6 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.fee.listOfFee
@@ -32,6 +31,7 @@ import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.DisabledFunctionalityRulesHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
@@ -58,7 +58,7 @@ class MarketOrderService @Autowired constructor(
         private val assetsPairsHolder: AssetsPairsHolder,
         private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
         private val marketOrderValidator: MarketOrderValidator,
-        private val settings: ApplicationSettingsCache,
+        private val applicationSettingsHolder: ApplicationSettingsHolder,
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
         private val messageSender: MessageSender,
         private val messageProcessingStatusHolder: MessageProcessingStatusHolder): AbstractService {
@@ -131,7 +131,7 @@ class MarketOrderService @Autowired constructor(
         val matchingResult = matchingEngine.match(order,
                 getOrderBook(order),
                 messageWrapper.messageId!!,
-                priceDeviationThreshold = assetPair.marketOrderPriceDeviationThreshold ?: settings.marketOrderPriceDeviationThreshold(assetPair.assetPairId),
+                priceDeviationThreshold = assetPair.marketOrderPriceDeviationThreshold ?: applicationSettingsHolder.marketOrderPriceDeviationThreshold(assetPair.assetPairId),
                 executionContext = executionContext)
         marketOrderExecutionContext.matchingResult = matchingResult
 
