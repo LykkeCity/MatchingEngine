@@ -51,6 +51,7 @@ import com.lykke.matching.engine.utils.monitoring.OrderBookMidPriceChecker
 import com.lykke.utils.logging.ThrottlingLogger
 import org.mockito.Mockito
 import org.springframework.context.ApplicationEventPublisher
+import java.util.Optional
 import java.util.concurrent.LinkedBlockingQueue
 
 abstract class AbstractPerformanceTest {
@@ -158,7 +159,7 @@ abstract class AbstractPerformanceTest {
 
         expiryOrdersQueue = ExpiryOrdersQueue()
         genericLimitOrderService = GenericLimitOrderService(ordersDatabaseAccessorsHolder,
-                tradeInfoQueue,
+                Optional.of(tradeInfoQueue),
                 expiryOrdersQueue)
 
         feeProcessor = FeeProcessor(assetsHolder, assetsPairsHolder, genericLimitOrderService)

@@ -15,13 +15,14 @@ import java.util.ArrayList
 import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
+import java.util.Optional
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.PriorityBlockingQueue
 
 @Component
 class GenericLimitOrderService @Autowired constructor(private val orderBookDatabaseAccessorHolder: OrdersDatabaseAccessorsHolder,
-                                                      private val tradeInfoQueue: BlockingQueue<TradeInfo>,
+                                                      private val tradeInfoQueue: Optional<BlockingQueue<TradeInfo>>,
                                                       private val expiryOrdersQueue: ExpiryOrdersQueue) : AbstractGenericLimitOrderService<AssetOrderBook> {
 
     //asset -> orderBook
@@ -134,7 +135,9 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     }
 
     fun putTradeInfo(tradeInfo: TradeInfo) {
-        tradeInfoQueue.put(tradeInfo)
+        if (tradeInfoQueue.isPresent) {
+            tradeInfoQueue.get().put(tradeInfo)
+        }
     }
 
     fun buildMarketProfile(): List<BestPrice> {
