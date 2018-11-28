@@ -12,7 +12,7 @@ import java.util.stream.Collectors
 
 @Component
 @Profile("default", "!local_config")
-class QueueSizeLogger @Autowired constructor(private val queues: Map<String, BlockingQueue<*>>,
+class QueueSizeLogger @Autowired constructor(private val queues: Map<String, BlockingQueue<*>?>,
                                              private val config: Config) {
     companion object {
         val LOGGER = Logger.getLogger(QueueSizeLogger::class.java.name)
@@ -25,11 +25,17 @@ class QueueSizeLogger @Autowired constructor(private val queues: Map<String, Blo
 
     @Scheduled(fixedRateString = "#{Config.me.queueConfig.queueSizeLoggerInterval}",  initialDelayString = "#{Config.me.queueConfig.queueSizeLoggerInterval}")
     private fun log() {
-        Thread.currentThread().name = LOG_THREAD_NAME
-        val queueNameToQueueSize = getQueueNameToQueueSize(queues)
+        try {
+            Thread.currentThread().name = LOG_THREAD_NAME
+            val queueNameToQueueSize = getQueueNameToQueueSize(queues)
 
-        logQueueSizes(queueNameToQueueSize)
-        checkQueueSizeLimits(queueNameToQueueSize)
+            logQueueSizes(queueNameToQueueSize)
+            checkQueueSizeLimits(queueNameToQueueSize)
+        } catch (e: Exception) {
+            val message = "Unable to check queue sizes"
+            LOGGER.error(message, e)
+            METRICS_LOGGER.logError(message)
+        }
     }
 
     private fun logQueueSizes(nameToQueueSize: Map<String, Int>) {
@@ -53,7 +59,7 @@ class QueueSizeLogger @Autowired constructor(private val queues: Map<String, Blo
                 }
     }
 
-    private fun getQueueNameToQueueSize(nameToQueue: Map<String, BlockingQueue<*>>): Map<String, Int> {
-       return nameToQueue.mapValues { entry -> entry.value.size }
+    private fun getQueueNameToQueueSize(nameToQueue: Map<String, BlockingQueue<*>?>): Map<String, Int> {
+       return nameToQueue.filter { it.value != null }.mapValues { entry -> entry.value!!.size }
     }
 }
