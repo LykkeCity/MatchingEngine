@@ -2,9 +2,7 @@ package com.lykke.matching.engine.messages
 
 import com.lykke.matching.engine.AppInitialData
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
-import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
@@ -34,6 +32,7 @@ import com.lykke.matching.engine.outgoing.socket.SocketServer
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.utils.config.Config
+import com.lykke.matching.engine.utils.config.MatchingEngineConfig
 import com.lykke.matching.engine.utils.monitoring.GeneralHealthMonitor
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
@@ -61,7 +60,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
     private val balanceUpdateHandler: BalanceUpdateHandler
 
-    private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
     private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor
     private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor
     private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor
@@ -78,22 +76,14 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val limitOrderMassCancelService: LimitOrderMassCancelService
     private val multiLimitOrderCancelService: MultiLimitOrderCancelService
     private val balanceUpdateService: BalanceUpdateService
-    private val tradesInfoService: TradesInfoService
-    private val historyTicksService: HistoryTicksService
     private val transferOperationSaveService: TransferOperationSaveService
 
-    private val marketStateCache: MarketStateCache
     private val applicationSettingsCache: ApplicationSettingsCache
 
     private val quotesUpdateHandler: QuotesUpdateHandler
 
     private val servicesMap: Map<MessageType, AbstractService>
     private val processedMessagesCache: ProcessedMessagesCache
-
-    private var bestPriceBuilder: Timer? = null
-    private var candlesBuilder: Timer? = null
-    private var hoursCandlesBuilder: Timer? = null
-    private var historyTicksBuilder: Timer? = null
 
     private val performanceStatsHolder: PerformanceStatsHolder
 
@@ -111,12 +101,10 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         messageSequenceNumberHolder = applicationContext.getBean(MessageSequenceNumberHolder::class.java)
 
-        this.marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
         persistenceManager = applicationContext.getBean("persistenceManager") as PersistenceManager
 
         cashOperationsDatabaseAccessor = applicationContext.getBean(AzureCashOperationsDatabaseAccessor::class.java)
 
-        this.limitOrderDatabaseAccessor = applicationContext.getBean(AzureLimitOrderDatabaseAccessor::class.java)
         this.marketOrderDatabaseAccessor = applicationContext.getBean(AzureMarketOrderDatabaseAccessor::class.java)
         this.backOfficeDatabaseAccessor = applicationContext.getBean(AzureBackOfficeDatabaseAccessor::class.java)
 
@@ -152,23 +140,12 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.balanceUpdateService = applicationContext.getBean(BalanceUpdateService::class.java)
         this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
 
-        this.tradesInfoService = applicationContext.getBean(TradesInfoService::class.java)
-
         this.transferOperationSaveService = applicationContext.getBean(TransferOperationSaveService::class.java)
 
         this.cashInOutPreprocessor = applicationContext.getBean(CashInOutPreprocessor::class.java)
         cashInOutPreprocessor.start()
         this.cashTransferPreprocessor = applicationContext.getBean(CashTransferPreprocessor::class.java)
         cashTransferPreprocessor.start()
-
-        this.historyTicksService = HistoryTicksService(marketStateCache,
-                genericLimitOrderService,
-                applicationContext.environment.getProperty("application.tick.frequency")!!.toLong())
-
-        if (!isLocalProfile) {
-            marketStateCache.refresh()
-            this.historyTicksBuilder = historyTicksService.start()
-        }
 
         this.quotesUpdateHandler = applicationContext.getBean(QuotesUpdateHandler::class.java)
         val connectionsHolder = applicationContext.getBean(ConnectionsHolder::class.java)
@@ -180,19 +157,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
             SocketServer(config, connectionsHolder, genericLimitOrderService, assetsHolder, assetsPairsHolder).start()
         }
 
-        if (!isLocalProfile) {
-            this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
-                limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
-            }
-
-            val time = LocalDateTime.now()
-            this.candlesBuilder = fixedRateTimer(name = "CandleBuilder", initialDelay = ((1000 - time.nano / 1000000) + 1000 * (63 - time.second)).toLong(), period = config.me.candleSaverInterval) {
-                tradesInfoService.saveCandles()
-            }
-
-            this.hoursCandlesBuilder = fixedRateTimer(name = "HoursCandleBuilder", initialDelay = 0, period = config.me.hoursCandleSaverInterval) {
-                tradesInfoService.saveHourCandles()
-            }
+        if (!isLocalProfile && config.me.disableMarketHistory != true) {
+            initMarketHistoryProcess(applicationContext, config.me)
         }
 
         val server = HttpServer.create(InetSocketAddress(config.me.httpOrderBookPort), 0)
@@ -202,6 +168,35 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         server.start()
 
         appInitialData = AppInitialData(genericLimitOrderService.initialOrdersCount, genericStopLimitOrderService.initialStopOrdersCount, balanceHolder.initialBalancesCount, balanceHolder.initialClientsCount)
+    }
+
+    private fun initMarketHistoryProcess(applicationContext: ApplicationContext,
+                                         config: MatchingEngineConfig) {
+        val genericLimitOrderService = applicationContext.getBean(GenericLimitOrderService::class.java)
+        val marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
+        val historyTicksService = HistoryTicksService(marketStateCache,
+                genericLimitOrderService,
+                applicationContext.environment.getProperty("application.tick.frequency")!!.toLong())
+        marketStateCache.refresh()
+        historyTicksService.start()
+
+        val limitOrderDatabaseAccessor = applicationContext.getBean(AzureLimitOrderDatabaseAccessor::class.java)
+        fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.bestPricesInterval) {
+            limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
+        }
+
+        val time = LocalDateTime.now()
+
+        val tradesInfoService = applicationContext.getBean(TradesInfoService::class.java)
+        tradesInfoService.start()
+
+        fixedRateTimer(name = "CandleBuilder", initialDelay = ((1000 - time.nano / 1000000) + 1000 * (63 - time.second)).toLong(), period = config.candleSaverInterval) {
+            tradesInfoService.saveCandles()
+        }
+
+        fixedRateTimer(name = "HoursCandleBuilder", initialDelay = 0, period = config.hoursCandleSaverInterval) {
+            tradesInfoService.saveHourCandles()
+        }
     }
 
     override fun run() {

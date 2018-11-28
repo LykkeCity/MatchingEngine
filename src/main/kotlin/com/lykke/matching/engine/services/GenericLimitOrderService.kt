@@ -19,6 +19,7 @@ import java.util.ArrayList
 import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
+import java.util.Optional
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.PriorityBlockingQueue
@@ -29,7 +30,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
                                                       private val assetsPairsHolder: AssetsPairsHolder,
                                                       private val balancesHolder: BalancesHolder,
                                                       private val quotesUpdateQueue: BlockingQueue<QuotesUpdate>,
-                                                      private val tradeInfoQueue: BlockingQueue<TradeInfo>,
+                                                      private val tradeInfoQueue: Optional<BlockingQueue<TradeInfo>>,
                                                       applicationSettingsCache: ApplicationSettingsCache) : AbstractGenericLimitOrderService<AssetOrderBook> {
 
     companion object {
@@ -148,7 +149,9 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     }
 
     fun putTradeInfo(tradeInfo: TradeInfo) {
-        tradeInfoQueue.put(tradeInfo)
+        if (tradeInfoQueue.isPresent) {
+            tradeInfoQueue.get().put(tradeInfo)
+        }
     }
 
     fun buildMarketProfile(): List<BestPrice> {
