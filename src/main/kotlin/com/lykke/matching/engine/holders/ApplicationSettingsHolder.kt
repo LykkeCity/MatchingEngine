@@ -26,7 +26,7 @@ class ApplicationSettingsHolder(val applicationSettingsCache: ApplicationSetting
     private var moPriceDeviationThresholds: MutableMap<String, String> = ConcurrentHashMap()
 
     @Volatile
-    private var loPriceDeviationThresholds: MutableMap<String, String> = ConcurrentHashMap()
+    private var midPriceDeviationThresholds: MutableMap<String, String> = ConcurrentHashMap()
 
     @Volatile
     private var messageProcessingSwitch: MutableMap<String, String> = ConcurrentHashMap()
@@ -40,7 +40,7 @@ class ApplicationSettingsHolder(val applicationSettingsCache: ApplicationSetting
         messageProcessingSwitch = getSettingValueByName(allSettingGroups, AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH)
 
         moPriceDeviationThresholds = getSettingValueByName(allSettingGroups, AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD)
-        loPriceDeviationThresholds = getSettingValueByName(allSettingGroups, AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD)
+        midPriceDeviationThresholds = getSettingValueByName(allSettingGroups, AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD)
     }
 
     fun isTrustedClient(client: String): Boolean {
@@ -55,8 +55,8 @@ class ApplicationSettingsHolder(val applicationSettingsCache: ApplicationSetting
         return moPriceDeviationThresholds[assetPairId]?.toBigDecimal()
     }
 
-    fun limitOrderPriceDeviationThreshold(assetPairId: String): BigDecimal? {
-        return loPriceDeviationThresholds[assetPairId]?.toBigDecimal()
+    fun midPriceDeviationThreshold(assetPairId: String): BigDecimal? {
+        return midPriceDeviationThresholds[assetPairId]?.toBigDecimal()
     }
 
     fun isMessageProcessingEnabled(): Boolean {
@@ -98,7 +98,7 @@ class ApplicationSettingsHolder(val applicationSettingsCache: ApplicationSetting
             AvailableSettingGroup.TRUSTED_CLIENTS -> trustedClients
             AvailableSettingGroup.DISABLED_ASSETS -> disabledAssets
             AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD -> moPriceDeviationThresholds
-            AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD -> loPriceDeviationThresholds
+            AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD -> midPriceDeviationThresholds
             AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH -> messageProcessingSwitch
             else -> null
         }

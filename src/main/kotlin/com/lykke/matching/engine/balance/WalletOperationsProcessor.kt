@@ -57,7 +57,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
             val asset = assetsHolder.getAsset(operation.assetId)
             changedAssetBalance.balance = NumberUtils.setScaleRoundHalfUp(changedAssetBalance.balance + operation.amount, asset.accuracy)
 
-            changedAssetBalance.reserved = if (allowTrustedClientReservedBalanceOperation || !applicationSettings.isTrustedClient(operation.clientId))
+            changedAssetBalance.reserved = if (allowTrustedClientReservedBalanceOperation || !applicationSettingsHolder.isTrustedClient(operation.clientId))
                 NumberUtils.setScaleRoundHalfUp(changedAssetBalance.reserved + operation.reservedAmount, asset.accuracy)
             else
                 changedAssetBalance.reserved

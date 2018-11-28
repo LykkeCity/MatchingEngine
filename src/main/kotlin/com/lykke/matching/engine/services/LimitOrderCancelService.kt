@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.context.LimitOrderCancelOperationContext
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.messages.MessageStatus
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.business.LimitOrderCancelOperationBusinessValidator

@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder

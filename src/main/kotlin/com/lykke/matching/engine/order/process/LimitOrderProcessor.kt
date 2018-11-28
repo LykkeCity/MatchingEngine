@@ -272,7 +272,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
 
     fun checkMidPrice(midPrice: BigDecimal?, orderContext: LimitOrderExecutionContext): Boolean {
         if (OrderValidationUtils.isMidPriceValid(midPrice, orderContext.lowerMidPriceBound, orderContext.upperMidPriceBound)) {
-            if (!applicationSettingsCache.isTrustedClient(orderContext.order.clientId)) {
+            if (!applicationSettingsHolder.isTrustedClient(orderContext.order.clientId)) {
                 orderContext.executionContext.controlsInfo("${getOrderInfo(orderContext.order)}, assetPair = ${orderContext.order.assetPairId}, mid price control passed, " +
                         "l = ${NumberUtils.roundForPrint(orderContext.lowerMidPriceBound)}, u = ${NumberUtils.roundForPrint(orderContext.upperMidPriceBound)}, " +
                         "m = ${NumberUtils.roundForPrint(midPrice)}")

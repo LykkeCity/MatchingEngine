@@ -109,7 +109,7 @@ abstract class AbstractPerformanceTest {
 
     val balanceUpdateQueue = LinkedBlockingQueue<BalanceUpdate>()
 
-    val clientLimitOrdersQueue  = LinkedBlockingQueue<LimitOrdersReport>()
+    val clientLimitOrdersQueue = LinkedBlockingQueue<LimitOrdersReport>()
 
     val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
 
@@ -117,9 +117,9 @@ abstract class AbstractPerformanceTest {
 
     val rabbitOrderBookQueue = LinkedBlockingQueue<OrderBook>()
 
-    val rabbitSwapQueue  = LinkedBlockingQueue<MarketOrderWithTrades>()
+    val rabbitSwapQueue = LinkedBlockingQueue<MarketOrderWithTrades>()
 
-    val trustedClientsLimitOrdersQueue  = LinkedBlockingQueue<LimitOrdersReport>()
+    val trustedClientsLimitOrdersQueue = LinkedBlockingQueue<LimitOrdersReport>()
 
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
@@ -204,13 +204,13 @@ abstract class AbstractPerformanceTest {
         val matchingResultHandlingHelper = MatchingResultHandlingHelper(applicationSettingsHolder)
 
         val matchingEngine = MatchingEngine(genericLimitOrderService, feeProcessor)
-        val priceDeviationThresholdHolder = PriceDeviationThresholdHolder(applicationSettingsCache)
+        val priceDeviationThresholdHolder = PriceDeviationThresholdHolder(applicationSettingsHolder)
 
         val limitOrderProcessor = LimitOrderProcessor(limitOrderInputValidator,
                 LimitOrderBusinessValidatorImpl(),
                 applicationSettingsHolder,
                 matchingEngine,
-                PriceDeviationThresholdHolder(applicationSettingsCache),
+                PriceDeviationThresholdHolder(applicationSettingsHolder),
                 matchingResultHandlingHelper)
 
         val stopOrderProcessor = StopLimitOrderProcessor(limitOrderInputValidator,
@@ -264,8 +264,8 @@ abstract class AbstractPerformanceTest {
                 messageSequenceNumberHolder,
                 priceDeviationThresholdHolder,
                 midPriceHolder,
-                notificationSender,
-                messageProcessingStatusHolder)
-
+                messageProcessingStatusHolder,
+                notificationSender
+        )
     }
 }

@@ -10,6 +10,7 @@ import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedDa
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.impl.ValidationException

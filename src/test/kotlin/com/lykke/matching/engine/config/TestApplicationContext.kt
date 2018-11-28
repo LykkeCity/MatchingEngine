@@ -390,8 +390,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun priceDeviationThreshold(settingsCache: ApplicationSettingsCache): PriceDeviationThresholdHolder {
-        return PriceDeviationThresholdHolder(settingsCache)
+    open fun priceDeviationThreshold(applicationSettingsHolder: ApplicationSettingsHolder): PriceDeviationThresholdHolder {
+        return PriceDeviationThresholdHolder(applicationSettingsHolder)
     }
 
     @Bean
