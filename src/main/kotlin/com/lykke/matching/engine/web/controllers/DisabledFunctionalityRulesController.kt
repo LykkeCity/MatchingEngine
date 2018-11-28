@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.web.controllers
 
-import com.lykke.matching.engine.daos.setting.SettingNotFoundException
+import com.lykke.matching.engine.daos.setting.DisabledFunctionalityRuleNotFoundException
 import com.lykke.matching.engine.services.DisabledFunctionalityRulesService
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
@@ -52,6 +52,7 @@ class DisabledFunctionalityRulesController {
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),
             ApiResponse(code = 400, message = "Supplied rule is invalid"),
+            ApiResponse(code = 404, message = "Rule is not found"),
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
     fun update(@PathVariable("id") id: String,
@@ -78,8 +79,8 @@ class DisabledFunctionalityRulesController {
             ApiResponse(code = 200, message = "Success"),
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
-    fun get(@PathVariable("id") id: String, @RequestParam("enabled", required = false) enabled: Boolean? = null): DisabledFunctionalityRuleDto? {
-        return disabledFunctionalityRulesService.get(id, enabled)
+    fun get(@PathVariable("id") id: String): DisabledFunctionalityRuleDto? {
+        return disabledFunctionalityRulesService.get(id)
     }
 
     @GetMapping("/history/{id}", produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -113,7 +114,7 @@ class DisabledFunctionalityRulesController {
     }
 
     @ExceptionHandler
-    private fun handleSettingNotFound(request: HttpServletRequest, exception: SettingNotFoundException): ResponseEntity<String> {
+    private fun handleSettingNotFound(request: HttpServletRequest, exception: DisabledFunctionalityRuleNotFoundException): ResponseEntity<String> {
         return ResponseEntity(exception.message, HttpStatus.NOT_FOUND)
     }
 
