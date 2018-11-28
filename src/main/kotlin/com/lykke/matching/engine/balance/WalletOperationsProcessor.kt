@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolder
@@ -25,7 +26,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdat
 
 class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
                                 private val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
-                                private val applicationSettings: ApplicationSettingsCache,
+                                private val applicationSettingsHolder: ApplicationSettingsHolder,
                                 private val persistenceManager: PersistenceManager,
                                 private val assetsHolder: AssetsHolder,
                                 private val validate: Boolean,
@@ -161,7 +162,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
     }
 
     private fun isTrustedClientReservedBalanceOperation(operation: WalletOperation): Boolean {
-        return NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, operation.amount) && applicationSettings.isTrustedClient(operation.clientId)
+        return NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, operation.amount) && applicationSettingsHolder.isTrustedClient(operation.clientId)
     }
 
     private fun getChangedAssetBalance(clientId: String, assetId: String): ChangedAssetBalance {

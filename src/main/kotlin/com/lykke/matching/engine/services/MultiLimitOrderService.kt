@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.daos.DisabledFunctionalityRule
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.MultiLimitOrder
 import com.lykke.matching.engine.daos.order.OrderTimeInForce
@@ -19,8 +20,9 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
@@ -42,7 +44,8 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                              private val assetsHolder: AssetsHolder,
                              private val assetsPairsHolder: AssetsPairsHolder,
                              private val balancesHolder: BalancesHolder,
-                             private val applicationSettingsCache: ApplicationSettingsCache) : AbstractService {
+                             private val applicationSettingsHolder: ApplicationSettingsHolder,
+                             private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
@@ -64,7 +67,13 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
             writeResponse(messageWrapper, MessageStatus.UNKNOWN_ASSET)
             return
         }
-        val isTrustedClient = applicationSettingsCache.isTrustedClient(message.clientId)
+
+        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(DisabledFunctionalityRule(null, assetPair.assetPairId, MessageType.MULTI_LIMIT_ORDER))) {
+            writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+            return
+        }
+
+        val isTrustedClient = applicationSettingsHolder.isTrustedClient(message.clientId)
 
         val multiLimitOrder = readMultiLimitOrder(messageWrapper.messageId!!, message, isTrustedClient, assetPair)
         val now = Date()
@@ -262,7 +271,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
         messageWrapper.id = message.uid
-        messageWrapper.processedMessage = if (applicationSettingsCache.isTrustedClient(message.clientId))
+        messageWrapper.processedMessage = if (applicationSettingsHolder.isTrustedClient(message.clientId))
             null
         else
             ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)

@@ -3,7 +3,7 @@ package com.lykke.matching.engine.order.process
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.process.context.StopLimitOrderContext
@@ -19,7 +19,7 @@ import java.math.BigDecimal
 @Component
 class StopLimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputValidator,
                               private val stopOrderBusinessValidator: StopOrderBusinessValidator,
-                              private val applicationSettingsCache: ApplicationSettingsCache,
+                              private val applicationSettingsHolder: ApplicationSettingsHolder,
                               private val limitOrderProcessor: LimitOrderProcessor) : OrderProcessor<LimitOrder> {
 
     override fun processOrder(order: LimitOrder, executionContext: ExecutionContext): ProcessedOrder {
@@ -81,14 +81,14 @@ class StopLimitOrderProcessor(private val limitOrderInputValidator: LimitOrderIn
 
     private fun addOrderToReportIfNotTrusted(orderContext: StopLimitOrderContext) {
         val order = orderContext.order
-        if (order.isPartiallyMatched() || !applicationSettingsCache.isTrustedClient(order.clientId)) {
+        if (order.isPartiallyMatched() || !applicationSettingsHolder.isTrustedClient(order.clientId)) {
             orderContext.executionContext.addClientLimitOrderWithTrades(LimitOrderWithTrades(order))
         }
     }
 
     private fun addOrderToReport(orderContext: StopLimitOrderContext) {
         val order = orderContext.order
-        if (applicationSettingsCache.isTrustedClient(order.clientId) && !order.isPartiallyMatched()) {
+        if (applicationSettingsHolder.isTrustedClient(order.clientId) && !order.isPartiallyMatched()) {
             orderContext.executionContext.addTrustedClientLimitOrderWithTrades(LimitOrderWithTrades(order))
         } else {
             orderContext.executionContext.addClientLimitOrderWithTrades(LimitOrderWithTrades(order))

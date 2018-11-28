@@ -5,7 +5,8 @@ enum class AvailableSettingGroup(val settingGroupName: String) {
     TRUSTED_CLIENTS("TrustedClients"),
     MESSAGE_PROCESSING_SWITCH("MessageProcessingSwitch"),
     MO_PRICE_DEVIATION_THRESHOLD("MarketOrderPriceDeviationThreshold"),
-    MID_PRICE_DEVIATION_THRESHOLD("MidPriceDeviationThreshold");
+    MID_PRICE_DEVIATION_THRESHOLD("MidPriceDeviationThreshold"),
+    DISABLED_FUNCTIONALITY_RULES("DisabledFunctionalityRules");
 
     companion object {
         fun getBySettingsGroupName(settingGroupName: String): AvailableSettingGroup {
