@@ -1,7 +1,6 @@
 package com.lykke.matching.engine.config.spring
 
 import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
@@ -144,11 +143,6 @@ open class QueueConfig {
     @Bean
     open fun quotesUpdateQueue(): BlockingQueue<QuotesUpdate> {
         return LinkedBlockingQueue<QuotesUpdate>()
-    }
-
-    @Bean
-    open fun tradeInfoQueue(): BlockingQueue<TradeInfo> {
-        return LinkedBlockingQueue<TradeInfo>()
     }
 
     @Bean
