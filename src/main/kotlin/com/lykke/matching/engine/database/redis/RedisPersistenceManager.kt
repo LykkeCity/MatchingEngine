@@ -75,7 +75,7 @@ class RedisPersistenceManager(
             data.stopOrderBooksData?.let { persistStopOrders(transaction, it) }
 
             persistMessageSequenceNumber(transaction, data.messageSequenceNumber)
-//            persistMidPrices(transaction, data.midPricePersistenceData)
+            persistMidPrices(transaction, data.midPricePersistenceData)
 
             val persistTime = System.nanoTime()
 
