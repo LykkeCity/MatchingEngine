@@ -1773,7 +1773,7 @@ class LimitOrderServiceTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 10000.0)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD"))
         applicationSettingsCache.update()
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
@@ -1803,7 +1803,7 @@ class LimitOrderServiceTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 10000.0)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD"))
         applicationSettingsCache.update()
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 8000.0, volume = -0.2)))
@@ -1836,7 +1836,7 @@ class LimitOrderServiceTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 10000.0)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD"))
         applicationSettingsCache.update()
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 8000.0, volume = -0.3)))
@@ -1869,7 +1869,7 @@ class LimitOrderServiceTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 1.0)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting(BigDecimal.valueOf(0.01).toString(), "BTCUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD, getSetting(BigDecimal.valueOf(0.01).toString(), "BTCUSD"))
         applicationSettingsCache.update()
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
@@ -1901,7 +1901,7 @@ class LimitOrderServiceTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 1.0)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting(BigDecimal.valueOf(0.01).toString(), "BTCUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD, getSetting(BigDecimal.valueOf(0.01).toString(), "BTCUSD"))
         applicationSettingsCache.update()
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
@@ -1937,7 +1937,7 @@ class LimitOrderServiceTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 1.0)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD"))
         applicationSettingsCache.update()
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
@@ -1975,7 +1975,7 @@ class LimitOrderServiceTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = 1.0, price = 6000.0)))
 
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD"))
         applicationSettingsCache.update()
         clientsEventsQueue.clear()
 
