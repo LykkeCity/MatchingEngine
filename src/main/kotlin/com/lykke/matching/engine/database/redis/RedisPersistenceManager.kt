@@ -12,7 +12,9 @@ import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersist
 import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
 import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
@@ -32,7 +34,9 @@ class RedisPersistenceManager(
         private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<AccountPersistEvent>,
         private val redisMidPriceDatabaseAccessor: RedisMidPriceDatabaseAccessor,
         private val redisConnection: RedisConnection,
-        private val config: Config): PersistenceManager {
+        private val config: Config,
+        private val currentTransactionDataHolder: CurrentTransactionDataHolder,
+        private val performanceStatsHolder: PerformanceStatsHolder): PersistenceManager {
 
     companion object {
         private val LOGGER = Logger.getLogger(RedisPersistenceManager::class.java.name)
@@ -83,6 +87,10 @@ class RedisPersistenceManager(
                     ", persist: ${PrintUtils.convertToString2((persistTime - startTime).toDouble())}" +
                     ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}" +
                     (if (messageId != null) " ($messageId)" else ""))
+
+            currentTransactionDataHolder.getMessageType()?.let {
+                performanceStatsHolder.addPersistTime(it.type,commitTime - startTime)
+            }
 
             if (!CollectionUtils.isEmpty(data.balancesData?.wallets)) {
                 persistedWalletsApplicationEventPublisher.publishEvent(AccountPersistEvent(data.balancesData!!.wallets))

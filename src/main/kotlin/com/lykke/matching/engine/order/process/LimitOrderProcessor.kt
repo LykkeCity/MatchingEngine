@@ -17,7 +17,6 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
-import com.lykke.matching.engine.services.validators.impl.OrderFatalValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
@@ -66,8 +65,6 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
                     baseAsset)
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, false, e.message, e.orderStatus)
-        } catch (e: OrderFatalValidationException) {
-            return OrderValidationResult(false, true, e.message)
         }
         return OrderValidationResult(true)
     }
