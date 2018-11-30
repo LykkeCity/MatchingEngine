@@ -51,6 +51,14 @@ class PersistenceData(val balancesData: BalancesData?,
                     .append("balances: ${it.balances.size}, ")
         }
 
+        midPricePersistenceData?.let {
+            if (it.midPrices != null) {
+                result.append("mid prices: ${it.midPrices.size}, ")
+            } else {
+                result.append("mid prices: remove all, ")
+            }
+        }
+
         orderBooksData?.let {
             result.append("order books: ${it.orderBooks.size}, ")
                     .append("orders to save: ${it.ordersToSave.size}, ")
