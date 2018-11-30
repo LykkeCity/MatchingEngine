@@ -55,7 +55,7 @@ class PersistenceData(val balancesData: BalancesData?,
         }
 
         stopOrderBooksData?.let {
-            result.append("stop order books: ${it.orderBooks}, ")
+            result.append("stop order books: ${it.orderBooks.size}, ")
                     .append("stop orders to save: ${it.ordersToSave.size}, ")
                     .append("stop orders to remove: ${it.ordersToRemove.size}, ")
         }
