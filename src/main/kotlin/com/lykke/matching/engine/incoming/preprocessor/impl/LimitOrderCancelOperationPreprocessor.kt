@@ -4,11 +4,11 @@ import com.lykke.matching.engine.daos.context.LimitOrderCancelOperationContext
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
+import com.lykke.matching.engine.incoming.LoggerNames
 import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
-import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.impl.ValidationException
@@ -18,18 +18,16 @@ import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
-import javax.annotation.PostConstruct
 
 @Component
 class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOperationParsedData>,
                                             val limitOrderCancelOperationValidator: LimitOrderCancelOperationInputValidator,
-                                            val limitOrderCancelInputQueue: BlockingQueue<MessageWrapper>,
                                             val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
                                             val limitOrderCancelOperationPreprocessorPersistenceManager: PersistenceManager,
-                                            val processedMessagesCache: ProcessedMessagesCache) : MessagePreprocessor, Thread(LimitOrderCancelOperationPreprocessor::class.java.name) {
+                                            val processedMessagesCache: ProcessedMessagesCache) : MessagePreprocessor {
 
     companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(LimitOrderCancelOperationPreprocessor::class.java.name)
+        private val LOGGER = ThrottlingLogger.getLogger(String.format("%s.%s", LimitOrderCancelOperationPreprocessor::class.java.name, LoggerNames.LIMIT_ORDER_CANCEL))
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
@@ -52,19 +50,6 @@ class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContext
         }
 
         messageWrapper.writeNewResponse(builder)
-    }
-
-    override fun run() {
-        while (true) {
-            val messageWrapper = limitOrderCancelInputQueue.take()
-            try {
-                messageWrapper.messagePreProcessorStartTimestamp = System.nanoTime()
-                preProcess(messageWrapper)
-                messageWrapper.messagePreProcessorEndTimestamp = System.nanoTime()
-            } catch (e: Exception) {
-                handlePreprocessingException(e, messageWrapper)
-            }
-        }
     }
 
     private fun processInvalidData(data: LimitOrderCancelOperationParsedData,
@@ -97,26 +82,5 @@ class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContext
             return false
         }
         return true
-    }
-
-    @PostConstruct
-    private fun init() {
-        this.start()
-    }
-
-    private fun handlePreprocessingException(exception: Exception, message: MessageWrapper) {
-        try {
-            val context = message.context
-            CashTransferPreprocessor.LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
-                    if (context != null) "Error details: $context" else "", exception)
-
-            CashTransferPreprocessor.METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
-            writeResponse(message, MessageStatus.RUNTIME)
-        } catch (e: Exception) {
-            val errorMessage = "Got error during message preprocessing failure handling"
-            e.addSuppressed(exception)
-            CashTransferPreprocessor.LOGGER.error(errorMessage, e)
-            CashTransferPreprocessor.METRICS_LOGGER.logError(errorMessage, e)
-        }
     }
 }
