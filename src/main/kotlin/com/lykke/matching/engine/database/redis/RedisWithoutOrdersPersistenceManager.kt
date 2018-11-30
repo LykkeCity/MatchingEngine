@@ -87,8 +87,8 @@ class RedisWithoutOrdersPersistenceManager(
             REDIS_PERFORMANCE_LOGGER.debug("Total: ${PrintUtils.convertToString2((commitTime - startTime).toDouble())}" +
                     ", persist: ${PrintUtils.convertToString2((persistTime - startTime).toDouble())}" +
                     ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}" +
-                    ", summary: ${data.getSummary()}, " +
-                    (if (messageId != null) "messageId: ($messageId)" else ""))
+                    ", persisted data summary: ${data.getSummary()}" +
+                    (if (messageId != null) ", messageId: ($messageId)" else ""))
 
             currentTransactionDataHolder.getMessageType()?.let {
                 performanceStatsHolder.addPersistTime(it.type, commitTime - startTime)

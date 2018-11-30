@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.TypePerformanceStats;
 import com.microsoft.azure.storage.table.TableServiceEntity;
 
 public class AzurePerformanceStats extends TableServiceEntity {
+    private String appVersion;
     private String type;
     private String inputQueueTime;
     private String preProcessingTime;
@@ -28,6 +29,7 @@ public class AzurePerformanceStats extends TableServiceEntity {
         this.count = stats.getCount();
         this.persistTime = stats.getPersistTime();
         this.persistCount = stats.getPersistCount();
+        this.appVersion = stats.getAppVersion();
     }
 
     public String getType() {
@@ -100,5 +102,13 @@ public class AzurePerformanceStats extends TableServiceEntity {
 
     public void setPreProcessedMessageQueue(String preProcessedMessageQueue) {
         this.preProcessedMessageQueueTime = preProcessedMessageQueue;
+    }
+
+    public void setAppVersion(String appVersion) {
+        this.appVersion = appVersion;
+    }
+
+    public String getAppVersion() {
+        return appVersion;
     }
 }

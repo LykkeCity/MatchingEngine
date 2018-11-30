@@ -4,6 +4,7 @@ import java.util.Date
 
 class TypePerformanceStats(
         val timestamp: Date,
+        val appVersion: String,
         val type: String,
         val inputQueueTime: String?,
         val preProcessingTime: String?,
@@ -16,6 +17,7 @@ class TypePerformanceStats(
 ) {
     override fun toString(): String {
         return "TypePerformanceStats(timestamp=$timestamp, " +
+                "appVersion='$appVersion', " +
                 "type='$type', " +
                 "inputQueueTime='$inputQueueTime', " +
                 "preProcessingTime='$preProcessingTime', " +
