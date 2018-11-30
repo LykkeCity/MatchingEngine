@@ -41,5 +41,8 @@ data class MatchingEngineConfig(
         val ordersMigration: Boolean,
         val writeOrdersToSecondaryDb: Boolean,
         val referenceMidPricePeriod: Long,
-        val disableMarketHistory: Boolean?
+        val disableBlobHistory: Boolean?,
+        val disableBestPriceHistory: Boolean?,
+        val disableCandlesHistory: Boolean?,
+        val disableHourCandlesHistory: Boolean?
 )
