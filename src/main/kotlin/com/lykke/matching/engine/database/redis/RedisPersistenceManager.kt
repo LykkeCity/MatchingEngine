@@ -82,6 +82,7 @@ class RedisPersistenceManager(
             REDIS_PERFORMANCE_LOGGER.debug("Total: ${PrintUtils.convertToString2((commitTime - startTime).toDouble())}" +
                     ", persist: ${PrintUtils.convertToString2((persistTime - startTime).toDouble())}" +
                     ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}" +
+                    ", persist data summary: ${data.getSummary()}" +
                     (if (messageId != null) " ($messageId)" else ""))
 
             currentTransactionDataHolder.getMessageType()?.let {
