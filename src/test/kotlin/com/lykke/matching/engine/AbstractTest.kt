@@ -51,6 +51,9 @@ abstract class AbstractTest {
     private lateinit var assetsCache: AssetsCache
 
     @Autowired
+    protected lateinit var applicationSettingsHolder: ApplicationSettingsHolder
+
+    @Autowired
     protected lateinit var applicationSettingsCache: ApplicationSettingsCache
 
     @Autowired
@@ -139,6 +142,9 @@ abstract class AbstractTest {
     protected lateinit var cashInOutOperationService: CashInOutOperationService
 
     @Autowired
+    protected lateinit var messageProcessingStatusHolder: MessageProcessingStatusHolder
+
+    @Autowired
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
 
     protected open fun initServices() {
@@ -148,6 +154,8 @@ abstract class AbstractTest {
         assetsCache.update()
         assetPairsCache.update()
         applicationSettingsCache.update()
+
+        applicationSettingsHolder.update()
     }
 
     protected fun clearMessageQueues() {

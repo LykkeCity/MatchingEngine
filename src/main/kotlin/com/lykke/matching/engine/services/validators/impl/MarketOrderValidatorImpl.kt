@@ -4,14 +4,13 @@ import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
-import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
@@ -21,10 +20,9 @@ import java.util.concurrent.PriorityBlockingQueue
 
 @Component
 class MarketOrderValidatorImpl
-@Autowired constructor(private val limitOrderInputValidator: LimitOrderInputValidator,
-                       private val assetsPairsHolder: AssetsPairsHolder,
+@Autowired constructor(private val assetsPairsHolder: AssetsPairsHolder,
                        private val assetsHolder: AssetsHolder,
-                       private val applicationSettingsCache: ApplicationSettingsCache) : MarketOrderValidator {
+                       private val applicationSettingsHolder: ApplicationSettingsHolder) : MarketOrderValidator {
 
     companion object {
         private val LOGGER = Logger.getLogger(MarketOrderValidatorImpl::class.java.name)
@@ -81,8 +79,8 @@ class MarketOrderValidatorImpl
 
     private fun isAssetEnabled(order: MarketOrder) {
         val assetPair = getAssetPair(order)
-        if (applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId)
-                || applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId)) {
+        if (applicationSettingsHolder.isAssetDisabled(assetPair.baseAssetId)
+                || applicationSettingsHolder.isAssetDisabled(assetPair.quotingAssetId)) {
             LOGGER.info("Disabled asset $order")
             throw OrderValidationException(OrderStatus.DisabledAsset)
         }

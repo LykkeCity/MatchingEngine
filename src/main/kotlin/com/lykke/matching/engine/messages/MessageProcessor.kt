@@ -5,9 +5,9 @@ import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
@@ -53,7 +53,7 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
     private val multiLimitOrderCancelService: MultiLimitOrderCancelService
     private val transferOperationSaveService: TransferOperationSaveService
 
-    private val applicationSettingsCache: ApplicationSettingsCache
+    private val applicationSettingsHolder: ApplicationSettingsHolder
 
     private val servicesMap: Map<MessageType, AbstractService>
     private val processedMessagesCache: ProcessedMessagesCache
@@ -86,7 +86,7 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
         this.currentTransactionDataHolder = applicationContext.getBean(CurrentTransactionDataHolder::class.java)
 
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
-        this.applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
+        this.applicationSettingsHolder = applicationContext.getBean(ApplicationSettingsHolder::class.java)
 
         val genericLimitOrderService = applicationContext.getBean(GenericLimitOrderService::class.java)
         val genericStopLimitOrderService = applicationContext.getBean(GenericStopLimitOrderService::class.java)
@@ -152,7 +152,7 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
             }
 
 
-            if (!messageProcessingStatusHolder.isMessageSwitchEnabled()) {
+            if (!messageProcessingStatusHolder.isMessageProcessingEnabled()) {
                 service.writeResponse(message, MessageStatus.MESSAGE_PROCESSING_DISABLED)
                 return
             }
