@@ -43,6 +43,34 @@ class PersistenceData(val balancesData: BalancesData?,
                 midPricePersistenceData == null
     }
 
+    fun getSummary(): String {
+        val result = StringBuilder()
+
+        balancesData?.let {
+            result.append("wallets: ${it.wallets.size}, ")
+                    .append("balances: ${it.balances.size}, ")
+        }
+
+        orderBooksData?.let {
+            result.append("order books: ${it.orderBooks.size}, ")
+                    .append("orders to save: ${it.ordersToSave.size}, ")
+                    .append("orders to remove: ${it.ordersToRemove.size}, ")
+        }
+
+        stopOrderBooksData?.let {
+            result.append("stop order books: ${it.orderBooks}, ")
+                    .append("stop orders to save: ${it.ordersToSave.size}, ")
+                    .append("stop orders to remove: ${it.ordersToRemove.size}, ")
+        }
+
+        messageSequenceNumber?.let {
+            result.append("message sequence number: $messageSequenceNumber")
+        }
+
+
+        return result.toString()
+    }
+
     private fun append(builder: StringBuilder, prefix: String, obj: Any?) {
         obj?.let {
             if (builder.isNotEmpty()) {

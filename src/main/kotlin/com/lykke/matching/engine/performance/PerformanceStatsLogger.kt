@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.TypePerformanceStats
 import com.lykke.matching.engine.database.MonitoringDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.utils.PrintUtils
+import com.lykke.utils.AppVersion
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Profile
@@ -32,7 +33,7 @@ class PerformanceStatsLogger @Autowired constructor(private val monitoringDataba
             val totalTime = PrintUtils.convertToString2(typeStats.totalTime.toDouble() / typeStats.count)
             val processingTime = PrintUtils.convertToString2(typeStats.processingTime.toDouble() / typeStats.count)
             val persistTime = PrintUtils.convertToString2(typeStats.persistTime.toDouble() / typeStats.persistTimeCount)
-            LOGGER.info("$type: count: ${typeStats.count}, " +
+            LOGGER.info("App version: ${AppVersion.VERSION}, $type: count: ${typeStats.count}, " +
                     (inputQueueTime?.let { "input queue time: $it, " } ?: "") +
                     (preProcessingTime?.let { "pre processing time: $it, " } ?: "") +
                     "pre processed message queue time: $preProcessedMessageQueueTime, " +
@@ -43,6 +44,7 @@ class PerformanceStatsLogger @Autowired constructor(private val monitoringDataba
 
             monitoringDatabaseAccessor.savePerformanceStats(TypePerformanceStats(now,
                     type,
+                    AppVersion.VERSION,
                     inputQueueTime,
                     preProcessingTime,
                     preProcessedMessageQueueTime,
