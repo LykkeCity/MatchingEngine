@@ -35,7 +35,7 @@ class CashInOutPreprocessor(
         private val messageProcessingStatusHolder: MessageProcessingStatusHolder): MessagePreprocessor {
 
     companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(String.format("%s.%s", CashInOutPreprocessor::class.java.name, LoggerNames.CASH_IN_OUT))
+        private val LOGGER = ThrottlingLogger.getLogger(LoggerNames.CASH_IN_OUT)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 

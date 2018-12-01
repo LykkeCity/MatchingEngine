@@ -23,7 +23,7 @@ import java.util.concurrent.BlockingQueue
 class SingleLimitOrderPreprocessor(private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>) : MessagePreprocessor {
 
     companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(String.format("%s.%s", SingleLimitOrderPreprocessor::class.java.name, LoggerNames.SINGLE_LIMIT_ORDER))
+        private val LOGGER = ThrottlingLogger.getLogger(LoggerNames.SINGLE_LIMIT_ORDER)
     }
 
     @Autowired

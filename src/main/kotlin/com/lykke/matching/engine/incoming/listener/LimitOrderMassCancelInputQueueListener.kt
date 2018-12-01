@@ -10,9 +10,4 @@ import java.util.concurrent.BlockingQueue
 @Component
 class LimitOrderMassCancelInputQueueListener(limitOrderMassCancelInputQueue: BlockingQueue<MessageWrapper>,
                                              limitOrderMassCancelOperationPreprocessor: LimitOrderMassCancelOperationPreprocessor)
-    : InputQueueListener(limitOrderMassCancelInputQueue, limitOrderMassCancelOperationPreprocessor, LOGGER) {
-
-    companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(String.format("%s.%s", LimitOrderMassCancelInputQueueListener::class.java.name, LoggerNames.LIMIT_ORDER_MASS_CANCEL))
-    }
-}
+    : InputQueueListener(limitOrderMassCancelInputQueue, limitOrderMassCancelOperationPreprocessor, ThrottlingLogger.getLogger(LoggerNames.LIMIT_ORDER_MASS_CANCEL))

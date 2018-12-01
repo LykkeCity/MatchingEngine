@@ -29,7 +29,7 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                                     val applicationSettingsCache: ApplicationSettingsCache) : ContextParser<SingleLimitOrderParsedData> {
 
     companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(String.format("%s.%s", SingleLimitOrderContextParser::class.java.name, LoggerNames.SINGLE_LIMIT_ORDER))
+        private val LOGGER = ThrottlingLogger.getLogger(LoggerNames.SINGLE_LIMIT_ORDER)
     }
 
     override fun parse(messageWrapper: MessageWrapper): SingleLimitOrderParsedData {

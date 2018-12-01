@@ -35,7 +35,7 @@ class CashTransferPreprocessor(
 ): MessagePreprocessor {
 
     companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(String.format("%s.%s", CashTransferPreprocessor::class.java.name, LoggerNames.CASH_TRANSFER))
+        private val LOGGER = ThrottlingLogger.getLogger(LoggerNames.CASH_TRANSFER)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 

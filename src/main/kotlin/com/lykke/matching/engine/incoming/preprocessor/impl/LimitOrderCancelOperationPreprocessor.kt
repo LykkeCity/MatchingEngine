@@ -27,7 +27,7 @@ class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContext
                                             val processedMessagesCache: ProcessedMessagesCache) : MessagePreprocessor {
 
     companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(String.format("%s.%s", LimitOrderCancelOperationPreprocessor::class.java.name, LoggerNames.LIMIT_ORDER_CANCEL))
+        private val LOGGER = ThrottlingLogger.getLogger(LoggerNames.LIMIT_ORDER_CANCEL)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 

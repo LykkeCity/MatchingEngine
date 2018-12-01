@@ -10,9 +10,4 @@ import java.util.concurrent.BlockingQueue
 @Component
 class CashInOutInputQueueListener(cashInOutInputQueue: BlockingQueue<MessageWrapper>,
                                   cashInOutPreprocessor: CashInOutPreprocessor)
-    : InputQueueListener(cashInOutInputQueue, cashInOutPreprocessor, LOGGER) {
-
-    companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(String.format("%s.%s", CashInOutInputQueueListener::class.java.name, LoggerNames.CASH_IN_OUT))
-    }
-}
+    : InputQueueListener(cashInOutInputQueue, cashInOutPreprocessor, ThrottlingLogger.getLogger(LoggerNames.CASH_IN_OUT))

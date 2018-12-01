@@ -10,9 +10,4 @@ import java.util.concurrent.BlockingQueue
 @Component
 class CashTransferInputQueueListener(cashTransferInputQueue: BlockingQueue<MessageWrapper>,
                                      cashTransferPreprocessor: CashTransferPreprocessor)
-    : InputQueueListener(cashTransferInputQueue, cashTransferPreprocessor, LOGGER) {
-
-    companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(String.format("%s.%s", CashTransferInputQueueListener::class.java.name, LoggerNames.CASH_TRANSFER))
-    }
-}
+    : InputQueueListener(cashTransferInputQueue, cashTransferPreprocessor, ThrottlingLogger.getLogger(LoggerNames.CASH_TRANSFER))
