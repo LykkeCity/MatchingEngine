@@ -36,7 +36,8 @@ class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDataba
                         asset.minInvertedVolume?.toBigDecimal(),
                         asset.maxVolume?.toBigDecimal(),
                         asset.maxValue?.toBigDecimal(),
-                        asset.marketOrderPriceDeviationThreshold?.toBigDecimal())
+                        asset.marketOrderPriceDeviationThreshold?.toBigDecimal(),
+                        asset.midPriceDeviationThreshold?.toBigDecimal())
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset pairs", e)

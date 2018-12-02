@@ -7,9 +7,10 @@ import java.math.BigDecimal
 @Component
 class PriceDeviationThresholdHolder(private val settingsCache: ApplicationSettingsCache) {
     fun getMidPriceDeviationThreshold(assetPairId: String, executionContext: ExecutionContext): BigDecimal? {
-        return settingsCache.midPriceDeviationThreshold(assetPairId)
+        return executionContext.assetPairsById[assetPairId]?.midPriceDeviationThreshold
     }
+
     fun getMarketOrderPriceDeviationThreshold(assetPairId: String, executionContext: ExecutionContext): BigDecimal? {
-        return settingsCache.marketOrderPriceDeviationThreshold(assetPairId)
+        return executionContext.assetPairsById[assetPairId]?.marketOrderPriceDeviationThreshold ?: settingsCache.marketOrderPriceDeviationThreshold(assetPairId)
     }
 }

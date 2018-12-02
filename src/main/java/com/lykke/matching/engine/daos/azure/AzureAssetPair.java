@@ -1,3 +1,4 @@
+
 package com.lykke.matching.engine.daos.azure;
 
 import com.microsoft.azure.storage.table.TableServiceEntity;
@@ -13,6 +14,7 @@ public class AzureAssetPair extends TableServiceEntity {
     private Double minInvertedVolume;
     private Double maxVolume;
     private Double maxValue;
+    private Double midPriceDeviationThreshold;
     private Double marketOrderPriceDeviationThreshold;
 
     public AzureAssetPair() {
@@ -25,6 +27,7 @@ public class AzureAssetPair extends TableServiceEntity {
                           Double minInvertedVolume,
                           Double maxVolume,
                           Double maxValue,
+                          Double midPriceDeviationThreshold,
                           Double marketOrderPriceDeviationThreshold) {
         super(ASSET_PAIR, baseAssetId + quotingAssetId);
         this.baseAssetId = baseAssetId;
@@ -34,6 +37,7 @@ public class AzureAssetPair extends TableServiceEntity {
         this.minInvertedVolume = minInvertedVolume;
         this.maxVolume = maxVolume;
         this.maxValue = maxValue;
+        this.midPriceDeviationThreshold = midPriceDeviationThreshold;
         this.marketOrderPriceDeviationThreshold = marketOrderPriceDeviationThreshold;
     }
 
@@ -97,6 +101,14 @@ public class AzureAssetPair extends TableServiceEntity {
         this.maxValue = maxValue;
     }
 
+    public Double getMidPriceDeviationThreshold() {
+        return midPriceDeviationThreshold;
+    }
+
+    public void setMidPriceDeviationThreshold(Double midPriceDeviationThreshold) {
+        this.midPriceDeviationThreshold = midPriceDeviationThreshold;
+    }
+
     public Double getMarketOrderPriceDeviationThreshold() {
         return marketOrderPriceDeviationThreshold;
     }
@@ -115,6 +127,7 @@ public class AzureAssetPair extends TableServiceEntity {
                 ", minInvertedVolume=" + minInvertedVolume +
                 ", maxVolume=" + maxVolume +
                 ", maxValue=" + maxValue +
+                ", midPriceDeviationThreshold=" + midPriceDeviationThreshold +
                 ", marketOrderPriceDeviationThreshold=" + marketOrderPriceDeviationThreshold +
                 ")";
     }
