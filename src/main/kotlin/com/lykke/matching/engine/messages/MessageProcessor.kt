@@ -17,9 +17,6 @@ import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
-import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
-import com.lykke.matching.engine.notification.BalanceUpdateHandler
-import com.lykke.matching.engine.notification.QuotesUpdateHandler
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
@@ -84,6 +81,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val messageProcessingStatusHolder: MessageProcessingStatusHolder
     private val messageSequenceNumberHolder: MessageSequenceNumberHolder
 
+    private var currentTransactionDataHolder: CurrentTransactionDataHolder
+
     init {
         val isLocalProfile = applicationContext.environment.acceptsProfiles("local")
         messageProcessingStatusHolder = applicationContext.getBean(MessageProcessingStatusHolder::class.java)
@@ -131,6 +130,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         cashInOutPreprocessor.start()
         this.cashTransferPreprocessor = applicationContext.getBean(CashTransferPreprocessor::class.java)
         cashTransferPreprocessor.start()
+
+        this.currentTransactionDataHolder = applicationContext.getBean(CurrentTransactionDataHolder::class.java)
 
         this.historyTicksService = HistoryTicksService(marketStateCache,
                 genericLimitOrderService,

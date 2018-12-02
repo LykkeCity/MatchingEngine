@@ -33,7 +33,7 @@ class OrderBookListener {
     @PostConstruct
     fun initRabbitMqPublisher() {
         rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.orderBooks,
-                RabbitOrderBookListener::class.java.simpleName,
+                OrderBookListener::class.java.simpleName,
                 rabbitOrderBookQueue,
                 config.me.name,
                 AppVersion.VERSION,
@@ -42,7 +42,7 @@ class OrderBookListener {
 
     @EventListener
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
-        if(rabbitFailureEvent.publisherName == RabbitOrderBookListener::class.java.simpleName) {
+        if(rabbitFailureEvent.publisherName == OrderBookListener::class.java.simpleName) {
             rabbitFailureEvent.failedEvent?.let {
                 rabbitOrderBookQueue.putFirst(it as OrderBook)
             }
@@ -52,7 +52,7 @@ class OrderBookListener {
 
     @EventListener
     fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
-        if (rabbitRecoverEvent.publisherName == RabbitOrderBookListener::class.java.simpleName) {
+        if (rabbitRecoverEvent.publisherName == OrderBookListener::class.java.simpleName) {
             applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
         }
     }
