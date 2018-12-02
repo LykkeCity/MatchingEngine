@@ -15,6 +15,7 @@ class MessageWrapper(
         val byteArray: ByteArray,
         val clientHandler: ClientHandler?,
         val startTimestamp: Long = System.nanoTime(),
+
         var timestamp: Long? = null,
         var messageId: String? = null,
         var parsedMessage: MessageOrBuilder? = null,
@@ -27,6 +28,9 @@ class MessageWrapper(
         val LOGGER = ThrottlingLogger.getLogger(MessageWrapper::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
+
+    var messagePreProcessorStartTimestamp: Long?  = null
+    var messagePreProcessorEndTimestamp: Long? = null
 
     var processedMessage: ProcessedMessage? = null
 

@@ -33,11 +33,6 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         val now = Date()
         val context = messageWrapper.context as LimitOrderCancelOperationContext
 
-        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
-            processOldLimitOrderCancelMessage(messageWrapper, context, now)
-            return
-        }
-
         LOGGER.debug("Got limit order cancel request (id: ${context.uid}, orders: ${context.limitOrderIds})")
         val typeToOrder = getLimitOrderTypeToLimitOrders(context.limitOrderIds)
 
@@ -53,7 +48,8 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                 context.messageId,
                 context.messageType,
                 typeToOrder[LimitOrderType.LIMIT],
-                typeToOrder[LimitOrderType.STOP_LIMIT], now, context.processedMessage, false))
+                typeToOrder[LimitOrderType.STOP_LIMIT], now, context.processedMessage, false,
+                messageWrapper))
 
 
         limitOrdersCancelHelper.processPersistResults(updateSuccessful, messageWrapper, context.messageId)
@@ -77,29 +73,5 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
 
     private fun getOrder(orderId: String): LimitOrder? {
         return genericLimitOrderService.getOrder(orderId) ?: genericStopLimitOrderService.getOrder(orderId)
-    }
-
-    private fun processOldLimitOrderCancelMessage(messageWrapper: MessageWrapper, context: LimitOrderCancelOperationContext,  now: Date) {
-        LOGGER.debug("Got old limit  order messageId: ${context.messageId}  (id: ${context.limitOrderIds}) cancel request id: ${context.uid}")
-
-        val limitOrderId = context.limitOrderIds.first().toString()
-        val order = genericLimitOrderService.getOrder(limitOrderId)
-        if (order != null) {
-            val newOrderBook = genericLimitOrderService.getOrderBook(order.assetPairId).copy()
-            newOrderBook.removeOrder(order)
-            val updated = persistenceManager.persist(PersistenceData(null,
-                    messageWrapper.processedMessage,
-                    OrderBooksPersistenceData(listOf(OrderBookPersistenceData(order.assetPairId,
-                            order.isBuySide(),
-                            newOrderBook.getCopyOfOrderBook(order.isBuySide()))),
-                            emptyList(),
-                            listOf(order)),
-                    null,
-                    null))
-            if (updated) {
-                genericLimitOrderService.cancelLimitOrder(Date(), limitOrderId, true)
-            }
-        }
-        messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
     }
 }

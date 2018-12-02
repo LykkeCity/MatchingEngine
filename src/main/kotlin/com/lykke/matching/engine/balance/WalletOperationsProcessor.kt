@@ -13,6 +13,9 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
+import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolder
+import com.lykke.matching.engine.order.transaction.WalletAssetBalance
+import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate as OutgoingBalanceUpdate
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
@@ -28,33 +31,31 @@ import kotlin.collections.toList
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate as OutgoingBalanceUpdate
 
 class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
+                                private val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
                                 private val applicationSettings: ApplicationSettingsCache,
                                 private val persistenceManager: PersistenceManager,
                                 private val assetsHolder: AssetsHolder,
                                 private val validate: Boolean,
-                                private val logger: Logger?) {
+                                private val logger: Logger?): BalancesGetter {
 
     companion object {
         private val LOGGER = Logger.getLogger(WalletOperationsProcessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val balancesUpdater = balancesHolder.createUpdater()
-    private val changedAssetBalances = HashMap<String, ChangedAssetBalance>()
-    private val updates = HashMap<String, ClientBalanceUpdate>()
+   private val clientBalanceUpdatesByClientIdAndAssetId = HashMap<String, ClientBalanceUpdate>()
 
-    fun preProcess(operations: List<WalletOperation>, forceApply: Boolean = false): WalletOperationsProcessor {
+    fun preProcess(operations: Collection<WalletOperation>, forceApply: Boolean = false): WalletOperationsProcessor {
         if (operations.isEmpty()) {
             return this
         }
-        val transactionChangedAssetBalances = HashMap<String, TransactionChangedAssetBalance>()
+        val changedAssetBalances = HashMap<String, ChangedAssetBalance>()
         operations.forEach { operation ->
             if (isTrustedClientReservedBalanceOperation(operation)) {
                 return@forEach
             }
-            val key = key(operation)
-            val changedAssetBalance = transactionChangedAssetBalances.getOrPut(key) {
-                TransactionChangedAssetBalance(changedAssetBalances.getOrDefault(key, defaultChangedAssetBalance(operation)))
+            val changedAssetBalance = changedAssetBalances.getOrPut(generateKey(operation)) {
+                getChangedAssetBalance(operation.clientId, operation.assetId)
             }
 
             val asset = assetsHolder.getAsset(operation.assetId)
@@ -67,7 +68,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
 
         if (validate) {
             try {
-                transactionChangedAssetBalances.values.forEach { validateBalanceChange(it) }
+                changedAssetBalances.values.forEach { validateBalanceChange(it) }
             } catch (e: BalanceException) {
                 if (!forceApply) {
                     throw e
@@ -78,37 +79,53 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
             }
         }
 
-        changedAssetBalances.putAll(transactionChangedAssetBalances.mapValues {
-            val transactionChangedAssetBalance = it.value
-            val update = updates.getOrPut(key(transactionChangedAssetBalance)) {
-                ClientBalanceUpdate(transactionChangedAssetBalance.clientId,
-                        transactionChangedAssetBalance.assetId,
-                        transactionChangedAssetBalance.changedAssetBalance.originBalance,
-                        transactionChangedAssetBalance.balance,
-                        transactionChangedAssetBalance.changedAssetBalance.originReserved,
-                        transactionChangedAssetBalance.reserved)
-            }
-            update.newBalance = transactionChangedAssetBalance.balance
-            update.newReserved = transactionChangedAssetBalance.reserved
-            it.value.apply()
-        })
+        changedAssetBalances.forEach { processChangedAssetBalance(it.value) }
         return this
     }
 
+    private fun processChangedAssetBalance(changedAssetBalance: ChangedAssetBalance) {
+        if (!changedAssetBalance.isChanged()) {
+            return
+        }
+        changedAssetBalance.apply()
+        generateEventData(changedAssetBalance)
+    }
+
+    private fun generateEventData(changedAssetBalance: ChangedAssetBalance) {
+        val key = generateKey(changedAssetBalance)
+        val update = clientBalanceUpdatesByClientIdAndAssetId.getOrPut(key) {
+            ClientBalanceUpdate(changedAssetBalance.clientId,
+                    changedAssetBalance.assetId,
+                    changedAssetBalance.originBalance,
+                    changedAssetBalance.balance,
+                    changedAssetBalance.originReserved,
+                    changedAssetBalance.reserved)
+        }
+        update.newBalance = changedAssetBalance.balance
+        update.newReserved = changedAssetBalance.reserved
+        if (isBalanceUpdateNotificationNotNeeded(update)) {
+            clientBalanceUpdatesByClientIdAndAssetId.remove(key)
+        }
+    }
+
+    private fun isBalanceUpdateNotificationNotNeeded(clientBalanceUpdate: ClientBalanceUpdate): Boolean {
+        return NumberUtils.equalsIgnoreScale(clientBalanceUpdate.oldBalance, clientBalanceUpdate.newBalance) &&
+                NumberUtils.equalsIgnoreScale(clientBalanceUpdate.oldReserved, clientBalanceUpdate.newReserved)
+    }
+
     fun apply(): WalletOperationsProcessor {
-        balancesUpdater.apply()
+        currentTransactionBalancesHolder.apply()
         return this
     }
 
     fun persistenceData(): BalancesData {
-        return balancesUpdater.persistenceData()
+        return currentTransactionBalancesHolder.persistenceData()
     }
 
     fun persistBalances(processedMessage: ProcessedMessage?,
                         orderBooksData: OrderBooksPersistenceData?,
                         stopOrderBooksData: OrderBooksPersistenceData?,
                         messageSequenceNumber: Long?): Boolean {
-        changedAssetBalances.forEach { it.value.apply() }
         return persistenceManager.persist(PersistenceData(persistenceData(),
                 processedMessage,
                 orderBooksData,
@@ -117,39 +134,67 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
     }
 
     fun sendNotification(id: String, type: String, messageId: String) {
-        if (updates.isNotEmpty()) {
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList(), messageId))
+        if (clientBalanceUpdatesByClientIdAndAssetId.isNotEmpty()) {
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), clientBalanceUpdatesByClientIdAndAssetId.values.toList(), messageId))
         }
     }
 
     fun getClientBalanceUpdates(): List<ClientBalanceUpdate> {
-        return updates.values.toList()
+        return clientBalanceUpdatesByClientIdAndAssetId.values.toList()
     }
 
-    private fun defaultChangedAssetBalance(operation: WalletOperation): ChangedAssetBalance {
-        val walletAssetBalance = balancesUpdater.getWalletAssetBalance(operation.clientId, operation.assetId)
-        return ChangedAssetBalance(walletAssetBalance.wallet, walletAssetBalance.assetBalance)
+    override fun getAvailableBalance(clientId: String, assetId: String): BigDecimal {
+        val balance = getChangedCopyOrOriginalAssetBalance(clientId, assetId)
+        return if (balance.reserved > BigDecimal.ZERO)
+            balance.balance - balance.reserved
+        else
+            balance.balance
+    }
+
+    override fun getAvailableReservedBalance(clientId: String, assetId: String): BigDecimal {
+        val balance = getChangedCopyOrOriginalAssetBalance(clientId, assetId)
+        return if (balance.reserved > BigDecimal.ZERO && balance.reserved < balance.balance)
+            balance.reserved
+        else
+            balance.balance
+    }
+
+    override fun getReservedBalance(clientId: String, assetId: String): BigDecimal {
+        return getChangedCopyOrOriginalAssetBalance(clientId, assetId).reserved
     }
 
     private fun isTrustedClientReservedBalanceOperation(operation: WalletOperation): Boolean {
         return NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, operation.amount) && applicationSettings.isTrustedClient(operation.clientId)
     }
-}
 
-private abstract class AbstractChangedAssetBalance(val assetId: String,
-                                                   val clientId: String,
-                                                   val originBalance: BigDecimal,
-                                                   val originReserved: BigDecimal) {
-    var balance = originBalance
-    var reserved = originReserved
+    private fun getChangedAssetBalance(clientId: String, assetId: String): ChangedAssetBalance {
+        val walletAssetBalance = getCurrentTransactionWalletAssetBalance(clientId, assetId)
+        return ChangedAssetBalance(walletAssetBalance.wallet, walletAssetBalance.assetBalance)
+    }
+
+    private fun getChangedCopyOrOriginalAssetBalance(clientId: String, assetId: String): AssetBalance {
+        return currentTransactionBalancesHolder.getChangedCopyOrOriginalAssetBalance(clientId, assetId)
+    }
+
+    private fun getCurrentTransactionWalletAssetBalance(clientId: String, assetId: String): WalletAssetBalance {
+        return currentTransactionBalancesHolder.getWalletAssetBalance(clientId, assetId)
+    }
 }
 
 private class ChangedAssetBalance(private val wallet: Wallet,
-                                  val assetBalance: AssetBalance) :
-        AbstractChangedAssetBalance(assetBalance.asset,
-                wallet.clientId,
-                assetBalance.balance,
-                assetBalance.reserved) {
+                                  assetBalance: AssetBalance) {
+
+    val assetId = assetBalance.asset
+    val clientId = wallet.clientId
+    val originBalance = assetBalance.balance
+    val originReserved = assetBalance.reserved
+    var balance = originBalance
+    var reserved = originReserved
+
+    fun isChanged(): Boolean {
+        return !NumberUtils.equalsIgnoreScale(originBalance, balance) ||
+                !NumberUtils.equalsIgnoreScale(originReserved, reserved)
+    }
 
     fun apply(): Wallet {
         wallet.setBalance(assetId, balance)
@@ -158,25 +203,14 @@ private class ChangedAssetBalance(private val wallet: Wallet,
     }
 }
 
-private class TransactionChangedAssetBalance(val changedAssetBalance: ChangedAssetBalance) :
-        AbstractChangedAssetBalance(changedAssetBalance.assetId,
-                changedAssetBalance.clientId,
-                changedAssetBalance.balance,
-                changedAssetBalance.reserved) {
+private fun generateKey(operation: WalletOperation) = generateKey(operation.clientId, operation.assetId)
 
-    fun apply(): ChangedAssetBalance {
-        changedAssetBalance.balance = balance
-        changedAssetBalance.reserved = reserved
-        return changedAssetBalance
-    }
-}
+private fun generateKey(assetBalance: ChangedAssetBalance) = generateKey(assetBalance.clientId, assetBalance.assetId)
 
-private fun key(operation: WalletOperation) = "${operation.clientId}_${operation.assetId}"
-
-private fun key(assetBalance: TransactionChangedAssetBalance) = "${assetBalance.clientId}_${assetBalance.assetId}"
+private fun generateKey(clientId: String, assetId: String) = "${clientId}_$assetId"
 
 @Throws(BalanceException::class)
-private fun validateBalanceChange(assetBalance: TransactionChangedAssetBalance) =
+private fun validateBalanceChange(assetBalance: ChangedAssetBalance) =
         validateBalanceChange(assetBalance.clientId,
                 assetBalance.assetId,
                 assetBalance.originBalance,

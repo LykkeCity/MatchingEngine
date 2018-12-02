@@ -1,6 +1,8 @@
 package com.lykke.matching.engine.config.spring
 
-import com.google.gson.Gson
+import com.google.gson.*
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
+import com.lykke.matching.engine.services.validators.settings.SettingValidator
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.catalina.connector.Connector
 import org.springframework.beans.factory.annotation.Autowired
@@ -10,8 +12,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.http.converter.json.GsonHttpMessageConverter
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
-import springfox.documentation.swagger.web.UiConfigurationBuilder
-import springfox.documentation.swagger.web.UiConfiguration
+import springfox.documentation.spring.web.json.Json
 
 
 
@@ -50,12 +51,13 @@ open class WebConfig  {
     }
 
     @Bean
-    open fun uiConfig(): UiConfiguration {
-        return UiConfigurationBuilder.builder()
-                .displayRequestDuration(true)
-                .validatorUrl(null)
-                .build()
+    open fun settingValidators(settingValidators: List<SettingValidator>): Map<AvailableSettingGroup, List<SettingValidator>> {
+        return settingValidators.groupBy { it.getSettingGroup() }
     }
+
+    private fun gson(): Gson = GsonBuilder()
+            .registerTypeAdapter(Json::class.java, SpringfoxJsonToGsonAdapter())
+            .create()
 
     private fun getConnector(port: Int): Connector {
         val connector = Connector(CONNECTOR_PROTOCOL)

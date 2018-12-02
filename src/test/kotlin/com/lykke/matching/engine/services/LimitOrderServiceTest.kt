@@ -65,16 +65,16 @@ class LimitOrderServiceTest: AbstractTest() {
         @Primary
         open fun testConfig(): TestSettingsDatabaseAccessor {
             val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client3"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client3"))
             return testSettingsDatabaseAccessor
         }
     }
 
     @Autowired
-    private lateinit var messageBuilder: MessageBuilder
+    private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @Autowired
-    private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
+    private lateinit var messageBuilder: MessageBuilder
 
     @Before
     fun setUp() {
@@ -441,6 +441,34 @@ class LimitOrderServiceTest: AbstractTest() {
         assertEquals(OutgoingOrderStatus.MATCHED, event.orders[1].status)
 
         assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
+    }
+
+    @Test
+    fun testStatusDate() {
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 1.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1.0)
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", uid = "order1", assetId = "EURUSD", volume = -1.0, price = 1.0)))
+
+        assertEquals(OrderStatus.InOrderBook.name, genericLimitOrderService.getOrder("order1")!!.status)
+        val inOrderBookStatusDate = genericLimitOrderService.getOrder("order1")!!.statusDate
+
+        Thread.sleep(10)
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", volume = 0.4, price = 1.0)))
+
+        assertEquals(OrderStatus.Processing.name, genericLimitOrderService.getOrder("order1")!!.status)
+        val partiallyMatchedStatusDate1 = genericLimitOrderService.getOrder("order1")!!.statusDate
+
+        Thread.sleep(10)
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", volume = 0.4, price = 1.0)))
+
+        assertEquals(OrderStatus.Processing.name, genericLimitOrderService.getOrder("order1")!!.status)
+        val partiallyMatchedStatusDate2 = genericLimitOrderService.getOrder("order1")!!.statusDate
+
+        assertTrue(partiallyMatchedStatusDate1!! > inOrderBookStatusDate)
+        assertEquals(partiallyMatchedStatusDate1, partiallyMatchedStatusDate2)
     }
 
     @Test
@@ -1673,7 +1701,7 @@ class LimitOrderServiceTest: AbstractTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3))
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 11000.0, volume = -0.3))
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting("0.09", "BTCUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD, getSetting("0.09", "BTCUSD"))
 
         applicationSettingsCache.update()
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 11000.0, volume = 1.0)))
@@ -1687,7 +1715,7 @@ class LimitOrderServiceTest: AbstractTest() {
         assertOrderBookSize("BTCUSD", false, 2)
         assertOrderBookSize("BTCUSD", true, 0)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting("0.1", "BTCUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD, getSetting("0.1", "BTCUSD"))
 
         applicationSettingsCache.update()
 
@@ -1708,7 +1736,7 @@ class LimitOrderServiceTest: AbstractTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 13000.0, volume = 0.3))
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 12000.0, volume = 0.3))
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting("0.07", "BTCUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD, getSetting("0.07", "BTCUSD"))
 
         applicationSettingsCache.update()
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 12000.0, volume = -1.0)))
@@ -1722,7 +1750,7 @@ class LimitOrderServiceTest: AbstractTest() {
         assertOrderBookSize("BTCUSD", true, 2)
         assertOrderBookSize("BTCUSD", false, 0)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting("0.08", "BTCUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD, getSetting("0.08", "BTCUSD"))
         applicationSettingsCache.update()
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 12000.0, volume = -1.0)))
 

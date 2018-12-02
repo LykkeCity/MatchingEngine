@@ -8,15 +8,14 @@ import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.notification.*
-import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
-import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.junit.After
@@ -71,10 +70,10 @@ abstract class AbstractTest {
     protected lateinit var testOrderDatabaseAccessor: TestFileOrderDatabaseAccessor
 
     @Autowired
-    private lateinit var genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory
+    protected lateinit var genericLimitOrderService: GenericLimitOrderService
 
     @Autowired
-    protected lateinit var genericLimitOrderService: GenericLimitOrderService
+    protected lateinit var singleLimitOrderService: SingleLimitOrderService
 
     @Autowired
     protected lateinit var multiLimitOrderService: MultiLimitOrderService
@@ -125,12 +124,6 @@ abstract class AbstractTest {
     protected lateinit var cashTransferOperationsService: CashTransferOperationService
 
     @Autowired
-    protected lateinit var messageSequenceNumberHolder: MessageSequenceNumberHolder
-
-    @Autowired
-    protected lateinit var messageSender: MessageSender
-
-    @Autowired
     protected lateinit var clientsEventsQueue: BlockingQueue<Event<*>>
 
     @Autowired
@@ -147,7 +140,6 @@ abstract class AbstractTest {
     protected lateinit var cashInOutOperationService: CashInOutOperationService
 
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
-    protected lateinit var singleLimitOrderService: SingleLimitOrderService
 
     private var initialized = false
     protected open fun initServices() {
@@ -159,7 +151,6 @@ abstract class AbstractTest {
         assetPairsCache.update()
         applicationSettingsCache.update()
 
-        singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
     }
@@ -212,18 +203,34 @@ abstract class AbstractTest {
 
     @After
     open fun tearDown() {
-        if (initialized) {
-            val primaryDbOrders = ordersDatabaseAccessorsHolder.primaryAccessor.loadLimitOrders()
-            val secondaryDbOrders = ordersDatabaseAccessorsHolder.secondaryAccessor!!.loadLimitOrders()
-            val cacheOrders = genericLimitOrderService.getAllOrderBooks().values.flatMap {
-                val orders = mutableListOf<LimitOrder>()
-                orders.addAll(it.getOrderBook(false))
-                orders.addAll(it.getOrderBook(true))
-                orders
-            }
-            assertEqualsOrderLists(primaryDbOrders, cacheOrders)
-            assertEqualsOrderLists(secondaryDbOrders, cacheOrders)
+        assertEqualsDbAndCacheLimitOrders()
+        assertEqualsDbAndCacheStopLimitOrders()
+    }
+
+    private fun assertEqualsDbAndCacheLimitOrders() {
+        val primaryDbOrders = ordersDatabaseAccessorsHolder.primaryAccessor.loadLimitOrders()
+        val secondaryDbOrders = ordersDatabaseAccessorsHolder.secondaryAccessor!!.loadLimitOrders()
+        val cacheOrders = genericLimitOrderService.getAllOrderBooks().values.flatMap {
+            val orders = mutableListOf<LimitOrder>()
+            orders.addAll(it.getOrderBook(false))
+            orders.addAll(it.getOrderBook(true))
+            orders
         }
+        assertEqualsOrderLists(primaryDbOrders, cacheOrders)
+        assertEqualsOrderLists(secondaryDbOrders, cacheOrders)
+    }
+
+    private fun assertEqualsDbAndCacheStopLimitOrders() {
+        val primaryDbOrders = stopOrdersDatabaseAccessorsHolder.primaryAccessor.loadStopLimitOrders()
+        val secondaryDbOrders = stopOrdersDatabaseAccessorsHolder.secondaryAccessor!!.loadStopLimitOrders()
+        val cacheOrders = genericStopLimitOrderService.getAllOrderBooks().values.flatMap {
+            val orders = mutableListOf<LimitOrder>()
+            orders.addAll(it.getOrderBook(false))
+            orders.addAll(it.getOrderBook(true))
+            orders
+        }
+        assertEqualsOrderLists(primaryDbOrders, cacheOrders)
+        assertEqualsOrderLists(secondaryDbOrders, cacheOrders)
     }
 
     private fun assertEqualsOrderLists(orders1: Collection<LimitOrder>, orders2: Collection<LimitOrder>) {
@@ -235,16 +242,17 @@ abstract class AbstractTest {
             assertNotNull(order2)
             assertEqualsOrders(order1, order2!!)
         }
-
     }
 
     private fun assertEqualsOrders(order1: LimitOrder, order2: LimitOrder) {
         assertEquals(order1.id, order2.id)
         assertEquals(order1.externalId, order2.externalId)
         assertEquals(order1.status, order2.status)
+        assertEquals(order1.statusDate, order2.statusDate)
         assertEquals(order1.remainingVolume, order2.remainingVolume)
         assertEquals(order1.lastMatchTime, order2.lastMatchTime)
         assertEquals(order1.reservedLimitVolume, order2.reservedLimitVolume)
+        assertEquals(order1.price, order2.price)
     }
 
     protected fun assertEventBalanceUpdate(clientId: String,

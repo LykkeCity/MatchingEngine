@@ -9,10 +9,11 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.services.validators.impl.OrderFatalValidationException
+import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
+import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
@@ -46,6 +47,7 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
         if (validationResult.isFatalInvalid) {
             LOGGER.error("Fatal validation error occurred, ${validationResult.message} " +
                     "Error details: $singleLimitContext")
+            writeResponse(messageWrapper, MessageStatusUtils.toMessageStatus(validationResult.status!!), validationResult.message)
             return
         }
 
@@ -62,21 +64,25 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
                 LimitOrderType.STOP_LIMIT -> limitOrderInputValidator.validateStopOrder(singleLimitOrderParsedData)
             }
         } catch (e: OrderValidationException) {
-            return OrderValidationResult(false, false, e.message, e.orderStatus)
-        } catch (e: OrderFatalValidationException) {
-            return OrderValidationResult(false, true, e.message)
+            return OrderValidationResult(false, isFatalInvalid(e), e.message, e.orderStatus)
         }
 
         return OrderValidationResult(true)
     }
 
+    private fun isFatalInvalid(validationException: OrderValidationException): Boolean {
+        return validationException.orderStatus == OrderStatus.UnknownAsset
+    }
+
     override fun run() {
         while (true) {
-            val message = limitOrderInputQueue.take()
+            val messageWrapper = limitOrderInputQueue.take()
             try {
-                preProcess(message)
+                messageWrapper.messagePreProcessorStartTimestamp = System.nanoTime()
+                preProcess(messageWrapper)
+                messageWrapper.messagePreProcessorEndTimestamp = System.nanoTime()
             } catch (exception: Exception) {
-                handlePreprocessingException(exception, message)
+                handlePreprocessingException(exception, messageWrapper)
             }
         }
     }
@@ -87,12 +93,8 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
-        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
-        } else {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setStatus(status.type))
-        }
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setStatus(status.type))
     }
 
     private fun handlePreprocessingException(exception: Exception, message: MessageWrapper) {
