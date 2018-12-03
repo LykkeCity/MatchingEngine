@@ -9,6 +9,7 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
+import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -23,10 +24,11 @@ import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 @Service
-class ReservedCashInOutOperationService @Autowired constructor (private val assetsHolder: AssetsHolder,
-                                                                private val balancesHolder: BalancesHolder,
-                                                                private val reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
-                                                                private val reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator) : AbstractService {
+class ReservedCashInOutOperationService @Autowired constructor(private val assetsHolder: AssetsHolder,
+                                                               private val balancesHolder: BalancesHolder,
+                                                               private val reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
+                                                               private val reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
+                                                               private val performanceStatsHolder: PerformanceStatsHolder) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(ReservedCashInOutOperationService::class.java.name)
@@ -67,9 +69,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setMatchingEngineId(matchingEngineOperationId)
-                    .setStatus(MessageStatus.RUNTIME.type))
+            writeErrorResponse(messageWrapper, matchingEngineOperationId, MessageStatus.RUNTIME)
             LOGGER.info("Reserved cash in/out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.reservedVolume)}: unable to save balance")
             return
         }
@@ -82,19 +82,10 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                 operation.assetId,
                 messageWrapper.messageId!!))
 
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setMatchingEngineId(matchingEngineOperationId)
-                .setStatus(MessageStatus.OK.type))
+        writeResponse(messageWrapper, matchingEngineOperationId, MessageStatus.OK)
 
         LOGGER.info("Reserved cash in/out operation (${message.id}) for client ${message.clientId}, " +
                 "asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.reservedVolume)} processed")
-    }
-
-    fun writeErrorResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus, errorMessage: String = StringUtils.EMPTY) {
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse
-                .newBuilder()
-                .setMatchingEngineId(matchingEngineOperationId)
-                .setStatus(status.type).setStatusReason(errorMessage))
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.ReservedCashInOutOperation {
@@ -103,16 +94,42 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        messageWrapper.messageId = if(message.hasMessageId()) message.messageId else  message.id
+        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.id
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
         messageWrapper.id = message.id
     }
 
-    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+    fun writeResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus) {
+        val start = System.nanoTime()
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setMatchingEngineId(matchingEngineOperationId)
+                .setStatus(status.type)
+        )
+        val end = System.nanoTime()
+
+        performanceStatsHolder.addWriteResponseTime(MessageType.RESERVED_CASH_IN_OUT_OPERATION.type, end - start)
+    }
+
+
+    override fun writeResponse(messageWrapper: MessageWrapper,  status: MessageStatus) {
+        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(status.type)
         )
+        val end = System.nanoTime()
+
+        performanceStatsHolder.addWriteResponseTime(MessageType.RESERVED_CASH_IN_OUT_OPERATION.type, end - start)
+    }
+
+    fun writeErrorResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus, errorMessage: String = StringUtils.EMPTY) {
+        val start = System.nanoTime()
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse
+                .newBuilder()
+                .setMatchingEngineId(matchingEngineOperationId)
+                .setStatus(status.type).setStatusReason(errorMessage))
+        val end = System.nanoTime()
+        performanceStatsHolder.addWriteResponseTime(MessageType.RESERVED_CASH_IN_OUT_OPERATION.type, end - start)
     }
 
     private fun getMessage(messageWrapper: MessageWrapper): ProtocolMessages.ReservedCashInOutOperation {
