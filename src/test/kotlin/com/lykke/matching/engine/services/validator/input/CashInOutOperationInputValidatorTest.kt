@@ -14,8 +14,8 @@ import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
+import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith

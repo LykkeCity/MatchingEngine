@@ -13,9 +13,6 @@ import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
-import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
-import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
@@ -79,8 +76,6 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
         this.marketOrderDatabaseAccessor = applicationContext.getBean(AzureMarketOrderDatabaseAccessor::class.java)
         this.backOfficeDatabaseAccessor = applicationContext.getBean(AzureBackOfficeDatabaseAccessor::class.java)
 
-        this.currentTransactionDataHolder = applicationContext.getBean(CurrentTransactionDataHolder::class.java)
-
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
         this.applicationSettingsHolder = applicationContext.getBean(ApplicationSettingsHolder::class.java)
 
@@ -103,6 +98,8 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
         this.multiLimitOrderCancelService = applicationContext.getBean(MultiLimitOrderCancelService::class.java)
 
         this.transferOperationSaveService = applicationContext.getBean(TransferOperationSaveService::class.java)
+
+        this.currentTransactionDataHolder = applicationContext.getBean(CurrentTransactionDataHolder::class.java)
 
         processedMessagesCache = applicationContext.getBean(ProcessedMessagesCache::class.java)
         servicesMap = initServicesMap()

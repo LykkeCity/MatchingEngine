@@ -20,7 +20,6 @@ import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.Date
-import kotlin.collections.HashMap
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate as OutgoingBalanceUpdate
 
 class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
@@ -36,7 +35,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val clientBalanceUpdatesByClientIdAndAssetId = HashMap<String, ClientBalanceUpdate>()
+   private val clientBalanceUpdatesByClientIdAndAssetId = HashMap<String, ClientBalanceUpdate>()
 
     fun preProcess(operations: Collection<WalletOperation>,
                    allowInvalidBalance: Boolean = false,
