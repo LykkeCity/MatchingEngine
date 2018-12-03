@@ -16,6 +16,7 @@ import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
+import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.assertEquals
@@ -145,6 +146,8 @@ abstract class AbstractTest {
     protected lateinit var messageProcessingStatusHolder: MessageProcessingStatusHolder
 
     @Autowired
+    private lateinit var performanceStatsHolder: PerformanceStatsHolder
+
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
 
     protected open fun initServices() {

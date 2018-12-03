@@ -12,8 +12,7 @@ import org.springframework.stereotype.Component
 import java.util.Date
 
 @Component
-@Profile("default")
-class PerformanceStatsLogger @Autowired constructor(private val monitoringDatabaseAccessor: MonitoringDatabaseAccessor) {
+class PerformanceStatsLogger @Autowired constructor() {
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(PerformanceStatsLogger::class.java.name)
     }
@@ -32,27 +31,18 @@ class PerformanceStatsLogger @Autowired constructor(private val monitoringDataba
 
             val totalTime = PrintUtils.convertToString2(typeStats.totalTime.toDouble() / typeStats.count)
             val processingTime = PrintUtils.convertToString2(typeStats.processingTime.toDouble() / typeStats.count)
-            val persistTime = PrintUtils.convertToString2(typeStats.persistTime.toDouble() / typeStats.persistTimeCount)
+            val persistTime = PrintUtils.convertToString2(typeStats.persistTime.toDouble() / typeStats.persistsCount)
+            val writeResponseTime = PrintUtils.convertToString2(typeStats.writeResponseTime.toDouble() / typeStats.writeResponseCount)
             LOGGER.info("App version: ${AppVersion.VERSION}, $type: count: ${typeStats.count}, " +
                     (inputQueueTime?.let { "input queue time: $it, " } ?: "") +
                     (preProcessingTime?.let { "pre processing time: $it, " } ?: "") +
                     "pre processed message queue time: $preProcessedMessageQueueTime, " +
                     "processing time: $processingTime " +
-                    "(persist time: $persistTime), " +
-                    "persist count: ${typeStats.persistTimeCount}, " +
+                    "(persist time: $persistTime, write response time: $writeResponseTime), " +
+                    "persist count: ${typeStats.persistsCount}, " +
                     "total time: $totalTime")
 
-            monitoringDatabaseAccessor.savePerformanceStats(TypePerformanceStats(now,
-                    type,
-                    AppVersion.VERSION,
-                    inputQueueTime,
-                    preProcessingTime,
-                    preProcessedMessageQueueTime,
-                    processingTime,
-                    persistTime,
-                    totalTime,
-                    typeStats.count,
-                    typeStats.persistTimeCount))
+
         }
     }
 }

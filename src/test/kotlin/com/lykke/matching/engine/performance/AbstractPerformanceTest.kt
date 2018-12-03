@@ -124,6 +124,8 @@ abstract class AbstractPerformanceTest {
 
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
+    val performanceStatsHolder = PerformanceStatsHolder()
+
     private fun clearMessageQueues() {
         rabbitEventsQueue.clear()
         rabbitTrustedClientsEventsQueue.clear()
@@ -239,7 +241,8 @@ abstract class AbstractPerformanceTest {
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
                 executionDataApplyService,
-                previousLimitOrdersProcessor)
+                previousLimitOrdersProcessor,
+                performanceStatsHolder)
 
         multiLimitOrderService = MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
@@ -249,8 +252,7 @@ abstract class AbstractPerformanceTest {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                applicationSettingsHolder,
-                messageProcessingStatusHolder)
+                applicationSettingsHolder)
 
         val marketOrderValidator = MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder)
         marketOrderService = MarketOrderService(matchingEngine,
@@ -264,7 +266,6 @@ abstract class AbstractPerformanceTest {
                 marketOrderValidator,
                 messageSequenceNumberHolder,
                 priceDeviationThresholdHolder,
-                midPriceHolder,
                 messageProcessingStatusHolder,
                 notificationSender
         )

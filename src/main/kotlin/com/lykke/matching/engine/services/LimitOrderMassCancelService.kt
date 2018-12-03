@@ -3,8 +3,10 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.context.LimitOrderMassCancelOperationContext
 import com.lykke.matching.engine.messages.MessageStatus
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Service
 import java.util.*
@@ -12,7 +14,8 @@ import java.util.*
 @Service
 class LimitOrderMassCancelService(private val genericLimitOrderService: GenericLimitOrderService,
                                   private val genericStopLimitOrderService: GenericStopLimitOrderService,
-                                  private val limitOrdersCancelHelper: LimitOrdersCancelHelper) : AbstractService {
+                                  private val limitOrdersCancelHelper: LimitOrdersCancelHelper,
+                                  private val performanceStatsHolder: PerformanceStatsHolder) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(LimitOrderMassCancelService::class.java.name)
     }
@@ -50,6 +53,9 @@ class LimitOrderMassCancelService(private val genericLimitOrderService: GenericL
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(status.type))
+        val end = System.nanoTime()
+        performanceStatsHolder.addWriteResponseTime(MessageType.LIMIT_ORDER_MASS_CANCEL.type, end - start)
     }
 }

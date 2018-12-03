@@ -12,6 +12,7 @@ public class AzurePerformanceStats extends TableServiceEntity {
     private String totalTime;
     private String processingTime;
     private String persistTime;
+    private String writeResponseTime;
     private Long persistCount;
     private Long count;
 
@@ -28,6 +29,7 @@ public class AzurePerformanceStats extends TableServiceEntity {
         this.processingTime = stats.getProcessingTime();
         this.count = stats.getCount();
         this.persistTime = stats.getPersistTime();
+        this.writeResponseTime = stats.getWriteResponseTime();
         this.persistCount = stats.getPersistCount();
         this.appVersion = stats.getAppVersion();
     }
@@ -68,6 +70,14 @@ public class AzurePerformanceStats extends TableServiceEntity {
         return persistTime;
     }
 
+    public String getWriteResponseTime() {
+        return writeResponseTime;
+    }
+
+    public String getPreProcessedMessageQueueTime() {
+        return preProcessedMessageQueueTime;
+    }
+
     public Long getPersistCount() {
         return persistCount;
     }
@@ -90,6 +100,14 @@ public class AzurePerformanceStats extends TableServiceEntity {
 
     public String getPreProcessedMessageQueue() {
         return preProcessedMessageQueueTime;
+    }
+
+    public void setWriteResponseTime(String writeResponseTime) {
+        this.writeResponseTime = writeResponseTime;
+    }
+
+    public void setPreProcessedMessageQueueTime(String preProcessedMessageQueueTime) {
+        this.preProcessedMessageQueueTime = preProcessedMessageQueueTime;
     }
 
     public void setInputQueueTime(String inputQueueTime) {

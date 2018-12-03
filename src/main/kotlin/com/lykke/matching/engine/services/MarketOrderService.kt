@@ -44,6 +44,7 @@ import com.lykke.matching.engine.services.validators.impl.OrderValidationExcepti
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
+import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -66,7 +67,8 @@ class MarketOrderService @Autowired constructor(
         private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
         private val midPriceHolder: MidPriceHolder,
         private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-        private val messageSender: MessageSender) : AbstractService {
+        private val messageSender: MessageSender,
+        private val performanceStatsHolder: PerformanceStatsHolder) : AbstractService {
     companion object {
         private val CONTROLS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.controls")
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
@@ -300,7 +302,10 @@ class MarketOrderService @Autowired constructor(
     private fun writePersistenceErrorResponse(messageWrapper: MessageWrapper, order: MarketOrder) {
         val message = "Unable to save result data"
         LOGGER.error("$order: $message")
+        val start = System.nanoTime()
         writeResponse(messageWrapper, order, MessageStatus.RUNTIME, message)
+        val end = System.nanoTime()
+        performanceStatsHolder.addWriteResponseTime(MessageType.MULTI_LIMIT_ORDER.type, end - start)
         return
     }
 
@@ -312,7 +317,10 @@ class MarketOrderService @Autowired constructor(
         } else if (reason != null) {
             marketOrderResponse.statusReason = reason
         }
+        val start = System.nanoTime()
         messageWrapper.writeMarketOrderResponse(marketOrderResponse)
+        val end = System.nanoTime()
+        performanceStatsHolder.addWriteResponseTime(MessageType.MULTI_LIMIT_ORDER.type, end - start)
     }
 
     private fun writeErrorResponse(messageWrapper: MessageWrapper,
@@ -353,7 +361,10 @@ class MarketOrderService @Autowired constructor(
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        val start = System.nanoTime()
         messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder()
                 .setStatus(status.type))
+        val end = System.nanoTime()
+        performanceStatsHolder.addWriteResponseTime(MessageType.MULTI_LIMIT_ORDER.type, end - start)
     }
 }

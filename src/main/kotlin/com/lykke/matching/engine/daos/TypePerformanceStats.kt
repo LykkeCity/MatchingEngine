@@ -11,6 +11,7 @@ class TypePerformanceStats(
         val preProcessedMessageQueueTime: String,
         val processingTime: String,
         val persistTime: String,
+        val writeResponseTime: String,
         val totalTime: String,
         val count: Long,
         val persistCount: Long
@@ -24,6 +25,7 @@ class TypePerformanceStats(
                 "preProcessedMessageQueueTime='$preProcessedMessageQueueTime', " +
                 "processingTime='$processingTime', " +
                 "persistTime='$persistTime', " +
+                "writeResponseTime='$writeResponseTime', "
                 "totalTime='$totalTime', " +
                 "count=$count, " +
                 "persistCount=$persistCount)"

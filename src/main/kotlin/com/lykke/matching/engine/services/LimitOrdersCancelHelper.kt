@@ -2,17 +2,21 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
+import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Component
 import java.util.*
 
 @Component
-class LimitOrdersCancelHelper(private val cancellerFactory: GenericLimitOrdersCancellerFactory) {
+class LimitOrdersCancelHelper(private val cancellerFactory: GenericLimitOrdersCancellerFactory,
+                              private val performanceStatsHolder: PerformanceStatsHolder,
+                              private val currentTransactionDataHolder: CurrentTransactionDataHolder) {
     companion object {
         private val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
     }
@@ -57,7 +61,13 @@ class LimitOrdersCancelHelper(private val cancellerFactory: GenericLimitOrdersCa
     }
 
     private fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        val start = System.nanoTime()
         writeResponse(messageWrapper, status, null)
+        val end = System.nanoTime()
+
+        currentTransactionDataHolder.getMessageType()?.let {
+            performanceStatsHolder.addWriteResponseTime(it.type ,end - start)
+        }
     }
 
     private fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
@@ -67,6 +77,12 @@ class LimitOrdersCancelHelper(private val cancellerFactory: GenericLimitOrdersCa
             builder.statusReason = message
         }
 
+        val start = System.nanoTime()
         messageWrapper.writeNewResponse(builder)
+        val end = System.nanoTime()
+
+        currentTransactionDataHolder.getMessageType()?.let {
+            performanceStatsHolder.addWriteResponseTime(it.type ,end - start)
+        }
     }
 }
