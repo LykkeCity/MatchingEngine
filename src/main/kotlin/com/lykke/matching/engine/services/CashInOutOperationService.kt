@@ -11,11 +11,13 @@ import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.INVALID_FEE
 import com.lykke.matching.engine.messages.MessageStatus.OK
+import com.lykke.matching.engine.messages.MessageStatus.RUNTIME
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
+import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -32,7 +34,8 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
                                 private val feeProcessor: FeeProcessor,
                                 private val cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator,
                                 private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                private val messageSender: MessageSender) : AbstractService {
+                                private val messageSender: MessageSender,
+                                private val performanceStatsHolder: PerformanceStatsHolder) : AbstractService {
     override fun parseMessage(messageWrapper: MessageWrapper) {
         //do nothing
     }
@@ -83,10 +86,7 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setMatchingEngineId(cashInOutOperation.matchingEngineOperationId)
-                    .setStatus(MessageStatus.RUNTIME.type))
-            LOGGER.info("Cash in/out operation (${cashInOutOperation.externalId}) for client ${cashInOutContext.cashInOutOperation.clientId} asset ${cashInOutOperation.asset.assetId}, volume: ${NumberUtils.roundForPrint(walletOperation.amount)}: unable to save balance")
+            writeErrorResponse(messageWrapper, cashInOutOperation.matchingEngineOperationId, RUNTIME, "unable to save balance")
             return
         }
         walletProcessor.apply().sendNotification(cashInOutOperation.externalId!!, MessageType.CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
@@ -105,9 +105,8 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
 
         messageSender.sendMessage(outgoingMessage)
 
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setMatchingEngineId(cashInOutOperation.matchingEngineOperationId)
-                .setStatus(OK.type))
+        writeResponse(messageWrapper, cashInOutOperation.matchingEngineOperationId, OK)
+
 
         LOGGER.info("Cash in/out walletOperation (${cashInOutOperation.externalId}) for client ${cashInOutContext.cashInOutOperation.clientId}, " +
                 "asset ${cashInOutOperation.asset.assetId}, " +
@@ -129,9 +128,21 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
         ))
     }
 
+    fun writeResponse(messageWrapper: MessageWrapper, setMatchingEngineId: String, status: MessageStatus) {
+        val start = System.nanoTime()
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setMatchingEngineId(setMatchingEngineId)
+                .setStatus(status.type))
+        val end = System.nanoTime()
+        performanceStatsHolder.addWriteResponseTime(MessageType.CASH_IN_OUT_OPERATION.type, end - start)
+    }
+
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(status.type))
+        val end = System.nanoTime()
+        performanceStatsHolder.addWriteResponseTime(MessageType.CASH_IN_OUT_OPERATION.type, end - start)
     }
 
     private fun writeErrorResponse(messageWrapper: MessageWrapper,
@@ -139,10 +150,13 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
                                    status: MessageStatus,
                                    errorMessage: String = StringUtils.EMPTY) {
         val context = messageWrapper.context as CashInOutContext
+        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setMatchingEngineId(matchingEngineOperationId)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
+        val end = System.nanoTime()
+        performanceStatsHolder.addWriteResponseTime(MessageType.CASH_IN_OUT_OPERATION.type, end - start)
         LOGGER.info("Cash in/out operation (${context.cashInOutOperation.externalId}), messageId: ${messageWrapper.messageId} for client ${context.cashInOutOperation.clientId}, " +
                 "asset ${context.cashInOutOperation.asset!!.assetId}, amount: ${NumberUtils.roundForPrint(context.cashInOutOperation.amount)}: $errorMessage")
     }
