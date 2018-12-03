@@ -148,6 +148,7 @@ abstract class AbstractTest {
     @Autowired
     private lateinit var performanceStatsHolder: PerformanceStatsHolder
 
+    @Autowired
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
 
     protected open fun initServices() {

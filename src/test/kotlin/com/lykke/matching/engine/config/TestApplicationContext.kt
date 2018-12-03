@@ -366,7 +366,8 @@ open class TestApplicationContext {
                                     assetsPairsHolder: AssetsPairsHolder,
                                     balancesHolder: BalancesHolder,
                                     applicationSettingsHolder: ApplicationSettingsHolder,
-                                    messageProcessingStatusHolder: MessageProcessingStatusHolder): MultiLimitOrderService {
+                                    messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                    performanceStatsHolder: PerformanceStatsHolder): MultiLimitOrderService {
         return MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
@@ -376,7 +377,8 @@ open class TestApplicationContext {
                 assetsPairsHolder,
                 balancesHolder,
                 applicationSettingsHolder,
-                messageProcessingStatusHolder)
+                messageProcessingStatusHolder,
+                performanceStatsHolder)
     }
 
     @Bean

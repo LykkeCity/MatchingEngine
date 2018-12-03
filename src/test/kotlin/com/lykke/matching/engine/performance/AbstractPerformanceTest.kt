@@ -9,7 +9,6 @@ import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.*
-import com.lykke.matching.engine.incoming.parsers.impl.*
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
@@ -252,7 +251,7 @@ abstract class AbstractPerformanceTest {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                applicationSettingsHolder)
+                applicationSettingsHolder, messageProcessingStatusHolder, performanceStatsHolder)
 
         val marketOrderValidator = MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder)
         marketOrderService = MarketOrderService(matchingEngine,
@@ -266,8 +265,10 @@ abstract class AbstractPerformanceTest {
                 marketOrderValidator,
                 messageSequenceNumberHolder,
                 priceDeviationThresholdHolder,
+                midPriceHolder,
                 messageProcessingStatusHolder,
-                notificationSender
+                notificationSender,
+                performanceStatsHolder
         )
     }
 }
