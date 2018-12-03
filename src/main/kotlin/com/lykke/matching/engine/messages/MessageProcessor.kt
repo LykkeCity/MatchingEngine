@@ -13,6 +13,9 @@ import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
+import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
+import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
@@ -53,8 +56,6 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
     private val servicesMap: Map<MessageType, AbstractService>
     private val processedMessagesCache: ProcessedMessagesCache
 
-    private var currentTransactionDataHolder: CurrentTransactionDataHolder
-
     private val performanceStatsHolder: PerformanceStatsHolder
 
     val appInitialData: AppInitialData
@@ -62,6 +63,8 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
     private val reservedCashInOutOperationService: ReservedCashInOutOperationService
     private val messageProcessingStatusHolder: MessageProcessingStatusHolder
     private val messageSequenceNumberHolder: MessageSequenceNumberHolder
+
+    private var currentTransactionDataHolder: CurrentTransactionDataHolder
 
     init {
         messageProcessingStatusHolder = applicationContext.getBean(MessageProcessingStatusHolder::class.java)
@@ -75,8 +78,6 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
 
         this.marketOrderDatabaseAccessor = applicationContext.getBean(AzureMarketOrderDatabaseAccessor::class.java)
         this.backOfficeDatabaseAccessor = applicationContext.getBean(AzureBackOfficeDatabaseAccessor::class.java)
-
-        this.currentTransactionDataHolder = applicationContext.getBean(CurrentTransactionDataHolder::class.java)
 
         this.currentTransactionDataHolder = applicationContext.getBean(CurrentTransactionDataHolder::class.java)
 

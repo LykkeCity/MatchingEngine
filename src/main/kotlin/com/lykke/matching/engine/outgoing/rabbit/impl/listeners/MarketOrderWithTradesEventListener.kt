@@ -25,7 +25,7 @@ class MarketOrderWithTradesEventListener {
     private var failed = false
 
     @Autowired
-    private lateinit var rabbitSwapQueue: BlockingDeque<MarketOrderWithTrades>
+    private lateinit var marketOrderWithTrades: BlockingDeque<MarketOrderWithTrades>
 
     @Autowired
     private lateinit var rabbitMqOldService: RabbitMqService<Any>
@@ -46,7 +46,7 @@ class MarketOrderWithTradesEventListener {
     fun initRabbitMqPublisher() {
         rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.marketOrders,
                 MarketOrderWithTradesEventListener::class.java.simpleName,
-                rabbitSwapQueue,
+                marketOrderWithTrades,
                 config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT,
@@ -61,7 +61,7 @@ class MarketOrderWithTradesEventListener {
             failed = true
             logFail(rabbitFailureEvent.publisherName)
             rabbitFailureEvent.failedEvent?.let {
-                rabbitSwapQueue.putFirst(it as MarketOrderWithTrades)
+                marketOrderWithTrades.putFirst(it as MarketOrderWithTrades)
             }
 
             applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT, rabbitFailureEvent.publisherName))
