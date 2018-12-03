@@ -10,8 +10,7 @@ import java.time.ZonedDateTime
 import javax.annotation.PostConstruct
 
 @Component
-@Profile("default")
-class PerformanceStatsLoggerStarter @Autowired constructor(private val performanceStatsLogger: PerformanceStatsLogger,
+ class PerformanceStatsLoggerStarter @Autowired constructor(private val performanceStatsLogger: PerformanceStatsLogger,
                                                            private val performanceStatsHolder: PerformanceStatsHolder,
                                                            private val taskScheduler: TaskScheduler,
                                                            private val config: Config) {
@@ -20,7 +19,6 @@ class PerformanceStatsLoggerStarter @Autowired constructor(private val performan
         taskScheduler.scheduleAtFixedRate({
             Thread.currentThread().name = "PerformanceStatsLogger"
             performanceStatsLogger.logStats(performanceStatsHolder.getStatsAndReset().values)
-        }, ZonedDateTime.now().toInstant().plusMillis(config.me.performanceStatsInterval),
-                Duration.ofMillis(config.me.performanceStatsInterval))
+        }, 100)
     }
 }
