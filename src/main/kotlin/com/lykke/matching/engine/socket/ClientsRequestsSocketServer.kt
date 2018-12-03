@@ -37,7 +37,7 @@ class ClientsRequestsSocketServer(private val clientRequestThreadPool: ThreadPoo
     private val connections = CopyOnWriteArraySet<ClientHandler>()
 
     override fun run() {
-        val messageProcessor = MessageProcessor(config, messageRouter, applicationContext)
+        val messageProcessor = MessageProcessor(messageRouter, applicationContext)
 
         messageProcessor.start()
 

@@ -1,8 +1,6 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.database.cache.MarketStateCache
-import com.lykke.utils.logging.PerformanceLogger
-import org.apache.log4j.Logger
 import java.time.Duration
 import java.util.*
 import kotlin.concurrent.fixedRateTimer
@@ -15,6 +13,7 @@ class HistoryTicksService(
     private lateinit var historyTicksPersist: Timer
 
     fun start(): Timer {
+        marketStateCache.refresh()
         val persistPeriod = getPeriod(Duration.ofDays(1))
         historyTicksPersist = fixedRateTimer(name = "HistoryTicksPersist", initialDelay = persistPeriod, period = persistPeriod) {
             marketStateCache.flush()

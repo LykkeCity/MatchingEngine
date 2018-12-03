@@ -74,6 +74,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import java.util.Optional
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.Executor
 import java.util.concurrent.LinkedBlockingQueue
@@ -81,6 +82,11 @@ import java.util.concurrent.LinkedBlockingQueue
 @Configuration
 @Import(QueueConfig::class, TestExecutionContext::class)
 open class TestApplicationContext {
+
+    @Bean
+    open fun tradeInfoQueue(): BlockingQueue<TradeInfo> {
+        return LinkedBlockingQueue<TradeInfo>()
+    }
 
     @Bean
     open fun threadPoolTaskExecutor(): Executor {
@@ -294,8 +300,7 @@ open class TestApplicationContext {
                                       assetsHolder: AssetsHolder,
                                       assetsPairsHolder: AssetsPairsHolder,
                                       balancesHolder: BalancesHolder,
-                                      tradeInfoQueue: BlockingQueue<TradeInfo>
-                                      ): GenericLimitOrderService {
+                                      tradeInfoQueue: Optional<BlockingQueue<TradeInfo>>): GenericLimitOrderService {
         return GenericLimitOrderService(testOrderDatabaseAccessor,
                 assetsHolder,
                 assetsPairsHolder,
