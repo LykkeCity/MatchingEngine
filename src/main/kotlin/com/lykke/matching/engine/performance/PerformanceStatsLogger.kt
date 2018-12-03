@@ -12,7 +12,8 @@ import org.springframework.stereotype.Component
 import java.util.Date
 
 @Component
-class PerformanceStatsLogger @Autowired constructor() {
+@Profile("default")
+class PerformanceStatsLogger @Autowired constructor(private val monitoringDatabaseAccessor: MonitoringDatabaseAccessor) {
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(PerformanceStatsLogger::class.java.name)
     }
@@ -42,7 +43,18 @@ class PerformanceStatsLogger @Autowired constructor() {
                     "persist count: ${typeStats.persistsCount}, " +
                     "total time: $totalTime")
 
-
+            monitoringDatabaseAccessor.savePerformanceStats(TypePerformanceStats(now,
+                    type,
+                    AppVersion.VERSION,
+                    inputQueueTime,
+                    preProcessingTime,
+                    preProcessedMessageQueueTime,
+                    processingTime,
+                    persistTime,
+                    totalTime,
+                    writeResponseTime,
+                    typeStats.count,
+                    typeStats.persistsCount))
         }
     }
 }
