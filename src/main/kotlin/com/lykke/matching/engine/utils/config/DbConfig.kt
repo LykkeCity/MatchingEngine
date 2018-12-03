@@ -1,9 +1,13 @@
 package com.lykke.matching.engine.utils.config
 
 data class DbConfig(
+    val hBlobConnString: String,
+    val hBestPriceConnString: String,
+    val hCandlesConnString: String,
+    val hHourCandlesConnString: String,
+
     val balancesInfoConnString: String,
     val hTradesConnString: String,
-    val hLiquidityConnString: String,
     val dictsConnString: String,
     val sharedStorageConnString: String,
     val messageLogConnString: String,
