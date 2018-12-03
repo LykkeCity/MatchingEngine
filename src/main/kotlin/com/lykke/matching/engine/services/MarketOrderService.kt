@@ -37,6 +37,7 @@ import com.lykke.matching.engine.order.process.context.MarketOrderExecutionConte
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
+import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -58,7 +59,8 @@ class MarketOrderService @Autowired constructor(
         private val marketOrderValidator: MarketOrderValidator,
         private val settings: ApplicationSettingsCache,
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-        private val messageSender: MessageSender): AbstractService {
+        private val messageSender: MessageSender,
+        private val performanceStatsHolder: PerformanceStatsHolder) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
         private val STATS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.stats")
@@ -119,7 +121,8 @@ class MarketOrderService @Autowired constructor(
         val matchingResult = matchingEngine.match(order,
                 getOrderBook(order),
                 messageWrapper.messageId!!,
-                priceDeviationThreshold = assetPair.marketOrderPriceDeviationThreshold ?: settings.marketOrderPriceDeviationThreshold(assetPair.assetPairId),
+                priceDeviationThreshold = assetPair.marketOrderPriceDeviationThreshold
+                        ?: settings.marketOrderPriceDeviationThreshold(assetPair.assetPairId),
                 executionContext = executionContext)
         marketOrderExecutionContext.matchingResult = matchingResult
 
@@ -211,7 +214,10 @@ class MarketOrderService @Autowired constructor(
     private fun writePersistenceErrorResponse(messageWrapper: MessageWrapper, order: MarketOrder) {
         val message = "Unable to save result data"
         LOGGER.error("$order: $message")
+        val start = System.nanoTime()
         writeResponse(messageWrapper, order, MessageStatus.RUNTIME, message)
+        val end = System.nanoTime()
+        performanceStatsHolder.addWriteResponseTime(MessageType.MULTI_LIMIT_ORDER.type, end - start)
         return
     }
 
@@ -223,7 +229,10 @@ class MarketOrderService @Autowired constructor(
         } else if (reason != null) {
             marketOrderResponse.statusReason = reason
         }
+        val start = System.nanoTime()
         messageWrapper.writeMarketOrderResponse(marketOrderResponse)
+        val end = System.nanoTime()
+        performanceStatsHolder.addWriteResponseTime(MessageType.MULTI_LIMIT_ORDER.type, end - start)
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
@@ -236,7 +245,10 @@ class MarketOrderService @Autowired constructor(
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        val start = System.nanoTime()
         messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder()
                 .setStatus(status.type))
+        val end = System.nanoTime()
+        performanceStatsHolder.addWriteResponseTime(MessageType.MULTI_LIMIT_ORDER.type, end - start)
     }
 }
