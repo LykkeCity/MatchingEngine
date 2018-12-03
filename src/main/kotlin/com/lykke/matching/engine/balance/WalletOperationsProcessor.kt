@@ -20,12 +20,6 @@ import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.Date
-import kotlin.collections.HashMap
-import kotlin.collections.List
-import kotlin.collections.forEach
-import kotlin.collections.getOrPut
-import kotlin.collections.isNotEmpty
-import kotlin.collections.toList
 
 class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
                                 private val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
