@@ -15,8 +15,6 @@ import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
-import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
-import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
@@ -38,9 +36,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         val MONITORING_LOGGER = ThrottlingLogger.getLogger("${MessageProcessor::class.java.name}.monitoring")
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
-
-    private val cashInOutPreprocessor: CashInOutPreprocessor
-    private val cashTransferPreprocessor: CashTransferPreprocessor
 
     private val messagesQueue: BlockingQueue<MessageWrapper> = messageRouter.preProcessedMessageQueue
 
@@ -114,11 +109,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.multiLimitOrderCancelService = applicationContext.getBean(MultiLimitOrderCancelService::class.java)
 
         this.transferOperationSaveService = applicationContext.getBean(TransferOperationSaveService::class.java)
-
-        this.cashInOutPreprocessor = applicationContext.getBean(CashInOutPreprocessor::class.java)
-        cashInOutPreprocessor.start()
-        this.cashTransferPreprocessor = applicationContext.getBean(CashTransferPreprocessor::class.java)
-        cashTransferPreprocessor.start()
 
         processedMessagesCache = applicationContext.getBean(ProcessedMessagesCache::class.java)
         servicesMap = initServicesMap()

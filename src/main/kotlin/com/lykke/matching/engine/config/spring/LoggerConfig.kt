@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPreprocessor
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.logging.MetricsLogger
@@ -20,11 +19,6 @@ open class LoggerConfig {
     @Bean(destroyMethod = "")
     open fun appStarterLogger(): Logger {
         return Logger.getLogger("AppStarter")
-    }
-
-    @Bean
-    open fun singleLimitOrderContextPreprocessorLogger(): ThrottlingLogger {
-        return ThrottlingLogger.getLogger(SingleLimitOrderPreprocessor::class.java.name)
     }
 
     @PostConstruct

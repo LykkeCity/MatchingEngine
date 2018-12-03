@@ -64,9 +64,7 @@ import com.lykke.matching.engine.utils.monitoring.HealthMonitor
 import com.lykke.matching.engine.utils.monitoring.OrderBookMidPriceChecker
 import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
-import com.lykke.utils.logging.ThrottlingLogger
 import org.mockito.Mockito
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
@@ -517,7 +515,7 @@ open class TestApplicationContext {
                                    persistenceManager: PersistenceManager,
                                    processedMessagesCache: ProcessedMessagesCache,
                                    messageProcessingStatusHolder: MessageProcessingStatusHolder): CashInOutPreprocessor {
-        return CashInOutPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(),
+        return CashInOutPreprocessor(LinkedBlockingQueue(),
                 Mockito.mock(CashOperationIdDatabaseAccessor::class.java),
                 persistenceManager,
                 processedMessagesCache,
@@ -545,8 +543,10 @@ open class TestApplicationContext {
     open fun cashTransferPreprocessor(applicationContext: ApplicationContext, persistenceManager: PersistenceManager,
                                       processedMessagesCache: ProcessedMessagesCache, messageProcessingStatusHolder: MessageProcessingStatusHolder): CashTransferPreprocessor {
         return CashTransferPreprocessor(LinkedBlockingQueue(),
-                LinkedBlockingQueue(), Mockito.mock(CashOperationIdDatabaseAccessor::class.java),
-                persistenceManager, processedMessagesCache, messageProcessingStatusHolder)
+                Mockito.mock(CashOperationIdDatabaseAccessor::class.java),
+                persistenceManager,
+                processedMessagesCache,
+                messageProcessingStatusHolder)
     }
 
     @Bean
@@ -585,10 +585,8 @@ open class TestApplicationContext {
 
     @Bean
     open fun singleLimitOrderContextParser(assetsPairsHolder: AssetsPairsHolder, assetsHolder: AssetsHolder,
-                                           applicationSettingsHolder: ApplicationSettingsHolder,
-                                           @Qualifier("singleLimitOrderContextPreprocessorLogger")
-                                           logger: ThrottlingLogger): SingleLimitOrderContextParser {
-        return SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsHolder, logger)
+                                           applicationSettingsHolder: ApplicationSettingsHolder): SingleLimitOrderContextParser {
+        return SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsHolder)
     }
 
     @Bean
@@ -606,12 +604,6 @@ open class TestApplicationContext {
     open fun stopOrderBusinessValidatorImpl(): StopOrderBusinessValidatorImpl {
         return StopOrderBusinessValidatorImpl()
     }
-
-    @Bean
-    open fun singleLimitOrderContextPreprocessorLogger(): ThrottlingLogger {
-        return ThrottlingLogger.getLogger(SingleLimitOrderPreprocessor::class.java.name)
-    }
-
 
     @Bean
     open fun limitOrderCancelOperationInputValidator(): LimitOrderCancelOperationInputValidator {
@@ -671,15 +663,10 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun singleLimitOrderPreprocessor(limitOrderInputQueue: BlockingQueue<MessageWrapper>,
-                                          preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
-                                          messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                                          @Qualifier("singleLimitOrderContextPreprocessorLogger")
-                                          logger: ThrottlingLogger): SingleLimitOrderPreprocessor {
-        return SingleLimitOrderPreprocessor(limitOrderInputQueue,
-                preProcessedMessageQueue,
-                messageProcessingStatusHolder,
-                logger)
+    open fun singleLimitOrderPreprocessor(preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                                          messageProcessingStatusHolder: MessageProcessingStatusHolder): SingleLimitOrderPreprocessor {
+        return SingleLimitOrderPreprocessor(preProcessedMessageQueue,
+                messageProcessingStatusHolder)
     }
 
     @Bean

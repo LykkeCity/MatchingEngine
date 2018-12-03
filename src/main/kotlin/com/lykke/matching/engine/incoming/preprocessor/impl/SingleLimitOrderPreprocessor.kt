@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.DisabledFunctionalityRule
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
+import com.lykke.matching.engine.incoming.LoggerNames
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
@@ -16,22 +17,16 @@ import com.lykke.matching.engine.services.validators.impl.OrderValidationExcepti
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
-import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
-import javax.annotation.PostConstruct
 
 @Component
-class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<MessageWrapper>,
-                                   private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
-                                   private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                                   @Qualifier("singleLimitOrderContextPreprocessorLogger")
-                                   private val LOGGER: ThrottlingLogger) : MessagePreprocessor, Thread(SingleLimitOrderPreprocessor::class.java.name) {
+class SingleLimitOrderPreprocessor(private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                                   private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : MessagePreprocessor {
     companion object {
-        private val METRICS_LOGGER = MetricsLogger.getLogger()
+        private val LOGGER = ThrottlingLogger.getLogger(LoggerNames.SINGLE_LIMIT_ORDER)
     }
 
     @Autowired
@@ -84,42 +79,8 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
         return validationException.orderStatus == OrderStatus.UnknownAsset
     }
 
-    override fun run() {
-        while (true) {
-            val messageWrapper = limitOrderInputQueue.take()
-            try {
-                messageWrapper.messagePreProcessorStartTimestamp = System.nanoTime()
-                preProcess(messageWrapper)
-                messageWrapper.messagePreProcessorEndTimestamp = System.nanoTime()
-            } catch (exception: Exception) {
-                handlePreprocessingException(exception, messageWrapper)
-            }
-        }
-    }
-
-    @PostConstruct
-    fun init() {
-        this.start()
-    }
-
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(status.type))
-    }
-
-    private fun handlePreprocessingException(exception: Exception, message: MessageWrapper) {
-        try {
-            val context = message.context
-            LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
-                    if (context != null) "Error details: $context" else "", exception)
-
-            METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
-            writeResponse(message, MessageStatus.RUNTIME)
-        } catch (e: Exception) {
-            val errorMessage = "Got error during message preprocessing failure handling"
-            e.addSuppressed(exception)
-            LOGGER.error(errorMessage, e)
-            METRICS_LOGGER.logError(errorMessage, e)
-        }
     }
 }

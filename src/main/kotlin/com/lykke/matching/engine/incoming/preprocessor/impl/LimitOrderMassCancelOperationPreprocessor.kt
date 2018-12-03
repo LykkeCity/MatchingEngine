@@ -9,23 +9,14 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.utils.logging.MetricsLogger
-import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
-import javax.annotation.PostConstruct
 
 @Component
-class LimitOrderMassCancelOperationPreprocessor(val limitOrderMassCancelInputQueue: BlockingQueue<MessageWrapper>,
-                                                val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+class LimitOrderMassCancelOperationPreprocessor(val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
                                                 val limitOrderMassCancelOperationContextParser: LimitOrderMassCancelOperationContextParser,
                                                 val messageProcessingStatusHolder: MessageProcessingStatusHolder) :
-        MessagePreprocessor, Thread(LimitOrderMassCancelOperationPreprocessor::class.java.name) {
-
-    companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(LimitOrderMassCancelOperationPreprocessor::class.java.name)
-        private val METRICS_LOGGER = MetricsLogger.getLogger()
-    }
+        MessagePreprocessor {
 
     override fun preProcess(messageWrapper: MessageWrapper) {
         val parsedData = limitOrderMassCancelOperationContextParser.parse(messageWrapper)
@@ -45,39 +36,5 @@ class LimitOrderMassCancelOperationPreprocessor(val limitOrderMassCancelInputQue
 
         message?.let { responseBuilder.setStatusReason(it) }
         messageWrapper.writeNewResponse(responseBuilder)
-    }
-
-    override fun run() {
-        while (true) {
-            val messageWrapper = limitOrderMassCancelInputQueue.take()
-            try {
-                messageWrapper.messagePreProcessorStartTimestamp = System.nanoTime()
-                preProcess(messageWrapper)
-                messageWrapper.messagePreProcessorEndTimestamp = System.nanoTime()
-            } catch (e: Exception) {
-                handlePreprocessingException(e, messageWrapper)
-            }
-        }
-    }
-
-    @PostConstruct
-    fun init() {
-        this.start()
-    }
-
-    private fun handlePreprocessingException(exception: Exception, message: MessageWrapper) {
-        try {
-            val context = message.context
-            LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
-                    if (context != null) "Error details: $context" else "", exception)
-
-            METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
-            writeResponse(message, MessageStatus.RUNTIME)
-        } catch (e: Exception) {
-            val errorMessage = "Got error during message preprocessing failure handling"
-            e.addSuppressed(exception)
-            LOGGER.error(errorMessage, e)
-            METRICS_LOGGER.logError(errorMessage, e)
-        }
     }
 }

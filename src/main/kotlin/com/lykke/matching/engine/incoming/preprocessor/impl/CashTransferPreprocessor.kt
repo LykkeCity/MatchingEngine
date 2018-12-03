@@ -7,12 +7,12 @@ import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
+import com.lykke.matching.engine.incoming.LoggerNames
 import com.lykke.matching.engine.incoming.parsers.data.CashTransferParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.DUPLICATE
-import com.lykke.matching.engine.messages.MessageStatus.RUNTIME
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -29,17 +29,16 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 class CashTransferPreprocessor(
-        private val cashTransferInputQueue: BlockingQueue<MessageWrapper>,
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
         private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
         private val cashTransferPreprocessorPersistenceManager: PersistenceManager,
         private val processedMessagesCache: ProcessedMessagesCache,
         private val messageProcessingStatusHolder: MessageProcessingStatusHolder
-): MessagePreprocessor, Thread(CashTransferPreprocessor::class.java.name) {
+): MessagePreprocessor {
 
     companion object {
-        val LOGGER = ThrottlingLogger.getLogger(CashTransferPreprocessor::class.java.name)
-        val METRICS_LOGGER = MetricsLogger.getLogger()
+        private val LOGGER = ThrottlingLogger.getLogger(LoggerNames.CASH_TRANSFER)
+        private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     @Autowired
@@ -59,8 +58,8 @@ class CashTransferPreprocessor(
         if (!messageProcessingStatusHolder.isHealthStatusOk()) {
             writeResponse(cashTransferParsedData.messageWrapper, MessageStatus.RUNTIME)
             val errorMessage = "Message processing is disabled"
-            CashInOutPreprocessor.LOGGER.error(errorMessage)
-            CashInOutPreprocessor.METRICS_LOGGER.logError(errorMessage)
+            LOGGER.error(errorMessage)
+            METRICS_LOGGER.logError(errorMessage)
             return
         }
 
@@ -133,34 +132,5 @@ class CashTransferPreprocessor(
         LOGGER.info("Cash transfer operation (${context.transferOperation.externalId}) from client ${context.transferOperation.fromClientId} " +
                 "to client ${context.transferOperation.toClientId}, asset ${context.transferOperation.asset}," +
                 " volume: ${NumberUtils.roundForPrint(context.transferOperation.volume)}: $errorMessage")
-    }
-
-    override fun run() {
-        while (true) {
-            val messageWrapper = cashTransferInputQueue.take()
-            try {
-                messageWrapper.messagePreProcessorStartTimestamp = System.nanoTime()
-                preProcess(messageWrapper)
-                messageWrapper.messagePreProcessorEndTimestamp = System.nanoTime()
-            } catch (exception: Exception) {
-                handlePreprocessingException(exception, messageWrapper)
-            }
-        }
-    }
-
-    private fun handlePreprocessingException(exception: Exception, message: MessageWrapper) {
-        try {
-            val context = message.context
-            LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
-                    if (context != null) "Error details: $context" else "", exception)
-
-            METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
-            writeResponse(message, RUNTIME)
-        } catch (e: Exception) {
-            val errorMessage = "Got error during message preprocessing failure handling"
-            e.addSuppressed(exception)
-            LOGGER.error(errorMessage, e)
-            METRICS_LOGGER.logError(errorMessage, e)
-        }
     }
 }
