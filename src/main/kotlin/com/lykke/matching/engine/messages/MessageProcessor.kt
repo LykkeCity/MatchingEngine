@@ -4,9 +4,7 @@ import com.lykke.matching.engine.AppInitialData
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
@@ -18,17 +16,13 @@ import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.utils.config.Config
-import com.lykke.matching.engine.utils.config.MatchingEngineConfig
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.context.ApplicationContext
-import java.time.LocalDateTime
 import java.util.*
 import java.util.concurrent.BlockingQueue
-import kotlin.concurrent.fixedRateTimer
 
-class MessageProcessor(config: Config, messageRouter: MessageRouter, applicationContext: ApplicationContext)
+class MessageProcessor(messageRouter: MessageRouter, applicationContext: ApplicationContext)
     : Thread(MessageProcessor::class.java.name) {
 
     companion object {
@@ -70,7 +64,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val messageSequenceNumberHolder: MessageSequenceNumberHolder
 
     init {
-        val isLocalProfile = applicationContext.environment.acceptsProfiles("local")
         messageProcessingStatusHolder = applicationContext.getBean(MessageProcessingStatusHolder::class.java)
         performanceStatsHolder = applicationContext.getBean(PerformanceStatsHolder::class.java)
 
@@ -113,40 +106,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         processedMessagesCache = applicationContext.getBean(ProcessedMessagesCache::class.java)
         servicesMap = initServicesMap()
 
-        if (!isLocalProfile && config.me.disableMarketHistory != true) {
-            initMarketHistoryProcess(applicationContext, config.me)
-        }
-
         appInitialData = AppInitialData(genericLimitOrderService.initialOrdersCount, genericStopLimitOrderService.initialStopOrdersCount, balanceHolder.initialBalancesCount, balanceHolder.initialClientsCount)
-    }
-
-    private fun initMarketHistoryProcess(applicationContext: ApplicationContext,
-                                         config: MatchingEngineConfig) {
-        val genericLimitOrderService = applicationContext.getBean(GenericLimitOrderService::class.java)
-        val marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
-        val historyTicksService = HistoryTicksService(marketStateCache,
-                genericLimitOrderService,
-                applicationContext.environment.getProperty("application.tick.frequency")!!.toLong())
-        marketStateCache.refresh()
-        historyTicksService.start()
-
-        val limitOrderDatabaseAccessor = applicationContext.getBean(AzureLimitOrderDatabaseAccessor::class.java)
-        fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.bestPricesInterval) {
-            limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
-        }
-
-        val time = LocalDateTime.now()
-
-        val tradesInfoService = applicationContext.getBean(TradesInfoService::class.java)
-        tradesInfoService.start()
-
-        fixedRateTimer(name = "CandleBuilder", initialDelay = ((1000 - time.nano / 1000000) + 1000 * (63 - time.second)).toLong(), period = config.candleSaverInterval) {
-            tradesInfoService.saveCandles()
-        }
-
-        fixedRateTimer(name = "HoursCandleBuilder", initialDelay = 0, period = config.hoursCandleSaverInterval) {
-            tradesInfoService.saveHourCandles()
-        }
     }
 
     override fun run() {
