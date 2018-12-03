@@ -5,7 +5,6 @@ import java.util.*
 enum class MessageType (val type: Byte){
     RESPONSE(0)
     ,PING(1)
-    ,OLD_BALANCE_UPDATE(6)
     ,CASH_TRANSFER_OPERATION(8)
     ,CASH_IN_OUT_OPERATION(9)
     ,ORDER_BOOK_SNAPSHOT(40)
