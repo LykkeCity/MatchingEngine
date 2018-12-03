@@ -9,7 +9,6 @@ import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.*
-import com.lykke.matching.engine.incoming.parsers.impl.*
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
@@ -121,6 +120,8 @@ abstract class AbstractPerformanceTest {
     val trustedClientsLimitOrdersQueue = LinkedBlockingQueue<LimitOrdersReport>()
 
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
+
+    val performanceStatsHolder = PerformanceStatsHolder()
 
     private fun clearMessageQueues() {
         rabbitEventsQueue.clear()
@@ -237,7 +238,8 @@ abstract class AbstractPerformanceTest {
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
                 executionDataApplyService,
-                previousLimitOrdersProcessor)
+                previousLimitOrdersProcessor,
+                performanceStatsHolder)
 
         multiLimitOrderService = MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
@@ -247,8 +249,7 @@ abstract class AbstractPerformanceTest {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                applicationSettingsHolder,
-                messageProcessingStatusHolder)
+                applicationSettingsHolder, messageProcessingStatusHolder, performanceStatsHolder)
 
         val marketOrderValidator = MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder)
         marketOrderService = MarketOrderService(matchingEngine,
@@ -264,7 +265,8 @@ abstract class AbstractPerformanceTest {
                 priceDeviationThresholdHolder,
                 midPriceHolder,
                 messageProcessingStatusHolder,
-                notificationSender
+                notificationSender,
+                performanceStatsHolder
         )
     }
 }

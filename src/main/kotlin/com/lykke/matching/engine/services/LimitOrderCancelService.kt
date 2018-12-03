@@ -9,6 +9,7 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.validators.business.LimitOrderCancelOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
@@ -22,6 +23,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                               private val genericStopLimitOrderService: GenericStopLimitOrderService,
                               private val validator: LimitOrderCancelOperationBusinessValidator,
                               private val limitOrdersCancelHelper: LimitOrdersCancelHelper,
+                              private val performanceStatsHolder: PerformanceStatsHolder,
                               private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
@@ -60,7 +62,10 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(status.type))
+        val end = System.nanoTime()
+        performanceStatsHolder.addWriteResponseTime(MessageType.LIMIT_ORDER_CANCEL.type, end - start)
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {

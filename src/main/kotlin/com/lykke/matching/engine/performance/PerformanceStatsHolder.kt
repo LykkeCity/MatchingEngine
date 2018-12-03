@@ -31,10 +31,16 @@ class PerformanceStatsHolder {
         stats.count++
     }
 
+    fun addWriteResponseTime(type: Byte, writeResponseTime: Long) {
+        val stats = statsMap.getOrPut(type) { PerformanceStats(type) }
+        stats.writeResponseTime += writeResponseTime
+        stats.writeResponseCount++
+    }
+
     fun addPersistTime(type: Byte, persistTime: Long) {
         val stats = statsMap.getOrPut(type) { PerformanceStats(type) }
         stats.persistTime += persistTime
-        stats.persistTimeCount++
+        stats.persistsCount++
     }
 
     fun getStatsAndReset(): Map<Byte, PerformanceStats> {

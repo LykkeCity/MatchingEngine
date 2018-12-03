@@ -10,6 +10,7 @@ import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.ExecutionDataApplyService
+import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.log4j.Logger
@@ -21,7 +22,8 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
                               private val genericLimitOrdersProcessor: GenericLimitOrdersProcessor,
                               private val stopOrderBookProcessor: StopOrderBookProcessor,
                               private val executionDataApplyService: ExecutionDataApplyService,
-                              private val previousLimitOrdersProcessor: PreviousLimitOrdersProcessor) : AbstractService {
+                              private val previousLimitOrdersProcessor: PreviousLimitOrdersProcessor,
+                              private val performanceStatsHolder: PerformanceStatsHolder) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(SingleLimitOrderService::class.java.name)
         private val STATS_LOGGER = Logger.getLogger("${SingleLimitOrderService::class.java.name}.stats")
@@ -102,7 +104,10 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        val start = System.nanoTime()
         writeResponse(messageWrapper, status, null)
+        val end = System.nanoTime()
+        performanceStatsHolder.addWriteResponseTime(MessageType.LIMIT_ORDER.type, end - start)
     }
 
     private fun writeResponse(messageWrapper: MessageWrapper,
@@ -112,7 +117,10 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
         val builder = ProtocolMessages.NewResponse.newBuilder().setStatus(status.type)
         internalOrderId?.let { builder.setMatchingEngineId(internalOrderId) }
         statusReason?.let { builder.setStatusReason(it) }
+        val start = System.nanoTime()
         messageWrapper.writeNewResponse(builder)
+        val end = System.nanoTime()
+        performanceStatsHolder.addWriteResponseTime(MessageType.LIMIT_ORDER.type, end - start)
     }
 }
 
