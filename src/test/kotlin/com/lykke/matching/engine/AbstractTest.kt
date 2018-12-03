@@ -16,6 +16,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.junit.After
@@ -148,6 +149,9 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var cashInOutOperationService: CashInOutOperationService
 
+    @Autowired
+    private lateinit var performanceStatsHolder: PerformanceStatsHolder
+
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
 
     protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
@@ -164,7 +168,7 @@ abstract class AbstractTest {
 
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
 
-        multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
+        multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache, performanceStatsHolder)
     }
 
     protected fun clearMessageQueues() {

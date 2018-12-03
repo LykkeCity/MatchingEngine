@@ -9,8 +9,10 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import org.apache.log4j.Logger
+import org.springframework.stereotype.Service
 import java.util.Date
 
+@Service
 class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOrderService,
                                    private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                    private val settings: ApplicationSettingsCache,
