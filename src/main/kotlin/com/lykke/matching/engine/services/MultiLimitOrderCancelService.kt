@@ -7,12 +7,14 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
+import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import org.apache.log4j.Logger
 import java.util.Date
 
 class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOrderService,
                                    private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
-                                   private val settings: ApplicationSettingsCache): AbstractService {
+                                   private val settings: ApplicationSettingsCache,
+                                   private val performanceStatsHolder: PerformanceStatsHolder): AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderCancelService::class.java.name)
@@ -37,15 +39,11 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
             messageWrapper.persisted = updated
             if (!updated) {
                 LOGGER.debug("Unable to save result for multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy}")
-                messageWrapper.writeNewResponse(
-                        ProtocolMessages.NewResponse.newBuilder()
-                                .setStatus(MessageStatus.RUNTIME.type)
-                                .setStatusReason("Unable to save result"))
+                writeErrorResponse(messageWrapper, MessageStatus.RUNTIME, "Unable to save result")
                 return
             }
         }
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setStatus(MessageStatus.OK.type))
+        writeResponse(messageWrapper, MessageStatus.OK)
         LOGGER.debug("Multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy} processed")
     }
 
@@ -68,8 +66,21 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
             ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)
     }
 
+    private fun writeErrorResponse(messageWrapper: MessageWrapper, status: MessageStatus, errorMessage: String? = null) {
+        val start = System.nanoTime()
+        messageWrapper.writeNewResponse(
+                ProtocolMessages.NewResponse.newBuilder()
+                        .setStatus(status.type)
+                        .setStatusReason(errorMessage))
+        val end = System.nanoTime()
+        performanceStatsHolder.addWriteResponseTime(MessageType.MULTI_LIMIT_ORDER_CANCEL.type, end - start)
+    }
+
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(status.type))
+        val end = System.nanoTime()
+        performanceStatsHolder.addWriteResponseTime(MessageType.MULTI_LIMIT_ORDER_CANCEL.type, end - start)
     }
 }
