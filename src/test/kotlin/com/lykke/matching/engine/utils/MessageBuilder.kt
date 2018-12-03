@@ -283,14 +283,6 @@ companion object {
                     sourceClientId, targetClientId, assetIds,
                     if (makerFeeModificator != null) BigDecimal.valueOf(makerFeeModificator) else null))
         }
-
-        fun buildBalanceUpdateWrapper(clientId: String, assetId: String, amount: Double, uid: String = "123"): MessageWrapper {
-            return MessageWrapper("Test", MessageType.BALANCE_UPDATE.type, ProtocolMessages.BalanceUpdate.newBuilder()
-                    .setUid(uid)
-                    .setClientId(clientId)
-                    .setAssetId(assetId)
-                    .setAmount(amount).build().toByteArray(), null)
-        }
     }
 
     fun buildTransferWrapper(fromClientId: String,
