@@ -1,8 +1,6 @@
 package com.lykke.matching.engine.order
 
-import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.order.transaction.ExecutionContext
