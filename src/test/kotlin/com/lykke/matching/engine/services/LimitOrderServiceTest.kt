@@ -1826,10 +1826,10 @@ class LimitOrderServiceTest : AbstractTest() {
     @Test
     fun testSellMidPriceDeviationOrderRejected() {
         //given
-        initMidPriceHolder("BTCEUR")
+        initMidPriceHolder("BTCUSD")
 
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
-        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 10000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 1.0)
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.01)))
@@ -1841,7 +1841,7 @@ class LimitOrderServiceTest : AbstractTest() {
         clientsEventsQueue.clear()
 
         //when
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client4", assetId = "BTCEUR", price = 1000.0, volume = -0.3)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client4", assetId = "BTCUSD", price = 1000.0, volume = -0.3)))
 
 
         //then
@@ -1850,31 +1850,33 @@ class LimitOrderServiceTest : AbstractTest() {
         assertEquals(1, executionEvent.orders.size)
         assertEquals(OutgoingOrderStatus.REJECTED, executionEvent.orders.single().status)
         assertEquals(OrderRejectReason.TOO_HIGH_MID_PRICE_DEVIATION, executionEvent.orders.single().rejectReason)
-        assertOrderBookSize("BTCEUR", false, 1)
-        assertOrderBookSize("BTCEUR", true, 2)
+        assertOrderBookSize("BTCUSD", false, 1)
+        assertOrderBookSize("BTCUSD", true, 2)
     }
 
     @Test
     fun testMidPriceDeviationCancelOrdersProcessed() {
         //given
-        initMidPriceHolder("BTCEUR")
+        initMidPriceHolder("BTCUSD")
 
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
-        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 10000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 1.0)
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.01)))
+        applicationSettingsCache.update()
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client4", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
 
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCEUR", price = 9100.0, volume = 0.3)))
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCEUR", price = 8000.0, volume = 0.3)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9100.0, volume = 0.3)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 8000.0, volume = 0.3)))
+
 
         clientsEventsQueue.clear()
 
         //when
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client4", assetId = "BTCEUR", price = 9100.0, volume = -0.3), true))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client4", assetId = "BTCUSD", price = 9100.0, volume = -0.3), true))
 
 
         //then
@@ -1884,8 +1886,8 @@ class LimitOrderServiceTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders.first().status)
         assertEquals(OutgoingOrderStatus.REJECTED, executionEvent.orders[1].status)
         assertEquals(OrderRejectReason.TOO_HIGH_MID_PRICE_DEVIATION, executionEvent.orders[1].rejectReason)
-        assertOrderBookSize("BTCEUR", false, 1)
-        assertOrderBookSize("BTCEUR", true, 2)
+        assertOrderBookSize("BTCUSD", false, 1)
+        assertOrderBookSize("BTCUSD", true, 2)
     }
 
     @Test

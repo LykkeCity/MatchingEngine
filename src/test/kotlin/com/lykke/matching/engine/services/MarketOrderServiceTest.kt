@@ -1070,17 +1070,15 @@ class MarketOrderServiceTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
         assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, getSetting( "0.04", "EURUSD"))
-        applicationSettingsCache.update()
-
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, "EURUSD", "0.04", true)
         clearMessageQueues()
+
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = -2.0)))
         eventOrder = (clientsEventsQueue.single() as ExecutionEvent).orders.single()
         assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
         assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, getSetting( "0.05", "EURUSD"))
-        applicationSettingsCache.update()
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, "EURUSD", "0.05", true)
 
         clearMessageQueues()
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = -2.0)))
