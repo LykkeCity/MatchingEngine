@@ -84,9 +84,6 @@ class WalletOperationsProcessorTest : AbstractTest() {
         assertBalance("Client2", "ETH", 3.0, 0.3)
         assertBalance("Client3", "BTC", 0.0, 0.0)
 
-        assertEquals(2, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
-        assertTrue(setOf("Client1", "Client2").containsAll(balanceUpdateHandlerTest.balanceUpdateNotificationQueue.map { it.clientId }))
-
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
         val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate
         assertEquals(2, balanceUpdate.balances.size)
@@ -172,9 +169,6 @@ class WalletOperationsProcessorTest : AbstractTest() {
         assertEquals(BigDecimal.ZERO, clientBalanceUpdates.single().newReserved)
 
         walletOperationsProcessor.sendNotification("id", "type", "messageId")
-
-        assertEquals(1, balanceUpdateHandlerTest.balanceUpdateNotificationQueue.size)
-        assertEquals("TrustedClient2", balanceUpdateHandlerTest.balanceUpdateNotificationQueue.single().clientId)
     }
 
     @Test
@@ -204,9 +198,6 @@ class WalletOperationsProcessorTest : AbstractTest() {
         assertEquals(BigDecimal.valueOf(0.2), clientBalanceUpdates.single().newReserved)
 
         walletOperationsProcessor.sendNotification("id", "type", "messageId")
-
-        assertEquals(1, balanceUpdateHandlerTest.balanceUpdateNotificationQueue.size)
-        assertEquals("Client1", balanceUpdateHandlerTest.balanceUpdateNotificationQueue.single().clientId)
     }
 
     private fun validate(clientId: String, assetId: String, oldBalance: Double, oldReserved: Double, newBalance: Double, newReserved: Double): Boolean {

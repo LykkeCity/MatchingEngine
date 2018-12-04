@@ -23,7 +23,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import java.math.BigDecimal
 import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
@@ -59,16 +58,10 @@ abstract class AbstractTest {
     protected lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
     @Autowired
-    protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
-
-    @Autowired
     protected lateinit var testDictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor
 
     @Autowired
     protected lateinit var assetPairsCache: AssetPairsCache
-
-    @Autowired
-    protected lateinit var balanceUpdateService: BalanceUpdateService
 
     @Autowired
     protected lateinit var persistenceManager: TestPersistenceManager
@@ -136,8 +129,6 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>
 
-    protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
-
     @Autowired
     @Qualifier("rabbitCashInOutQueue")
     protected lateinit var cashInOutQueue:  BlockingQueue<CashOperation>
@@ -150,8 +141,6 @@ abstract class AbstractTest {
 
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
 
-    protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
-
     private var initialized = false
     protected open fun initServices() {
         initialized = true
@@ -162,14 +151,11 @@ abstract class AbstractTest {
         assetPairsCache.update()
         applicationSettingsCache.update()
 
-        reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
 
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
     }
 
     protected fun clearMessageQueues() {
-        quotesNotificationQueue.clear()
-
         balanceUpdateHandlerTest.clear()
         tradesInfoListener.clear()
 
