@@ -4,7 +4,6 @@ import com.lykke.matching.engine.daos.DisabledFunctionalityRule
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
-import com.lykke.matching.engine.incoming.LoggerNames
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
@@ -19,15 +18,15 @@ import com.lykke.matching.engine.services.validators.input.LimitOrderInputValida
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
 
 @Component
 class SingleLimitOrderPreprocessor(private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
-                                   private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : MessagePreprocessor {
-    companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(LoggerNames.SINGLE_LIMIT_ORDER)
-    }
+                                   private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                   @Qualifier("singleLimitOrderPreProcessingLogger")
+                                   private val logger: ThrottlingLogger) : MessagePreprocessor {
 
     @Autowired
     private lateinit var singleLimitOrderContextParser: SingleLimitOrderContextParser
@@ -50,7 +49,7 @@ class SingleLimitOrderPreprocessor(private val preProcessedMessageQueue: Blockin
 
         //currently if order is not valid at all - can not be passed to the business thread - ignore it
         if (validationResult.isFatalInvalid) {
-            LOGGER.error("Fatal validation error occurred, ${validationResult.message} " +
+            logger.error("Fatal validation error occurred, ${validationResult.message} " +
                     "Error details: $singleLimitContext")
             writeResponse(messageWrapper, MessageStatusUtils.toMessageStatus(validationResult.status!!), validationResult.message)
             return

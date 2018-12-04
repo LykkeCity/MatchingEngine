@@ -65,6 +65,7 @@ import com.lykke.matching.engine.utils.monitoring.HealthMonitor
 import com.lykke.matching.engine.utils.monitoring.OrderBookMidPriceChecker
 import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
+import com.lykke.utils.logging.ThrottlingLogger
 import org.mockito.Mockito
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationEventPublisher
@@ -539,7 +540,8 @@ open class TestApplicationContext {
                 Mockito.mock(CashOperationIdDatabaseAccessor::class.java),
                 persistenceManager,
                 processedMessagesCache,
-                messageProcessingStatusHolder)
+                messageProcessingStatusHolder,
+                ThrottlingLogger.getLogger("cashInOut"))
     }
 
     @Bean
@@ -566,7 +568,8 @@ open class TestApplicationContext {
                 Mockito.mock(CashOperationIdDatabaseAccessor::class.java),
                 persistenceManager,
                 processedMessagesCache,
-                messageProcessingStatusHolder)
+                messageProcessingStatusHolder,
+                ThrottlingLogger.getLogger("transfer"))
     }
 
     @Bean
@@ -607,7 +610,10 @@ open class TestApplicationContext {
     @Bean
     open fun singleLimitOrderContextParser(assetsPairsHolder: AssetsPairsHolder, assetsHolder: AssetsHolder,
                                            applicationSettingsHolder: ApplicationSettingsHolder): SingleLimitOrderContextParser {
-        return SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsHolder)
+        return SingleLimitOrderContextParser(assetsPairsHolder,
+                assetsHolder,
+                applicationSettingsHolder,
+                ThrottlingLogger.getLogger("limitOrder"))
     }
 
     @Bean
@@ -692,7 +698,8 @@ open class TestApplicationContext {
     open fun singleLimitOrderPreprocessor(preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
                                           messageProcessingStatusHolder: MessageProcessingStatusHolder): SingleLimitOrderPreprocessor {
         return SingleLimitOrderPreprocessor(preProcessedMessageQueue,
-                messageProcessingStatusHolder)
+                messageProcessingStatusHolder,
+                ThrottlingLogger.getLogger("limitOrder"))
     }
 
     @Bean
