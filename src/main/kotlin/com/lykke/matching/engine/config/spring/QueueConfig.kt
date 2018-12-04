@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
+import com.lykke.matching.engine.database.reconciliation.events.MidPricesPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -164,6 +165,11 @@ open class QueueConfig {
     @Bean
     open fun updatedOrderBooksQueue(): BlockingQueue<OrderBookPersistEvent>? {
         return LinkedBlockingQueue<OrderBookPersistEvent>()
+    }
+
+    @Bean
+    open fun persistMidPricesQueue(): BlockingQueue<MidPricesPersistEvent> {
+        return LinkedBlockingQueue<MidPricesPersistEvent>()
     }
 
     @Bean

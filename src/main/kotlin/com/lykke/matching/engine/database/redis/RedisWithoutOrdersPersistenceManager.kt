@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
+import com.lykke.matching.engine.database.reconciliation.events.MidPricesPersistEvent
 import com.lykke.matching.engine.database.redis.accessor.impl.*
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.deduplication.ProcessedMessage
@@ -30,7 +31,7 @@ class RedisWithoutOrdersPersistenceManager(
         private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
         private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
         private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<AccountPersistEvent>,
-        private val redisMidPriceDatabaseAccessor: RedisMidPriceDatabaseAccessor,
+        private val persistMidPricesApplicationEventPublisher: SimpleApplicationEventPublisher<MidPricesPersistEvent>,
         private val redisConnection: RedisConnection,
         private val config: Config,
         private val currentTransactionDataHolder: CurrentTransactionDataHolder,
@@ -77,7 +78,7 @@ class RedisWithoutOrdersPersistenceManager(
         }
 
         persistMessageSequenceNumber(transaction, data.messageSequenceNumber)
-        persistMidPrices(transaction, data.midPricePersistenceData)
+        persistMidPrices(data.midPricePersistenceData)
 
         val persistTime = System.nanoTime()
 
@@ -150,22 +151,11 @@ class RedisWithoutOrdersPersistenceManager(
         }
     }
 
-    private fun persistMidPrices(transaction: Transaction, midPricePersistenceData: MidPricePersistenceData?) {
-        LOGGER.trace("Start to persist mid price")
-
+    private fun persistMidPrices(midPricePersistenceData: MidPricePersistenceData?) {
         if (midPricePersistenceData == null) {
             LOGGER.trace("Mid price is empty - skipping")
             return
         }
-
-        if (midPricePersistenceData.removeAll) {
-            LOGGER.info("Removing all mid prices")
-            redisMidPriceDatabaseAccessor.removeAll(transaction)
-            return
-        }
-
-        if (!CollectionUtils.isEmpty(midPricePersistenceData.midPrices)) {
-            redisMidPriceDatabaseAccessor.save(transaction, midPricePersistenceData.midPrices!!)
-        }
+        persistMidPricesApplicationEventPublisher.publishEvent(MidPricesPersistEvent(midPricePersistenceData))
     }
 }

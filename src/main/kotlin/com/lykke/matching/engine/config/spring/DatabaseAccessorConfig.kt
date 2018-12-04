@@ -9,10 +9,12 @@ import com.lykke.matching.engine.database.common.PersistenceManagerFactory
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.listeners.MidPricesPersistListener
 import com.lykke.matching.engine.database.listeners.OrderBookPersistListener
 import com.lykke.matching.engine.database.listeners.StopOrderBookPersistListener
 import com.lykke.matching.engine.database.listeners.WalletOperationsPersistListener
 import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
+import com.lykke.matching.engine.database.reconciliation.events.MidPricesPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
@@ -67,6 +69,16 @@ open class DatabaseAccessorConfig {
 
 
     //<editor-fold desc="Persist listeners">
+
+    @Bean
+    open fun midPricesPersistListener(persistMidPricesRedisConnection: Optional<RedisConnection>,
+                                      redisMidPriceDatabaseAccessor: Optional<MidPriceDatabaseAccessor>,
+                                      persistMidPricesQueue: BlockingQueue<MidPricesPersistEvent>): MidPricesPersistListener? {
+        if (!persistMidPricesRedisConnection.isPresent) {
+            return null
+        }
+        return MidPricesPersistListener(persistMidPricesRedisConnection.get(), redisMidPriceDatabaseAccessor.get(), persistMidPricesQueue)
+    }
 
     @Bean
     open fun walletOperationsPersistListener(updatedWalletsQueue: BlockingQueue<AccountPersistEvent>,
@@ -233,6 +245,12 @@ open class DatabaseAccessorConfig {
     open fun persistedOrdersApplicationEventPublisher(updatedOrderBooksQueue: BlockingQueue<OrderBookPersistEvent>,
                                                       listeners: Optional<List<QueueConsumer<OrderBookPersistEvent>?>>): SimpleApplicationEventPublisher<OrderBookPersistEvent> {
         return ApplicationEventPublisherImpl(updatedOrderBooksQueue, listeners)
+    }
+
+    @Bean
+    open fun persistMidPricesApplicationeventPublisher(persistMidPricesQueue: BlockingQueue<MidPricesPersistEvent>,
+                                                       listeners: Optional<List<QueueConsumer<MidPricesPersistEvent>?>>): SimpleApplicationEventPublisher<MidPricesPersistEvent> {
+        return ApplicationEventPublisherImpl(persistMidPricesQueue, listeners)
     }
     //</editor-fold>
 }
