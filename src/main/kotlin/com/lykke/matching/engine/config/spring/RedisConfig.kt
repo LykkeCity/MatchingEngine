@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.config.spring
 
 import com.lykke.matching.engine.database.MidPriceDatabaseAccessor
@@ -64,6 +63,11 @@ open class RedisConfig {
     @Bean
     open fun cashTransferOperationsPreprocessorRedisConnection(): RedisConnection? {
         return redisConnectionFactory.getConnection("cashTransferOperationsPreprocessorRedisConnection")
+    }
+
+    @Bean
+    open fun persistMidPricesRedisConnection(): RedisConnection? {
+        return redisConnectionFactory.getConnection("midPricesPersistRedisConnection")
     }
     //</editor-fold>
 

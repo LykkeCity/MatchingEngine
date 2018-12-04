@@ -729,13 +729,4 @@ open class TestApplicationContext {
                             orderBookMidPriceChecker: OrderBookMidPriceChecker): MidPriceHolder {
         return MidPriceHolder(100, readOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
     }
-
-    @Bean
-    fun executionContextFactory(balancesHolder: BalancesHolder,
-                                genericLimitOrderService: GenericLimitOrderService,
-                                genericStopLimitOrderService: GenericStopLimitOrderService,
-                                midPriceHolder: MidPriceHolder,
-                                assetsHolder: AssetsHolder): ExecutionContextFactory {
-        return ExecutionContextFactory(balancesHolder, genericLimitOrderService, genericStopLimitOrderService, midPriceHolder, assetsHolder)
-    }
 }

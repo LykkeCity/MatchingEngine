@@ -1,3 +1,4 @@
+
 package com.lykke.matching.engine.daos.azure;
 
 import com.microsoft.azure.storage.table.TableServiceEntity;

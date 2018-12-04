@@ -884,6 +884,8 @@ class MarketOrderServiceTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
 
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.01)))
+
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9200.0, volume = 0.3)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = 0.2)))
@@ -917,6 +919,8 @@ class MarketOrderServiceTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
 
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.01)))
+
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9200.0, volume = 0.2)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = 0.2)))
@@ -946,6 +950,8 @@ class MarketOrderServiceTest : AbstractTest() {
         initMidPriceHolder("BTCUSD")
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
+
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.01)))
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 7000.0, volume = -0.2)))
@@ -985,6 +991,7 @@ class MarketOrderServiceTest : AbstractTest() {
 
         Thread.sleep(120)
 
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.09)))
         clientsEventsQueue.clear()
 
         //when
@@ -1063,7 +1070,8 @@ class MarketOrderServiceTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
         assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
 
-        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, "EURUSD", "0.04", true)
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, getSetting( "0.04", "EURUSD"))
+        applicationSettingsCache.update()
 
         clearMessageQueues()
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = -2.0)))
@@ -1071,7 +1079,8 @@ class MarketOrderServiceTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
         assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
 
-        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, "EURUSD", "0.05", true)
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, getSetting( "0.05", "EURUSD"))
+        applicationSettingsCache.update()
 
         clearMessageQueues()
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = -2.0)))
