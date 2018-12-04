@@ -12,13 +12,13 @@ import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.incoming.LoggerNames
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.utils.logging.ThrottlingLogger
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.*
@@ -26,11 +26,9 @@ import java.util.*
 @Component
 class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                                     val assetsHolder: AssetsHolder,
-                                    val applicationSettingsCache: ApplicationSettingsCache) : ContextParser<SingleLimitOrderParsedData> {
-
-    companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(LoggerNames.SINGLE_LIMIT_ORDER)
-    }
+                                    val applicationSettingsCache: ApplicationSettingsCache,
+                                    @Qualifier("singleLimitOrderPreProcessingLogger")
+                                    val logger: ThrottlingLogger) : ContextParser<SingleLimitOrderParsedData> {
 
     override fun parse(messageWrapper: MessageWrapper): SingleLimitOrderParsedData {
 
@@ -93,7 +91,7 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
         val singleLimitOrderContext = getContext(messageId, limitOrder, message.cancelAllPreviousLimitOrders,
                 ProcessedMessage(messageWrapper.type, message.timestamp, messageId))
 
-        LOGGER.info("Got limit order  messageId: $messageId, id: ${message.uid}, client ${message.clientId}")
+        logger.info("Got limit order  messageId: $messageId, id: ${message.uid}, client ${message.clientId}")
 
         return singleLimitOrderContext
     }

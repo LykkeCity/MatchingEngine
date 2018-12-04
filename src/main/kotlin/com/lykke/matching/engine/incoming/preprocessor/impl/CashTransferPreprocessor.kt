@@ -6,7 +6,6 @@ import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
-import com.lykke.matching.engine.incoming.LoggerNames
 import com.lykke.matching.engine.incoming.parsers.data.CashTransferParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
@@ -22,6 +21,7 @@ import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.apache.commons.lang3.StringUtils
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
 
@@ -31,11 +31,12 @@ class CashTransferPreprocessor(
         private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
         private val cashTransferPreprocessorPersistenceManager: PersistenceManager,
         private val processedMessagesCache: ProcessedMessagesCache,
-        private val messageProcessingStatusHolder: MessageProcessingStatusHolder
+        private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
+        @Qualifier("cashTransferPreProcessingLogger")
+        private val logger: ThrottlingLogger
 ): MessagePreprocessor {
 
     companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(LoggerNames.CASH_TRANSFER)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
@@ -56,7 +57,7 @@ class CashTransferPreprocessor(
         if (!messageProcessingStatusHolder.isHealthStatusOk()) {
             writeResponse(cashTransferParsedData.messageWrapper, MessageStatus.RUNTIME)
             val errorMessage = "Message processing is disabled"
-            LOGGER.error(errorMessage)
+            logger.error(errorMessage)
             METRICS_LOGGER.logError(errorMessage)
             return
         }
@@ -86,7 +87,7 @@ class CashTransferPreprocessor(
                                    message: String) {
         val messageWrapper = cashTransferParsedData.messageWrapper
         val context = messageWrapper.context as CashTransferContext
-        LOGGER.info("Input validation failed messageId: ${context.messageId}, details: $message")
+        logger.info("Input validation failed messageId: ${context.messageId}, details: $message")
 
         val persistSuccess = cashTransferPreprocessorPersistenceManager.persist(PersistenceData(context.processedMessage))
         if (!persistSuccess) {
@@ -97,7 +98,7 @@ class CashTransferPreprocessor(
             processedMessagesCache.addMessage(context.processedMessage)
             writeErrorResponse(messageWrapper, context, MessageStatusUtils.toMessageStatus(validationType), message)
         } catch (e: Exception) {
-            LOGGER.error("Error occurred during processing of invalid cash transfer data, context $context", e)
+            logger.error("Error occurred during processing of invalid cash transfer data, context $context", e)
             METRICS_LOGGER.logError("Error occurred during invalid data processing, ${messageWrapper.type} ${context.messageId}")
         }
     }
@@ -108,7 +109,7 @@ class CashTransferPreprocessor(
 
         if (cashOperationIdDatabaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
             writeResponse(parsedMessageWrapper, DUPLICATE)
-            LOGGER.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
+            logger.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
             METRICS_LOGGER.logError("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
             return true
         }
@@ -127,7 +128,7 @@ class CashTransferPreprocessor(
                 .setMatchingEngineId(context.transferOperation.matchingEngineOperationId)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
-        LOGGER.info("Cash transfer operation (${context.transferOperation.externalId}) from client ${context.transferOperation.fromClientId} " +
+        logger.info("Cash transfer operation (${context.transferOperation.externalId}) from client ${context.transferOperation.fromClientId} " +
                 "to client ${context.transferOperation.toClientId}, asset ${context.transferOperation.asset}," +
                 " volume: ${NumberUtils.roundForPrint(context.transferOperation.volume)}: $errorMessage")
     }

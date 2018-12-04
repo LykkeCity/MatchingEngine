@@ -48,6 +48,7 @@ import com.lykke.matching.engine.services.validators.business.impl.StopOrderBusi
 import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
 import com.lykke.matching.engine.utils.MessageBuilder
+import com.lykke.utils.logging.ThrottlingLogger
 import java.util.Optional
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -55,6 +56,7 @@ abstract class AbstractPerformanceTest {
 
     companion object {
         val REPEAT_TIMES = 100
+        private val LOGGER = ThrottlingLogger.getLogger(AbstractPerformanceTest::class.java.name)
     }
 
     protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
@@ -168,7 +170,7 @@ abstract class AbstractPerformanceTest {
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
         val limitOrderInputValidator = LimitOrderInputValidatorImpl(applicationSettingsCache)
-        singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsCache)
+        singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsCache, LOGGER)
         cashInOutContextParser = CashInOutContextParser(assetsHolder)
         cashTransferContextParser = CashTransferContextParser(assetsHolder)
 

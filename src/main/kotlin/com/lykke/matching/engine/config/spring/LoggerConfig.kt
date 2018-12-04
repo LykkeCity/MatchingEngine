@@ -21,6 +21,31 @@ open class LoggerConfig {
         return Logger.getLogger("AppStarter")
     }
 
+    @Bean
+    open fun singleLimitOrderPreProcessingLogger(): ThrottlingLogger {
+        return ThrottlingLogger.getLogger("SingleLimitOrderPreProcessing")
+    }
+
+    @Bean
+    open fun cashInOutPreProcessingLogger(): ThrottlingLogger {
+        return ThrottlingLogger.getLogger("CashInOutPreProcessing")
+    }
+
+    @Bean
+    open fun cashTransferPreProcessingLogger(): ThrottlingLogger {
+        return ThrottlingLogger.getLogger("CashTransferPreProcessing")
+    }
+
+    @Bean
+    open fun limitOrderCancelPreProcessingLogger(): ThrottlingLogger {
+        return ThrottlingLogger.getLogger("LimitOrderCancelPreProcessing")
+    }
+
+    @Bean
+    open fun limitOrderMassCancelPreProcessingLogger(): ThrottlingLogger {
+        return ThrottlingLogger.getLogger("LimitOrderMassCancelPreProcessing")
+    }
+
     @PostConstruct
     open fun init() {
         AppInitializer.init()

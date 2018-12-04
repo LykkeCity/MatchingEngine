@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
 import com.lykke.matching.engine.daos.context.CashInOutContext
@@ -7,7 +6,6 @@ import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
-import com.lykke.matching.engine.incoming.LoggerNames
 import com.lykke.matching.engine.incoming.parsers.data.CashInOutParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
@@ -23,6 +21,7 @@ import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.apache.commons.lang3.StringUtils
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
 
@@ -32,10 +31,11 @@ class CashInOutPreprocessor(
         private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
         private val cashInOutOperationPreprocessorPersistenceManager: PersistenceManager,
         private val processedMessagesCache: ProcessedMessagesCache,
-        private val messageProcessingStatusHolder: MessageProcessingStatusHolder): MessagePreprocessor {
+        private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
+        @Qualifier("cashInOutPreProcessingLogger")
+        private val logger: ThrottlingLogger): MessagePreprocessor {
 
     companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(LoggerNames.CASH_IN_OUT)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
@@ -56,7 +56,7 @@ class CashInOutPreprocessor(
         if (!messageProcessingStatusHolder.isHealthStatusOk()) {
             writeResponse(parsedData.messageWrapper, MessageStatus.RUNTIME)
             val errorMessage = "Message processing is disabled"
-            LOGGER.error(errorMessage)
+            logger.error(errorMessage)
             METRICS_LOGGER.logError(errorMessage)
             return
         }
@@ -86,7 +86,7 @@ class CashInOutPreprocessor(
                                    message: String) {
         val messageWrapper = cashInOutParsedData.messageWrapper
         val context = messageWrapper.context as CashInOutContext
-        LOGGER.info("Input validation failed messageId: ${context.messageId}, details: $message")
+        logger.info("Input validation failed messageId: ${context.messageId}, details: $message")
 
         val persistSuccess = cashInOutOperationPreprocessorPersistenceManager.persist(PersistenceData(context.processedMessage))
         if (!persistSuccess) {
@@ -97,7 +97,7 @@ class CashInOutPreprocessor(
             processedMessagesCache.addMessage(context.processedMessage)
             writeErrorResponse(messageWrapper, context.cashInOutOperation.matchingEngineOperationId, MessageStatusUtils.toMessageStatus(validationType), message)
         } catch (e: Exception) {
-            LOGGER.error("Error occurred during processing of invalid cash in/out data, context $context", e)
+            logger.error("Error occurred during processing of invalid cash in/out data, context $context", e)
             METRICS_LOGGER.logError("Error occurred during invalid data processing, ${messageWrapper.type} ${context.messageId}")
         }
     }
@@ -107,7 +107,7 @@ class CashInOutPreprocessor(
         val context = cashInOutParsedData.messageWrapper.context as CashInOutContext
         if (cashOperationIdDatabaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
             writeResponse(parsedMessageWrapper, DUPLICATE)
-            LOGGER.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
+            logger.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
             METRICS_LOGGER.logError("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
             return true
         }
@@ -128,7 +128,7 @@ class CashInOutPreprocessor(
                 .setMatchingEngineId(operationId)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
-        LOGGER.info("Cash in/out operation (${context.cashInOutOperation.externalId}), messageId: ${messageWrapper.messageId} for client ${context.cashInOutOperation.clientId}, " +
+        logger.info("Cash in/out operation (${context.cashInOutOperation.externalId}), messageId: ${messageWrapper.messageId} for client ${context.cashInOutOperation.clientId}, " +
                 "asset ${context.cashInOutOperation.asset!!.assetId}, amount: ${NumberUtils.roundForPrint(context.cashInOutOperation.amount)}: $errorMessage")
     }
 }
