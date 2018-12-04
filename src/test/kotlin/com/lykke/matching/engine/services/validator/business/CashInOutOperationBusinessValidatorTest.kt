@@ -11,7 +11,6 @@ import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.services.validator.CashOperationValidatorTest
 import com.lykke.matching.engine.services.validator.input.CashInOutOperationInputValidatorTest
 import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
@@ -32,7 +31,7 @@ import kotlin.test.assertEquals
 class CashInOutOperationBusinessValidatorTest {
 
     companion object {
-        val CLIENT_ID = "Client1"
+        val CLIENT_NAME = "Client1"
         val ASSET_ID = "USD"
     }
 
@@ -60,8 +59,8 @@ class CashInOutOperationBusinessValidatorTest {
     @Test(expected = ValidationException::class)
     fun testBalanceValid() {
         //given
-        testBalanceHolderWrapper.updateBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 500.0)
-        testBalanceHolderWrapper.updateReservedBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 250.0)
+        testBalanceHolderWrapper.updateBalance(CLIENT_NAME, ASSET_ID, 500.0)
+        testBalanceHolderWrapper.updateReservedBalance(CLIENT_NAME, ASSET_ID, 250.0)
         val cashInOutOperationBuilder = getDefaultCashInOutOperationBuilder()
         cashInOutOperationBuilder.volume = -300.0
 
@@ -77,7 +76,7 @@ class CashInOutOperationBusinessValidatorTest {
     private fun getDefaultCashInOutOperationBuilder(): ProtocolMessages.CashInOutOperation.Builder {
         return ProtocolMessages.CashInOutOperation.newBuilder()
                 .setId("test")
-                .setClientId(CLIENT_ID)
+                .setClientId(CLIENT_NAME)
                 .setAssetId(ASSET_ID)
                 .setVolume(0.0)
                 .setTimestamp(System.currentTimeMillis())

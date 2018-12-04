@@ -6,8 +6,6 @@ import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEv
 import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
-import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
@@ -42,12 +40,6 @@ open class QueueConfig {
 
     @Bean
     @RabbitQueue
-    open fun cashSwapQueue(): BlockingDeque<CashSwapOperation> {
-        return LinkedBlockingDeque<CashSwapOperation>()
-    }
-
-    @Bean
-    @RabbitQueue
     open fun clientLimitOrdersQueue(): BlockingDeque<LimitOrdersReport> {
         return LinkedBlockingDeque<LimitOrdersReport>()
     }
@@ -66,7 +58,7 @@ open class QueueConfig {
 
     @Bean
     @RabbitQueue
-    open fun rabbitSwapQueue(): BlockingDeque<MarketOrderWithTrades> {
+    open fun rabbitMarketOrderWithTradesQueue(): BlockingDeque<MarketOrderWithTrades> {
         return LinkedBlockingDeque<MarketOrderWithTrades>()
     }
 
@@ -133,16 +125,6 @@ open class QueueConfig {
     @Bean
     open fun orderBookQueue(): BlockingQueue<OrderBook> {
         return LinkedBlockingQueue<OrderBook>()
-    }
-
-    @Bean
-    open fun balanceUpdateNotificationQueue(): BlockingQueue<BalanceUpdateNotification> {
-        return  LinkedBlockingQueue<BalanceUpdateNotification>()
-    }
-
-    @Bean
-    open fun quotesUpdateQueue(): BlockingQueue<QuotesUpdate> {
-        return LinkedBlockingQueue<QuotesUpdate>()
     }
 
     @Bean
