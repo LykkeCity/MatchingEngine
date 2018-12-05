@@ -2,7 +2,6 @@ package com.lykke.matching.engine.outgoing.socket
 
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.config.Config
@@ -23,7 +22,6 @@ class OrderBooksSubscribersSocketServer(val config: Config,
                                         val genericLimitOrderService: GenericLimitOrderService,
                                         val assetsHolder: AssetsHolder,
                                         val assetsPairsHolder: AssetsPairsHolder,
-                                        private val midPriceHolder: MidPriceHolder,
                                         private val orderBookSubscribersThreadPool: Optional<ThreadPoolTaskExecutor>): Thread(OrderBooksSubscribersSocketServer::class.java.name) {
 
     companion object {
@@ -57,7 +55,7 @@ class OrderBooksSubscribersSocketServer(val config: Config,
 
     private fun submitClientConnection(clientConnection: Socket) {
         val connection = Connection(clientConnection, LinkedBlockingQueue<OrderBook>(),
-                genericLimitOrderService.getAllOrderBooks(), assetsHolder, assetsPairsHolder, midPriceHolder)
+                genericLimitOrderService.getAllOrderBooks(), assetsHolder, assetsPairsHolder)
         try {
             orderBookSubscribersThreadPool.get().submit(connection)
         } catch (e: RejectedExecutionException) {

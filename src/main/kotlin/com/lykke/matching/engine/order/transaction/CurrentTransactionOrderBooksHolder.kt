@@ -13,7 +13,7 @@ import java.util.Date
 import java.util.HashMap
 import java.util.concurrent.PriorityBlockingQueue
 
-class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: GenericLimitOrderService)
+open class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: GenericLimitOrderService)
     : AbstractTransactionOrderBooksHolder<AssetOrderBook, GenericLimitOrderService>(genericLimitOrderService) {
 
     private val orderCopyWrappersByOriginalOrder = HashMap<LimitOrder, CopyWrapper<LimitOrder>>()
@@ -74,25 +74,21 @@ class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: G
             genericLimitOrderService.setOrderBook(assetPairId, orderBook)
             val orderBookCopy = orderBook.copy()
             if (changedBuySides.contains(assetPairId)) {
-                processChangedOrderBookSide(orderBookCopy, true, date, currentTransactionMidPriceHolder, executionContext)
+                processChangedOrderBookSide(orderBookCopy, true, date)
             }
             if (changedSellSides.contains(assetPairId)) {
-                processChangedOrderBookSide(orderBookCopy, false, date, currentTransactionMidPriceHolder, executionContext)
+                processChangedOrderBookSide(orderBookCopy, false, date)
             }
         }
     }
 
     private fun processChangedOrderBookSide(orderBookCopy: AssetOrderBook,
                                             isBuySide: Boolean,
-                                            date: Date,
-                                            currentTransactionMidPriceHolder: CurrentTransactionMidPriceHolder,
-                                            executionContext: ExecutionContext) {
+                                            date: Date) {
         val assetPairId = orderBookCopy.assetPairId
         val price = if (isBuySide) orderBookCopy.getBidPrice() else orderBookCopy.getAskPrice()
         tradeInfoList.add(TradeInfo(assetPairId, isBuySide, price, date))
         outgoingOrderBooks.add(OrderBook(assetPairId,
-                currentTransactionMidPriceHolder.getRefMidPrice(assetPairId, executionContext),
-                currentTransactionMidPriceHolder.getRefMidPricePeriod(),
                 isBuySide,
                 date,
                 orderBookCopy.getOrderBook(isBuySide)))

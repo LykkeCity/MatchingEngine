@@ -85,6 +85,7 @@ abstract class AbstractPerformanceTest {
 
     private var stopOrdersDatabaseAccessorsHolder = StopOrdersDatabaseAccessorsHolder(primaryStopOrdersDatabaseAccessor, secondaryStopOrdersDatabaseAccessor)
     private var messageProcessingStatusHolder = Mockito.mock(MessageProcessingStatusHolder::class.java)
+    private val priceDeviationThresholdHolder = PriceDeviationThresholdHolder(applicationSettingsCache)
 
     protected lateinit var assetPairsCache: AssetPairsCache
     protected lateinit var applicationSettingsHolder: ApplicationSettingsHolder
@@ -97,7 +98,6 @@ abstract class AbstractPerformanceTest {
     protected lateinit var singleLimitOrderContextParser: SingleLimitOrderContextParser
     protected lateinit var cashInOutContextParser: CashInOutContextParser
     protected lateinit var cashTransferContextParser: CashTransferContextParser
-
     protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
     private lateinit var feeProcessor: FeeProcessor
@@ -199,7 +199,8 @@ abstract class AbstractPerformanceTest {
                 genericLimitOrderService,
                 genericStopLimitOrderService,
                 midPriceHolder,
-                assetsHolder)
+                assetsHolder,
+                priceDeviationThresholdHolder)
 
         val matchingResultHandlingHelper = MatchingResultHandlingHelper(applicationSettingsHolder)
 

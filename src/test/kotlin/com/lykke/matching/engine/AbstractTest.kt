@@ -10,6 +10,8 @@ import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.notification.*
+import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
+import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
@@ -132,6 +134,8 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>
 
+    @Autowired
+    protected lateinit var executionContextFactory: ExecutionContextFactory
     @Autowired
     @Qualifier("rabbitCashInOutQueue")
     protected lateinit var cashInOutQueue:  BlockingQueue<CashOperation>

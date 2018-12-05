@@ -10,6 +10,7 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
+import com.lykke.matching.engine.order.transaction.CurrentTransactionOrderBooksHolder
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder
@@ -19,6 +20,7 @@ import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.getSetting
 import com.nhaarman.mockito_kotlin.doAnswer
 import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.any
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -78,8 +80,20 @@ class AllOrdersCancellerTest : AbstractTest() {
     @Autowired
     private lateinit var assetsPairsHolder: AssetsPairsHolder
 
+    private var currentTransactionOrderBooksHolder = mock<CurrentTransactionOrderBooksHolder>() {
+        on { getChangedCopyOrOriginalOrderBook(any()) } doAnswer {
+            mock() {
+                on { getMidPrice() } doAnswer {
+                    BigDecimal.ZERO
+                }
+            }
+        }
+    }
+
     private var executionContextMock = mock<ExecutionContext> {
-        on {date} doAnswer { Date() }
+        on { assetPairsById } doAnswer { HashMap() }
+        on { date } doAnswer { Date() }
+        on { orderBooksHolder } doAnswer { currentTransactionOrderBooksHolder }
     }
 
     @Before
@@ -134,8 +148,8 @@ class AllOrdersCancellerTest : AbstractTest() {
     @Test
     fun testCancelAllOrdersCheckMidPricesAreRemoved() {
         //given
-        initMidPriceHolder("BTCUSD")
-
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.09)))
+        assetPairsCache.update()
         val assetPair = assetPairsCache.getAssetPair("BTCUSD")
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 3500.0, volume = 0.5)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 6500.0, volume = 0.5)))
@@ -202,10 +216,5 @@ class AllOrdersCancellerTest : AbstractTest() {
         assertOrderBookSize("LKK1YLKK", true, 0)
         assertBalance("Client1", "LKK", 1.0, 0.0)
         assertBalance("Client1", "LKK1Y", 0.0, 0.0)
-    }
-
-    private fun initMidPriceHolder(assetPairId: String) {
-        midPriceHolder.addMidPrice(assetsPairsHolder.getAssetPair(assetPairId), BigDecimal.valueOf(1), executionContextMock)
-        Thread.sleep(150)
     }
 }

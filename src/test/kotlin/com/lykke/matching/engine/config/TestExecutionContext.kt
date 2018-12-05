@@ -52,12 +52,14 @@ open class TestExecutionContext {
                                      genericLimitOrderService: GenericLimitOrderService,
                                      genericStopLimitOrderService: GenericStopLimitOrderService,
                                      midPriceHolder: MidPriceHolder,
-                                     assetsHolder: AssetsHolder): ExecutionContextFactory {
+                                     assetsHolder: AssetsHolder,
+                                     priceDeviationThresholdHolder: PriceDeviationThresholdHolder): ExecutionContextFactory {
         return ExecutionContextFactory(balancesHolder,
                 genericLimitOrderService,
                 genericStopLimitOrderService,
                 midPriceHolder,
-                assetsHolder)
+                assetsHolder,
+                priceDeviationThresholdHolder)
     }
 
     @Bean

@@ -18,29 +18,18 @@ class OrderBook {
 
     val prices: MutableList<Order> = ArrayList()
 
-    val refMidPrice: BigDecimal?
-    val refMidPricePeriod: Long
-
     constructor(assetPair: String,
-                refMidPrice: BigDecimal,
-                refMidPricePeriod: Long,
                 isBuy: Boolean, timestamp: Date) {
         this.assetPair = assetPair
         this.isBuy = isBuy
-        this.refMidPrice = refMidPrice
-        this.refMidPricePeriod = refMidPricePeriod
         this.timestamp = timestamp
     }
 
     constructor(assetPair: String,
-                refMidPrice: BigDecimal,
-                refMidPricePeriod: Long,
                 isBuy: Boolean,
                 timestamp: Date,
                 orders: PriorityBlockingQueue<LimitOrder>) {
         this.assetPair = assetPair
-        this.refMidPrice = refMidPrice
-        this.refMidPricePeriod = refMidPricePeriod
         this.isBuy = isBuy
         this.timestamp = timestamp
 

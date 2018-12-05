@@ -7,6 +7,7 @@ import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
+import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
@@ -20,7 +21,8 @@ class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                               private val genericLimitOrderService: GenericLimitOrderService,
                               private val genericStopLimitOrderService: GenericStopLimitOrderService,
                               private val midPriceHolder: MidPriceHolder,
-                              private val assetsHolder: AssetsHolder) {
+                              private val assetsHolder: AssetsHolder,
+                              private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder) {
 
     fun create(messageId: String,
                requestId: String,
@@ -35,7 +37,7 @@ class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                walletOperationsProcessor: WalletOperationsProcessor = balancesHolder.createWalletProcessor(logger),
                orderBooksHolder: CurrentTransactionOrderBooksHolder = genericLimitOrderService.createCurrentTransactionOrderBooksHolder(),
                stopOrderBooksHolder: CurrentTransactionStopOrderBooksHolder = genericStopLimitOrderService.createCurrentTransactionOrderBooksHolder(),
-               currentTransactionMidPriceHolder: CurrentTransactionMidPriceHolder = CurrentTransactionMidPriceHolder(midPriceHolder)): ExecutionContext {
+               currentTransactionMidPriceHolder: CurrentTransactionMidPriceHolder = CurrentTransactionMidPriceHolder(midPriceHolder, priceDeviationThresholdHolder)): ExecutionContext {
         return ExecutionContext(messageId,
                 requestId,
                 messageType,
