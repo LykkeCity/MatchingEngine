@@ -84,7 +84,8 @@ abstract class AbstractPerformanceTest {
 
     protected val secondaryStopOrdersDatabaseAccessor = TestFileStopOrderDatabaseAccessor()
     protected val primaryStopOrdersDatabaseAccessor = TestStopOrderBookDatabaseAccessor(secondaryStopOrdersDatabaseAccessor)
-    private var stopOrdersDatabaseAccessorsHolder = StopOrdersDatabaseAccessorsHolder(primaryStopOrdersDatabaseAccessor, secondaryStopOrdersDatabaseAccessor)
+    private val stopOrdersDatabaseAccessorsHolder = StopOrdersDatabaseAccessorsHolder(primaryStopOrdersDatabaseAccessor, secondaryStopOrdersDatabaseAccessor)
+    private val priceDeviationThresholdHolder = PriceDeviationThresholdHolder(applicationSettingsCache)
 
     protected lateinit var assetPairsCache: AssetPairsCache
     protected lateinit var applicationSettingsCache: ApplicationSettingsCache
@@ -96,7 +97,6 @@ abstract class AbstractPerformanceTest {
     protected lateinit var singleLimitOrderContextParser: SingleLimitOrderContextParser
     protected lateinit var cashInOutContextParser: CashInOutContextParser
     protected lateinit var cashTransferContextParser: CashTransferContextParser
-
     protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
     private lateinit var feeProcessor: FeeProcessor
@@ -201,7 +201,7 @@ abstract class AbstractPerformanceTest {
 
         val executionContextFactory = ExecutionContextFactory(balancesHolder,
                 genericLimitOrderService,
-                genericStopLimitOrderService, midPriceHolder, assetsHolder)
+                genericStopLimitOrderService, midPriceHolder, assetsHolder, priceDeviationThresholdHolder)
 
         val matchingResultHandlingHelper = MatchingResultHandlingHelper(applicationSettingsCache)
 

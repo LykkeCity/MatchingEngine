@@ -13,6 +13,7 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
@@ -32,6 +33,7 @@ import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.getSetting
 import com.nhaarman.mockito_kotlin.doAnswer
 import com.nhaarman.mockito_kotlin.mock
+import org.apache.log4j.Logger
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -1711,10 +1713,54 @@ class LimitOrderServiceTest : AbstractTest() {
         assertOrderBookSize("BTCUSD", false, 0)
     }
 
+
+    @Test
+    fun midPriceIsNotPersistedWhenNoThresholdForAssetPairTest() {
+        //given
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
+        assetPairsCache.update()
+
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
+
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 8000.0, volume = 0.1))
+
+        //when
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 6000.0, volume = 0.1)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 8100.0, volume = 0.1)))
+
+
+        //then
+        //check ref price is equal to order book mid price
+        assertEquals(BigDecimal.valueOf(9050), midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("BTCUSD"), getExecutionContext(Date())))
+    }
+
+    @Test
+    fun midPriceIsPersistedWhenNoThresholdForAssetPairTest() {
+        //given
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.9)))
+        assetPairsCache.update()
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
+
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 8000.0, volume = 0.1))
+
+        //when
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 6000.0, volume = 0.1)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 8100.0, volume = 0.1)))
+
+
+        //then
+        //check ref price is equal to order book mid price
+        assertEquals(BigDecimal.valueOf(9025), midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("BTCUSD"), getExecutionContext(Date())))
+    }
+
+
     @Test
     fun midPriceProtectionDoesNotWorkWhenNoThresholdForAssetPairTest() {
         //given
-        initMidPriceHolder("BTCUSD")
 
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
@@ -1743,7 +1789,8 @@ class LimitOrderServiceTest : AbstractTest() {
     @Test
     fun midPriceIsCalculatedOrderBookNotEmptyTest() {
         //given
-        initMidPriceHolder("BTCUSD")
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.1)))
+        assetPairsCache.update()
 
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
@@ -1751,7 +1798,7 @@ class LimitOrderServiceTest : AbstractTest() {
 
 
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3))
-        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 2000.0, volume = 0.3))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 8990.0, volume = 0.3))
 
         //when
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = 0.3)))
@@ -1764,14 +1811,12 @@ class LimitOrderServiceTest : AbstractTest() {
     @Test
     fun testMidPriceDeviationOrderRejectedWithoutMatching() {
         //given
-        initMidPriceHolder("BTCUSD")
-
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 10000.0)
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.09)))
-        applicationSettingsCache.update()
+        assetPairsCache.update()
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 5000.0, volume = 0.3)))
@@ -1794,14 +1839,12 @@ class LimitOrderServiceTest : AbstractTest() {
     @Test
     fun testBuyMidPriceDeviationOrderRejectedDuringMatching() {
         //given
-        initMidPriceHolder("BTCUSD")
-
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 10000.0)
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.09)))
-        applicationSettingsCache.update()
+        assetPairsCache.update()
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 8000.0, volume = -0.2)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
@@ -1827,14 +1870,12 @@ class LimitOrderServiceTest : AbstractTest() {
     @Test
     fun testBuyMidPriceDeviationOrderRejected() {
         //given
-        initMidPriceHolder("BTCUSD")
-
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 10000.0)
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.09)))
-        applicationSettingsCache.update()
+        assetPairsCache.update()
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 8000.0, volume = -0.3)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
@@ -1860,14 +1901,12 @@ class LimitOrderServiceTest : AbstractTest() {
     @Test
     fun testSellMidPriceDeviationOrderRejected() {
         //given
-        initMidPriceHolder("BTCUSD")
-
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 1.0)
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.01)))
-        applicationSettingsCache.update()
+        assetPairsCache.update()
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9100.0, volume = 0.2)))
@@ -1892,14 +1931,12 @@ class LimitOrderServiceTest : AbstractTest() {
     @Test
     fun testMidPriceDeviationCancelOrdersProcessed() {
         //given
-        initMidPriceHolder("BTCUSD")
-
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 1.0)
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.01)))
-        applicationSettingsCache.update()
+        assetPairsCache.update()
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client4", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
@@ -1928,14 +1965,12 @@ class LimitOrderServiceTest : AbstractTest() {
     @Test
     fun orderPartiallyMatchedMidPriceDeviation() {
         //given
-        initMidPriceHolder("BTCUSD")
-
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 1.0)
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.09)))
-        applicationSettingsCache.update()
+        assetPairsCache.update()
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 8400.0, volume = 0.2)))
@@ -1960,8 +1995,8 @@ class LimitOrderServiceTest : AbstractTest() {
     @Test
     fun testOrderBookMidPriceOutOfRange() {
         //given
-        initMidPriceHolder("BTCUSD")
-
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.9)))
+        assetPairsCache.update()
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 10.0)
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 10000.0)
@@ -1973,7 +2008,7 @@ class LimitOrderServiceTest : AbstractTest() {
 
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.01)))
-        applicationSettingsCache.update()
+        assetPairsCache.update()
         clientsEventsQueue.clear()
 
         //when
@@ -1989,8 +2024,14 @@ class LimitOrderServiceTest : AbstractTest() {
         assertOrderBookSize("BTCUSD", true, 2)
     }
 
-    private fun initMidPriceHolder(assetPairId: String) {
-        midPriceHolder.addMidPrice(assetsPairsHolder.getAssetPair(assetPairId), BigDecimal.ZERO,  executionContextMock)
-        Thread.sleep(150)
+    private fun getExecutionContext(date: Date): ExecutionContext {
+        return executionContextFactory.create("test",
+                "test",
+                MessageType.LIMIT_ORDER,
+                null,
+                emptyMap(),
+                date,
+                Logger.getLogger(""),
+                Logger.getLogger(""))
     }
 }

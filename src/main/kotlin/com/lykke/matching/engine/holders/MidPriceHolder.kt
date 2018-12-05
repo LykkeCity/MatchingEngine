@@ -34,12 +34,6 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") val refreshM
         }
     }
 
-    fun getRefMidPriceWithoutCleanupAndChecks(assetPair: AssetPair, operationTime: Date): BigDecimal {
-
-        val unscaledRefMidPrice = referencePriceByAssetPairId[assetPair.assetPairId] ?: BigDecimal.ZERO
-        return NumberUtils.setScaleRoundUp(unscaledRefMidPrice, assetPair.accuracy)
-    }
-
     fun getReferenceMidPrice(assetPair: AssetPair,
                              executionContext: ExecutionContext,
                              notSavedMidPricesSum: BigDecimal,

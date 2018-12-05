@@ -148,8 +148,8 @@ class AllOrdersCancellerTest : AbstractTest() {
     @Test
     fun testCancelAllOrdersCheckMidPricesAreRemoved() {
         //given
-        initMidPriceHolder("BTCUSD")
-
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.09)))
+        assetPairsCache.update()
         val assetPair = assetPairsCache.getAssetPair("BTCUSD")
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 3500.0, volume = 0.5)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 6500.0, volume = 0.5)))
@@ -216,10 +216,5 @@ class AllOrdersCancellerTest : AbstractTest() {
         assertOrderBookSize("LKK1YLKK", true, 0)
         assertBalance("Client1", "LKK", 1.0, 0.0)
         assertBalance("Client1", "LKK1Y", 0.0, 0.0)
-    }
-
-    private fun initMidPriceHolder(assetPairId: String) {
-        midPriceHolder.addMidPrice(assetsPairsHolder.getAssetPair(assetPairId), BigDecimal.valueOf(1), executionContextMock)
-        Thread.sleep(150)
     }
 }

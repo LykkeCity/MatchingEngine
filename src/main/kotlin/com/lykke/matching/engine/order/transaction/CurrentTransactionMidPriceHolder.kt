@@ -3,15 +3,21 @@ package com.lykke.matching.engine.order.transaction
 import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.holders.MidPriceHolder
+import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
 import java.math.BigDecimal
 import java.util.*
 
-class CurrentTransactionMidPriceHolder(private val midPriceHolder: MidPriceHolder) {
+class CurrentTransactionMidPriceHolder(private val midPriceHolder: MidPriceHolder,
+                                       private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder) {
     private val midPriceByAssetPair = HashMap<String, MutableList<BigDecimal>>()
     private val midPriceSumByAssetPair = HashMap<String, BigDecimal>()
     private var removeAll = false
 
-    fun addMidPrice(assetPairId: String, midPrice: BigDecimal) {
+    fun addMidPrice(assetPairId: String, midPrice: BigDecimal, executionContext: ExecutionContext) {
+        if (!isPersistOfMidPricesNeeded(assetPairId, executionContext)) {
+            return
+        }
+
         val midPrices = midPriceByAssetPair.getOrPut(assetPairId) { ArrayList() }
         midPrices.add(midPrice)
 
@@ -19,8 +25,11 @@ class CurrentTransactionMidPriceHolder(private val midPriceHolder: MidPriceHolde
         midPriceSumByAssetPair[assetPairId] = midPriceSum.add(midPrice)
     }
 
-    fun addMidPrices(midPricesByAssetPairId: Map<String, List<BigDecimal>>) {
+    fun addMidPrices(midPricesByAssetPairId: Map<String, List<BigDecimal>>, executionContext: ExecutionContext) {
         midPricesByAssetPairId.forEach { assetPairId, midPrices ->
+            if (!isPersistOfMidPricesNeeded(assetPairId, executionContext)) {
+                return@forEach
+            }
             (midPriceByAssetPair.getOrPut(assetPairId) { ArrayList() }).addAll(midPrices)
             val midPriceSum = midPriceSumByAssetPair.getOrPut(assetPairId) { BigDecimal.ZERO }
             val newMidPricesSum = midPrices.reduceRight { num, acc -> acc.add(num) }
@@ -57,10 +66,6 @@ class CurrentTransactionMidPriceHolder(private val midPriceHolder: MidPriceHolde
         removeAll = true
     }
 
-    fun getRefMidPricePeriod(): Long {
-        return midPriceHolder.refreshMidPricePeriod
-    }
-
     fun apply(executionContext: ExecutionContext) {
         if (removeAll) {
             midPriceHolder.clear()
@@ -73,5 +78,9 @@ class CurrentTransactionMidPriceHolder(private val midPriceHolder: MidPriceHolde
                 midPriceHolder.addMidPrice(assetPair, it, executionContext)
             }
         }
+    }
+
+    private fun isPersistOfMidPricesNeeded(assetPairId: String, executionContext: ExecutionContext): Boolean {
+        return priceDeviationThresholdHolder.getMidPriceDeviationThreshold(assetPairId, executionContext) != null
     }
 }

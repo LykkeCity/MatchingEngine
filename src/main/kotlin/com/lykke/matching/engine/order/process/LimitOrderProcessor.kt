@@ -227,7 +227,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         }
 
         getNewMidPriceAfterMatching(orderContext)?.let {
-            executionContext.currentTransactionMidPriceHolder.addMidPrice(order.assetPairId, it)
+            executionContext.currentTransactionMidPriceHolder.addMidPrice(order.assetPairId, it, executionContext)
         }
 
         matchingResult.apply()
@@ -396,7 +396,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         }
 
         getMewMidPriceWithoutMatching(orderContext)?.let {
-            executionContext.currentTransactionMidPriceHolder.addMidPrice(order.assetPairId, it)
+            executionContext.currentTransactionMidPriceHolder.addMidPrice(order.assetPairId, it, executionContext)
         }
 
         order.reservedLimitVolume = limitVolume
