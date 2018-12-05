@@ -31,7 +31,6 @@ open class ExecutionContext(val messageId: String,
                             private val controlsLogger: Logger) {
 
     var tradeIndex: Long = 0
-    var removeAllMidPrices = false
     var executionContextForCancelOperation = false
 
     private val clientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()

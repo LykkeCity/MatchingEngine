@@ -34,31 +34,6 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") val refreshM
         }
     }
 
-    fun getReferenceMidPrice(assetPair: AssetPair,
-                             executionContext: ExecutionContext,
-                             notSavedMidPricesSum: BigDecimal,
-                             notSavedMidPricesLength: BigDecimal): BigDecimal {
-
-        val currentRefMidPrice = getUnScaledReferenceMidPrice(assetPair, executionContext)
-        if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, notSavedMidPricesLength)) {
-            return NumberUtils.setScaleRoundUp(currentRefMidPrice, assetPair.accuracy)
-        }
-
-        val currentMidPricesLength = BigDecimal.valueOf(midPricesByAssetPairId[assetPair.assetPairId]?.size?.toLong()
-                ?: 0)
-        val totalMidPricesLength = notSavedMidPricesLength + currentMidPricesLength
-
-        val newMidPricesPart = NumberUtils.divideWithMaxScale(notSavedMidPricesSum, totalMidPricesLength)
-
-        if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, currentMidPricesLength)) {
-            return NumberUtils.setScaleRoundUp(newMidPricesPart, assetPair.accuracy)
-        }
-
-        val currentMidPricesCoef = NumberUtils.divideWithMaxScale(currentMidPricesLength, totalMidPricesLength)
-
-        return NumberUtils.setScaleRoundUp(currentRefMidPrice * currentMidPricesCoef + newMidPricesPart, assetPair.accuracy)
-    }
-
     fun getReferenceMidPrice(assetPair: AssetPair, executionContext: ExecutionContext): BigDecimal {
         return NumberUtils.setScaleRoundUp(getUnScaledReferenceMidPrice(assetPair, executionContext), assetPair.accuracy)
     }
@@ -74,10 +49,6 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") val refreshM
         if (midPriceDangerous) {
             orderBookMidPriceChecker.checkOrderBook(RefMidPriceDangerousChangeEvent(assetPair.assetPairId, referencePriceByAssetPairId[assetPair.assetPairId]!!, executionContext))
         }
-    }
-
-    fun addMidPrices(assetPair: AssetPair, newMidPrices: List<BigDecimal>, executionContext: ExecutionContext) {
-        newMidPrices.forEach { addMidPrice(assetPair, it, executionContext) }
     }
 
     fun clear() {

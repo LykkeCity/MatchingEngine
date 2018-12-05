@@ -25,6 +25,7 @@ import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
+import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.services.utils.MultiOrderFilter
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Service
