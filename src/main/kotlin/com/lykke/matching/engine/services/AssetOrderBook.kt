@@ -7,7 +7,7 @@ import java.math.BigDecimal
 import java.util.*
 import java.util.concurrent.PriorityBlockingQueue
 
-class AssetOrderBook(assetId: String) : AbstractAssetOrderBook(assetId) {
+open class AssetOrderBook(assetId: String) : AbstractAssetOrderBook(assetId) {
 
     val SELL_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
         var result = o1.price.compareTo(o2.price)
@@ -40,7 +40,7 @@ class AssetOrderBook(assetId: String) : AbstractAssetOrderBook(assetId) {
 
     fun getAskPrice() = askOrderBook.peek()?.price ?: BigDecimal.ZERO
     fun getBidPrice() = bidOrderBook.peek()?.price ?: BigDecimal.ZERO
-    fun getMidPrice(): BigDecimal? {
+    open fun getMidPrice(): BigDecimal? {
         return if (!NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, getAskPrice()) && !NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, getBidPrice())) {
             NumberUtils.divideWithMaxScale(getAskPrice() + getBidPrice(), BigDecimal.valueOf(2))
         } else

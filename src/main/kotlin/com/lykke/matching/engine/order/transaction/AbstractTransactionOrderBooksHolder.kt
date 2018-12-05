@@ -18,7 +18,7 @@ abstract class AbstractTransactionOrderBooksHolder<AssetOrderBook : AbstractAsse
     protected val changedBuySides = HashSet<String>()
     protected val changedSellSides = HashSet<String>()
 
-    fun getChangedCopyOrOriginalOrderBook(assetPairId: String): AssetOrderBook {
+    open fun getChangedCopyOrOriginalOrderBook(assetPairId: String): AssetOrderBook {
         return assetOrderBookCopiesByAssetPairId[assetPairId] ?: genericLimitOrderService.getOrderBook(assetPairId)
     }
 

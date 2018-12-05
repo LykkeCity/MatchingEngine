@@ -13,7 +13,7 @@ import java.util.Date
 import java.util.HashMap
 import java.util.concurrent.PriorityBlockingQueue
 
-class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: GenericLimitOrderService)
+open class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: GenericLimitOrderService)
     : AbstractTransactionOrderBooksHolder<AssetOrderBook, GenericLimitOrderService>(genericLimitOrderService) {
 
     private val orderCopyWrappersByOriginalOrder = HashMap<LimitOrder, CopyWrapper<LimitOrder>>()
