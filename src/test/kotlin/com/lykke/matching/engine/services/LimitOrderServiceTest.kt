@@ -91,7 +91,7 @@ class LimitOrderServiceTest : AbstractTest() {
     private lateinit var messageBuilder: MessageBuilder
 
     private var executionContextMock = mock<ExecutionContext> {
-        on {date} doAnswer { Date() }
+        on { date } doAnswer { Date() }
     }
 
     @Before
@@ -1727,12 +1727,15 @@ class LimitOrderServiceTest : AbstractTest() {
     @Test
     fun midPriceProtectionDoesNotWorkWhenNoThresholdForAssetPairTest() {
         //given
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
+        assetPairsCache.update()
 
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 1.0)
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
+
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 2000.0, volume = 0.2)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = 0.3)))
 
@@ -1740,7 +1743,6 @@ class LimitOrderServiceTest : AbstractTest() {
 
         //when
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client4", assetId = "BTCUSD", price = 1000.0, volume = -0.3)))
-
 
         //then
         assertEquals(1, clientsEventsQueue.size)

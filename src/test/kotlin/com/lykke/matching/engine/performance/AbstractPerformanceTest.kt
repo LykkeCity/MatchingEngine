@@ -85,7 +85,7 @@ abstract class AbstractPerformanceTest {
 
     private var stopOrdersDatabaseAccessorsHolder = StopOrdersDatabaseAccessorsHolder(primaryStopOrdersDatabaseAccessor, secondaryStopOrdersDatabaseAccessor)
     private var messageProcessingStatusHolder = Mockito.mock(MessageProcessingStatusHolder::class.java)
-    private val priceDeviationThresholdHolder = PriceDeviationThresholdHolder(applicationSettingsCache)
+    private val priceDeviationThresholdHolder = PriceDeviationThresholdHolder(applicationSettingsHolder)
 
     protected lateinit var assetPairsCache: AssetPairsCache
     protected lateinit var applicationSettingsHolder: ApplicationSettingsHolder
