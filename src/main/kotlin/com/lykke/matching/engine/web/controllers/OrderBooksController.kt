@@ -35,12 +35,6 @@ class OrderBooksController {
     @Autowired
     private lateinit var genericStopLimitOrderService: GenericStopLimitOrderService
 
-    @Autowired
-    private lateinit var midPriceHolder: MidPriceHolder
-
-    @Autowired
-    private lateinit var assetsPairsHolder: AssetsPairsHolder
-
     @GetMapping("/orderBooks", produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiOperation("Endpoint to get all limit order books")
     fun getOrderBooks(request: HttpServletRequest): LinkedList<OrderBook> {
@@ -49,9 +43,8 @@ class OrderBooksController {
 
         genericLimitOrderService.getAllOrderBooks().values.forEach {
             val orderBook = it.copy()
-            val refMidPrice = midPriceHolder.getRefMidPriceWithoutCleanupAndChecks(assetsPairsHolder.getAssetPair(orderBook.assetPairId), Date())
-            books.add(OrderBook(orderBook.assetPairId, refMidPrice, midPriceHolder.refreshMidPricePeriod, true, now, orderBook.getOrderBook(true)))
-            books.add(OrderBook(orderBook.assetPairId, refMidPrice, midPriceHolder.refreshMidPricePeriod, false, now, orderBook.getOrderBook(false)))
+            books.add(OrderBook(orderBook.assetPairId, true, now, orderBook.getOrderBook(true)))
+            books.add(OrderBook(orderBook.assetPairId, false, now, orderBook.getOrderBook(false)))
         }
 
         LOGGER.info("Order book snapshot sent to ${request.remoteAddr}")

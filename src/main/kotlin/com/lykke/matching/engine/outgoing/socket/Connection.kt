@@ -2,7 +2,6 @@ package com.lykke.matching.engine.outgoing.socket
 
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageType.ORDER_BOOK_SNAPSHOT
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -25,8 +24,7 @@ class Connection(val socket: Socket,
                  val inputQueue: BlockingQueue<OrderBook>,
                  val orderBooks: ConcurrentHashMap<String, AssetOrderBook>,
                  val assetsCache: AssetsHolder,
-                 val assetPairsCache: AssetsPairsHolder,
-                 val midPriceHolder: MidPriceHolder) : Thread(Connection::class.java.name) {
+                 val assetPairsCache: AssetsPairsHolder) : Thread(Connection::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(Connection::class.java.name)
@@ -63,9 +61,8 @@ class Connection(val socket: Socket,
             val now = Date()
             orderBooks.values.forEach {
                 val orderBook = it.copy()
-                val refMidPrice = midPriceHolder.getRefMidPriceWithoutCleanupAndChecks(assetPairsCache.getAssetPair(orderBook.assetPairId), Date())
-                writeOrderBook(OrderBook(orderBook.assetPairId, refMidPrice, midPriceHolder.refreshMidPricePeriod, true, now, orderBook.getOrderBook(true)), outputStream)
-                writeOrderBook(OrderBook(orderBook.assetPairId, refMidPrice, midPriceHolder.refreshMidPricePeriod, false, now, orderBook.getOrderBook(false)), outputStream)
+                writeOrderBook(OrderBook(orderBook.assetPairId, true, now, orderBook.getOrderBook(true)), outputStream)
+                writeOrderBook(OrderBook(orderBook.assetPairId, false, now, orderBook.getOrderBook(false)), outputStream)
             }
 
             while (true) {
