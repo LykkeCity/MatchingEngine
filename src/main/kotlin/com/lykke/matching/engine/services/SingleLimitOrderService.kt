@@ -40,6 +40,8 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
 
     }
 
+    private class OrderProcessingResult (val executionContext: ExecutionContext, val processedOrder: ProcessedOrder)
+
     private var messagesCount: Long = 0
 
     private var logCount = 100
@@ -117,10 +119,10 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
                 executionContext)
 
         return if (!midPriceValid) {
-            val freshExecutionContext = createExecutionContext(context, messageWrapper, context.assetPair, now, context.baseAsset, context.quotingAsset, order)
+
             val inputOrder = context.limitOrder
             inputOrder.updateStatus(OrderStatus.TooHighMidPriceDeviation, now)
-            OrderProcessingResult(processInvalidLimitOrder(order, freshExecutionContext, context), ProcessedOrder(inputOrder, false))
+            OrderProcessingResult(processInvalidLimitOrder(order, messageWrapper, context, now), ProcessedOrder(inputOrder, false))
         } else {
             OrderProcessingResult(executionContext, processedOrder)
         }
@@ -140,7 +142,17 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
                 context.validationResult?.let { mapOf(Pair(order.id, it)) } ?: emptyMap())
     }
 
-    private fun processInvalidLimitOrder(order: LimitOrder, executionContext: ExecutionContext, context: SingleLimitOrderContext): ExecutionContext{
+    private fun processInvalidLimitOrder(order: LimitOrder,
+                                         messageWrapper: MessageWrapper,
+                                         context: SingleLimitOrderContext,
+                                         now: Date): ExecutionContext{
+        val freshExecutionContext = createExecutionContext(context,
+                messageWrapper,
+                context.assetPair!!,
+                now,
+                context.baseAsset!!,
+                context.quotingAsset!!,
+                order)
         previousLimitOrdersProcessor.cancelAndReplaceOrders(order.clientId,
                 order.assetPairId,
                 context.isCancelOrders,
@@ -148,9 +160,9 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
                 !order.isBuySide(),
                 emptyMap(),
                 emptyMap(),
-                executionContext)
+                freshExecutionContext)
 
-        return executionContext
+        return freshExecutionContext
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
@@ -172,6 +184,5 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
         messageWrapper.writeNewResponse(builder)
     }
 
-    private class OrderProcessingResult (val executionContext: ExecutionContext, val processedOrder: ProcessedOrder)
 }
 

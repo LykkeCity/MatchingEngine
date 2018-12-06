@@ -20,11 +20,16 @@ import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.MidPriceHolder
+import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
+import com.lykke.matching.engine.order.process.ProcessedOrder
+import com.lykke.matching.engine.order.transaction.ExecutionContext
+import com.lykke.matching.engine.services.utils.MidPriceUtils
 import com.lykke.matching.engine.services.utils.MultiOrderFilter
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Service
@@ -41,12 +46,17 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                              private val assetsHolder: AssetsHolder,
                              private val assetsPairsHolder: AssetsPairsHolder,
                              private val balancesHolder: BalancesHolder,
-                             private val applicationSettingsCache: ApplicationSettingsCache) : AbstractService {
+                             private val applicationSettingsCache: ApplicationSettingsCache,
+                             private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
+                             private val midPriceHolder: MidPriceHolder) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
         private val CONTROLS_LOGGER = Logger.getLogger("${MultiLimitOrderService::class.java.name}.controls")
     }
+
+
+    private class OrdersProcessingResult(val executionContext: ExecutionContext, val processedOrders: List<ProcessedOrder>)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         if (messageWrapper.parsedMessage == null) {
@@ -68,25 +78,10 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
         val multiLimitOrder = readMultiLimitOrder(messageWrapper.messageId!!, message, isTrustedClient, assetPair)
         val now = Date()
 
-        val executionContext = executionContextFactory.create(messageWrapper.messageId!!,
-                messageWrapper.id!!,
-                MessageType.MULTI_LIMIT_ORDER,
-                messageWrapper.processedMessage,
-                mapOf(Pair(assetPair.assetPairId, assetPair)),
-                now,
-                LOGGER,
-                CONTROLS_LOGGER)
+        val ordersProcessingResult = processOrders(multiLimitOrder, messageWrapper, assetPair, now)
+        val executionContext = ordersProcessingResult.executionContext
+        val processedOrders = ordersProcessingResult.processedOrders
 
-        previousLimitOrdersProcessor.cancelAndReplaceOrders(multiLimitOrder.clientId,
-                multiLimitOrder.assetPairId,
-                multiLimitOrder.cancelAllPreviousLimitOrders,
-                multiLimitOrder.cancelBuySide,
-                multiLimitOrder.cancelSellSide,
-                multiLimitOrder.buyReplacements,
-                multiLimitOrder.sellReplacements,
-                executionContext)
-
-        val processedOrders = genericLimitOrdersProcessor.processOrders(multiLimitOrder.orders, executionContext)
         stopOrderBookProcessor.checkAndExecuteStopLimitOrders(executionContext)
         val persisted = executionDataApplyService.persistAndSendEvents(messageWrapper, executionContext)
 
@@ -118,6 +113,68 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
             responseBuilder.addStatuses(statusBuilder)
         }
         messageWrapper.writeMultiLimitOrderResponse(responseBuilder)
+    }
+
+    fun createExecutionContext(messageWrapper: MessageWrapper, assetPair: AssetPair, now: Date): ExecutionContext {
+        return executionContextFactory.create(messageWrapper.messageId!!,
+                messageWrapper.id!!,
+                MessageType.MULTI_LIMIT_ORDER,
+                messageWrapper.processedMessage,
+                mapOf(Pair(assetPair.assetPairId, assetPair)),
+                now,
+                LOGGER,
+                CONTROLS_LOGGER)
+    }
+
+    private fun processOrders(inputMultiLimitOrder: MultiLimitOrder, messageWrapper: MessageWrapper, assetPair: AssetPair, now: Date): OrdersProcessingResult {
+        val executionContext = createExecutionContext(messageWrapper, assetPair, now)
+        val processingMultiLimitOrder = inputMultiLimitOrder.copy()
+
+        previousLimitOrdersProcessor.cancelAndReplaceOrders(processingMultiLimitOrder.clientId,
+                processingMultiLimitOrder.assetPairId,
+                processingMultiLimitOrder.cancelAllPreviousLimitOrders,
+                processingMultiLimitOrder.cancelBuySide,
+                processingMultiLimitOrder.cancelSellSide,
+                processingMultiLimitOrder.buyReplacements,
+                processingMultiLimitOrder.sellReplacements,
+                executionContext)
+
+        val processedOrders = genericLimitOrdersProcessor.processOrders(processingMultiLimitOrder.orders, executionContext)
+
+        val midPriceValid = MidPriceUtils.isMidPriceValid(priceDeviationThresholdHolder.getMidPriceDeviationThreshold(assetPair.assetPairId, executionContext),
+                midPriceHolder.getReferenceMidPrice(assetPair, executionContext),
+                assetPair.assetPairId,
+                executionContext)
+
+        return if (!midPriceValid) {
+            processInvalidOrder(messageWrapper, inputMultiLimitOrder, assetPair, now)
+            inputMultiLimitOrder.orders.forEach {
+                if (it.status == OrderStatus.InOrderBook.name) {
+                    it.updateStatus(OrderStatus.TooHighMidPriceDeviation, now)
+                }
+            }
+            val invalidProcessedOrders = inputMultiLimitOrder.orders.map { ProcessedOrder(it, false) }
+            OrdersProcessingResult(executionContext, invalidProcessedOrders)
+        } else {
+            OrdersProcessingResult(executionContext, processedOrders)
+        }
+    }
+
+    private fun processInvalidOrder(messageWrapper: MessageWrapper,
+                                    inputMultiLimitOrder: MultiLimitOrder,
+                                    assetPair: AssetPair,
+                                    now: Date): ExecutionContext {
+        val freshContext = createExecutionContext(messageWrapper, assetPair, now)
+
+        previousLimitOrdersProcessor.cancelAndReplaceOrders(inputMultiLimitOrder.clientId,
+                inputMultiLimitOrder.assetPairId,
+                inputMultiLimitOrder.cancelAllPreviousLimitOrders,
+                inputMultiLimitOrder.cancelBuySide,
+                inputMultiLimitOrder.cancelSellSide,
+                inputMultiLimitOrder.buyReplacements,
+                inputMultiLimitOrder.sellReplacements,
+                freshContext)
+        return freshContext
     }
 
     private fun readMultiLimitOrder(messageId: String,
@@ -160,7 +217,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                 LOGGER.debug("Incoming limit order (message id: $messageId): ${getIncomingOrderInfo(currentOrder)}")
             }
             val type = if (currentOrder.hasType()) LimitOrderType.getByExternalId(currentOrder.type) else LimitOrderType.LIMIT
-            val status = when(type) {
+            val status = when (type) {
                 LimitOrderType.LIMIT -> OrderStatus.InOrderBook
                 LimitOrderType.STOP_LIMIT -> OrderStatus.Pending
             }
@@ -272,4 +329,5 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
         messageWrapper.writeMultiLimitOrderResponse(ProtocolMessages.MultiLimitOrderResponse.newBuilder()
                 .setStatus(status.type).setAssetPairId(assetPairId))
     }
+
 }
