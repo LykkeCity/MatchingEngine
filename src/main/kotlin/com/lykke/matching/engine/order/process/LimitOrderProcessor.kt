@@ -15,6 +15,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import com.lykke.matching.engine.services.AssetOrderBook
+import com.lykke.matching.engine.services.utils.MidPriceUtils
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
@@ -111,7 +112,12 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
     }
 
     private fun processValidOrder(orderContext: LimitOrderExecutionContext): ProcessedOrder {
-        val (lowerMidPriceBound, upperMidPriceBound) = getMidPricesInterval(orderContext)
+        val executionContext = orderContext.executionContext
+        val assetPairId = orderContext.order.assetPairId
+        val refMidPrice = orderContext.executionContext.currentTransactionMidPriceHolder.getRefMidPrice(assetPairId, executionContext)
+        val refMidPriceThreshold = priceDeviationThresholdHolder.getMidPriceDeviationThreshold(orderContext.order.assetPairId, orderContext.executionContext)
+        val (lowerMidPriceBound, upperMidPriceBound) = MidPriceUtils
+                .getMidPricesInterval(refMidPriceThreshold, refMidPrice)
         orderContext.lowerMidPriceBound = lowerMidPriceBound
         orderContext.upperMidPriceBound = upperMidPriceBound
         val order = orderContext.order
@@ -448,17 +454,5 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
                 matchingResult.matchedWithZeroLatestTrade
     }
 
-    private fun getMidPricesInterval(orderContext: LimitOrderExecutionContext): Pair<BigDecimal?, BigDecimal?> {
-        var lowerMidPriceBound: BigDecimal? = null
-        var upperMidPriceBound: BigDecimal? = null
-        val order = orderContext.order
-        val executionContext = orderContext.executionContext
-        val midPriceDeviationThreshold = priceDeviationThresholdHolder.getMidPriceDeviationThreshold(order.assetPairId, executionContext)
-        val referenceMidPrice = orderContext.executionContext.currentTransactionMidPriceHolder.getRefMidPrice(order.assetPairId, executionContext)
-        if (midPriceDeviationThreshold != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
-            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * midPriceDeviationThreshold)
-            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * midPriceDeviationThreshold)
-        }
-        return lowerMidPriceBound to upperMidPriceBound
-    }
+
 }
