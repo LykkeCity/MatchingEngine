@@ -330,7 +330,8 @@ open class TestApplicationContext {
                                     assetsHolder: AssetsHolder,
                                     assetsPairsHolder: AssetsPairsHolder,
                                     balancesHolder: BalancesHolder,
-                                    applicationSettingsCache: ApplicationSettingsCache): MultiLimitOrderService {
+                                    applicationSettingsCache: ApplicationSettingsCache,
+                                    testUUIDHolder: TestUUIDHolder): MultiLimitOrderService {
         return MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
@@ -339,8 +340,12 @@ open class TestApplicationContext {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                applicationSettingsCache)
+                applicationSettingsCache,
+                testUUIDHolder())
     }
+
+    @Bean
+    open fun testUUIDHolder() = TestUUIDHolder()
 
     @Bean
     open fun marketOrderService(matchingEngine: MatchingEngine,
