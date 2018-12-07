@@ -211,7 +211,6 @@ abstract class AbstractPerformanceTest {
                 LimitOrderBusinessValidatorImpl(),
                 applicationSettingsCache,
                 matchingEngine,
-                PriceDeviationThresholdHolder(applicationSettingsCache),
                 matchingResultHandlingHelper)
 
         val stopOrderProcessor = StopLimitOrderProcessor(limitOrderInputValidator,
@@ -239,7 +238,10 @@ abstract class AbstractPerformanceTest {
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
                 executionDataApplyService,
-                previousLimitOrdersProcessor)
+                previousLimitOrdersProcessor,
+                priceDeviationThresholdHolder,
+                midPriceHolder,
+                applicationSettingsCache)
 
         multiLimitOrderService = MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
@@ -249,7 +251,9 @@ abstract class AbstractPerformanceTest {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                applicationSettingsCache)
+                applicationSettingsCache,
+                priceDeviationThresholdHolder,
+                midPriceHolder)
 
         val marketOrderValidator = MarketOrderValidatorImpl(limitOrderInputValidator, assetsPairsHolder, assetsHolder, applicationSettingsCache)
         marketOrderService = MarketOrderService(matchingEngine,

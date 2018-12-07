@@ -105,13 +105,11 @@ open class TestExecutionContext {
                                  applicationSettingsCache: ApplicationSettingsCache,
                                  matchingEngine: MatchingEngine,
                                  midPriceHolder: MidPriceHolder,
-                                 priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
                                  matchingResultHandlingHelper: MatchingResultHandlingHelper): LimitOrderProcessor {
         return LimitOrderProcessor(limitOrderInputValidator,
                 limitOrderBusinessValidator,
                 applicationSettingsCache,
                 matchingEngine,
-                priceDeviationThresholdHolder,
                 matchingResultHandlingHelper)
     }
 

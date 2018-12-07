@@ -334,12 +334,18 @@ open class TestApplicationContext {
                                      genericLimitOrdersProcessor: GenericLimitOrdersProcessor,
                                      stopOrderBookProcessor: StopOrderBookProcessor,
                                      executionDataApplyService: ExecutionDataApplyService,
-                                     previousLimitOrdersProcessor: PreviousLimitOrdersProcessor): SingleLimitOrderService {
+                                     previousLimitOrdersProcessor: PreviousLimitOrdersProcessor,
+                                     priceDeviationThreshold: PriceDeviationThresholdHolder,
+                                     midPriceHolder: MidPriceHolder,
+                                     applicationSettingsCache: ApplicationSettingsCache): SingleLimitOrderService {
         return SingleLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
                 executionDataApplyService,
-                previousLimitOrdersProcessor)
+                previousLimitOrdersProcessor,
+                priceDeviationThreshold,
+                midPriceHolder,
+                applicationSettingsCache)
     }
 
     @Bean
@@ -351,7 +357,9 @@ open class TestApplicationContext {
                                     assetsHolder: AssetsHolder,
                                     assetsPairsHolder: AssetsPairsHolder,
                                     balancesHolder: BalancesHolder,
-                                    applicationSettingsCache: ApplicationSettingsCache): MultiLimitOrderService {
+                                    applicationSettingsCache: ApplicationSettingsCache,
+                                    priceDeviationThreshold: PriceDeviationThresholdHolder,
+                                    midPriceHolder: MidPriceHolder): MultiLimitOrderService {
         return MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
@@ -360,7 +368,9 @@ open class TestApplicationContext {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                applicationSettingsCache)
+                applicationSettingsCache,
+                priceDeviationThreshold,
+                midPriceHolder)
     }
 
     @Bean
