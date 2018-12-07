@@ -568,7 +568,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         assertLimitOrderMatchingResult(matchingResult, status = OrderStatus.TooHighMidPriceDeviation, marketBalance = null, remainingVolume = BigDecimal.valueOf(5.0))
     }
 
-    @Test
+    /*@Test
     //normally not a case, for limit orders as tha should be rejected with NegativeSpread business validation before matching
     fun testMatchingBuyOrderMidPriceDeviationWithSkipOrders() {
         testBalanceHolderWrapper.updateBalance("Client1", "EUR", 1000.0)
@@ -601,5 +601,5 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0)
         val matchingResult = match(limitOrder, getOrderBook("EURUSD", true), BigDecimal("1.53"), BigDecimal("1.57"))
         assertLimitOrderMatchingResult(matchingResult, status = OrderStatus.TooHighMidPriceDeviation, marketBalance = null, remainingVolume = BigDecimal.valueOf(-100.0))
-    }
+    }*/
 }
