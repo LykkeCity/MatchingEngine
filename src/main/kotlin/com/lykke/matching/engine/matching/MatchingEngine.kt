@@ -94,8 +94,14 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
                     && (order.takePrice() == null || (if (isBuy) order.takePrice()!! >= workingOrderBook.peek().price else order.takePrice()!! <= workingOrderBook.peek().price))) {
                 val limitOrderOrigin = workingOrderBook.poll()
                 if (order.clientId == limitOrderOrigin.clientId) {
-                    skipLimitOrders.add(limitOrderOrigin)
-                    continue
+                    if (order.takePrice() != null) {
+                        order.updateStatus(OrderStatus.LeadToNegativeSpread, now)
+                        executionContext.info("Order ${order.externalId} (client: ${order.clientId}) leads to negative spread with order ${limitOrderOrigin.externalId}")
+                        return MatchingResult(orderWrapper, cancelledLimitOrders)
+                    } else {
+                        skipLimitOrders.add(limitOrderOrigin)
+                        continue
+                    }
                 }
 
                 val limitOrderCopyWrapper = executionContext.orderBooksHolder.getOrPutOrderCopyWrapper(limitOrderOrigin) { CopyWrapper(limitOrderOrigin) }

@@ -20,7 +20,6 @@ class LimitOrderBusinessValidatorImpl: LimitOrderBusinessValidator {
             OrderValidationUtils.validateBalance(availableBalance, limitVolume)
         }
 
-        validateLeadToNegativeSpread(order, orderBook)
         validatePreviousOrderNotFound(order)
         validateNotEnoughFounds(order)
     }
@@ -28,12 +27,6 @@ class LimitOrderBusinessValidatorImpl: LimitOrderBusinessValidator {
     private fun validatePreviousOrderNotFound(order: LimitOrder) {
         if (order.status == OrderStatus.NotFoundPrevious.name) {
             throw OrderValidationException(OrderStatus.NotFoundPrevious, "${orderInfo(order)} has not found previous order (${order.previousExternalId})")
-        }
-    }
-
-    private fun validateLeadToNegativeSpread(order: LimitOrder, orderBook: AssetOrderBook) {
-        if (orderBook.leadToNegativeSpreadForClient(order)) {
-            throw OrderValidationException(OrderStatus.LeadToNegativeSpread, "Limit order ${orderInfo(order)} lead to negative spread")
         }
     }
 
