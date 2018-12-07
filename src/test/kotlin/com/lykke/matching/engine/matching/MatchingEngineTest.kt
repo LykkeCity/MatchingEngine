@@ -111,14 +111,10 @@ abstract class MatchingEngineTest {
 
     protected fun match(order: Order,
                         orderBook: PriorityBlockingQueue<LimitOrder>,
-                        lowerBound: BigDecimal? = null,
-                        upperBound: BigDecimal? = null,
                         moPriceDeviationThreshold: BigDecimal? = null): MatchingResult {
         return matchingEngine.match(order,
                 orderBook,
                 "test",
-                lowerMidPriceBound = lowerBound,
-                upperMidPriceBound = upperBound,
                 moPriceDeviationThreshold = moPriceDeviationThreshold,
                 executionContext = executionContext)
     }

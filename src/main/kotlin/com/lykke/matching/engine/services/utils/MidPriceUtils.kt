@@ -16,14 +16,5 @@ class MidPriceUtils {
             }
             return lowerMidPriceBound to upperMidPriceBound
         }
-
-        fun isMidPriceValid(threshold: BigDecimal?,
-                            referenceMidPrice: BigDecimal,
-                            assetPairId: String,
-                            executionContext: ExecutionContext): Boolean {
-            val (lowerBound, upperBound) = getMidPricesInterval(threshold, referenceMidPrice)
-            val midPrice = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPairId).getMidPrice()
-            return OrderValidationUtils.isMidPriceValid(midPrice, lowerBound, upperBound)
-        }
     }
 }
