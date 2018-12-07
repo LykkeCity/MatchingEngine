@@ -137,50 +137,49 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                 midPriceHolder.getReferenceMidPrice(assetPair, executionContext))
 
         if (!isOrderBookMidPriceValidBeforeMatching(executionContext, lowerMidPriceBound, upperMidPriceBound, assetPair)) {
-            processOrderBookMidPriceInvalidBeforeMatching(executionContext, processingMultiLimitOrder, assetPair, upperMidPriceBound, lowerMidPriceBound, now)
+            processOrderBookMidPriceInvalidBeforeMatching(executionContext, processingMultiLimitOrder, assetPair, upperMidPriceBound, lowerMidPriceBound)
         }
 
         val processedOrders = genericLimitOrdersProcessor.processOrders(processingMultiLimitOrder.orders, executionContext)
 
-        val midPrice = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPair.assetPairId).getMidPrice()
-        val midPriceValid = OrderValidationUtils.isMidPriceValid(midPrice, lowerMidPriceBound, upperMidPriceBound)
+        val midPriceAfterOrderMatching = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPair.assetPairId).getMidPrice()
+        val midPriceValid = OrderValidationUtils.isMidPriceValid(midPriceAfterOrderMatching, lowerMidPriceBound, upperMidPriceBound)
         return if (!midPriceValid) {
-            val invalidProcessedOrders = processMidPriceIsInvalidAfterMatching(executionContext,
+            return processMidPriceIsInvalidAfterMatching(
                     messageWrapper,
                     inputMultiLimitOrder,
                     assetPair,
                     lowerMidPriceBound,
                     upperMidPriceBound,
-                    midPrice,
+                    midPriceAfterOrderMatching,
                     now)
-            OrdersProcessingResult(executionContext, invalidProcessedOrders)
         } else {
             if (!applicationSettingsCache.isTrustedClient(inputMultiLimitOrder.clientId)) {
                 executionContext.controlsInfo("Multilimit message uid = ${inputMultiLimitOrder.messageUid}, assetPair = ${assetPair.assetPairId}, mid price control passed, " +
                         "l = ${NumberUtils.roundForPrint(lowerMidPriceBound)}, u = ${NumberUtils.roundForPrint(upperMidPriceBound)}, " +
-                        "m = ${NumberUtils.roundForPrint(midPrice)}")
+                        "m = ${NumberUtils.roundForPrint(midPriceAfterOrderMatching)}")
             }
             OrdersProcessingResult(executionContext, processedOrders)
         }
     }
 
-    private fun processMidPriceIsInvalidAfterMatching(executionContext: ExecutionContext,
-                                                      messageWrapper: MessageWrapper,
+    private fun processMidPriceIsInvalidAfterMatching(messageWrapper: MessageWrapper,
                                                       multiLimitOrder: MultiLimitOrder,
                                                       assetPair: AssetPair,
                                                       lowerMidPriceBound: BigDecimal?,
                                                       upperMidPriceBound: BigDecimal?,
                                                       midPriceAfterMatching: BigDecimal?,
-                                                      now: Date): List<ProcessedOrder> {
+                                                      now: Date): OrdersProcessingResult {
+        val freshExecutionContext = getExecutionContextWithProcessedPrevOrders(messageWrapper, multiLimitOrder, assetPair, now)
+
         if (!applicationSettingsCache.isTrustedClient(multiLimitOrder.clientId)) {
-            executionContext.controlsInfo("Multilimit message uid = ${multiLimitOrder.messageUid}, assetPair = ${assetPair.assetPairId}, mid price control passed, " +
+            freshExecutionContext.controlsInfo("Multilimit message uid = ${multiLimitOrder.messageUid}, assetPair = ${assetPair.assetPairId}, mid price control failed, " +
                     "l = ${NumberUtils.roundForPrint(lowerMidPriceBound)}, u = ${NumberUtils.roundForPrint(upperMidPriceBound)}, " +
                     "m = $midPriceAfterMatching")
         }
 
         //discard old execution context as it contains invalid matching data that should be rejected dues to invalid mid price
-        val executionContextForInvalidOrders = getExecutionContextWithProcessedPrevOrders(messageWrapper, multiLimitOrder, assetPair, now)
-        return rejectOrders(OrderStatus.TooHighMidPriceDeviation, executionContextForInvalidOrders, multiLimitOrder, now)
+        return OrdersProcessingResult(freshExecutionContext, rejectOrders(OrderStatus.TooHighMidPriceDeviation, freshExecutionContext, multiLimitOrder, now))
     }
 
     private fun isOrderBookMidPriceValidBeforeMatching(executionContext: ExecutionContext,
@@ -192,15 +191,15 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
     }
 
     private fun processOrderBookMidPriceInvalidBeforeMatching(executionContext: ExecutionContext,
-                                                      multiLimitOrder: MultiLimitOrder,
-                                                      assetPair: AssetPair,
-                                                      upperMidPriceBound: BigDecimal?,
-                                                      lowerMidPriceBound: BigDecimal?) {
+                                                              multiLimitOrder: MultiLimitOrder,
+                                                              assetPair: AssetPair,
+                                                              upperMidPriceBound: BigDecimal?,
+                                                              lowerMidPriceBound: BigDecimal?) {
         val orderBookMidPriceBeforeOrdersMatching = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPair.assetPairId).getMidPrice()
 
 
         val message = "Multilimit message uid = ${multiLimitOrder.messageUid}, assetPairId = ${assetPair.assetPairId}, " +
-                "is order book mid price: ${NumberUtils.roundForPrint(orderBookMidPriceBeforeOrdersMatching)} " +
+                "order book mid price: ${NumberUtils.roundForPrint(orderBookMidPriceBeforeOrdersMatching)} " +
                 "already aut of range lowerBound: ${NumberUtils.roundForPrint(lowerMidPriceBound)}), upperBound: ${NumberUtils.roundForPrint(upperMidPriceBound)}"
         executionContext.error(message)
         executionContext.controlsError(message)
