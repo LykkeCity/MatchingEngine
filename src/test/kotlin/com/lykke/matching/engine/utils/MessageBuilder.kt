@@ -183,7 +183,7 @@ companion object {
             return MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER.type, buildMultiLimitOrder(pair, clientId,
                     orders,
                     cancel,
-                    cancelMode).toByteArray(), null, messageId = "test", id = "test")
+                    cancelMode).toByteArray(), TestClientHandler(), messageId = "test", id = "test")
         }
 
         private fun buildMultiLimitOrder(assetPairId: String,
@@ -215,9 +215,6 @@ companion object {
             }
             return multiOrderBuilder.build()
         }
-
-
-
 
         fun buildMultiLimitOrderCancelWrapper(clientId: String, assetPairId: String, isBuy: Boolean): MessageWrapper = MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER_CANCEL.type, ProtocolMessages.MultiLimitOrderCancel.newBuilder()
                 .setUid(UUID.randomUUID().toString())

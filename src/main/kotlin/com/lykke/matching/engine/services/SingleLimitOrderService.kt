@@ -121,7 +121,7 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
 
         val processedOrder = genericLimitOrdersProcessor.processOrders(listOf(processingOrder), executionContext).single()
 
-        val midPriceAfterOrderProcessing = executionContext.orderBooksHolder.getChangedOrderBookCopy(assetPair.assetPairId).getMidPrice()
+        val midPriceAfterOrderProcessing = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPair.assetPairId).getMidPrice()
         val midPriceValid = OrderValidationUtils.isMidPriceValid(midPriceAfterOrderProcessing, lowerMidPriceBound, upperMidPriceBound)
 
         return if (!midPriceValid) {
