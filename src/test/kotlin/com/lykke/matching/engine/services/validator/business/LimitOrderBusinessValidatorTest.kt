@@ -20,29 +20,6 @@ class LimitOrderBusinessValidatorTest {
         val ASSET_PAIR_ID = "BTCUSD"
     }
 
-
-    @Test(expected = OrderValidationException::class)
-    fun testLeadToNegativeSpread() {
-        //given
-        val limitOrderBusinessValidatorImpl = LimitOrderBusinessValidatorImpl()
-
-        try {
-            //when
-            val orderBook = AssetOrderBook(ASSET_PAIR_ID)
-
-            orderBook.addOrder(getLimitOrder(fee = getValidFee(), volume = BigDecimal.valueOf(-1.0)))
-            limitOrderBusinessValidatorImpl.performValidation(true,
-                    getLimitOrder(fee = getValidFee()),
-                    BigDecimal.valueOf(10.0),
-                    BigDecimal.valueOf(9.0),
-                    orderBook,
-                    Date())
-        } catch (e: OrderValidationException) {
-            assertEquals(OrderStatus.LeadToNegativeSpread, e.orderStatus)
-            throw e
-        }
-    }
-
     @Test(expected = OrderValidationException::class)
     fun testPreviousOrderNotFount() {
         //given

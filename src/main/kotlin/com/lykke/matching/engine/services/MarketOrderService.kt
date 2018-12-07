@@ -25,6 +25,7 @@ import com.lykke.matching.engine.order.OrderStatus.InvalidFee
 import com.lykke.matching.engine.order.OrderStatus.InvalidValue
 import com.lykke.matching.engine.order.OrderStatus.InvalidVolume
 import com.lykke.matching.engine.order.OrderStatus.InvalidVolumeAccuracy
+import com.lykke.matching.engine.order.OrderStatus.LeadToNegativeSpread
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
@@ -168,6 +169,7 @@ class MarketOrderService @Autowired constructor(
         when (OrderStatus.valueOf(matchingResult.orderCopy.status)) {
             ReservedVolumeGreaterThanBalance,
             NoLiquidity,
+            LeadToNegativeSpread,
             NotEnoughFunds,
             InvalidFee,
             InvalidVolumeAccuracy,
