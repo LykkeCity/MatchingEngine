@@ -9,7 +9,6 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolder
 import org.apache.log4j.Logger
@@ -21,7 +20,6 @@ import java.util.concurrent.BlockingQueue
 class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAccessorsHolder,
                      private val persistenceManager: PersistenceManager,
                      private val assetsHolder: AssetsHolder,
-                     private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
                      private val balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
                      private val applicationSettingsCache: ApplicationSettingsCache): BalancesGetter {
 
@@ -41,6 +39,10 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         wallets = balancesDbAccessorsHolder.primaryAccessor.loadWallets()
         initialClientsCount = wallets.size
         initialBalancesCount = wallets.values.sumBy { it.balances.size }
+    }
+
+    fun clientExists(clientId: String): Boolean {
+        return wallets.containsKey(clientId)
     }
 
     fun getBalances(clientId: String): Map<String, AssetBalance> {
@@ -96,7 +98,6 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
             return false
         }
         currentTransactionBalancesHolder.apply()
-        balanceUpdateNotificationQueue.put(BalanceUpdateNotification(clientId))
         return true
     }
 
@@ -114,7 +115,6 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
             return false
         }
         currentTransactionBalancesHolder.apply()
-        balanceUpdateNotificationQueue.put(BalanceUpdateNotification(clientId))
         return true
     }
 
@@ -138,7 +138,6 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
                 createCurrentTransactionBalancesHolder(),
                 applicationSettingsCache,
                 persistenceManager,
-                balanceUpdateNotificationQueue,
                 assetsHolder,
                 validate,
                 logger)

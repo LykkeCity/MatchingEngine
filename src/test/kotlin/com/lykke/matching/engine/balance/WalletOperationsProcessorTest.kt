@@ -83,9 +83,6 @@ class WalletOperationsProcessorTest : AbstractTest() {
         assertBalance("Client2", "ETH", 3.0, 0.3)
         assertBalance("Client3", "BTC", 0.0, 0.0)
 
-        assertEquals(2, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
-        assertTrue(setOf("Client1", "Client2").containsAll(balanceUpdateHandlerTest.balanceUpdateNotificationQueue.map { it.clientId }))
-
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
         val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate
         assertEquals(2, balanceUpdate.balances.size)
@@ -150,8 +147,8 @@ class WalletOperationsProcessorTest : AbstractTest() {
 
     @Test
     fun testTrustedClientReservedOperations() {
-        settingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("TrustedClient1"))
-        settingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("TrustedClient2"))
+        settingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("TrustedClient1"))
+        settingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("TrustedClient2"))
         applicationSettingsCache.update()
 
         testBalanceHolderWrapper.updateBalance("TrustedClient1", "BTC", 1.0)
