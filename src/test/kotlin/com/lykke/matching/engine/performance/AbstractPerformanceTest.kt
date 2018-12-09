@@ -23,8 +23,6 @@ import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperation
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
-import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExecutionEventSender
 import com.lykke.matching.engine.order.ExecutionPersistenceService
@@ -51,6 +49,7 @@ import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputV
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.context.ApplicationEventPublisher
+import java.util.Optional
 import java.util.concurrent.LinkedBlockingQueue
 
 abstract class AbstractPerformanceTest {
@@ -106,8 +105,6 @@ abstract class AbstractPerformanceTest {
 
     val balanceUpdateQueue = LinkedBlockingQueue<BalanceUpdate>()
 
-    val balanceUpdateNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
-
     val clientLimitOrdersQueue  = LinkedBlockingQueue<LimitOrdersReport>()
 
     val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
@@ -120,22 +117,18 @@ abstract class AbstractPerformanceTest {
 
     val trustedClientsLimitOrdersQueue  = LinkedBlockingQueue<LimitOrdersReport>()
 
-    val quotesUpdateQueue = LinkedBlockingQueue<QuotesUpdate>()
-
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
     private fun clearMessageQueues() {
         rabbitEventsQueue.clear()
         rabbitTrustedClientsEventsQueue.clear()
         balanceUpdateQueue.clear()
-        balanceUpdateNotificationQueue.clear()
         clientLimitOrdersQueue.clear()
         lkkTradesQueue.clear()
         orderBookQueue.clear()
         rabbitOrderBookQueue.clear()
         rabbitSwapQueue.clear()
         trustedClientsLimitOrdersQueue.clear()
-        quotesUpdateQueue.clear()
         tradeInfoQueue.clear()
     }
 
@@ -154,10 +147,10 @@ abstract class AbstractPerformanceTest {
         balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder,
                 persistenceManager,
                 assetsHolder,
-                balanceUpdateNotificationQueue, balanceUpdateQueue,
+                balanceUpdateQueue,
                 applicationSettingsHolder)
 
-        testBalanceHolderWrapper = TestBalanceHolderWrapper(BalanceUpdateHandlerTest(balanceUpdateQueue, balanceUpdateNotificationQueue), balancesHolder)
+        testBalanceHolderWrapper = TestBalanceHolderWrapper(BalanceUpdateHandlerTest(balanceUpdateQueue), balancesHolder)
         assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
         assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
 
@@ -165,10 +158,7 @@ abstract class AbstractPerformanceTest {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                quotesUpdateQueue,
-                tradeInfoQueue)
-
-        feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
+                Optional.of(tradeInfoQueue))
 
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)

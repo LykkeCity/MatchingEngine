@@ -2,7 +2,7 @@ package com.lykke.matching.engine.outgoing.rabbit.impl.listeners
 
 import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
 import com.lykke.matching.engine.logging.DatabaseLogger
-import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
+import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.outgoing.rabbit.events.RabbitFailureEvent
 import com.lykke.matching.engine.outgoing.rabbit.events.RabbitRecoverEvent
@@ -20,10 +20,9 @@ import java.util.concurrent.BlockingDeque
 import javax.annotation.PostConstruct
 
 @Component
-class RabbitTransferEventListener {
-
+class MarketOrderWithTradesEventListener {
     @Autowired
-    private lateinit var rabbitTransferQueue: BlockingDeque<CashTransferOperation>
+    private lateinit var marketOrderWithTrades: BlockingDeque<MarketOrderWithTrades>
 
     @Autowired
     private lateinit var rabbitMqOldService: RabbitMqService<Any>
@@ -37,14 +36,14 @@ class RabbitTransferEventListener {
     @Value("\${azure.logs.blob.container}")
     private lateinit var logBlobName: String
 
-    @Value("\${azure.logs.transfers.events.table}")
+    @Value("\${azure.logs.market.orders.table}")
     private lateinit var logTable: String
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.transfers,
-                RabbitTransferEventListener::class.java.simpleName,
-                rabbitTransferQueue,
+        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.marketOrders,
+                MarketOrderWithTradesEventListener::class.java.simpleName,
+                marketOrderWithTrades,
                 config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT,
@@ -55,17 +54,18 @@ class RabbitTransferEventListener {
 
     @EventListener
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
-        if(rabbitFailureEvent.publisherName == RabbitTransferEventListener::class.java.simpleName) {
+        if(rabbitFailureEvent.publisherName == MarketOrderWithTradesEventListener::class.java.simpleName) {
             rabbitFailureEvent.failedEvent?.let {
-                rabbitTransferQueue.putFirst(it as CashTransferOperation)
+                marketOrderWithTrades.putFirst(it as MarketOrderWithTrades)
             }
+
             applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT, rabbitFailureEvent.publisherName))
         }
     }
 
     @EventListener
     fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
-        if (rabbitRecoverEvent.publisherName == RabbitTransferEventListener::class.java.simpleName) {
+        if (rabbitRecoverEvent.publisherName == MarketOrderWithTradesEventListener::class.java.simpleName) {
             applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
         }
     }
