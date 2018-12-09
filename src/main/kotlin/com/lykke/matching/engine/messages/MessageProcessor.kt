@@ -105,7 +105,7 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
 
         this.limitOrderMassCancelService = applicationContext.getBean(LimitOrderMassCancelService::class.java)
 
-        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
+        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsHolder)
 
         this.transferOperationSaveService = applicationContext.getBean(TransferOperationSaveService::class.java)
 
