@@ -154,12 +154,27 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                     midPriceAfterOrderMatching,
                     now)
         } else {
-            if (!applicationSettingsCache.isTrustedClient(inputMultiLimitOrder.clientId)) {
-                executionContext.controlsInfo("Multilimit message uid = ${inputMultiLimitOrder.messageUid}, assetPair = ${assetPair.assetPairId}, mid price control passed, " +
-                        "l = ${NumberUtils.roundForPrint(lowerMidPriceBound)}, u = ${NumberUtils.roundForPrint(upperMidPriceBound)}, " +
-                        "m = ${NumberUtils.roundForPrint(midPriceAfterOrderMatching)}")
-            }
+            processMidPriceIsValidAfterMatching(executionContext,
+                    inputMultiLimitOrder,
+                    lowerMidPriceBound,
+                    upperMidPriceBound,
+                    midPriceAfterOrderMatching)
             OrdersProcessingResult(executionContext, processedOrders)
+        }
+    }
+
+    private fun processMidPriceIsValidAfterMatching(executionContext: ExecutionContext,
+                                                    multiLimitOrder: MultiLimitOrder,
+                                                    lowerMidPriceBound: BigDecimal?,
+                                                    upperMidPriceBound: BigDecimal?,
+                                                    midPrice: BigDecimal?) {
+        midPrice?.let {
+            executionContext.currentTransactionMidPriceHolder.addMidPrice(multiLimitOrder.assetPairId, midPrice, executionContext)
+        }
+        if (!applicationSettingsCache.isTrustedClient(multiLimitOrder.clientId)) {
+            executionContext.controlsInfo("Multilimit message uid = ${multiLimitOrder.messageUid}, assetPair = ${multiLimitOrder.assetPairId}, mid price control passed, " +
+                    "l = ${NumberUtils.roundForPrint(lowerMidPriceBound)}, u = ${NumberUtils.roundForPrint(upperMidPriceBound)}, " +
+                    "m = ${NumberUtils.roundForPrint(midPrice)}")
         }
     }
 

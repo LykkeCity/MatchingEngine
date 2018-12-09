@@ -132,12 +132,29 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
                     midPriceAfterOrderProcessing,
                     now)
         } else {
-            if (!applicationSettingsCache.isTrustedClient(processingOrder.clientId)) {
-                executionContext.controlsInfo("Limit order externalId = ${processingOrder.externalId}, assetPair = ${context.assetPair.assetPairId}, mid price control passed, " +
-                        "l = ${NumberUtils.roundForPrint(lowerMidPriceBound)}, u = ${NumberUtils.roundForPrint(upperMidPriceBound)}, " +
-                        "m = $midPriceAfterOrderProcessing")
-            }
+            processMidPriceValidAfterMatching(executionContext,
+                    context.limitOrder,
+                    assetPair.assetPairId,
+                    lowerMidPriceBound,
+                    upperMidPriceBound,
+                    midPriceAfterOrderProcessing)
             OrderProcessingResult(executionContext, processedOrder)
+        }
+    }
+
+    private fun processMidPriceValidAfterMatching(executionContext: ExecutionContext,
+                                                  limitOrder: LimitOrder,
+                                                  assetPairId: String,
+                                                  lowerMidPriceBound: BigDecimal?,
+                                                  upperMidPriceBound: BigDecimal?,
+                                                  midPrice: BigDecimal?) {
+        midPrice?.let {
+            executionContext.currentTransactionMidPriceHolder.addMidPrice(assetPairId, midPrice, executionContext)
+        }
+        if (!applicationSettingsCache.isTrustedClient(limitOrder.clientId)) {
+            executionContext.controlsInfo("Limit order externalId = ${limitOrder.externalId}, assetPair = ${assetPairId}, mid price control passed, " +
+                    "l = ${NumberUtils.roundForPrint(lowerMidPriceBound)}, u = ${NumberUtils.roundForPrint(upperMidPriceBound)}, " +
+                    "m = $midPrice")
         }
     }
 
