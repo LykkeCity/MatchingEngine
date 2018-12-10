@@ -93,6 +93,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         val commentWithPrefix = getCommentWithOperationPrefix(SettingOperation.DELETE, deleteSettingRequestDto.comment)
         settingsGroupToBeDeleted.settings.forEach { addHistoryRecord(settingsGroup, commentWithPrefix, deleteSettingRequestDto.user, it) }
         applicationSettingsCache.deleteSettingGroup(settingsGroup)
+
         applicationEventPublisher.publishEvent(ApplicationGroupDeletedEvent(settingsGroup,
                 settingsGroupToBeDeleted.settings,
                 deleteSettingRequestDto.comment,
@@ -109,6 +110,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
                 getCommentWithOperationPrefix(SettingOperation.DELETE, deleteSettingRequestDto.comment),
                 deleteSettingRequestDto.user, settingToBeDeleted)
         applicationSettingsCache.deleteSetting(settingsGroup, settingName)
+
 
         applicationEventPublisher.publishEvent(ApplicationSettingDeletedEvent(settingsGroup,
                 settingToBeDeleted,
