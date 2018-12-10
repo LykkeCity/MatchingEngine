@@ -22,12 +22,9 @@ import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
-import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.order.ExecutionDataApplyService
-import com.lykke.matching.engine.utils.monitoring.GeneralHealthMonitor
-import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.context.ApplicationContext
@@ -139,7 +136,6 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
         cashTransferPreprocessor.start()
 
         this.quotesUpdateHandler = applicationContext.getBean(QuotesUpdateHandler::class.java)
-        val connectionsHolder = applicationContext.getBean(ConnectionsHolder::class.java)
 
         processedMessagesCache = applicationContext.getBean(ProcessedMessagesCache::class.java)
         servicesMap = initServicesMap()
@@ -187,16 +183,17 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
                 service.parseMessage(message)
             }
 
+
+            if (!messageProcessingStatusHolder.isMessageProcessingEnabled()) {
+                service.writeResponse(message, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+                return
+            }
+
             if (!messageProcessingStatusHolder.isHealthStatusOk()) {
                 service.writeResponse(message, MessageStatus.RUNTIME)
                 val errorMessage = "Message processing is disabled"
                 LOGGER.error(errorMessage)
                 METRICS_LOGGER.logError(errorMessage)
-                return
-            }
-
-            if (!messageProcessingStatusHolder.isMessageProcessingEnabled()) {
-                service.writeResponse(message, MessageStatus.MESSAGE_PROCESSING_DISABLED)
                 return
             }
 
