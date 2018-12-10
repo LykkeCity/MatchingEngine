@@ -4,11 +4,10 @@ import com.lykke.matching.engine.daos.Candle
 import com.lykke.matching.engine.daos.HourCandle
 import com.lykke.matching.engine.daos.Tick
 import com.lykke.matching.engine.daos.TradeInfo
-import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
+import com.lykke.matching.engine.database.CandlesDatabaseAccessor
+import com.lykke.matching.engine.database.HoursCandlesDatabaseAccessor
 import com.lykke.utils.logging.PerformanceLogger
 import org.apache.log4j.Logger
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
@@ -17,36 +16,28 @@ import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
 import java.util.concurrent.BlockingQueue
-import javax.annotation.PostConstruct
 import kotlin.concurrent.thread
 
-@Component
-class TradesInfoService @Autowired constructor(private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor) {
+class TradesInfoService(private val candlesDatabaseAccessor: CandlesDatabaseAccessor?,
+                        private val hoursCandlesDatabaseAccessor: HoursCandlesDatabaseAccessor?,
+                        private val tradeInfoQueue: BlockingQueue<TradeInfo>) {
 
-    companion object {
-        val LOGGER = Logger.getLogger(TradesInfoService::class.java.name)
-    }
+    private val formatter = SimpleDateFormat("yyyyMMddHHmm")
 
-    @Autowired
-    private lateinit var tradeInfoQueue: BlockingQueue<TradeInfo>
+    private val isCandlesEnabled = candlesDatabaseAccessor != null
+    private val candles = HashMap<String, HashMap<String, HashMap<Int, Tick>>>()
 
-    val formatter = SimpleDateFormat("yyyyMMddHHmm")
+    private val isHoursCandlesEnabled = hoursCandlesDatabaseAccessor != null
+    private val savedHoursCandles = hoursCandlesDatabaseAccessor?.getHoursCandles()
+    private val hoursCandles = HashMap<String, BigDecimal>()
 
-    val hourFormatter = SimpleDateFormat("yyyyMMddHH")
-
-    val candles = HashMap<String, HashMap<String, HashMap<Int, Tick>>>()
-    val savedHoursCandles = limitOrderDatabaseAccessor.getHoursCandles()
-    val hoursCandles = HashMap<String, BigDecimal>()
-
-    val bid = "Bid"
-    val ask = "Ask"
+    private val bid = "Bid"
+    private val ask = "Ask"
 
     private val candlesPerformanceLogger = PerformanceLogger(Logger.getLogger("historyPersistStats"), 1, "saveCandles: ")
     private val hourCandlesPerformanceLogger = PerformanceLogger(Logger.getLogger("historyPersistStats"), 1, "saveHourCandles: ")
 
-
-    @PostConstruct
-    fun initialize() {
+    fun start() {
         thread(start = true, name = TradesInfoService::class.java.name) {
             while (true) {
                 process(tradeInfoQueue.take())
@@ -54,15 +45,23 @@ class TradesInfoService @Autowired constructor(private val limitOrderDatabaseAcc
         }
     }
 
-    fun process(info: TradeInfo) {
+    private fun process(info: TradeInfo) {
+        if (isCandlesEnabled) {
+            addCandles(info)
+        }
+        if (isHoursCandlesEnabled) {
+            addHoursCandles(info)
+        }
+    }
+
+    private fun addCandles(info: TradeInfo) {
         val asset = "${info.assetPair}_${if (info.isBuy) bid else ask}"
         val dateTime = LocalDateTime.ofInstant(info.date.toInstant(), ZoneId.of("UTC"))
         val time = formatter.format(info.date)
         val second = dateTime.second
-
         synchronized(candles) {
-            val map = candles.getOrPut(time) { HashMap<String, HashMap<Int, Tick>>() }
-            val ticks = map.getOrPut(asset) { HashMap<Int, Tick>() }
+            val map = candles.getOrPut(time) { HashMap() }
+            val ticks = map.getOrPut(asset) { HashMap() }
             val curTick = ticks[second]
             if (curTick != null) {
                 if (curTick.highPrice < info.price) curTick.highPrice = info.price
@@ -72,7 +71,9 @@ class TradesInfoService @Autowired constructor(private val limitOrderDatabaseAcc
                 ticks[second] = Tick(info.price, info.price, info.price, info.price)
             }
         }
+    }
 
+    private fun addHoursCandles(info: TradeInfo) {
         if (!info.isBuy || !hoursCandles.containsKey(info.assetPair)) {
             synchronized(hoursCandles) {
                 hoursCandles.put(info.assetPair, info.price)
@@ -81,6 +82,11 @@ class TradesInfoService @Autowired constructor(private val limitOrderDatabaseAcc
     }
 
     fun saveCandles() {
+        if (!isCandlesEnabled) {
+            return
+        }
+        candlesDatabaseAccessor!!
+
         candlesPerformanceLogger.start()
         val time = formatter.format(Date())
         synchronized(candles) {
@@ -88,7 +94,7 @@ class TradesInfoService @Autowired constructor(private val limitOrderDatabaseAcc
             candlesPerformanceLogger.startPersist()
             keys.forEach { keyTime ->
                 candles[keyTime]?.forEach { asset ->
-                    limitOrderDatabaseAccessor.writeCandle(Candle(asset.key, keyTime, asset.value.entries.joinToString("|")
+                    candlesDatabaseAccessor.writeCandle(Candle(asset.key, keyTime, asset.value.entries.joinToString("|")
                     { "O=${it.value.openPrice};C=${it.value.closePrice};H=${it.value.highPrice};L=${it.value.lowPrice};T=${it.key}" }))
                 }
                 candles.remove(keyTime)
@@ -100,6 +106,12 @@ class TradesInfoService @Autowired constructor(private val limitOrderDatabaseAcc
     }
 
     fun saveHourCandles() {
+        if (!isHoursCandlesEnabled) {
+            return
+        }
+        hoursCandlesDatabaseAccessor!!
+        savedHoursCandles!!
+
         hourCandlesPerformanceLogger.start()
         synchronized(hoursCandles) {
             hoursCandles.keys.forEach { asset ->
@@ -115,7 +127,7 @@ class TradesInfoService @Autowired constructor(private val limitOrderDatabaseAcc
             hoursCandles.clear()
         }
         hourCandlesPerformanceLogger.startPersist()
-        limitOrderDatabaseAccessor.writeHourCandles(savedHoursCandles)
+        hoursCandlesDatabaseAccessor.writeHourCandles(savedHoursCandles)
         hourCandlesPerformanceLogger.endPersist()
         hourCandlesPerformanceLogger.end()
         hourCandlesPerformanceLogger.fixTime()

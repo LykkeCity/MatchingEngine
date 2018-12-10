@@ -35,7 +35,6 @@ import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
-import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.CashInOutOperationService
 import com.lykke.matching.engine.services.CashTransferOperationService
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -45,9 +44,12 @@ import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.MultiLimitOrderService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.services.validators.*
+import com.lykke.matching.engine.services.validators.MarketOrderValidator
+import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.business.*
 import com.lykke.matching.engine.services.validators.business.impl.*
+import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
+import com.lykke.matching.engine.services.validators.impl.ReservedCashInOutOperationValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.*
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
@@ -74,6 +76,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import java.util.Optional
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.Executor
 import java.util.concurrent.LinkedBlockingQueue
@@ -81,6 +84,11 @@ import java.util.concurrent.LinkedBlockingQueue
 @Configuration
 @Import(QueueConfig::class, TestExecutionContext::class, JsonConfig::class)
 open class TestApplicationContext {
+
+    @Bean
+    open fun tradeInfoQueue(): BlockingQueue<TradeInfo> {
+        return LinkedBlockingQueue<TradeInfo>()
+    }
 
     @Bean
     open fun threadPoolTaskExecutor(): Executor {
@@ -95,12 +103,11 @@ open class TestApplicationContext {
     @Bean
     open fun balanceHolder(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
                            persistenceManager: PersistenceManager,
-                           balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
                            balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
                            applicationSettingsHolder: ApplicationSettingsHolder,
                            backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor): BalancesHolder {
         return BalancesHolder(balancesDatabaseAccessorsHolder, persistenceManager, assetHolder(backOfficeDatabaseAccessor),
-                balanceUpdateNotificationQueue, balanceUpdateQueue, applicationSettingsHolder)
+                balanceUpdateQueue, applicationSettingsHolder)
     }
 
     @Bean
@@ -130,14 +137,13 @@ open class TestApplicationContext {
                                          testReservedVolumesDatabaseAccessor: TestReservedVolumesDatabaseAccessor,
                                          assetHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder,
                                          balancesHolder: BalancesHolder, applicationSettingsHolder: ApplicationSettingsHolder,
-                                         balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
                                          messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                          messageSender: MessageSender): ReservedVolumesRecalculator {
 
         return ReservedVolumesRecalculator(testOrderDatabaseAccessorHolder, stopOrdersDatabaseAccessorsHolder,
                 testReservedVolumesDatabaseAccessor, assetHolder,
                 assetsPairsHolder, balancesHolder, applicationSettingsHolder,
-                false, balanceUpdateNotificationQueue, messageSequenceNumberHolder, messageSender)
+                false, messageSequenceNumberHolder, messageSender)
     }
 
     @Bean
@@ -177,9 +183,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun balanceUpdateHandler(balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
-                                  balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>): BalanceUpdateHandlerTest {
-        return BalanceUpdateHandlerTest(balanceUpdateQueue, balanceUpdateNotificationQueue)
+    open fun balanceUpdateHandler(balanceUpdateQueue: BlockingQueue<BalanceUpdate>): BalanceUpdateHandlerTest {
+        return BalanceUpdateHandlerTest(balanceUpdateQueue)
     }
 
     @Bean
@@ -224,13 +229,6 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashOperationValidator(balancesHolder: BalancesHolder,
-                                    assetsHolder: AssetsHolder,
-                                    applicationSettingsHolder: ApplicationSettingsHolder): CashOperationValidator {
-        return CashOperationValidatorImpl(balancesHolder, assetsHolder, applicationSettingsHolder)
-    }
-
-    @Bean
     open fun cashInOutOperationBusinessValidator(balancesHolder: BalancesHolder): CashInOutOperationBusinessValidator {
         return CashInOutOperationBusinessValidatorImpl(balancesHolder)
     }
@@ -267,12 +265,6 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashSwapOperationValidator(balancesHolder: BalancesHolder,
-                                        assetsHolder: AssetsHolder): CashSwapOperationValidator {
-        return CashSwapOperationValidatorImpl(balancesHolder, assetsHolder)
-    }
-
-    @Bean
     open fun marketOrderValidator(assetsPairsHolder: AssetsPairsHolder,
                                   assetsHolder: AssetsHolder,
                                   applicationSettingsHolder: ApplicationSettingsHolder): MarketOrderValidator {
@@ -306,13 +298,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun balanceUpdateValidator(balancesHolder: BalancesHolder, assetsHolder: AssetsHolder): BalanceUpdateValidator {
-        return BalanceUpdateValidatorImpl(balancesHolder, assetsHolder)
-    }
-
-    @Bean
-    open fun balance(balancesHolder: BalancesHolder, balanceUpdateValidator: BalanceUpdateValidator): BalanceUpdateService {
-        return BalanceUpdateService(balancesHolder, balanceUpdateValidator)
+    open fun applicationSettingsHistoryDatabaseAccessor(): SettingsHistoryDatabaseAccessor {
+        return Mockito.mock(SettingsHistoryDatabaseAccessor::class.java)
     }
 
     @Bean
@@ -321,11 +308,6 @@ open class TestApplicationContext {
                                         settingsHistoryDatabaseAccessor: SettingsHistoryDatabaseAccessor,
                                         applicationEventPublisher: ApplicationEventPublisher): ApplicationSettingsService {
         return ApplicationSettingsServiceImpl(settingsDatabaseAccessor, applicationSettingsCache, settingsHistoryDatabaseAccessor, applicationEventPublisher)
-    }
-
-    @Bean
-    open fun applicationSettingsHistoryDatabaseAccessor(): SettingsHistoryDatabaseAccessor {
-        return Mockito.mock(SettingsHistoryDatabaseAccessor::class.java)
     }
 
     @Bean
@@ -338,13 +320,11 @@ open class TestApplicationContext {
                                       assetsHolder: AssetsHolder,
                                       assetsPairsHolder: AssetsPairsHolder,
                                       balancesHolder: BalancesHolder,
-                                      quotesUpdateQueue: BlockingQueue<QuotesUpdate>,
-                                      tradeInfoQueue: BlockingQueue<TradeInfo>): GenericLimitOrderService {
+                                      tradeInfoQueue: Optional<BlockingQueue<TradeInfo>>): GenericLimitOrderService {
         return GenericLimitOrderService(testOrderDatabaseAccessor,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                quotesUpdateQueue,
                 tradeInfoQueue)
     }
 
