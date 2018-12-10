@@ -6,7 +6,6 @@ import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
-import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.parsers.data.CashTransferParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor

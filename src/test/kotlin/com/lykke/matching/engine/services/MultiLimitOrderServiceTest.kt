@@ -4,13 +4,7 @@ import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
-import com.lykke.matching.engine.daos.*
-import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
-import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
-import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
@@ -25,7 +19,6 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitO
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.assertEquals
-import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
@@ -39,7 +32,6 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
-import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
