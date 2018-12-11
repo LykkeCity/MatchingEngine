@@ -59,7 +59,7 @@ class DisabledFunctionalitySettingValidator(val assetsHolder: AssetsHolder,
         }
 
         if (assetsHolder.getAssetAllowNulls(rule.assetId!!) == null) {
-            throw ValidationException(validationMessage = "Provided asset does not exist")
+            throw ValidationException(validationMessage = "Asset does not exist")
         }
     }
 
@@ -69,7 +69,7 @@ class DisabledFunctionalitySettingValidator(val assetsHolder: AssetsHolder,
         }
 
         if (assetsPairsHolder.getAssetPairAllowNulls(rule.assetPairId!!) == null) {
-            throw ValidationException(validationMessage = "Provided asset pair does not exist")
+            throw ValidationException(validationMessage = "Asset pair does not exist")
         }
     }
 
