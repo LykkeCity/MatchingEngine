@@ -3,7 +3,9 @@ package com.lykke.matching.engine.order.process
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.order.process.common.OrderUtils
 import com.lykke.matching.engine.order.transaction.ExecutionContext
+import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
@@ -15,12 +17,27 @@ class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcesso
         val processedOrders = mutableListOf<ProcessedOrder>()
         var order = getStopOrderToExecute(executionContext)
         while (order != null) {
-            reduceReservedBalance(order, executionContext)
-            val processedOrder = limitOrderProcessor.processOrder(order, executionContext)
-            processedOrders.add(processedOrder)
+            processedOrders.add(processStopOrder(order, executionContext))
             order = getStopOrderToExecute(executionContext)
         }
         return processedOrders
+    }
+
+    private fun processStopOrder(order: LimitOrder, executionContext: ExecutionContext): ProcessedOrder {
+        reduceReservedBalance(order, executionContext)
+        val childLimitOrder = OrderUtils.createChildLimitOrder(order, executionContext.date)
+        order.childOrderExternalId = childLimitOrder.externalId
+        addOrderToReport(order, executionContext)
+        executionContext.info("Created child limit order (${childLimitOrder.externalId}) based on stop order ${order.externalId}")
+        return limitOrderProcessor.processOrder(childLimitOrder, executionContext)
+    }
+
+    private fun addOrderToReport(order: LimitOrder, executionContext: ExecutionContext) {
+        if (applicationSettingsCache.isTrustedClient(order.clientId)) {
+            executionContext.addTrustedClientLimitOrderWithTrades(LimitOrderWithTrades(order))
+        } else {
+            executionContext.addClientLimitOrderWithTrades(LimitOrderWithTrades(order))
+        }
     }
 
     private fun getStopOrderToExecute(executionContext: ExecutionContext): LimitOrder? {

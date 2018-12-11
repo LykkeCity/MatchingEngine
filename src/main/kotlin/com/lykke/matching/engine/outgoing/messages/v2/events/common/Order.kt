@@ -29,7 +29,9 @@ class Order(val orderType: OrderType,
             val upperPrice: String?,
             val straight: Boolean?,
             val fees: List<FeeInstruction>?,
-            val trades: List<Trade>?) : EventPart<OutgoingMessages.ExecutionEvent.Order.Builder> {
+            val trades: List<Trade>?,
+            val parentExternalId: String?,
+            val childExternalId: String?) : EventPart<OutgoingMessages.ExecutionEvent.Order.Builder> {
 
     override fun createGeneratedMessageBuilder(): OutgoingMessages.ExecutionEvent.Order.Builder {
         val builder = OutgoingMessages.ExecutionEvent.Order.newBuilder()
@@ -76,6 +78,12 @@ class Order(val orderType: OrderType,
         }
         trades?.forEach { trade ->
             builder.addTrades(trade.createGeneratedMessageBuilder())
+        }
+        parentExternalId?.let {
+            builder.parentExternalId = it
+        }
+        childExternalId?.let {
+            builder.childExternalId = it
         }
         return builder
     }

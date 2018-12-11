@@ -48,7 +48,9 @@ companion object {
                         reservedVolume?.toBigDecimal(), fee, fees,
                         type, lowerLimitPrice?.toBigDecimal(), lowerPrice?.toBigDecimal(),
                         upperLimitPrice?.toBigDecimal(), upperPrice?.toBigDecimal(),
-                        previousExternalId)
+                        previousExternalId,
+                        null,
+                        null)
 
         fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
             val builder = ProtocolMessages.MarketOrder.newBuilder()

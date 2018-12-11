@@ -3,6 +3,7 @@ package com.lykke.matching.engine.daos
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
+import org.nustaq.serialization.annotations.Version
 import java.io.Serializable
 import java.math.BigDecimal
 import java.util.*
@@ -28,7 +29,11 @@ class LimitOrder(id: String,
                  val upperLimitPrice: BigDecimal?,
                  val upperPrice: BigDecimal?,
                  @Transient
-                 val previousExternalId: String?)
+                 val previousExternalId: String?,
+                 @Version(2)
+                 val parentOrderExternalId: String?,
+                 @Version(2)
+                 var childOrderExternalId: String?)
     : Order(id, externalId, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume, fee, fees, statusDate), Serializable {
 
     fun getAbsRemainingVolume(): BigDecimal {
@@ -71,7 +76,9 @@ class LimitOrder(id: String,
         return LimitOrder(id, externalId, assetPairId, clientId, volume, price, status, statusDate, createdAt,
                 registered, remainingVolume, lastMatchTime, reservedLimitVolume, fee as? LimitOrderFeeInstruction,
                 fees?.map { it as NewLimitOrderFeeInstruction }, type, lowerLimitPrice, lowerPrice, upperLimitPrice,
-                upperPrice, previousExternalId)
+                upperPrice, previousExternalId,
+                parentOrderExternalId,
+                childOrderExternalId)
     }
 
     override fun applyToOrigin(origin: Copyable) {
@@ -80,5 +87,6 @@ class LimitOrder(id: String,
         origin.remainingVolume = remainingVolume
         origin.lastMatchTime = lastMatchTime
         origin.price = price
+        origin.childOrderExternalId = childOrderExternalId
     }
 }

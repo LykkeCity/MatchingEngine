@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.order.process.common.OrderUtils
 import com.lykke.matching.engine.order.process.context.StopLimitOrderContext
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.services.validators.business.StopOrderBusinessValidator
@@ -126,9 +127,13 @@ class StopLimitOrderProcessor(private val limitOrderInputValidator: LimitOrderIn
 
     private fun executeOrderImmediately(orderContext: StopLimitOrderContext): ProcessedOrder {
         val order = orderContext.order
-        order.updateStatus(OrderStatus.InOrderBook, orderContext.executionContext.date)
         order.price = orderContext.immediateExecutionPrice!!
-        return limitOrderProcessor.processOrder(order, orderContext.executionContext)
+        order.updateStatus(OrderStatus.Executed, orderContext.executionContext.date)
+        val childLimitOrder = OrderUtils.createChildLimitOrder(order, orderContext.executionContext.date)
+        order.childOrderExternalId = childLimitOrder.externalId
+        addOrderToReport(orderContext)
+        orderContext.executionContext.info("Created child limit order (${childLimitOrder.externalId}) based on stop order ${order.externalId}")
+        return limitOrderProcessor.processOrder(childLimitOrder, orderContext.executionContext)
     }
 
     private fun addOrderToStopOrderBook(orderContext: StopLimitOrderContext): ProcessedOrder {

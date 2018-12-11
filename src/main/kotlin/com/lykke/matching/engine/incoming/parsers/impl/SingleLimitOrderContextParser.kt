@@ -101,7 +101,8 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
 
         val limitOrder = LimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, BigDecimal.valueOf(oldMessage.volume),
                 BigDecimal.valueOf(oldMessage.price), OrderStatus.InOrderBook.name, null, Date(oldMessage.timestamp), null, BigDecimal.valueOf(oldMessage.volume), null,
-                type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
+                type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null,
+                parentOrderExternalId = null, childOrderExternalId = null)
 
         logger.info("Got old limit order messageId: $messageId id: ${oldMessage.uid}, client ${oldMessage.clientId}")
 
@@ -158,6 +159,8 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                 lowerPrice = if (message.hasLowerPrice()) BigDecimal.valueOf(message.lowerPrice) else null,
                 upperLimitPrice = if (message.hasUpperLimitPrice()) BigDecimal.valueOf(message.upperLimitPrice) else null,
                 upperPrice = if (message.hasUpperPrice()) BigDecimal.valueOf(message.upperPrice) else null,
-                previousExternalId = null)
+                previousExternalId = null,
+                parentOrderExternalId = null,
+                childOrderExternalId = null)
     }
 }
