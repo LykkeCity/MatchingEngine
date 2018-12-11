@@ -78,7 +78,7 @@ class MarketOrderService @Autowired constructor(
 
         val parsedMessage = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
 
-        val assetPair = assetsPairsHolder.getAssetPair(parsedMessage.assetPairId)
+        val assetPair = assetsPairsHolder.getAssetPairAllowNulls(parsedMessage.assetPairId)
 
         val now = Date()
         val feeInstruction: FeeInstruction?
@@ -121,7 +121,7 @@ class MarketOrderService @Autowired constructor(
                 messageWrapper.id!!,
                 MessageType.MARKET_ORDER,
                 messageWrapper.processedMessage,
-                mapOf(Pair(assetPair.assetPairId, assetPair)),
+                mapOf(Pair(assetPair!!.assetPairId, assetPair)),
                 now,
                 LOGGER)
 
