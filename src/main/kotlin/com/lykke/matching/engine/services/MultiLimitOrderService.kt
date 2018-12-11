@@ -2,10 +2,10 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.DisabledFunctionalityRule
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.MultiLimitOrder
 import com.lykke.matching.engine.daos.order.OrderTimeInForce
+import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -71,7 +71,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
             return
         }
 
-        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(DisabledFunctionalityRule(null, assetPair.assetPairId, MessageType.MULTI_LIMIT_ORDER))) {
+        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(assetPair, OperationType.TRADE)) {
             writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }

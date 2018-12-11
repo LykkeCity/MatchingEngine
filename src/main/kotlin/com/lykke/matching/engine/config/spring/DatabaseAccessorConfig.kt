@@ -69,7 +69,6 @@ open class DatabaseAccessorConfig {
 
 
     //<editor-fold desc="Persist listeners">
-
     @Bean
     open fun midPricesPersistListener(persistMidPricesRedisConnection: Optional<RedisConnection>,
                                       redisMidPriceDatabaseAccessor: Optional<MidPriceDatabaseAccessor>,

@@ -27,15 +27,18 @@ class DisabledFunctionalityRulesServiceImpl : DisabledFunctionalityRulesService 
     @Autowired
     private lateinit var gson: Gson
 
-    override fun create(rule: DisabledFunctionalityRuleDto) {
+    override fun create(rule: DisabledFunctionalityRuleDto): String {
+        val ruleId = UUID.randomUUID().toString()
         disabledFunctionalitySettingValidator.validate(rule)
 
         applicationSettingsService.createOrUpdateSetting(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES,
-                SettingDto(name = UUID.randomUUID().toString(),
+                SettingDto(name = ruleId,
                         value = gson.toJson(toDisabledFunctionalityRule(rule)),
                         enabled = rule.enabled,
                         comment = rule.comment,
                         user = rule.user))
+
+        return ruleId
     }
 
     override fun update(id: String, rule: DisabledFunctionalityRuleDto) {
@@ -85,8 +88,8 @@ class DisabledFunctionalityRulesServiceImpl : DisabledFunctionalityRulesService 
                             it.name,
                             it.timestamp,
                             it.enabled,
-                            it.user,
-                            it.comment)
+                            it.comment,
+                            it.user)
                 }
                 .sortedByDescending { it.timestamp }
     }

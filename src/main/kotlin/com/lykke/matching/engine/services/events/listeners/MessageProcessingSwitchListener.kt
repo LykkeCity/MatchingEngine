@@ -2,9 +2,9 @@ package com.lykke.matching.engine.services.events.listeners
 
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
-import com.lykke.matching.engine.services.events.DeleteSettingEvent
-import com.lykke.matching.engine.services.events.DeleteSettingGroupEvent
-import com.lykke.matching.engine.services.events.SettingChangedEvent
+import com.lykke.matching.engine.services.events.ApplicationSettingDeletedEvent
+import com.lykke.matching.engine.services.events.ApplicationGroupDeletedEvent
+import com.lykke.matching.engine.services.events.ApplicationSettingCreatedOrUpdatedEvent
 import com.lykke.utils.logging.MetricsLogger
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
@@ -24,7 +24,7 @@ class MessageProcessingSwitchListener(val applicationSettingsHolder: Application
     }
 
     @EventListener
-    private fun messageProcessingSwitchChanged(settingChangedEvent: SettingChangedEvent) {
+    private fun messageProcessingSwitchChanged(settingChangedEvent: ApplicationSettingCreatedOrUpdatedEvent) {
         if (settingChangedEvent.settingGroup != AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH
                 || settingChangedEvent.previousSetting == null && !settingChangedEvent.setting.enabled
                 || settingChangedEvent.previousSetting?.enabled == settingChangedEvent.setting.enabled) {
@@ -38,7 +38,7 @@ class MessageProcessingSwitchListener(val applicationSettingsHolder: Application
     }
 
     @EventListener
-    private fun messageProcessingSwitchRemoved(deleteSettingEvent: DeleteSettingEvent) {
+    private fun messageProcessingSwitchRemoved(deleteSettingEvent: ApplicationSettingDeletedEvent) {
         if (deleteSettingEvent.settingGroup != AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH
                 || !deleteSettingEvent.deletedSetting.enabled) {
             return
@@ -50,7 +50,7 @@ class MessageProcessingSwitchListener(val applicationSettingsHolder: Application
     }
 
     @EventListener
-    private fun messageProcessingSwtichGroupRemoved(deleteSettingGroupEvent: DeleteSettingGroupEvent) {
+    private fun messageProcessingSwitchGroupRemoved(deleteSettingGroupEvent: ApplicationGroupDeletedEvent) {
         if (deleteSettingGroupEvent.settingGroup != AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH ||
                 deleteSettingGroupEvent.deletedSettings.find { it.enabled } == null) {
             return

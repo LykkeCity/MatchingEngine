@@ -10,7 +10,7 @@ class DisabledFunctionalityRuleDto(
         val id: String? = null,
         val assetId: String?,
         val assetPairId: String?,
-        val messageTypeId: Int?,
+        val operationType: String?,
 
         @get:NotNull(message = "Enabled flag should not be null")
         val enabled: Boolean?,

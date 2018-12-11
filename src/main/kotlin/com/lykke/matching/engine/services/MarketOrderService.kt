@@ -88,13 +88,13 @@ class MarketOrderService @Autowired constructor(
 
         val parsedMessage = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
 
-        val assetPair = assetsPairsHolder.getAssetPair(parsedMessage.assetPairId)
+        val assetPair = assetsPairsHolder.getAssetPairAllowNulls(parsedMessage.assetPairId)
 
         val now = Date()
         val feeInstruction: FeeInstruction?
         val feeInstructions: List<NewFeeInstruction>?
 
-        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(DisabledFunctionalityRule(null, assetPair.assetPairId, MessageType.MARKET_ORDER))) {
+        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(assetPair, OperationType.TRADE)) {
             writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }
@@ -124,7 +124,7 @@ class MarketOrderService @Autowired constructor(
                 messageWrapper.id!!,
                 MessageType.MARKET_ORDER,
                 messageWrapper.processedMessage,
-                mapOf(assetPair.assetPairId to assetPair),
+                mapOf(assetPair!!.assetPairId to assetPair),
                 now,
                 LOGGER,
                 CONTROLS_LOGGER)

@@ -1,31 +1,31 @@
 package com.lykke.matching.engine.notification
 
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
-import com.lykke.matching.engine.services.events.DeleteSettingEvent
-import com.lykke.matching.engine.services.events.DeleteSettingGroupEvent
-import com.lykke.matching.engine.services.events.SettingChangedEvent
+import com.lykke.matching.engine.services.events.ApplicationSettingDeletedEvent
+import com.lykke.matching.engine.services.events.ApplicationGroupDeletedEvent
+import com.lykke.matching.engine.services.events.ApplicationSettingCreatedOrUpdatedEvent
 import org.springframework.context.event.EventListener
 import java.util.concurrent.ConcurrentHashMap
 
 class SettingsListener() {
-    private val settingGroupToSettingChangeEvent = ConcurrentHashMap<AvailableSettingGroup, MutableList<SettingChangedEvent>>()
-    private val settingGroupToDeleteEvent = ConcurrentHashMap<AvailableSettingGroup, MutableList<DeleteSettingEvent>>()
-    private val settingGroupToDeleteGroupEvent = ConcurrentHashMap<AvailableSettingGroup, MutableList<DeleteSettingGroupEvent>>()
+    private val settingGroupToSettingChangeEvent = ConcurrentHashMap<AvailableSettingGroup, MutableList<ApplicationSettingCreatedOrUpdatedEvent>>()
+    private val settingGroupToDeleteEvent = ConcurrentHashMap<AvailableSettingGroup, MutableList<ApplicationSettingDeletedEvent>>()
+    private val settingGroupToDeleteGroupEvent = ConcurrentHashMap<AvailableSettingGroup, MutableList<ApplicationGroupDeletedEvent>>()
 
     @EventListener
-    fun settingChanged(settingChangedEvent: SettingChangedEvent) {
+    fun settingChanged(settingChangedEvent: ApplicationSettingCreatedOrUpdatedEvent) {
         val events = settingGroupToSettingChangeEvent.getOrPut(settingChangedEvent.settingGroup) {ArrayList()}
         events!!.add(settingChangedEvent)
     }
 
     @EventListener
-    private fun settingDeleted(deleteSettingEvent: DeleteSettingEvent) {
+    private fun settingDeleted(deleteSettingEvent: ApplicationSettingDeletedEvent) {
         val events = settingGroupToDeleteEvent.getOrPut(deleteSettingEvent.settingGroup) {ArrayList()}
         events!!.add(deleteSettingEvent)
     }
 
     @EventListener
-    private fun settingGroupDeleted(deleteSettingGroupEvent: DeleteSettingGroupEvent) {
+    private fun settingGroupDeleted(deleteSettingGroupEvent: ApplicationGroupDeletedEvent) {
         val events = settingGroupToDeleteGroupEvent.getOrPut(deleteSettingGroupEvent.settingGroup) {ArrayList()}
         events!!.add(deleteSettingGroupEvent)
     }

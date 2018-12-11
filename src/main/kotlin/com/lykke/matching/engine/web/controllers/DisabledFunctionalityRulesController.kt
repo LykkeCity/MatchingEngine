@@ -5,6 +5,7 @@ import com.lykke.matching.engine.services.DisabledFunctionalityRulesService
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
 import com.lykke.matching.engine.web.dto.DisabledFunctionalityRuleDto
+import com.lykke.matching.engine.web.dto.OperationType
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiResponse
@@ -97,6 +98,16 @@ class DisabledFunctionalityRulesController {
         }
 
         return ResponseEntity.status(HttpStatus.OK).body(historyRecords)
+    }
+
+    @GetMapping("/operation/type/supported", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @ApiOperation("Get list of supported operation types")
+    @ApiResponses(
+            ApiResponse(code = 200, message = "Success"),
+            ApiResponse(code = 500, message = "Internal server error occurred")
+    )
+    fun getSupportedOperations(): Array<OperationType> {
+        return OperationType.values()
     }
 
     @DeleteMapping("/{id}")

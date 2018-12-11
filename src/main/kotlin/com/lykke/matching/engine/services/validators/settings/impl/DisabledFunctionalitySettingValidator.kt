@@ -3,11 +3,11 @@ package com.lykke.matching.engine.services.validators.settings.impl
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.lykke.matching.engine.daos.DisabledFunctionalityRule
+import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.daos.converters.DisabledFunctionalityRulesConverter.Companion.toDisabledFunctionalityRuleDto
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.services.validators.settings.SettingValidator
 import com.lykke.matching.engine.web.dto.DisabledFunctionalityRuleDto
@@ -29,7 +29,7 @@ class DisabledFunctionalitySettingValidator(val assetsHolder: AssetsHolder,
 
     fun validate(rule: DisabledFunctionalityRuleDto) {
         validateRuleIsNotEmpty(rule)
-        validateMessageTypeExist(rule)
+        validateOperationExists(rule)
         validateAssetExist(rule)
         validateAssetPairIdExist(rule)
     }
@@ -43,11 +43,13 @@ class DisabledFunctionalitySettingValidator(val assetsHolder: AssetsHolder,
         }
     }
 
-    private fun validateMessageTypeExist(rule: DisabledFunctionalityRuleDto) {
-        rule.messageTypeId?.let {
-            if (MessageType.valueOf(rule.messageTypeId.toByte()) == null) {
-                throw ValidationException(validationMessage = "Provided message type is not supported")
+    private fun validateOperationExists(rule: DisabledFunctionalityRuleDto) {
+        try {
+            rule.operationType?.let {
+                OperationType.valueOf(it)
             }
+        } catch (e: IllegalArgumentException) {
+            throw ValidationException(validationMessage = "Operation does not exist")
         }
     }
 
@@ -57,7 +59,7 @@ class DisabledFunctionalitySettingValidator(val assetsHolder: AssetsHolder,
         }
 
         if (assetsHolder.getAssetAllowNulls(rule.assetId!!) == null) {
-            throw ValidationException(validationMessage = "Provided asset does not exist")
+            throw ValidationException(validationMessage = "Asset does not exist")
         }
     }
 
@@ -67,14 +69,14 @@ class DisabledFunctionalitySettingValidator(val assetsHolder: AssetsHolder,
         }
 
         if (assetsPairsHolder.getAssetPairAllowNulls(rule.assetPairId!!) == null) {
-            throw ValidationException(validationMessage = "Provided asset pair does not exist")
+            throw ValidationException(validationMessage = "Asset pair does not exist")
         }
     }
 
     private fun validateRuleIsNotEmpty(rule: DisabledFunctionalityRuleDto) {
         if (StringUtils.isEmpty(rule.assetId) &&
                 StringUtils.isEmpty(rule.assetPairId) &&
-                rule.messageTypeId == null) {
+                rule.operationType == null) {
             throw ValidationException(validationMessage = "All values of disabled functionality rule can not be empty")
         }
     }
