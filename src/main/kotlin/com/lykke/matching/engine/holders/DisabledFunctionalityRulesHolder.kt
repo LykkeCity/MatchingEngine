@@ -31,7 +31,11 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
             return disabledFunctionalityRules.any { isRuleMatch(null, null, operationType, it) }
         }
 
-        val rules = disabledFunctionalityRulesByAssetId[asset.assetId] ?: return false
+        val rules = getRules(asset)
+
+        if (CollectionUtils.isEmpty(rules)) {
+            return false
+        }
 
         return rules.any { isRuleMatch(null, asset, operationType, it) }
     }
@@ -41,7 +45,7 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
             return disabledFunctionalityRules.any { isRuleMatch(null, null, operationType, it) }
         }
 
-        val rules = getAllRulesForAssetPair(assetPair)
+        val rules = getRules(assetPair)
 
         if (CollectionUtils.isEmpty(rules)) {
             return false
@@ -58,7 +62,7 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
     }
 
     @EventListener
-    private fun onSettincUpdate(applicationSettingUpdateEvent: ApplicationSettingCreateOrUpdateEvent) {
+    private fun onSettingCreateOrUpdate(applicationSettingUpdateEvent: ApplicationSettingCreateOrUpdateEvent) {
         val setting = applicationSettingUpdateEvent.setting
         if (applicationSettingUpdateEvent.settingGroup != AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES) {
             return
@@ -90,8 +94,21 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
         clear()
     }
 
-    private fun getAllRulesForAssetPair(assetPair: AssetPair): Set<DisabledFunctionalityRule> {
+    private fun getRules(asset: Asset): Set<DisabledFunctionalityRule> {
         val result = HashSet<DisabledFunctionalityRule>()
+
+        disabledFunctionalityRulesByAssetId[asset.assetId]?.let {
+            result.addAll(it)
+        }
+
+        result.addAll(disabledFunctionalityRules)
+
+        return result
+    }
+
+    private fun getRules(assetPair: AssetPair): Set<DisabledFunctionalityRule> {
+        val result = HashSet<DisabledFunctionalityRule>()
+
         disabledFunctionalityRulesByAssetPairId[assetPair.assetPairId]?.let {
             result.addAll(it)
         }
@@ -103,6 +120,8 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
         disabledFunctionalityRulesByAssetId[assetPair.quotingAssetId]?.let {
             result.addAll(it)
         }
+
+        result.addAll(disabledFunctionalityRules)
 
         return result
     }
