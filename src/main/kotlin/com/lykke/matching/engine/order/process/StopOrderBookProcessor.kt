@@ -34,7 +34,7 @@ class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcesso
     }
 
     private fun addOrderToReport(order: LimitOrder, executionContext: ExecutionContext) {
-        if (applicationSettingsCache.isTrustedClient(order.clientId)) {
+        if (applicationSettingsHolder.isTrustedClient(order.clientId)) {
             executionContext.addTrustedClientLimitOrderWithTrades(LimitOrderWithTrades(order))
         } else {
             executionContext.addClientLimitOrderWithTrades(LimitOrderWithTrades(order))

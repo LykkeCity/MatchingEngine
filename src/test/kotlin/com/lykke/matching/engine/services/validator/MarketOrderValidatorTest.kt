@@ -213,7 +213,7 @@ class MarketOrderValidatorTest {
                 ASSET_PAIR_ID, CLIENT_NAME, BigDecimal.valueOf(1.0), BigDecimal.valueOf(1.0),
                 OrderStatus.InOrderBook.name, now, now, now, BigDecimal.valueOf(1.0), now, BigDecimal.valueOf(1.0),
                 null, null, null, null, null, null, null, null,
-                null, null))
+                null, null, null, null))
 
         return assetOrderBook.getOrderBook(isBuy)
      }

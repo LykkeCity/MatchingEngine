@@ -32,6 +32,8 @@ class OrderUtils {
                     null,
                     null,
                     null,
+                    order.timeInForce,
+                    order.expiryTime,
                     order.externalId,
                     null)
         }

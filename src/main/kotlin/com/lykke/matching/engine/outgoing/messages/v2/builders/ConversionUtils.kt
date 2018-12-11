@@ -115,6 +115,8 @@ private fun convertMarketOrder(marketOrderWithTrades: MarketOrderWithTrades): Or
             feeInstructions?.mapIndexed { index, feeInstruction -> convertFeeInstruction(index, feeInstruction) },
             marketOrderWithTrades.trades.map { convertTrade(it) },
             null,
+            null,
+            null,
             null)
 }
 
