@@ -7,7 +7,6 @@ import com.lykke.matching.engine.daos.converters.DisabledFunctionalityRulesConve
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.services.validators.settings.SettingValidator
 import com.lykke.matching.engine.web.dto.DisabledFunctionalityRuleDto
@@ -29,7 +28,6 @@ class DisabledFunctionalitySettingValidator(val assetsHolder: AssetsHolder,
 
     fun validate(rule: DisabledFunctionalityRuleDto) {
         validateRuleIsNotEmpty(rule)
-        validateMessageTypeExist(rule)
         validateAssetExist(rule)
         validateAssetPairIdExist(rule)
     }
@@ -40,14 +38,6 @@ class DisabledFunctionalitySettingValidator(val assetsHolder: AssetsHolder,
             validate(toDisabledFunctionalityRuleDto(rule))
         } catch (e: JsonSyntaxException) {
             throw ValidationException(validationMessage = "Invalid json was supplied: ${e.message}")
-        }
-    }
-
-    private fun validateMessageTypeExist(rule: DisabledFunctionalityRuleDto) {
-        rule.messageTypeId?.let {
-            if (MessageType.valueOf(rule.messageTypeId.toByte()) == null) {
-                throw ValidationException(validationMessage = "Provided message type is not supported")
-            }
         }
     }
 
@@ -74,7 +64,7 @@ class DisabledFunctionalitySettingValidator(val assetsHolder: AssetsHolder,
     private fun validateRuleIsNotEmpty(rule: DisabledFunctionalityRuleDto) {
         if (StringUtils.isEmpty(rule.assetId) &&
                 StringUtils.isEmpty(rule.assetPairId) &&
-                rule.messageTypeId == null) {
+                rule.operationType == null) {
             throw ValidationException(validationMessage = "All values of disabled functionality rule can not be empty")
         }
     }

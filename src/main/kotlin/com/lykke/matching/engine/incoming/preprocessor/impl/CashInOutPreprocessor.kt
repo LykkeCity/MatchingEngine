@@ -1,7 +1,7 @@
 
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
-import com.lykke.matching.engine.daos.DisabledFunctionalityRule
+import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.daos.context.CashInOutContext
 import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
@@ -14,7 +14,6 @@ import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.DUPLICATE
 import com.lykke.matching.engine.messages.MessageStatus.RUNTIME
-import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.impl.ValidationException
@@ -50,17 +49,9 @@ class CashInOutPreprocessor(
 
     override fun preProcess(messageWrapper: MessageWrapper) {
         val parsedData = cashInOutContextParser.parse(messageWrapper)
-
-        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(DisabledFunctionalityRule(parsedData.assetId, null, MessageType.CASH_IN_OUT_OPERATION))) {
+        val cashInOutContext = parsedData.messageWrapper.context as CashInOutContext
+        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(cashInOutContext.cashInOutOperation.asset, OperationType.CASH_IN_OUT)) {
             writeResponse(parsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
-            return
-        }
-
-        if (!messageProcessingStatusHolder.isHealthStatusOk()) {
-            writeResponse(parsedData.messageWrapper, MessageStatus.RUNTIME)
-            val errorMessage = "Message processing is disabled"
-            LOGGER.error(errorMessage)
-            METRICS_LOGGER.logError(errorMessage)
             return
         }
 

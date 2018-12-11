@@ -4,7 +4,7 @@ import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
 import com.lykke.matching.engine.web.dto.DisabledFunctionalityRuleDto
 
 interface DisabledFunctionalityRulesService {
-    fun create(rule: DisabledFunctionalityRuleDto)
+    fun create(rule: DisabledFunctionalityRuleDto): String
     fun update(id: String, rule: DisabledFunctionalityRuleDto)
     fun getAll(enabled: Boolean? = null): List<DisabledFunctionalityRuleDto>
     fun get(id: String): DisabledFunctionalityRuleDto?

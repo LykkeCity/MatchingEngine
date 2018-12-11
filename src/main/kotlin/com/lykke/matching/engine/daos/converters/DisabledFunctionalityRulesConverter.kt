@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.daos.converters
 
 import com.lykke.matching.engine.daos.DisabledFunctionalityRule
-import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.web.dto.DisabledFunctionalityRuleDto
 import java.util.*
 
@@ -11,7 +11,7 @@ class DisabledFunctionalityRulesConverter {
             return disabledFunctionalityRuleDto.let { rule ->
                 DisabledFunctionalityRule(rule.assetId,
                         rule.assetPairId,
-                        rule.messageTypeId?.let { MessageType.valueOf(it.toByte()) })
+                        rule.operationType?.let { OperationType.valueOf(it.name) })
             }
         }
 
@@ -25,7 +25,7 @@ class DisabledFunctionalityRulesConverter {
                     id = id,
                     assetId = rule.assetId,
                     assetPairId = rule.assetPairId,
-                    messageTypeId = rule.messageType?.type?.toInt(),
+                    operationType = rule.operationType?.let { com.lykke.matching.engine.web.dto.OperationType.valueOf(it.name) },
                     enabled = enabled,
                     timestamp = timestamp,
                     comment = comment,

@@ -2,10 +2,9 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.balance.BalanceException
-import com.lykke.matching.engine.daos.DisabledFunctionalityRule
+import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.holders.DisabledFunctionalityRulesHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -42,7 +41,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         }
         val message = getMessage(messageWrapper)
         val asset = assetsHolder.getAsset(message.assetId)
-        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(DisabledFunctionalityRule(asset.assetId, null, MessageType.RESERVED_CASH_IN_OUT_OPERATION))) {
+        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(asset, OperationType.CASH_IN_OUT)) {
             writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }

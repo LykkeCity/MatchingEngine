@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
-import com.lykke.matching.engine.daos.DisabledFunctionalityRule
+import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
@@ -8,7 +8,6 @@ import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedDat
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
-import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.impl.OrderFatalValidationException
@@ -43,9 +42,9 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
         val singleLimitOrderParsedData = singleLimitOrderContextParser.parse(messageWrapper)
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
-        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(DisabledFunctionalityRule(null,
-                        singleLimitContext.assetPair?.assetPairId,
-                        MessageType.LIMIT_ORDER))) {
+        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(
+                        singleLimitContext.assetPair,
+                        OperationType.TRADE)) {
             writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }
