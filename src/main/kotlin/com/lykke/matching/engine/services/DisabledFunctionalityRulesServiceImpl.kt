@@ -88,8 +88,8 @@ class DisabledFunctionalityRulesServiceImpl : DisabledFunctionalityRulesService 
                             it.name,
                             it.timestamp,
                             it.enabled,
-                            it.user,
-                            it.comment)
+                            it.comment,
+                            it.user)
                 }
                 .sortedByDescending { it.timestamp }
     }
