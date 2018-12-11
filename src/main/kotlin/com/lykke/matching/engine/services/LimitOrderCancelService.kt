@@ -21,7 +21,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                               private val genericStopLimitOrderService: GenericStopLimitOrderService,
                               private val validator: LimitOrderCancelOperationBusinessValidator,
                               private val limitOrdersCancelHelper: LimitOrdersCancelHelper,
-                              private val performanceStatsHolder: PerformanceStatsHolder, ) : AbstractService {
+                              private val performanceStatsHolder: PerformanceStatsHolder) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
     }

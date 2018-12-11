@@ -659,9 +659,8 @@ open class TestApplicationContext {
                                      genericStopLimitOrderService: GenericStopLimitOrderService,
                                      validator: LimitOrderCancelOperationBusinessValidator,
                                      limitOrdersCancelHelper: LimitOrdersCancelHelper,
-                                     messageProcessingStatusHolder: MessageProcessingStatusHolder,
                                      performanceStatsHolder: PerformanceStatsHolder): LimitOrderCancelService {
-        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelHelper, performanceStatsHolder, messageProcessingStatusHolder)
+        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelHelper, performanceStatsHolder)
     }
 
     @Bean
@@ -689,7 +688,7 @@ open class TestApplicationContext {
                                           applicationSettingsHolder: ApplicationSettingsHolder,
                                           performanceStatsHolder: PerformanceStatsHolder): MultiLimitOrderCancelService {
         return MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory,
-                applicationSettingsHolder)
+                applicationSettingsHolder, performanceStatsHolder)
     }
 
     @Bean
