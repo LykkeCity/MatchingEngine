@@ -46,7 +46,7 @@ class CurrentTransactionStopOrderBooksHolder(private val genericStopLimitOrderSe
         getChangedOrderBookCopy(assetPairId).removeOrder(order)
         val orderCopy = order.copy()
         orderCopy.price = orderPrice!!
-        orderCopy.updateStatus(OrderStatus.InOrderBook, date)
+        orderCopy.updateStatus(OrderStatus.Executed, date)
         return orderCopy
     }
 

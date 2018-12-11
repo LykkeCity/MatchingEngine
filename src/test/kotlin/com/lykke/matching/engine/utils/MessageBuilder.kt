@@ -54,7 +54,9 @@ companion object {
                         upperLimitPrice?.toBigDecimal(), upperPrice?.toBigDecimal(),
                         previousExternalId,
                         timeInForce,
-                        expiryTime)
+                        expiryTime,
+                        null,
+                        null)
 
         fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
             val builder = ProtocolMessages.MarketOrder.newBuilder()

@@ -83,7 +83,9 @@ class LimitOrderBusinessValidatorTest {
         return LimitOrder("test", "test", assetPair, "test", volume,
                 price, status, Date(), Date(), Date(), BigDecimal.valueOf(1.0), null,
                 expiryTime = null, timeInForce = null,
-                type = LimitOrderType.LIMIT, fee = fee, fees = fees, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
+                type = LimitOrderType.LIMIT, fee = fee, fees = fees, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null,
+                parentOrderExternalId = null,
+                childOrderExternalId = null)
     }
 
     fun getValidFee(): LimitOrderFeeInstruction {

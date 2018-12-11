@@ -32,7 +32,9 @@ class Order(val orderType: OrderType,
             val fees: List<FeeInstruction>?,
             val trades: List<Trade>?,
             val timeInForce: OrderTimeInForce?,
-            val expiryTime: Date?) : EventPart<OutgoingMessages.ExecutionEvent.Order.Builder> {
+            val expiryTime: Date?,
+            val parentExternalId: String?,
+            val childExternalId: String?) : EventPart<OutgoingMessages.ExecutionEvent.Order.Builder> {
 
     override fun createGeneratedMessageBuilder(): OutgoingMessages.ExecutionEvent.Order.Builder {
         val builder = OutgoingMessages.ExecutionEvent.Order.newBuilder()
@@ -85,6 +87,12 @@ class Order(val orderType: OrderType,
         }
         expiryTime?.let { expiryTime ->
             builder.setExpiryTime(expiryTime.createProtobufTimestampBuilder())
+        }
+        parentExternalId?.let {
+            builder.parentExternalId = it
+        }
+        childExternalId?.let {
+            builder.childExternalId = it
         }
         return builder
     }
