@@ -149,8 +149,10 @@ abstract class AbstractPerformanceTest {
                 ordersDatabaseAccessorsHolder,
                 stopOrdersDatabaseAccessorsHolder)
         balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder,
-                persistenceManager, assetsHolder,
-                balanceUpdateQueue, applicationSettingsHolder)
+                persistenceManager,
+                assetsHolder,
+                balanceUpdateQueue,
+                applicationSettingsHolder)
 
         testBalanceHolderWrapper = TestBalanceHolderWrapper(BalanceUpdateHandlerTest(balanceUpdateQueue), balancesHolder)
         assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
