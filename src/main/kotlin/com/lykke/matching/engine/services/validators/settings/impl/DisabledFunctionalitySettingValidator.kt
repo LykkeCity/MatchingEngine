@@ -3,6 +3,7 @@ package com.lykke.matching.engine.services.validators.settings.impl
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.lykke.matching.engine.daos.DisabledFunctionalityRule
+import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.daos.converters.DisabledFunctionalityRulesConverter.Companion.toDisabledFunctionalityRuleDto
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -28,6 +29,7 @@ class DisabledFunctionalitySettingValidator(val assetsHolder: AssetsHolder,
 
     fun validate(rule: DisabledFunctionalityRuleDto) {
         validateRuleIsNotEmpty(rule)
+        validateOperationExists(rule)
         validateAssetExist(rule)
         validateAssetPairIdExist(rule)
     }
@@ -38,6 +40,16 @@ class DisabledFunctionalitySettingValidator(val assetsHolder: AssetsHolder,
             validate(toDisabledFunctionalityRuleDto(rule))
         } catch (e: JsonSyntaxException) {
             throw ValidationException(validationMessage = "Invalid json was supplied: ${e.message}")
+        }
+    }
+
+    private fun validateOperationExists(rule: DisabledFunctionalityRuleDto) {
+        try {
+            rule.operationType?.let {
+                OperationType.valueOf(it)
+            }
+        } catch (e: IllegalArgumentException) {
+            throw ValidationException(validationMessage = "Operation does not exist")
         }
     }
 
