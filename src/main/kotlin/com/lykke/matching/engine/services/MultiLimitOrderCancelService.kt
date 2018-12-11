@@ -1,8 +1,6 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.DisabledFunctionalityRule
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -16,8 +14,7 @@ import java.util.Date
 @Component
 class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOrderService,
                                    private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
-                                   private val applicationSettingsHolder: ApplicationSettingsHolder,
-                                   private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : AbstractService {
+                                   private val applicationSettingsHolder: ApplicationSettingsHolder) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderCancelService::class.java.name)
@@ -28,13 +25,6 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
         LOGGER.debug("Got multi limit order cancel " +
                 "message id: ${messageWrapper.messageId}, id: ${message.uid}, ${message.clientId}, " +
                 "assetPair: ${message.assetPairId}, isBuy: ${message.isBuy}")
-
-        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(DisabledFunctionalityRule(null,
-                        message.assetPairId,
-                        MessageType.MULTI_LIMIT_ORDER_CANCEL))) {
-            writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
-            return
-        }
 
         val now = Date()
         val ordersToCancel = limitOrderService.searchOrders(message.clientId, message.assetPairId, message.isBuy)

@@ -29,7 +29,6 @@ import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.holders.DisabledFunctionalityRulesHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
@@ -85,7 +84,7 @@ class MarketOrderService @Autowired constructor(
         val feeInstruction: FeeInstruction?
         val feeInstructions: List<NewFeeInstruction>?
 
-        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(DisabledFunctionalityRule(null, assetPair.assetPairId, MessageType.MARKET_ORDER))) {
+        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(assetPair, OperationType.TRADE)) {
             writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }

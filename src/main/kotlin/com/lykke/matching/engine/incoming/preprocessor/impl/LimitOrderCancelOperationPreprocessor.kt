@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
-import com.lykke.matching.engine.daos.DisabledFunctionalityRule
 import com.lykke.matching.engine.daos.context.LimitOrderCancelOperationContext
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
@@ -10,7 +9,6 @@ import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedDa
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
-import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.impl.ValidationException
@@ -39,11 +37,6 @@ class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContext
     override fun preProcess(messageWrapper: MessageWrapper) {
         val parsedData = limitOrderCancelOperationContextParser.parse(messageWrapper)
         val parsedMessageWrapper = parsedData.messageWrapper
-
-        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(DisabledFunctionalityRule(null, null, MessageType.LIMIT_ORDER_CANCEL))) {
-            writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
-            return
-        }
 
         if (!validateData(parsedData)) {
             return

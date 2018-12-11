@@ -5,10 +5,10 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
-import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.services.validators.settings.impl.DisabledFunctionalitySettingValidator
 import com.lykke.matching.engine.web.dto.DisabledFunctionalityRuleDto
+import com.lykke.matching.engine.web.dto.OperationType
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
@@ -53,22 +53,17 @@ class DisabledFunctionalitySettingValidatorTest {
     }
 
     @Test(expected = ValidationException::class)
-    fun testMessageTypeDoesNotExist() {
-        disabledFunctionalitySettingValidator.validate(DisabledFunctionalityRuleDto(null, null, "", 77, true, "test", "test"))
-    }
-
-    @Test(expected = ValidationException::class)
     fun testAssetDoesNotExist() {
-        disabledFunctionalitySettingValidator.validate(DisabledFunctionalityRuleDto(null, "TEST", "", 77, true, "test", "test"))
+        disabledFunctionalitySettingValidator.validate(DisabledFunctionalityRuleDto(null, "TEST", "", OperationType.CASH_IN_OUT, true, "test", "test"))
     }
 
     @Test(expected = ValidationException::class)
     fun testAssetPairDoesNotExist() {
-        disabledFunctionalitySettingValidator.validate(DisabledFunctionalityRuleDto(null, "TEST", "", 77, true, "test", "test"))
+        disabledFunctionalitySettingValidator.validate(DisabledFunctionalityRuleDto(null, "TEST", "", OperationType.CASH_IN_OUT, true, "test", "test"))
     }
 
     @Test
     fun validRule() {
-        disabledFunctionalitySettingValidator.validate(DisabledFunctionalityRuleDto(null, "BTC", "BTCUSD", MessageType.MARKET_ORDER.type.toInt(), true, "test", "test"))
+        disabledFunctionalitySettingValidator.validate(DisabledFunctionalityRuleDto(null, "BTC", "BTCUSD", OperationType.TRADE, true, "test", "test"))
     }
 }
