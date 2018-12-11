@@ -11,7 +11,7 @@ class DisabledFunctionalityRulesConverter {
             return disabledFunctionalityRuleDto.let { rule ->
                 DisabledFunctionalityRule(rule.assetId,
                         rule.assetPairId,
-                        rule.operationType?.let { OperationType.valueOf(it.name) })
+                        rule.operationType?.let { OperationType.valueOf(it) })
             }
         }
 
@@ -25,7 +25,7 @@ class DisabledFunctionalityRulesConverter {
                     id = id,
                     assetId = rule.assetId,
                     assetPairId = rule.assetPairId,
-                    operationType = rule.operationType?.let { com.lykke.matching.engine.web.dto.OperationType.valueOf(it.name) },
+                    operationType = rule.operationType?.let { it.name },
                     enabled = enabled,
                     timestamp = timestamp,
                     comment = comment,

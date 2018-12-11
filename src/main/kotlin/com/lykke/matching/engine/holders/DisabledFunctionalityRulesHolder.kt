@@ -26,22 +26,19 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
     @Autowired
     private lateinit var gson: Gson
 
-    @Autowired
-    private lateinit var assetsPairsHolder: AssetsPairsHolder
-
-    fun isDisabled(asset: Asset?, operation: OperationType): Boolean {
+    fun isDisabled(asset: Asset?, operationType: OperationType): Boolean {
         if (asset == null) {
-            return disabledFunctionalityRules.any { isRuleMatch(DisabledFunctionalityRule(null, null, operation), it) }
+            return disabledFunctionalityRules.any { isRuleMatch(null, null, operationType, it) }
         }
 
         val rules = disabledFunctionalityRulesByAssetId[asset.assetId] ?: return false
 
-        return rules.any { isRuleMatch(DisabledFunctionalityRule(asset.assetId, null, operation), it) }
+        return rules.any { isRuleMatch(null, asset, operationType, it) }
     }
 
-    fun isDisabled(assetPair: AssetPair?, operation: OperationType): Boolean {
+    fun isDisabled(assetPair: AssetPair?, operationType: OperationType): Boolean {
         if (assetPair == null) {
-            return disabledFunctionalityRules.any { isRuleMatch(DisabledFunctionalityRule(null, null, operation), it) }
+            return disabledFunctionalityRules.any { isRuleMatch(null, null, operationType, it) }
         }
 
         val rules = getAllRulesForAssetPair(assetPair)
@@ -50,7 +47,7 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
             return false
         }
 
-        return rules.any { isRuleMatch(DisabledFunctionalityRule(null, assetPair.assetPairId, operation), it) }
+        return rules.any { isRuleMatch(assetPair, null, operationType, it) }
     }
 
     @PostConstruct
@@ -140,22 +137,22 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
         disabledFunctionalityRulesByAssetId[rule.assetId]?.remove(rule)
     }
 
-    private fun isRuleMatch(inputRequest: DisabledFunctionalityRule, disableRule: DisabledFunctionalityRule): Boolean {
-        return (StringUtils.isEmpty(disableRule.assetId) || StringUtils.isEmpty(inputRequest.assetId) || inputRequest.assetId == disableRule.assetId)
-                && isAssetPairMatch(inputRequest.assetPairId, disableRule)
-                && (disableRule.operationType == null || inputRequest.operationType == null || inputRequest.operationType == disableRule.operationType)
+    private fun isRuleMatch(assetPair: AssetPair?,
+                            asset: Asset?,
+                            operationType: OperationType?,
+                            disableRule: DisabledFunctionalityRule): Boolean {
+        return (StringUtils.isEmpty(disableRule.assetId) || asset == null || asset.assetId == disableRule.assetId)
+                && isAssetPairMatch(assetPair, disableRule)
+                && (disableRule.operationType == null || operationType == null || operationType == disableRule.operationType)
     }
 
-    private fun isAssetPairMatch(assetPairId: String?, disableRule: DisabledFunctionalityRule): Boolean {
-        if (StringUtils.isEmpty(assetPairId) || StringUtils.isEmpty(disableRule.assetId)) {
+    private fun isAssetPairMatch(assetPair: AssetPair?, disableRule: DisabledFunctionalityRule): Boolean {
+        if (assetPair == null || StringUtils.isEmpty(disableRule.assetId)) {
             return true
         }
 
-        val assetPair = assetsPairsHolder.getAssetPair(assetPairId!!)
-
         return assetPair.baseAssetId == disableRule.assetId
                 || assetPair.quotingAssetId == disableRule.assetId
-                || assetPairId == disableRule.assetPairId
+                || assetPair.assetPairId == disableRule.assetPairId
     }
-
 }
