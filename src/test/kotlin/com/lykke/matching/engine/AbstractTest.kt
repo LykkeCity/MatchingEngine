@@ -168,6 +168,7 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var messageProcessingStatusHolder: MessageProcessingStatusHolder
 
+    @Autowired
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
     protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
