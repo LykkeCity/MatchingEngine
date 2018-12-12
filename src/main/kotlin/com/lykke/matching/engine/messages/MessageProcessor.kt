@@ -5,12 +5,9 @@ import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.cache.MarketStateCache
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
@@ -72,8 +69,6 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
 
     private var currentTransactionDataHolder: CurrentTransactionDataHolder
 
-    private var assetPairHolder: AssetsPairsHolder
-
     init {
         messageProcessingStatusHolder = applicationContext.getBean(MessageProcessingStatusHolder::class.java)
         performanceStatsHolder = applicationContext.getBean(PerformanceStatsHolder::class.java)
@@ -108,7 +103,7 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
 
         this.limitOrderMassCancelService = applicationContext.getBean(LimitOrderMassCancelService::class.java)
 
-        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsHolder)
+        this.multiLimitOrderCancelService = applicationContext.getBean(MultiLimitOrderCancelService::class.java)
 
         this.transferOperationSaveService = applicationContext.getBean(TransferOperationSaveService::class.java)
 
@@ -118,7 +113,6 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
         cashTransferPreprocessor.start()
 
         this.currentTransactionDataHolder = applicationContext.getBean(CurrentTransactionDataHolder::class.java)
-        this.assetPairHolder = applicationContext.getBean(AssetsPairsHolder::class.java)
 
         processedMessagesCache = applicationContext.getBean(ProcessedMessagesCache::class.java)
         servicesMap = initServicesMap()
