@@ -41,7 +41,8 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         }
         val message = getMessage(messageWrapper)
         val asset = assetsHolder.getAsset(message.assetId)
-        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(asset, OperationType.CASH_IN_OUT)) {
+        if ((isCashIn(message.reservedVolume) && messageProcessingStatusHolder.isCashInDisabled(asset)) ||
+                (!isCashIn(message.reservedVolume) && messageProcessingStatusHolder.isCashOutDisabled(asset))) {
             writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }
@@ -123,6 +124,11 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                 .setStatus(status.type)
         )
     }
+
+    private fun isCashIn(amount: Double): Boolean {
+        return amount > 0
+    }
+
 
     private fun getMessage(messageWrapper: MessageWrapper): ProtocolMessages.ReservedCashInOutOperation {
         if (messageWrapper.parsedMessage == null) {

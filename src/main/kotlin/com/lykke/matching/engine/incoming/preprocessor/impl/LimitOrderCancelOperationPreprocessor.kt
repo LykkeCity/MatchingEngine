@@ -4,7 +4,6 @@ import com.lykke.matching.engine.daos.context.LimitOrderCancelOperationContext
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
-import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
@@ -26,8 +25,7 @@ class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContext
                                             val limitOrderCancelInputQueue: BlockingQueue<MessageWrapper>,
                                             val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
                                             val limitOrderCancelOperationPreprocessorPersistenceManager: PersistenceManager,
-                                            val processedMessagesCache: ProcessedMessagesCache,
-                                            val messageProcessingStatusHolder: MessageProcessingStatusHolder) : MessagePreprocessor, Thread(LimitOrderCancelOperationPreprocessor::class.java.name) {
+                                            val processedMessagesCache: ProcessedMessagesCache) : MessagePreprocessor, Thread(LimitOrderCancelOperationPreprocessor::class.java.name) {
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(LimitOrderCancelOperationPreprocessor::class.java.name)

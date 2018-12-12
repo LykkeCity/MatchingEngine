@@ -50,7 +50,7 @@ class CashTransferPreprocessor(
     override fun preProcess(messageWrapper: MessageWrapper) {
         val cashTransferParsedData = contextParser.parse(messageWrapper)
         val cashTransferContext = cashTransferParsedData.messageWrapper.context as CashTransferContext
-        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(cashTransferContext.transferOperation.asset, OperationType.CASH_TRANSFER)) {
+        if (messageProcessingStatusHolder.isCashTransferDisabled(cashTransferContext.transferOperation.asset)) {
             writeResponse(cashTransferParsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }
