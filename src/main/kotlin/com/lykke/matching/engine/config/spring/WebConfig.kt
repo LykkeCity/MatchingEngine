@@ -65,10 +65,6 @@ open class WebConfig  {
         return settingValidators.groupBy { it.getSettingGroup() }
     }
 
-    private fun gson(): Gson = GsonBuilder()
-            .registerTypeAdapter(Json::class.java, SpringfoxJsonToGsonAdapter())
-            .create()
-
     private fun getConnector(port: Int): Connector {
         val connector = Connector(CONNECTOR_PROTOCOL)
         connector.scheme = SCHEMA
