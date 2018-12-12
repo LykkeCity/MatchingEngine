@@ -29,7 +29,7 @@ class DisabledFunctionalitySettingValidator(val assetsHolder: AssetsHolder,
 
     fun validate(rule: DisabledFunctionalityRuleDto) {
         validateRuleIsNotEmpty(rule)
-        validateOperationExists(rule)
+        validateOperation(rule)
         validateAssetExist(rule)
         validateAssetPairIdExist(rule)
     }
@@ -43,13 +43,17 @@ class DisabledFunctionalitySettingValidator(val assetsHolder: AssetsHolder,
         }
     }
 
-    private fun validateOperationExists(rule: DisabledFunctionalityRuleDto) {
+    private fun validateOperation(rule: DisabledFunctionalityRuleDto) {
         try {
             rule.operationType?.let {
                 OperationType.valueOf(it)
             }
         } catch (e: IllegalArgumentException) {
             throw ValidationException(validationMessage = "Operation does not exist")
+        }
+
+        if (rule.assetPairId != null && rule.operationType != OperationType.TRADE.name) {
+            throw ValidationException(validationMessage = "Rule with asset pair can have only ${OperationType.TRADE.name} operation")
         }
     }
 

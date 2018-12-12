@@ -67,59 +67,49 @@ class DisabledFunctionalityRulesHolderTest {
     @Test
     fun fullMatchTest() {
         //given
-        disabledFunctionalityRulesService.create(DisabledFunctionalityRuleDto(null, null, "BTCUSD", OperationType.CASH_IN_OUT.name, true, "test", "test"))
+        disabledFunctionalityRulesService.create(DisabledFunctionalityRuleDto(null, "BTC", null, OperationType.CASH_IN.name, true, "test", "test"))
 
         //then
-        assertTrue(disabledFunctionalityRulesHolder.isDisabled(assetsPairsHolder.getAssetPair("BTCUSD"), com.lykke.matching.engine.daos.OperationType.CASH_IN_OUT))
+        assertTrue(disabledFunctionalityRulesHolder.isCashInDisabled(assetsHolder.getAsset("BTC")))
     }
 
     @Test
-    fun matchAssetAndAssetPairSetTest() {
+    fun matchAssetAndAssetPairTest() {
         //given
-        disabledFunctionalityRulesService.create(DisabledFunctionalityRuleDto(null, "JPY", "BTCUSD", OperationType.CASH_IN_OUT.name, true, "test", "test"))
+        disabledFunctionalityRulesService.create(DisabledFunctionalityRuleDto(null, "BTC", null, OperationType.TRADE.name, true, "test", "test"))
 
         //then
-        assertTrue(disabledFunctionalityRulesHolder.isDisabled(assetsPairsHolder.getAssetPair("BTCUSD"), com.lykke.matching.engine.daos.OperationType.CASH_IN_OUT))
-        assertTrue(disabledFunctionalityRulesHolder.isDisabled(assetsHolder.getAsset("JPY"), com.lykke.matching.engine.daos.OperationType.CASH_IN_OUT))
+        assertTrue(disabledFunctionalityRulesHolder.isTradeDisabled(assetsPairsHolder.getAssetPair("BTCUSD")))
     }
 
     @Test
     fun notMatchTest() {
         //given
-        disabledFunctionalityRulesService.create(DisabledFunctionalityRuleDto(null, null, "BTCUSD", OperationType.CASH_IN_OUT.name, true, "test", "test"))
+        disabledFunctionalityRulesService.create(DisabledFunctionalityRuleDto(null, "BTC", null, OperationType.CASH_TRANSFER.name, true, "test", "test"))
 
         //then
-        assertFalse(disabledFunctionalityRulesHolder.isDisabled(assetsPairsHolder.getAssetPair("EURJPY"), com.lykke.matching.engine.daos.OperationType.CASH_IN_OUT))
+        assertFalse(disabledFunctionalityRulesHolder.isCashTransferDisabled(assetsHolder.getAsset("JPY")))
     }
 
     @Test
     fun disabledRuleDoesNotMatchTest() {
         //given
-        disabledFunctionalityRulesService.create(DisabledFunctionalityRuleDto(null, "BTC", "BTCUSD", OperationType.TRADE.name, false, "test", "test"))
+        disabledFunctionalityRulesService.create(DisabledFunctionalityRuleDto(null, null, "BTCUSD", OperationType.TRADE.name, false, "test", "test"))
 
         //then
-        assertFalse(disabledFunctionalityRulesHolder.isDisabled(assetsHolder.getAsset("BTC"), com.lykke.matching.engine.daos.OperationType.TRADE))
+        assertFalse(disabledFunctionalityRulesHolder.isTradeDisabled(assetsPairsHolder.getAssetPair("BTCUSD")))
     }
 
     @Test
     fun removedRuleDoesNotMatch() {
         //given
-        val ruleId = disabledFunctionalityRulesService.create(DisabledFunctionalityRuleDto(null, "BTC", "BTCUSD", OperationType.TRADE.name, true, "test", "test"))
+        val ruleId = disabledFunctionalityRulesService.create(DisabledFunctionalityRuleDto(null, "BTC", null, OperationType.TRADE.name, true, "test", "test"))
 
         //when
         disabledFunctionalityRulesService.delete(ruleId, DeleteSettingRequestDto("test", "test"))
 
         //then
-        assertFalse(disabledFunctionalityRulesHolder.isDisabled(assetsHolder.getAsset("BTC"), com.lykke.matching.engine.daos.OperationType.TRADE))
-    }
-
-    @Test
-    fun assetMatchWithAssetPairTest() {
-        //given
-        disabledFunctionalityRulesService.create(DisabledFunctionalityRuleDto(null, "BTC", null, OperationType.CASH_IN_OUT.name, true, "test", "test"))
-
-        //then
-        assertTrue(disabledFunctionalityRulesHolder.isDisabled(assetsPairsHolder.getAssetPair("BTCUSD"), com.lykke.matching.engine.daos.OperationType.CASH_IN_OUT))
+        assertFalse(disabledFunctionalityRulesHolder.isTradeDisabled(assetsPairsHolder.getAssetPair("BTCUSD")))
     }
 
     @Test
@@ -128,16 +118,16 @@ class DisabledFunctionalityRulesHolderTest {
         disabledFunctionalityRulesService.create(DisabledFunctionalityRuleDto(null, "BTC", null, null, true, "test", "test"))
 
         //then
-        assertTrue(disabledFunctionalityRulesHolder.isDisabled(assetsPairsHolder.getAssetPair("BTCUSD"), com.lykke.matching.engine.daos.OperationType.CASH_TRANSFER))
-        assertTrue(disabledFunctionalityRulesHolder.isDisabled(assetsPairsHolder.getAssetPair("BTCUSD"), com.lykke.matching.engine.daos.OperationType.CASH_IN_OUT))
+        assertTrue(disabledFunctionalityRulesHolder.isTradeDisabled(assetsPairsHolder.getAssetPair("BTCUSD")))
+        assertTrue(disabledFunctionalityRulesHolder.isCashTransferDisabled(assetsHolder.getAsset("BTC")))
     }
 
     @Test
     fun operationMatchTest() {
         //given
-        disabledFunctionalityRulesService.create(DisabledFunctionalityRuleDto(null, null, null, OperationType.CASH_IN_OUT.name, true, "test", "test"))
+        disabledFunctionalityRulesService.create(DisabledFunctionalityRuleDto(null, null, null, OperationType.CASH_IN.name, true, "test", "test"))
 
         //then
-        assertTrue(disabledFunctionalityRulesHolder.isDisabled(assetsPairsHolder.getAssetPair("BTCUSD"), com.lykke.matching.engine.daos.OperationType.CASH_IN_OUT))
+        assertTrue(disabledFunctionalityRulesHolder.isCashInDisabled(assetsHolder.getAsset("BTC")))
     }
 }

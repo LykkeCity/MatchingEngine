@@ -311,8 +311,9 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun disabledFunctionalityRulesHolder(applicationSettingsCache: ApplicationSettingsCache): DisabledFunctionalityRulesHolder {
-        return DisabledFunctionalityRulesHolder(applicationSettingsCache)
+    open fun disabledFunctionalityRulesHolder(applicationSettingsCache: ApplicationSettingsCache,
+                                              assetsPairsHolder: AssetsPairsHolder): DisabledFunctionalityRulesHolder {
+        return DisabledFunctionalityRulesHolder(applicationSettingsCache, assetsPairsHolder)
     }
 
     @Bean

@@ -43,9 +43,7 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
         val singleLimitOrderParsedData = singleLimitOrderContextParser.parse(messageWrapper)
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
-        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(
-                        singleLimitContext.assetPair,
-                        OperationType.TRADE)) {
+        if (messageProcessingStatusHolder.isTradeDisabled(singleLimitContext.assetPair)) {
             writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }
