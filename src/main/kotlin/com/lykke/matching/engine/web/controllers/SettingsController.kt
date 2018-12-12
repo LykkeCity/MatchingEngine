@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.InvalidSettingGroupException
 import com.lykke.matching.engine.daos.setting.SettingNotFoundException
 import com.lykke.matching.engine.services.ApplicationSettingsService
+import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
 import com.lykke.matching.engine.web.dto.SettingDto
 import com.lykke.matching.engine.web.dto.SettingsGroupDto
@@ -37,7 +38,6 @@ class SettingsController {
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),
             ApiResponse(code = 400, message = "Supplied group name is not supported"),
-            ApiResponse(code = 404, message = "Setting not found"),
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
     @GetMapping("/{settingGroupName}", produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -90,21 +90,14 @@ class SettingsController {
     @ApiOperation("Get history records for given setting")
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),
-            ApiResponse(code = 400, message = "Supplied group name is not supported"),
-            ApiResponse(code = 404, message = "Setting not found"),
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
     @GetMapping("/{settingGroupName}/setting/{settingName}/history", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getHistoryRecords(@PathVariable("settingGroupName") settingGroupName: String,
-                         @PathVariable("settingName") settingName: String): ResponseEntity<List<SettingDto>> {
-        val historyRecords = applicationSettingsService
-                .getHistoryRecords(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), settingName)
-
-        return if(historyRecords.isEmpty())
-            ResponseEntity.status(HttpStatus.NOT_FOUND).body(null)
-        else
-            ResponseEntity.ok(historyRecords
-                    .sortedByDescending { it.timestamp })
+                          @PathVariable("settingName") settingName: String): List<SettingDto> {
+        return applicationSettingsService
+                .getHistoryRecords(settingGroupName, settingName)
+                .sortedByDescending { it.timestamp }
     }
 
     @ApiOperation("Create or update setting")
@@ -149,6 +142,16 @@ class SettingsController {
                       @Valid
                       deleteRequest: DeleteSettingRequestDto) {
         applicationSettingsService.deleteSetting(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), settingName, deleteRequest)
+    }
+
+    @ExceptionHandler
+    private fun handleApplicationValidationException(request: HttpServletRequest, exception: SettingNotFoundException): ResponseEntity<*> {
+        return ResponseEntity(exception.message, HttpStatus.NOT_FOUND)
+    }
+
+    @ExceptionHandler
+    private fun handleApplicationValidationException(request: HttpServletRequest, exception: ValidationException): ResponseEntity<*> {
+        return ResponseEntity(exception.message, HttpStatus.BAD_REQUEST)
     }
 
     @ExceptionHandler
