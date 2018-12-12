@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
-import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
@@ -15,8 +14,7 @@ import javax.annotation.PostConstruct
 @Component
 class LimitOrderMassCancelOperationPreprocessor(val limitOrderMassCancelInputQueue: BlockingQueue<MessageWrapper>,
                                                 val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
-                                                val limitOrderMassCancelOperationContextParser: LimitOrderMassCancelOperationContextParser,
-                                                val messageProcessingStatusHolder: MessageProcessingStatusHolder) :
+                                                val limitOrderMassCancelOperationContextParser: LimitOrderMassCancelOperationContextParser) :
         MessagePreprocessor, Thread(LimitOrderMassCancelOperationPreprocessor::class.java.name) {
 
     companion object {
