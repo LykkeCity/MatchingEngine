@@ -338,7 +338,8 @@ open class TestApplicationContext {
                                      previousLimitOrdersProcessor: PreviousLimitOrdersProcessor,
                                      priceDeviationThreshold: PriceDeviationThresholdHolder,
                                      midPriceHolder: MidPriceHolder,
-                                     applicationSettingsCache: ApplicationSettingsCache): SingleLimitOrderService {
+                                     applicationSettingsCache: ApplicationSettingsCache,
+                                     applicationSettingsHolder: ApplicationSettingsHolder): SingleLimitOrderService {
         return SingleLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
@@ -346,7 +347,7 @@ open class TestApplicationContext {
                 previousLimitOrdersProcessor,
                 priceDeviationThreshold,
                 midPriceHolder,
-                applicationSettingsCache)
+                applicationSettingsHolder)
     }
 
     @Bean
@@ -691,8 +692,8 @@ open class TestApplicationContext {
 
 
     @Bean
-    open fun priceDeviationThresholdHolder(settingsCache: ApplicationSettingsCache): PriceDeviationThresholdHolder {
-        return PriceDeviationThresholdHolder(settingsCache)
+    open fun priceDeviationThresholdHolder(applicationSettingsHolder: ApplicationSettingsHolder): PriceDeviationThresholdHolder {
+        return PriceDeviationThresholdHolder(applicationSettingsHolder)
     }
 
     @Bean

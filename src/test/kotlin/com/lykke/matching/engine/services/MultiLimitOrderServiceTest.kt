@@ -8,17 +8,11 @@ import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
-import com.lykke.matching.engine.holders.MidPriceHolder
-import com.lykke.matching.engine.messages.MessageStatus
-import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
-import com.lykke.matching.engine.socket.TestClientHandler
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderCancelWrapper
@@ -27,20 +21,17 @@ import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.getSetting
-import org.apache.log4j.Logger
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
-import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
@@ -85,9 +76,6 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Autowired
     private lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
-
-    @Autowired
-    private lateinit var midPriceHolder: MidPriceHolder
 
     @Before
     fun setUp() {
@@ -1377,125 +1365,4 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertBalance("Client1", "LKK", 1.0, 0.0)
     }
 
-    @Test
-    fun testSellOrdersMidPriceDeviation() {
-        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
-        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
-        testBalanceHolderWrapper.updateBalance("Client3", "BTC", 1.2)
-
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client3"))
-        applicationSettingsCache.update()
-
-        val assetPair = AssetPair("BTCUSD", "BTC", "USD", 8,
-                midPriceDeviationThreshold = BigDecimal.valueOf(0.09))
-        testDictionariesDatabaseAccessor.addAssetPair(assetPair)
-        assetPairsCache.update()
-
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 5000.0, volume = -0.01, clientId = "Client1")))
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 3000.0, volume = 0.01, clientId = "Client2")))
-        assertEquals(BigDecimal.valueOf(4000), midPriceHolder.getReferenceMidPrice(assetPair, getLimitOrderExecutionContext(Date())))
-
-        clearMessageQueues()
-
-        val messageWrapper = buildMultiLimitOrderWrapper("BTCUSD", "Client3", listOf(IncomingLimitOrder(-1.1, 3050.0)))
-        multiLimitOrderService.processMessage(messageWrapper)
-
-        assertEquals(0, testOrderBookListener.getCount())
-        assertEquals(0, testClientLimitOrderListener.getCount())
-        assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
-        assertEquals(1, genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(false).size)
-        assertEquals(1, genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).size)
-
-        val testClientHandler = messageWrapper.clientHandler as TestClientHandler
-        assertEquals(1, testClientHandler.responses.size)
-        val multiLimitOrderResponse = testClientHandler.responses.first() as ProtocolMessages.MultiLimitOrderResponse
-        assertEquals(MessageStatus.TOO_HIGH_MID_PRICE_DEVIATION.type, multiLimitOrderResponse.getStatuses(0).status)
-    }
-
-    @Test
-    fun testBuyOrdersMidPriceDeviation() {
-        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
-        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
-        testBalanceHolderWrapper.updateBalance("Client3", "USD", 10000.0)
-
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client3"))
-        applicationSettingsCache.update()
-
-        val assetPair = AssetPair("BTCUSD", "BTC", "USD", 8,
-                midPriceDeviationThreshold = BigDecimal.valueOf(0.09))
-        testDictionariesDatabaseAccessor.addAssetPair(assetPair)
-        assetPairsCache.update()
-
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 5000.0, volume = -0.01, clientId = "Client1")))
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 3000.0, volume = 0.01, clientId = "Client2")))
-        assertEquals(BigDecimal.valueOf(4000), midPriceHolder.getReferenceMidPrice(assetPair, getLimitOrderExecutionContext(Date())))
-
-        clearMessageQueues()
-
-        val messageWrapper = buildMultiLimitOrderWrapper("BTCUSD", "Client3", listOf(IncomingLimitOrder(1.1, 4900.0)))
-        multiLimitOrderService.processMessage(messageWrapper)
-
-        assertEquals(0, testOrderBookListener.getCount())
-        assertEquals(0, testClientLimitOrderListener.getCount())
-        assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
-        assertEquals(1, genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(false).size)
-        assertEquals(1, genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).size)
-
-        val testClientHandler = messageWrapper.clientHandler as TestClientHandler
-        assertEquals(1, testClientHandler.responses.size)
-        val multiLimitOrderResponse = testClientHandler.responses.first() as ProtocolMessages.MultiLimitOrderResponse
-        assertEquals(MessageStatus.TOO_HIGH_MID_PRICE_DEVIATION.type, multiLimitOrderResponse.getStatuses(0).status)
-    }
-
-    @Test
-    fun testCancelOrdersAreProcessedMidPriceDeviation() {
-        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
-        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
-        testBalanceHolderWrapper.updateBalance("Client3", "USD", 10000.0)
-
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client3"))
-        applicationSettingsCache.update()
-
-        val assetPair = AssetPair("BTCUSD", "BTC", "USD", 8,
-                midPriceDeviationThreshold = BigDecimal.valueOf(0.09))
-        testDictionariesDatabaseAccessor.addAssetPair(assetPair)
-        assetPairsCache.update()
-
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 5000.0, volume = -0.01, clientId = "Client1")))
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 3000.0, volume = 0.01, clientId = "Client2")))
-        clearMessageQueues()
-        assertEquals(BigDecimal.valueOf(4000), midPriceHolder.getReferenceMidPrice(assetPair, getLimitOrderExecutionContext(Date())))
-
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client3", listOf(IncomingLimitOrder(1.1, 2900.0))))
-
-        assertEquals(1, testOrderBookListener.getCount())
-        assertEquals(0, testClientLimitOrderListener.getCount())
-        assertEquals(1, testTrustedClientsLimitOrderListener.getCount())
-        assertEquals(1, genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(false).size)
-        assertEquals(2, genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).size)
-
-        //process multiLimit - cancel all prev orders
-        clearMessageQueues()
-        val messageWrapper = buildMultiLimitOrderWrapper("BTCUSD", "Client3", listOf(IncomingLimitOrder(1.1, 4900.0)))
-        multiLimitOrderService.processMessage(messageWrapper)
-        assertEquals(1, testOrderBookListener.getCount())
-        assertEquals(1, genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(false).size)
-        assertEquals(1, genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).size)
-
-        val testClientHandler = messageWrapper.clientHandler as TestClientHandler
-        assertEquals(1, testClientHandler.responses.size)
-        val multiLimitOrderResponse = testClientHandler.responses.first() as ProtocolMessages.MultiLimitOrderResponse
-        assertEquals(MessageStatus.TOO_HIGH_MID_PRICE_DEVIATION.type, multiLimitOrderResponse.getStatuses(0).status)
-    }
-
-    private fun getLimitOrderExecutionContext(date: Date): ExecutionContext {
-        return executionContextFactory.create("test",
-                "test",
-                MessageType.LIMIT_ORDER,
-                null,
-                emptyMap(),
-                date,
-                Logger.getLogger(""),
-                Logger.getLogger(""))
-    }
 }

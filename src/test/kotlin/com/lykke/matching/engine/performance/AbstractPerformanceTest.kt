@@ -88,7 +88,7 @@ abstract class AbstractPerformanceTest {
     protected val secondaryStopOrdersDatabaseAccessor = TestFileStopOrderDatabaseAccessor()
     protected val primaryStopOrdersDatabaseAccessor = TestStopOrderBookDatabaseAccessor(secondaryStopOrdersDatabaseAccessor)
     private val stopOrdersDatabaseAccessorsHolder = StopOrdersDatabaseAccessorsHolder(primaryStopOrdersDatabaseAccessor, secondaryStopOrdersDatabaseAccessor)
-    private val priceDeviationThresholdHolder = PriceDeviationThresholdHolder(applicationSettingsCache)
+    private val priceDeviationThresholdHolder = PriceDeviationThresholdHolder(applicationSettingsHolder)
     private var messageProcessingStatusHolder = Mockito.mock(MessageProcessingStatusHolder::class.java)
 
     protected lateinit var assetPairsCache: AssetPairsCache
@@ -150,7 +150,6 @@ abstract class AbstractPerformanceTest {
                 ordersDatabaseAccessorsHolder,
                 stopOrdersDatabaseAccessorsHolder)
         balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder,
-                balanceUpdateNotificationQueue,
                 persistenceManager,
                 assetsHolder,
                 balanceUpdateQueue,
@@ -179,7 +178,7 @@ abstract class AbstractPerformanceTest {
                 LimitOrderCancelOperationContextParser(),
                 LimitOrderMassCancelOperationContextParser())
 
-        val midPriceHolder = MidPriceHolder(10000, TestReadOnlyMidPriceDatabaseAccessor(), OrderBookMidPriceChecker(genericLimitOrderService, PriceDeviationThresholdHolder(applicationSettingsCache)))
+        val midPriceHolder = MidPriceHolder(10000, TestReadOnlyMidPriceDatabaseAccessor(), OrderBookMidPriceChecker(genericLimitOrderService, PriceDeviationThresholdHolder(applicationSettingsHolder)))
         genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder)
 
         val executionEventsSequenceNumbersGenerator = ExecutionEventsSequenceNumbersGenerator(messageSequenceNumberHolder)
@@ -238,7 +237,7 @@ abstract class AbstractPerformanceTest {
                 previousLimitOrdersProcessor,
                 priceDeviationThresholdHolder,
                 midPriceHolder,
-                applicationSettingsCache)
+                applicationSettingsHolder)
 
         multiLimitOrderService = MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
@@ -249,9 +248,9 @@ abstract class AbstractPerformanceTest {
                 assetsPairsHolder,
                 balancesHolder,
                 applicationSettingsHolder,
-                messageProcessingStatusHolder,
                 priceDeviationThresholdHolder,
-                midPriceHolder)
+                midPriceHolder,
+                messageProcessingStatusHolder)
 
         val marketOrderValidator = MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder)
         marketOrderService = MarketOrderService(matchingEngine,
@@ -263,10 +262,12 @@ abstract class AbstractPerformanceTest {
                 assetsPairsHolder,
                 rabbitSwapQueue,
                 marketOrderValidator,
+                applicationSettingsHolder,
                 messageSequenceNumberHolder,
-                PriceDeviationThresholdHolder(applicationSettingsCache),
+                PriceDeviationThresholdHolder(applicationSettingsHolder),
                 midPriceHolder,
-                notificationSender)
+                notificationSender,
+                messageProcessingStatusHolder)
 
     }
 }

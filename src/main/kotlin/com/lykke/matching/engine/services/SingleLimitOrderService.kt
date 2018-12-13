@@ -4,7 +4,7 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
@@ -38,7 +38,7 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
                               private val previousLimitOrdersProcessor: PreviousLimitOrdersProcessor,
                               private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
                               private val midPriceHolder: MidPriceHolder,
-                              private val applicationSettingsCache: ApplicationSettingsCache) : AbstractService {
+                              private val applicationSettingsHolder: ApplicationSettingsHolder) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(SingleLimitOrderService::class.java.name)
         private val STATS_LOGGER = Logger.getLogger("${SingleLimitOrderService::class.java.name}.stats")
@@ -151,7 +151,7 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
         midPrice?.let {
             executionContext.currentTransactionMidPriceHolder.addMidPrice(assetPairId, midPrice, executionContext)
         }
-        if (!applicationSettingsCache.isTrustedClient(limitOrder.clientId)) {
+        if (!applicationSettingsHolder.isTrustedClient(limitOrder.clientId)) {
             executionContext.controlsInfo("Limit order externalId = ${limitOrder.externalId}, assetPair = ${assetPairId}, mid price control passed, " +
                     "l = ${NumberUtils.roundForPrint(lowerMidPriceBound)}, u = ${NumberUtils.roundForPrint(upperMidPriceBound)}, " +
                     "m = $midPrice")
@@ -166,7 +166,7 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
                                                       now: Date): OrderProcessingResult {
         val freshExecutionContext = getExecutionContextWithProcessedPrevOrders(context, messageWrapper, now)
         val order = context.limitOrder
-        if (!applicationSettingsCache.isTrustedClient(order.clientId)) {
+        if (!applicationSettingsHolder.isTrustedClient(order.clientId)) {
             freshExecutionContext.controlsInfo("Limit order externalId = ${order.externalId}, assetPair = ${context.assetPair!!.assetPairId}, mid price control failed, " +
                     "l = ${NumberUtils.roundForPrint(lowerMidPriceBound)}, u = ${NumberUtils.roundForPrint(upperMidPriceBound)}, " +
                     "m = $midPrice")
@@ -183,7 +183,7 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
             limitOrder.updateStatus(status, now)
         }
 
-        if (!applicationSettingsCache.isTrustedClient(limitOrder.clientId)) {
+        if (!applicationSettingsHolder.isTrustedClient(limitOrder.clientId)) {
             executionContext.addClientLimitOrderWithTrades(LimitOrderWithTrades(limitOrder))
         }
         return ProcessedOrder(limitOrder, false)
