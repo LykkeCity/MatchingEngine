@@ -5,8 +5,6 @@ import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.cache.MarketStateCache
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
@@ -105,7 +103,7 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
 
         this.limitOrderMassCancelService = applicationContext.getBean(LimitOrderMassCancelService::class.java)
 
-        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsHolder)
+        this.multiLimitOrderCancelService = applicationContext.getBean(MultiLimitOrderCancelService::class.java)
 
         this.transferOperationSaveService = applicationContext.getBean(TransferOperationSaveService::class.java)
 
@@ -155,7 +153,7 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
             }
 
 
-            if (!messageProcessingStatusHolder.isMessageSwitchEnabled()) {
+            if (!messageProcessingStatusHolder.isMessageProcessingEnabled()) {
                 service.writeResponse(message, MessageStatus.MESSAGE_PROCESSING_DISABLED)
                 return
             }

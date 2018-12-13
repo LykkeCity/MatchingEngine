@@ -142,6 +142,10 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var cashInOutOperationService: CashInOutOperationService
 
+    @Autowired
+    protected lateinit var messageProcessingStatusHolder: MessageProcessingStatusHolder
+
+    @Autowired
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
 
     private var initialized = false
@@ -154,9 +158,6 @@ abstract class AbstractTest {
         assetPairsCache.update()
         applicationSettingsCache.update()
         applicationSettingsHolder.update()
-
-
-        multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsHolder)
     }
 
     protected fun clearMessageQueues() {

@@ -29,6 +29,7 @@ import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
@@ -58,7 +59,8 @@ class MarketOrderService @Autowired constructor(
         private val marketOrderValidator: MarketOrderValidator,
         private val applicationSettingsHolder: ApplicationSettingsHolder,
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-        private val messageSender: MessageSender): AbstractService {
+        private val messageSender: MessageSender,
+        private val messageProcessingStatusHolder: MessageProcessingStatusHolder): AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
         private val STATS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.stats")
@@ -73,10 +75,20 @@ class MarketOrderService @Autowired constructor(
         if (messageWrapper.parsedMessage == null) {
             parseMessage(messageWrapper)
         }
+
+        val parsedMessage = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
+
+        val assetPair = assetsPairsHolder.getAssetPairAllowNulls(parsedMessage.assetPairId)
+
         val now = Date()
         val feeInstruction: FeeInstruction?
         val feeInstructions: List<NewFeeInstruction>?
-        val parsedMessage = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
+
+        if (messageProcessingStatusHolder.isTradeDisabled(assetPair)) {
+            writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+            return
+        }
+
         feeInstruction = if (parsedMessage.hasFee()) FeeInstruction.create(parsedMessage.fee) else null
         feeInstructions = NewFeeInstruction.create(parsedMessage.feesList)
         LOGGER.debug("Got market order messageId: ${messageWrapper.messageId}, " +
@@ -104,13 +116,12 @@ class MarketOrderService @Autowired constructor(
             return
         }
 
-        val assetPair = getAssetPair(order)
 
         val executionContext = executionContextFactory.create(messageWrapper.messageId!!,
                 messageWrapper.id!!,
                 MessageType.MARKET_ORDER,
                 messageWrapper.processedMessage,
-                mapOf(Pair(assetPair.assetPairId, assetPair)),
+                mapOf(Pair(assetPair!!.assetPairId, assetPair)),
                 now,
                 LOGGER)
 
@@ -202,7 +213,6 @@ class MarketOrderService @Autowired constructor(
     private fun getOrderBook(order: MarketOrder) =
             genericLimitOrderService.getOrderBook(order.assetPairId).getOrderBook(!order.isBuySide())
 
-    private fun getAssetPair(order: MarketOrder) = assetsPairsHolder.getAssetPair(order.assetPairId)
 
     private fun parse(array: ByteArray): ProtocolMessages.MarketOrder {
         return ProtocolMessages.MarketOrder.parseFrom(array)

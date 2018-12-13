@@ -70,9 +70,8 @@ class SettingsController {
     )
     @GetMapping("/{settingGroupName}/setting/{settingName}", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getSetting(@PathVariable("settingGroupName") settingGroupName: String,
-                   @PathVariable("settingName") settingName: String,
-                   @RequestParam("enabled", required = false) enabled: Boolean? = null): ResponseEntity<SettingDto> {
-        val setting = applicationSettingsService.getSetting(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), settingName, enabled)
+                   @PathVariable("settingName") settingName: String): ResponseEntity<SettingDto> {
+        val setting = applicationSettingsService.getSetting(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), settingName)
 
         return if (setting != null) {
             ResponseEntity.ok(setting)
@@ -94,6 +93,7 @@ class SettingsController {
     @ApiOperation("Get history records for given setting")
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),
+            ApiResponse(code = 404, message = "Setting not found"),
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
     @GetMapping("/{settingGroupName}/setting/{settingName}/history", produces = [MediaType.APPLICATION_JSON_VALUE])
