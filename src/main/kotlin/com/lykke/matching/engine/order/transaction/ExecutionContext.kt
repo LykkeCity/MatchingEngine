@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.order.transaction
 
 import com.lykke.matching.engine.balance.WalletOperationsProcessor
@@ -93,8 +92,8 @@ open class ExecutionContext(val messageId: String,
 
     fun apply() {
         walletOperationsProcessor.apply()
-        orderBooksHolder.apply(date, currentTransactionMidPriceHolder, this)
-        stopOrderBooksHolder.apply(date, currentTransactionMidPriceHolder, this)
+        orderBooksHolder.apply(date, this)
+        stopOrderBooksHolder.apply(date, this)
 
         currentTransactionMidPriceHolder.apply(this)
     }
