@@ -23,7 +23,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
                      private val assetsHolder: AssetsHolder,
                      private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
                      private val balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
-                     private val applicationSettingsCache: ApplicationSettingsCache): BalancesGetter {
+                     private val applicationSettingsHolder: ApplicationSettingsHolder): BalancesGetter {
 
     companion object {
         private val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
@@ -131,12 +131,12 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         }
     }
 
-    fun isTrustedClient(clientId: String) = applicationSettingsCache.isTrustedClient(clientId)
+    fun isTrustedClient(clientId: String) = applicationSettingsHolder.isTrustedClient(clientId)
 
     fun createWalletProcessor(logger: Logger?, validate: Boolean = true): WalletOperationsProcessor {
         return WalletOperationsProcessor(this,
                 createCurrentTransactionBalancesHolder(),
-                applicationSettingsCache,
+                applicationSettingsHolder,
                 persistenceManager,
                 balanceUpdateNotificationQueue,
                 assetsHolder,

@@ -6,9 +6,9 @@ import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.SettingHistoryRecord
 import com.lykke.matching.engine.database.SettingsHistoryDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.notification.SettingsListener
 import com.lykke.matching.engine.services.validators.impl.ValidationException
-import com.lykke.matching.engine.utils.getSetting
 import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
 import com.lykke.matching.engine.web.dto.SettingDto
 import com.nhaarman.mockito_kotlin.argumentCaptor
@@ -43,9 +43,8 @@ class ApplicationSettingsServiceTest : AbstractTest() {
     @Test
     fun getAllSettingGroupsTest() {
         //given
-        testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient"))
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS, getSetting("BTC"))
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "testClient", "testClient", true)
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.DISABLED_ASSETS, "BTC", "BTC", true)
 
         //when
         val allSettingGroups = applicationSettingsService.getAllSettingGroups()
@@ -66,8 +65,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
     @Test
     fun getSettingsGroupTest() {
         //given
-        testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient"))
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "testClient", "testClient", true)
 
         //when
         val settingsGroup = applicationSettingsService.getSettingsGroup(AvailableSettingGroup.TRUSTED_CLIENTS)
@@ -81,8 +79,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
     @Test
     fun getSettingTest() {
         //given
-        testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient", "settingName"))
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName", "testClient", true)
 
         //when
         val setting = applicationSettingsService.getSetting(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName")
@@ -95,9 +92,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
     @Test
     fun createOrUpdateSettingTest() {
         //given
-        testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient", "settingName"))
-        settingsListener.clear()
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName", "testClient", true)
 
         //when
         applicationSettingsService.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, SettingDto("settingName", "test", true, "testComment", "testUser"))
@@ -107,7 +102,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         assertNotNull(dbSetting)
         assertEquals("test", dbSetting!!.value)
 
-        assertTrue(applicationSettingsCache.isTrustedClient("test"))
+        assertTrue(applicationSettingsHolder.isTrustedClient("test"))
         assertEquals(1, settingsListener.getSettingChangeSize())
 
         argumentCaptor<SettingHistoryRecord>().apply {
@@ -123,9 +118,8 @@ class ApplicationSettingsServiceTest : AbstractTest() {
     @Test
     fun deleteSettingsGroupTest() {
         //given
-        testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient1", "settingName1"))
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient2", "settingName2"))
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName1", "testClient1", true)
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName2", "testClient2", true)
 
         //when
         applicationSettingsService.deleteSettingsGroup(AvailableSettingGroup.TRUSTED_CLIENTS, DeleteSettingRequestDto("delete", "testUser"))
@@ -135,29 +129,27 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         assertNull(dbSetting)
         assertEquals(1, settingsListener.getDeleteGroupSize())
 
-        assertFalse(applicationSettingsCache.isTrustedClient("testClient"))
+        assertFalse(applicationSettingsHolder.isTrustedClient("testClient"))
 
         argumentCaptor<SettingHistoryRecord>().apply {
             verify(settingsHistoryDatabaseAccessor, times(2)).save(capture())
-            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, firstValue.settingGroupName)
-            assertEquals("settingName1", firstValue.name)
-            assertEquals("testClient1", firstValue.value)
-            assertEquals("testUser", firstValue.user)
-            assertEquals("[DELETE] delete", firstValue.comment)
+            val values = allValues.sortedBy { it.name }
+            assertEquals("settingName1", values.get(0).name)
+            assertEquals("testClient1", values.get(0).value)
+            assertEquals("testUser", values.get(0).user)
+            assertEquals("[DELETE] delete", values.get(0).comment)
 
-            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, secondValue.settingGroupName)
-            assertEquals("settingName2", secondValue.name)
-            assertEquals("testClient2", secondValue.value)
-            assertEquals("testUser", secondValue.user)
-            assertEquals("[DELETE] delete", secondValue.comment)
+            assertEquals("settingName2", values.get(1).name)
+            assertEquals("testClient2", values.get(1).value)
+            assertEquals("testUser", values.get(1).user)
+            assertEquals("[DELETE] delete", values.get(1).comment)
         }
     }
 
     @Test
     fun deleteSettingTest() {
         //given
-        testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient", "settingName"))
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName", "testClient", true)
 
         //when
         applicationSettingsService.deleteSetting(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName", DeleteSettingRequestDto("delete", "testUser"))
@@ -167,7 +159,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         assertNull(dbSetting)
         assertEquals(1, settingsListener.getDeleteSize())
 
-        assertFalse(applicationSettingsCache.isTrustedClient("testClient"))
+        assertFalse(applicationSettingsHolder.isTrustedClient("testClient"))
 
         argumentCaptor<SettingHistoryRecord>().apply {
             verify(settingsHistoryDatabaseAccessor).save(capture())
@@ -189,7 +181,6 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         applicationSettingsService
                 .createOrUpdateSetting(AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH,
                         SettingDto("test", "test", false, "testComment", "testUser"))
-
     }
 
     @Test
@@ -203,7 +194,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
                         SettingDto("stop", "stop", true, "testComment", "testUser"))
 
         //then
-        assertFalse(applicationSettingsCache.isMessageProcessingEnabled())
+        assertFalse(applicationSettingsHolder.isMessageProcessingEnabled())
         assertEquals(1, settingsListener.getSettingChangeSize())
 
         argumentCaptor<SettingHistoryRecord>().apply {

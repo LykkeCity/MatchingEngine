@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.services.validators.impl
 
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -13,7 +14,7 @@ import java.math.BigDecimal
 @Component
 class CashOperationValidatorImpl @Autowired constructor (private val balancesHolder: BalancesHolder,
                                                          private val assetsHolder: AssetsHolder,
-                                                         private val applicationSettingsCache: ApplicationSettingsCache) : CashOperationValidator {
+                                                         private val applicationSettingsHolder: ApplicationSettingsHolder) : CashOperationValidator {
 
     override fun performValidation(cashOperation: ProtocolMessages.CashOperation){
         isAssetEnabled(cashOperation)
@@ -46,7 +47,7 @@ class CashOperationValidatorImpl @Autowired constructor (private val balancesHol
     }
 
     private fun isAssetEnabled(cashOperation: ProtocolMessages.CashOperation){
-        if (cashOperation.amount < 0 && applicationSettingsCache.isAssetDisabled(cashOperation.assetId)) {
+        if (cashOperation.amount < 0 && applicationSettingsHolder.isAssetDisabled(cashOperation.assetId)) {
             throw ValidationException (ValidationException.Validation.DISABLED_ASSET,
                     "Cash out operation (${cashOperation.uid}) for client ${cashOperation.clientId} asset ${cashOperation.assetId}, " +
                     "volume: ${NumberUtils.roundForPrint(cashOperation.amount)}: disabled asset")

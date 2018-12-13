@@ -6,8 +6,10 @@ import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.*
@@ -65,7 +67,7 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
     private val balanceUpdateService: BalanceUpdateService
     private val transferOperationSaveService: TransferOperationSaveService
 
-    private val applicationSettingsCache: ApplicationSettingsCache
+    private val applicationSettingsHolder: ApplicationSettingsHolder
 
     private val quotesUpdateHandler: QuotesUpdateHandler
 
@@ -97,7 +99,7 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
         balanceUpdateHandler = applicationContext.getBean(BalanceUpdateHandler::class.java)
 
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
-        this.applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
+        this.applicationSettingsHolder = applicationContext.getBean(ApplicationSettingsHolder::class.java)
 
         val genericLimitOrderService = applicationContext.getBean(GenericLimitOrderService::class.java)
         val genericStopLimitOrderService = applicationContext.getBean(GenericStopLimitOrderService::class.java)
@@ -124,7 +126,7 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
 
         this.limitOrderMassCancelService = applicationContext.getBean(LimitOrderMassCancelService::class.java)
 
-        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
+        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsHolder)
         this.balanceUpdateService = applicationContext.getBean(BalanceUpdateService::class.java)
         this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
 

@@ -63,7 +63,7 @@ class AzureSettingsDatabaseAccessor(connectionString: String, configTableName: S
     }
 
     private fun getAllGroupNamesToAzureSettings(enabled: Boolean? = null): Map<String, List<AzureAppSetting>> {
-        return try {
+        try {
 
             val enabledQuery = enabled?.let {
                 val enabledFilter = getEnabledFlagFilter(enabled)
@@ -77,40 +77,40 @@ class AzureSettingsDatabaseAccessor(connectionString: String, configTableName: S
             val message = "Unable to load all application setting groups"
             LOGGER.error(message, e)
             METRICS_LOGGER.logError(message, e)
-            emptyMap()
+            throw e
         }
     }
 
     private fun getAzureSettingsForGroup(settingGroup: AvailableSettingGroup, enabled: Boolean? = null): List<AzureAppSetting> {
-        return try {
+        try {
             val partitionFilter = getGroupNameSetting(settingGroup)
             val combinedFiler = getCombinedFilterUseLogicalAnd(partitionFilter, getEnabledFlagFilter(enabled))
 
             val query = TableQuery.from(AzureAppSetting::class.java).where(combinedFiler)
 
-            settingsTable.execute(query).toList()
+            return settingsTable.execute(query).toList()
         } catch (e: Exception) {
             val message = "Unable to load application settings for group: ${settingGroup.settingGroupName}"
             LOGGER.error(message, e)
             METRICS_LOGGER.logError(message, e)
-            emptyList()
+            throw e
         }
     }
 
     private fun getAzureSetting(settingGroup: AvailableSettingGroup, settingName: String, enabled: Boolean? = null): AzureAppSetting? {
-        return try {
+        try {
             val partitionFilter = getGroupNameSetting(settingGroup)
             val rowFilter = TableQuery.generateFilterCondition(ROW_KEY, TableQuery.QueryComparisons.EQUAL, settingName)
             val enabledFiler = getEnabledFlagFilter(enabled)
 
             val query = TableQuery.from(AzureAppSetting::class.java).where(getCombinedFilterUseLogicalAnd(partitionFilter, rowFilter, enabledFiler))
 
-            settingsTable.execute(query)?.firstOrNull()
+            return settingsTable.execute(query)?.firstOrNull()
         } catch (e: Exception) {
             val message = "Unable to load single application setting for group: ${settingGroup.settingGroupName}, setting: $settingName"
             LOGGER.error(message, e)
             METRICS_LOGGER.logError(message, e)
-            null
+            throw e
         }
     }
 

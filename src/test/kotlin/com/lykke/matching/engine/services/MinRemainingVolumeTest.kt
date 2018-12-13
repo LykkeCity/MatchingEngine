@@ -43,7 +43,7 @@ class MinRemainingVolumeTest : AbstractTest() {
         @Primary
         open fun testConfig(): TestSettingsDatabaseAccessor {
             val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client3"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS,  getSetting("Client3"))
             return testSettingsDatabaseAccessor
         }
 

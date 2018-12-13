@@ -6,9 +6,9 @@ import org.springframework.stereotype.Component
 
 @Component
 class MessageProcessingStatusHolder(private val generalHealthMonitor: HealthMonitor,
-                                    private val applicationSettingsCache: ApplicationSettingsCache) {
+                                    private val applicationSettingsHolder: ApplicationSettingsHolder) {
     fun isMessageSwitchEnabled(): Boolean {
-        return applicationSettingsCache.isMessageProcessingEnabled()
+        return applicationSettingsHolder.isMessageProcessingEnabled()
     }
 
     fun isHealthStatusOk(): Boolean {

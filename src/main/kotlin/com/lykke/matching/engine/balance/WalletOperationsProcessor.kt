@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
@@ -26,7 +27,7 @@ import java.util.concurrent.BlockingQueue
 
 class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
                                 private val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
-                                private val applicationSettings: ApplicationSettingsCache,
+                                private val applicationSettingsHolder: ApplicationSettingsHolder,
                                 private val persistenceManager: PersistenceManager,
                                 private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
                                 private val assetsHolder: AssetsHolder,
@@ -56,7 +57,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
 
             val asset = assetsHolder.getAsset(operation.assetId)
             changedAssetBalance.balance = NumberUtils.setScaleRoundHalfUp(changedAssetBalance.balance + operation.amount, asset.accuracy)
-            changedAssetBalance.reserved = if (!applicationSettings.isTrustedClient(operation.clientId))
+            changedAssetBalance.reserved = if (!applicationSettingsHolder.isTrustedClient(operation.clientId))
                 NumberUtils.setScaleRoundHalfUp(changedAssetBalance.reserved + operation.reservedAmount, asset.accuracy)
             else
                 changedAssetBalance.reserved
@@ -163,7 +164,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
     }
 
     private fun isTrustedClientReservedBalanceOperation(operation: WalletOperation): Boolean {
-        return NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, operation.amount) && applicationSettings.isTrustedClient(operation.clientId)
+        return NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, operation.amount) && applicationSettingsHolder.isTrustedClient(operation.clientId)
     }
 
     private fun getChangedAssetBalance(clientId: String, assetId: String): ChangedAssetBalance {
