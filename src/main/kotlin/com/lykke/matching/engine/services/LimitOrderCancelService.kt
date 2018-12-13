@@ -25,6 +25,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                               private val validator: LimitOrderCancelOperationBusinessValidator,
                               private val limitOrdersCancelHelper: LimitOrdersCancelHelper,
                               private val persistenceManager: PersistenceManager) : AbstractService {
+
     companion object {
         private val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
     }
@@ -39,10 +40,10 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         }
 
         LOGGER.debug("Got limit order cancel request (id: ${context.uid}, orders: ${context.limitOrderIds})")
-        val typeToOrder = getLimitOrderTypeToLimitOrders(context.limitOrderIds)
+        val ordersByType = getLimitOrderTypeToLimitOrders(context.limitOrderIds)
 
         try {
-            validator.performValidation(typeToOrder, context)
+            validator.performValidation(ordersByType, context)
         } catch (e: ValidationException) {
             LOGGER.info("Business validation failed: ${context.messageId}, details: ${e.message}")
             writeResponse(messageWrapper, MessageStatusUtils.toMessageStatus(e.validationType))
@@ -52,8 +53,8 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         val updateSuccessful = limitOrdersCancelHelper.cancelOrders(LimitOrdersCancelHelper.CancelRequest(context.uid,
                 context.messageId,
                 context.messageType,
-                typeToOrder[LimitOrderType.LIMIT],
-                typeToOrder[LimitOrderType.STOP_LIMIT], now, context.processedMessage, false,
+                ordersByType[LimitOrderType.LIMIT],
+                ordersByType[LimitOrderType.STOP_LIMIT], now, context.processedMessage, false,
                 messageWrapper))
 
 

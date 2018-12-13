@@ -6,6 +6,7 @@ import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import java.util.stream.Collectors
 import kotlin.concurrent.fixedRateTimer
 
 @Component
@@ -37,6 +38,14 @@ class AssetPairsCache @Autowired constructor (
 
     fun getAssetPair(assetId1: String, assetId2: String): AssetPair? {
         return assetPairsByPair[pairKey(assetId1, assetId2)] ?: assetPairsByPair[pairKey(assetId2, assetId1)]
+    }
+
+    fun getAssetPairByAssetId(assetId: String): Set<AssetPair> {
+        return assetPairsById
+                .values
+                .stream()
+                .filter { it.quotingAssetId == assetId || it.baseAssetId == assetId}
+                .collect(Collectors.toSet())
     }
 
     override fun update() {

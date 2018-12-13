@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
 import com.lykke.matching.engine.daos.context.CashInOutContext
@@ -10,7 +9,6 @@ import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.parsers.data.CashInOutParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
-import com.lykke.matching.engine.messages.MessageProcessor
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.DUPLICATE
 import com.lykke.matching.engine.messages.MessageStatus.RUNTIME
@@ -25,6 +23,7 @@ import com.lykke.utils.logging.ThrottlingLogger
 import org.apache.commons.lang3.StringUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.math.BigDecimal
 import java.util.concurrent.BlockingQueue
 
 @Component
@@ -34,7 +33,7 @@ class CashInOutPreprocessor(
         private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
         private val cashInOutOperationPreprocessorPersistenceManager: PersistenceManager,
         private val processedMessagesCache: ProcessedMessagesCache,
-        private val messageProcessingStatusHolder: MessageProcessingStatusHolder): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
+        private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(CashInOutPreprocessor::class.java.name)
@@ -49,17 +48,10 @@ class CashInOutPreprocessor(
 
     override fun preProcess(messageWrapper: MessageWrapper) {
         val parsedData = cashInOutContextParser.parse(messageWrapper)
-
-        if (!messageProcessingStatusHolder.isMessageSwitchEnabled()) {
+        val cashInOutContext = parsedData.messageWrapper.context as CashInOutContext
+        if ((isCashIn(cashInOutContext.cashInOutOperation.amount) && messageProcessingStatusHolder.isCashInDisabled(cashInOutContext.cashInOutOperation.asset)) ||
+                (!isCashIn(cashInOutContext.cashInOutOperation.amount) && messageProcessingStatusHolder.isCashOutDisabled(cashInOutContext.cashInOutOperation.asset))) {
             writeResponse(parsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
-            return
-        }
-
-        if (!messageProcessingStatusHolder.isHealthStatusOk()) {
-            writeResponse(parsedData.messageWrapper, MessageStatus.RUNTIME)
-            val errorMessage = "Message processing is disabled"
-            LOGGER.error(errorMessage)
-            METRICS_LOGGER.logError(errorMessage)
             return
         }
 
@@ -129,6 +121,10 @@ class CashInOutPreprocessor(
                 .setStatusReason(errorMessage))
         LOGGER.info("Cash in/out operation (${context.cashInOutOperation.externalId}), messageId: ${messageWrapper.messageId} for client ${context.cashInOutOperation.clientId}, " +
                 "asset ${context.cashInOutOperation.asset!!.assetId}, amount: ${NumberUtils.roundForPrint(context.cashInOutOperation.amount)}: $errorMessage")
+    }
+
+    private fun isCashIn(amount: BigDecimal): Boolean {
+        return amount > BigDecimal.ZERO
     }
 
     override fun run() {

@@ -6,7 +6,6 @@ import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.SettingHistoryRecord
 import com.lykke.matching.engine.database.SettingsHistoryDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.notification.SettingsListener
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto

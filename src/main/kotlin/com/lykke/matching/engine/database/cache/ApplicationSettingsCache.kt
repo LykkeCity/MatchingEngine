@@ -37,22 +37,23 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
     fun createOrUpdateSettingValue(settingGroup: AvailableSettingGroup, settingName: String, value: String, enabled: Boolean) {
         deleteSetting(settingGroup, settingName)
         val settings = settingsByGroup.getOrPut(settingGroup) { HashSet() }
-        val setting = Setting(settingName, value, enabled)
-        settings.add(setting)
-        applicationEventPublisher.publishEvent(ApplicationSettingCreateOrUpdateEvent(settingGroup, setting))
+        val settingToAdd = Setting(settingName, value, enabled)
+        settings.add(settingToAdd)
+        applicationEventPublisher.publishEvent(ApplicationSettingCreateOrUpdateEvent(settingGroup, settingToAdd))
     }
 
     @Synchronized
     fun deleteSetting(settingGroup: AvailableSettingGroup, settingName: String) {
         val settings = getSettingsForSettingGroup(settingGroup)
-        val setting = settings?.find { it.name == settingName } ?: return
-        settings.remove(setting)
+        val settingToRemove = settings?.find { it.name == settingName }
+        settingToRemove?.let {
+            settings.remove(settingToRemove)
+            applicationEventPublisher.publishEvent(ApplicationSettingDeleteEvent(settingGroup, settingToRemove))
+        }
 
         if (CollectionUtils.isEmpty(settings)) {
             settingsByGroup.remove(settingGroup)
         }
-
-        applicationEventPublisher.publishEvent(ApplicationSettingDeleteEvent(settingGroup, setting))
     }
 
     @Synchronized

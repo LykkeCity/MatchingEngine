@@ -65,19 +65,19 @@ class ApplicationSettingsHolder(val applicationSettingsCache: ApplicationSetting
 
     @EventListener
     private fun onSettingCreate(event: ApplicationSettingCreateOrUpdateEvent) {
-        val settingValueByName = getSettingNameToValueByGroup(event.settingGroup)
+        val settingValueByName = getSettingNameToValueByGroup(event.settingGroup) ?: return
         settingValueByName[event.setting.name] = event.setting.value
     }
 
     @EventListener
     private fun onSettingRemove(event: ApplicationSettingDeleteEvent) {
-        val settingValueByName = getSettingNameToValueByGroup(event.settingGroup)
+        val settingValueByName = getSettingNameToValueByGroup(event.settingGroup) ?: return
         settingValueByName.remove(event.setting.name)
     }
 
     @EventListener
     private fun onSettingGroupRemove(event: ApplicationGroupDeleteEvent) {
-        getSettingNameToValueByGroup(event.availableSettingGroup).clear()
+        getSettingNameToValueByGroup(event.availableSettingGroup)?.clear()
     }
 
     private fun getSettingValueByName(settings: Set<Setting>): MutableMap<String, String> {
@@ -93,13 +93,14 @@ class ApplicationSettingsHolder(val applicationSettingsCache: ApplicationSetting
         return getSettingValueByName(group.settings)
     }
 
-    private fun getSettingNameToValueByGroup(settingGroup: AvailableSettingGroup): MutableMap<String, String> {
+    private fun getSettingNameToValueByGroup(settingGroup: AvailableSettingGroup): MutableMap<String, String>? {
         return when (settingGroup) {
             AvailableSettingGroup.TRUSTED_CLIENTS -> trustedClients
             AvailableSettingGroup.DISABLED_ASSETS -> disabledAssets
             AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD -> moPriceDeviationThresholds
             AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD -> loPriceDeviationThresholds
             AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH -> messageProcessingSwitch
+            else -> null
         }
     }
 }
