@@ -170,6 +170,7 @@ abstract class AbstractTest {
 
     @Autowired
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
+
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
     protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
 
@@ -190,10 +191,6 @@ abstract class AbstractTest {
                 stopOrderBookProcessor,
                 executionDataApplyService,
                 previousLimitOrdersProcessor)
-
-        multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService,
-                genericLimitOrdersCancellerFactory,
-                applicationSettingsHolder)
     }
 
     protected fun clearMessageQueues() {
