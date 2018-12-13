@@ -37,9 +37,6 @@ import kotlin.test.assertNull
 class MinVolumeOrderCancellerTest : AbstractTest() {
 
     @Autowired
-    private lateinit var recalculator: ReservedVolumesRecalculator
-
-    @Autowired
     private lateinit var messageBuilder: MessageBuilder
 
     @TestConfiguration
@@ -64,6 +61,9 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
             return testSettingsDatabaseAccessor
         }
     }
+
+    @Autowired
+    private lateinit var recalculator: ReservedVolumesRecalculator
 
     @Before
     fun setUp() {

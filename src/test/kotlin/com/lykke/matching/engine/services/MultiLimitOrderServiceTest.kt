@@ -34,6 +34,7 @@ import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
@@ -71,7 +72,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         @Bean
         @Primary
-        open fun testConfig(): TestSettingsDatabaseAccessor {
+        open fun testSettingsDatabaseAccessor(): TestSettingsDatabaseAccessor {
             val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
             testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client1"))
             testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client5"))
@@ -84,9 +85,6 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Autowired
     private lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
-
-    @Autowired
-    private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @Autowired
     private lateinit var midPriceHolder: MidPriceHolder
@@ -626,7 +624,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Test
     fun testAddAndMatchAndCancel() {
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client3"))
+        applicationSettingsCache.createOrUpdateSettingValue (AvailableSettingGroup.TRUSTED_CLIENTS, "Client3", "Client3", true)
 
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.26170853)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC",  0.001)
@@ -1355,8 +1353,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     fun testCancelAllOrdersOfExTrustedClient() {
         testBalanceHolderWrapper.updateBalance("Client1", "LKK", 1.0)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client1"))
-        applicationSettingsCache.update()
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "Client1", "Client1", true)
 
         // OrderBook orders with reservedLimitVolume=null
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "LKK1YLKK", volume = 5.0, price = 0.021))
@@ -1364,8 +1361,9 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         assertBalance("Client1", "LKK", 1.0, 0.0)
 
-        testSettingsDatabaseAccessor.clear()
-        applicationSettingsCache.update()
+        AvailableSettingGroup.values().forEach {
+            applicationSettingsCache.deleteSettingGroup(it)
+        }
 
         reservedVolumesRecalculator.recalculate()
 

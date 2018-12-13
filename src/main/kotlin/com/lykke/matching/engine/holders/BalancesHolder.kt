@@ -5,11 +5,9 @@ import com.lykke.matching.engine.balance.WalletOperationsProcessor
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolder
 import org.apache.log4j.Logger
@@ -19,11 +17,10 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAccessorsHolder,
-                     private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
                      private val persistenceManager: PersistenceManager,
                      private val assetsHolder: AssetsHolder,
                      private val balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
-                     private val applicationSettingsCache: ApplicationSettingsCache): BalancesGetter {
+                     private val applicationSettingsHolder: ApplicationSettingsHolder): BalancesGetter {
 
     companion object {
         private val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
@@ -100,7 +97,6 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
             return false
         }
         currentTransactionBalancesHolder.apply()
-        balanceUpdateNotificationQueue.put(BalanceUpdateNotification(clientId))
         return true
     }
     fun updateReservedBalance(processedMessage: ProcessedMessage?,
@@ -117,7 +113,6 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
             return false
         }
         currentTransactionBalancesHolder.apply()
-        balanceUpdateNotificationQueue.put(BalanceUpdateNotification(clientId))
         return true
     }
     fun insertOrUpdateWallets(wallets: Collection<Wallet>, messageSequenceNumber: Long?) {
@@ -135,13 +130,12 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
             balanceUpdateQueue.put(balanceUpdate)
         }
     }
-    fun isTrustedClient(clientId: String) = applicationSettingsCache.isTrustedClient(clientId)
+    fun isTrustedClient(clientId: String) = applicationSettingsHolder.isTrustedClient(clientId)
     fun createWalletProcessor(logger: Logger?, validate: Boolean = true): WalletOperationsProcessor {
         return WalletOperationsProcessor(this,
                 createCurrentTransactionBalancesHolder(),
-                applicationSettingsCache,
+                applicationSettingsHolder,
                 persistenceManager,
-                balanceUpdateNotificationQueue,
                 assetsHolder,
                 validate,
                 logger)

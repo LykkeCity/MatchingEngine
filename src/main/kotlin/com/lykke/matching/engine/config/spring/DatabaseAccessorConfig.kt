@@ -69,7 +69,6 @@ open class DatabaseAccessorConfig {
 
 
     //<editor-fold desc="Persist listeners">
-
     @Bean
     open fun midPricesPersistListener(persistMidPricesRedisConnection: Optional<RedisConnection>,
                                       redisMidPriceDatabaseAccessor: Optional<MidPriceDatabaseAccessor>,
@@ -157,26 +156,10 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun azureHistoryTicksDatabaseAccessor(@Value("\${application.tick.frequency}") frequency: Long)
-            : HistoryTicksDatabaseAccessor {
-        return AzureHistoryTicksDatabaseAccessor(config.me.db.hLiquidityConnString, frequency)
-    }
-
-    @Bean
-    open fun azureLimitOrderDatabaseAccessor(@Value("\${azure.best.price.table}") bestPricesTable: String,
-                                             @Value("\${azure.candles.table}") candlesTable: String,
-                                             @Value("\${azure.hour.candles.table}") hourCandlesTable: String)
-            : LimitOrderDatabaseAccessor {
-        return AzureLimitOrderDatabaseAccessor(connectionString = config.me.db.hLiquidityConnString,
-                bestPricesTable = bestPricesTable, candlesTable = candlesTable, hourCandlesTable = hourCandlesTable)
-    }
-
-    @Bean
     open fun azureMarketOrderDatabaseAccessor(@Value("\${azure.market.order.table}") tableName: String)
             : MarketOrderDatabaseAccessor {
         return AzureMarketOrderDatabaseAccessor(config.me.db.hTradesConnString, tableName)
     }
-
 
     @Bean
     open fun azureReservedVolumesDatabaseAccessor(@Value("\${azure.reserved.volumes.table}") tableName: String)

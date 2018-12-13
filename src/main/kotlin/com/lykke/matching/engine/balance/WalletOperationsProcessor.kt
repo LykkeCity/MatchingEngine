@@ -9,9 +9,9 @@ import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolder
@@ -33,9 +33,8 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdat
 
 class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
                                 private val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
-                                private val applicationSettings: ApplicationSettingsCache,
+                                private val applicationSettingsHolder: ApplicationSettingsHolder,
                                 private val persistenceManager: PersistenceManager,
-                                private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
                                 private val assetsHolder: AssetsHolder,
                                 private val validate: Boolean,
                                 private val logger: Logger?): BalancesGetter {
@@ -45,8 +44,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val clientIds = HashSet<String>()
-    private val clientBalanceUpdatesByClientIdAndAssetId = HashMap<String, ClientBalanceUpdate>()
+   private val clientBalanceUpdatesByClientIdAndAssetId = HashMap<String, ClientBalanceUpdate>()
 
     fun preProcess(operations: Collection<WalletOperation>, forceApply: Boolean = false): WalletOperationsProcessor {
         if (operations.isEmpty()) {
@@ -63,7 +61,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
 
             val asset = assetsHolder.getAsset(operation.assetId)
             changedAssetBalance.balance = NumberUtils.setScaleRoundHalfUp(changedAssetBalance.balance + operation.amount, asset.accuracy)
-            changedAssetBalance.reserved = if (!applicationSettings.isTrustedClient(operation.clientId))
+            changedAssetBalance.reserved = if (!applicationSettingsHolder.isTrustedClient(operation.clientId))
                 NumberUtils.setScaleRoundHalfUp(changedAssetBalance.reserved + operation.reservedAmount, asset.accuracy)
             else
                 changedAssetBalance.reserved
@@ -95,7 +93,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
     }
 
     private fun generateEventData(changedAssetBalance: ChangedAssetBalance) {
-        clientIds.add(changedAssetBalance.clientId)
         val key = generateKey(changedAssetBalance)
         val update = clientBalanceUpdatesByClientIdAndAssetId.getOrPut(key) {
             ClientBalanceUpdate(changedAssetBalance.clientId,
@@ -108,7 +105,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         update.newBalance = changedAssetBalance.balance
         update.newReserved = changedAssetBalance.reserved
         if (isBalanceUpdateNotificationNotNeeded(update)) {
-            clientIds.remove(changedAssetBalance.clientId)
             clientBalanceUpdatesByClientIdAndAssetId.remove(key)
         }
     }
@@ -140,7 +136,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
     }
 
     fun sendNotification(id: String, type: String, messageId: String) {
-        clientIds.forEach { balanceUpdateNotificationQueue.put(BalanceUpdateNotification(it)) }
         if (clientBalanceUpdatesByClientIdAndAssetId.isNotEmpty()) {
             balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), clientBalanceUpdatesByClientIdAndAssetId.values.toList(), messageId))
         }
@@ -171,7 +166,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
     }
 
     private fun isTrustedClientReservedBalanceOperation(operation: WalletOperation): Boolean {
-        return NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, operation.amount) && applicationSettings.isTrustedClient(operation.clientId)
+        return NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, operation.amount) && applicationSettingsHolder.isTrustedClient(operation.clientId)
     }
 
     private fun getChangedAssetBalance(clientId: String, assetId: String): ChangedAssetBalance {
