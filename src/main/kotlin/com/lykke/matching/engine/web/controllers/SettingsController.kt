@@ -145,11 +145,6 @@ class SettingsController {
     }
 
     @ExceptionHandler
-    private fun handleApplicationValidationException(request: HttpServletRequest, exception: SettingNotFoundException): ResponseEntity<*> {
-        return ResponseEntity(exception.message, HttpStatus.NOT_FOUND)
-    }
-
-    @ExceptionHandler
     private fun handleApplicationValidationException(request: HttpServletRequest, exception: ValidationException): ResponseEntity<*> {
         return ResponseEntity(exception.message, HttpStatus.BAD_REQUEST)
     }
