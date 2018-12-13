@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
-import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
@@ -8,6 +7,7 @@ import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedDat
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.impl.OrderFatalValidationException
