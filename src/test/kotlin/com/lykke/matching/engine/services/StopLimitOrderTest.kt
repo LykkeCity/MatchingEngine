@@ -114,7 +114,7 @@ class StopLimitOrderTest : AbstractTest() {
         val report = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(1, report.orders.size)
         assertEquals(OrderStatus.Pending.name, report.orders.first().order.status)
-        assertEquals(BigDecimal.valueOf( 0.01), report.orders.first().order.reservedLimitVolume)
+        assertEquals(BigDecimal.valueOf(0.01), report.orders.first().order.reservedLimitVolume)
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
 
         assertEquals(1, stopOrderDatabaseAccessor.getStopOrders("BTCUSD", false).size)
@@ -395,7 +395,7 @@ class StopLimitOrderTest : AbstractTest() {
 
         val stopOrder = report.orders.first { it.order.externalId == "order1" }
         assertEquals(OrderStatus.Matched.name, stopOrder.order.status)
-        assertEquals(BigDecimal.valueOf( 10500.0), stopOrder.order.price)
+        assertEquals(BigDecimal.valueOf(10500.0), stopOrder.order.price)
 
         assertEquals(1, clientsEventsQueue.size)
         val executionEvent = clientsEventsQueue.last() as ExecutionEvent
@@ -423,7 +423,7 @@ class StopLimitOrderTest : AbstractTest() {
         )))
         assertEquals(1, genericStopLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).size)
         assertEquals(1, stopOrderDatabaseAccessor.getStopOrders("BTCUSD", true).size)
-        assertEquals(BigDecimal.valueOf( 945.0), balancesHolder.getReservedBalance("Client1", "USD"))
+        assertEquals(BigDecimal.valueOf(945.0), balancesHolder.getReservedBalance("Client1", "USD"))
         assertEquals(BigDecimal.valueOf(945.0), testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = -0.1, price = 9000.0)))
@@ -673,7 +673,7 @@ class StopLimitOrderTest : AbstractTest() {
         assertEquals(1, genericStopLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).size)
         assertEquals(3, genericStopLimitOrderService.getOrderBook("BTCUSD").getOrderBook(false).size)
         assertEquals(BigDecimal.valueOf(0.5), balancesHolder.getReservedBalance("Client1", "BTC"))
-        assertEquals(BigDecimal.valueOf( 900.0), balancesHolder.getReservedBalance("Client3", "USD"))
+        assertEquals(BigDecimal.valueOf(900.0), balancesHolder.getReservedBalance("Client3", "USD"))
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = 0.1, price = 10500.0)))
 
@@ -707,7 +707,7 @@ class StopLimitOrderTest : AbstractTest() {
 
         assertEquals(1, genericStopLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).size)
         assertEquals(1, genericStopLimitOrderService.getOrderBook("BTCUSD").getOrderBook(false).size)
-        assertEquals(BigDecimal.valueOf( 0.1), balancesHolder.getReservedBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.valueOf(0.1), balancesHolder.getReservedBalance("Client1", "BTC"))
         assertEquals(BigDecimal.valueOf(1050.0), balancesHolder.getReservedBalance("Client3", "USD"))
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD",
@@ -745,7 +745,7 @@ class StopLimitOrderTest : AbstractTest() {
 
         val stopOrder = report.orders.first { it.order.externalId == "order1" }
         assertEquals(OrderStatus.Matched.name, stopOrder.order.status)
-        assertEquals(BigDecimal.valueOf( 10000.0), stopOrder.order.price)
+        assertEquals(BigDecimal.valueOf(10000.0), stopOrder.order.price)
 
         assertEquals(1, clientsEventsQueue.size)
         val executionEvent = clientsEventsQueue.poll() as ExecutionEvent

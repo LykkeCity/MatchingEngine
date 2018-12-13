@@ -68,7 +68,7 @@ open class CurrentTransactionOrderBooksHolder(private val genericLimitOrderServi
         return UpdatedOrderBookAndOrder(updatedOrderBook, updatedBestOrder)
     }
 
-    override fun applySpecificPart(date: Date, currentTransactionMidPriceHolder: CurrentTransactionMidPriceHolder, executionContext: ExecutionContext) {
+    override fun applySpecificPart(date: Date, executionContext: ExecutionContext) {
         orderCopyWrappersByOriginalOrder.forEach { it.value.applyToOrigin() }
         assetOrderBookCopiesByAssetPairId.forEach { assetPairId, orderBook ->
             genericLimitOrderService.setOrderBook(assetPairId, orderBook)
