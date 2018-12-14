@@ -1,7 +1,9 @@
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
+import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
@@ -21,6 +23,7 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 class SingleLimitOrderPreprocessor(private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                                   private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
                                    @Qualifier("singleLimitOrderPreProcessingLogger")
                                    private val logger: ThrottlingLogger) : MessagePreprocessor {
 
@@ -33,6 +36,11 @@ class SingleLimitOrderPreprocessor(private val preProcessedMessageQueue: Blockin
     override fun preProcess(messageWrapper: MessageWrapper) {
         val singleLimitOrderParsedData = singleLimitOrderContextParser.parse(messageWrapper)
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
+
+        if (messageProcessingStatusHolder.isTradeDisabled(singleLimitContext.assetPair)) {
+            writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+            return
+        }
 
         val validationResult = getValidationResult(singleLimitOrderParsedData)
 

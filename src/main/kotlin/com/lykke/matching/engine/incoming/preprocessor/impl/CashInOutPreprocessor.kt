@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
+import java.math.BigDecimal
 import java.util.concurrent.BlockingQueue
 
 @Component
@@ -33,7 +34,7 @@ class CashInOutPreprocessor(
         private val processedMessagesCache: ProcessedMessagesCache,
         private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
         @Qualifier("cashInOutPreProcessingLogger")
-        private val logger: ThrottlingLogger): MessagePreprocessor {
+        private val logger: ThrottlingLogger) : MessagePreprocessor {
 
     companion object {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
@@ -47,17 +48,10 @@ class CashInOutPreprocessor(
 
     override fun preProcess(messageWrapper: MessageWrapper) {
         val parsedData = cashInOutContextParser.parse(messageWrapper)
-
-        if (!messageProcessingStatusHolder.isMessageSwitchEnabled()) {
+        val cashInOutContext = parsedData.messageWrapper.context as CashInOutContext
+        if ((isCashIn(cashInOutContext.cashInOutOperation.amount) && messageProcessingStatusHolder.isCashInDisabled(cashInOutContext.cashInOutOperation.asset)) ||
+                (!isCashIn(cashInOutContext.cashInOutOperation.amount) && messageProcessingStatusHolder.isCashOutDisabled(cashInOutContext.cashInOutOperation.asset))) {
             writeResponse(parsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
-            return
-        }
-
-        if (!messageProcessingStatusHolder.isHealthStatusOk()) {
-            writeResponse(parsedData.messageWrapper, MessageStatus.RUNTIME)
-            val errorMessage = "Message processing is disabled"
-            logger.error(errorMessage)
-            METRICS_LOGGER.logError(errorMessage)
             return
         }
 
@@ -130,5 +124,9 @@ class CashInOutPreprocessor(
                 .setStatusReason(errorMessage))
         logger.info("Cash in/out operation (${context.cashInOutOperation.externalId}), messageId: ${messageWrapper.messageId} for client ${context.cashInOutOperation.clientId}, " +
                 "asset ${context.cashInOutOperation.asset!!.assetId}, amount: ${NumberUtils.roundForPrint(context.cashInOutOperation.amount)}: $errorMessage")
+    }
+
+    private fun isCashIn(amount: BigDecimal): Boolean {
+        return amount > BigDecimal.ZERO
     }
 }

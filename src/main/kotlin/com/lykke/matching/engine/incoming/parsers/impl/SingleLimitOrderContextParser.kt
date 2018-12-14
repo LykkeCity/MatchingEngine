@@ -10,6 +10,7 @@ import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.incoming.parsers.ContextParser
@@ -26,7 +27,7 @@ import java.util.*
 @Component
 class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                                     val assetsHolder: AssetsHolder,
-                                    val applicationSettingsCache: ApplicationSettingsCache,
+                                    val applicationSettingsHolder: ApplicationSettingsHolder,
                                     @Qualifier("singleLimitOrderPreProcessingLogger")
                                     val logger: ThrottlingLogger) : ContextParser<SingleLimitOrderParsedData> {
 
@@ -67,7 +68,7 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
     }
 
     private fun getTrustedClient(clientId: String): Boolean {
-        return applicationSettingsCache.isTrustedClient(clientId)
+        return applicationSettingsHolder.isTrustedClient(clientId)
     }
 
     fun getAssetPair(assetPairId: String): AssetPair? {
