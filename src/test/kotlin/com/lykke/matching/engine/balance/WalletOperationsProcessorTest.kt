@@ -148,15 +148,13 @@ class WalletOperationsProcessorTest : AbstractTest() {
 
     @Test
     fun testTrustedClientReservedOperations() {
-        settingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("TrustedClient1"))
-        settingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("TrustedClient2"))
-        applicationSettingsCache.update()
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "TrustedClient1", "TrustedClient1", true)
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "TrustedClient2", "TrustedClient2", true)
 
         testBalanceHolderWrapper.updateBalance("TrustedClient1", "BTC", 1.0)
         testBalanceHolderWrapper.updateBalance("TrustedClient2", "EUR", 1.0)
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(null, true)
 
-        val now = Date()
         walletOperationsProcessor.preProcess(listOf(
                 WalletOperation("TrustedClient1", "BTC", BigDecimal.ZERO, BigDecimal.valueOf(0.1)),
                 WalletOperation("TrustedClient2", "ETH", BigDecimal.valueOf(0.1), BigDecimal.valueOf(0.1))))
@@ -167,21 +165,18 @@ class WalletOperationsProcessorTest : AbstractTest() {
         assertEquals("TrustedClient2", clientBalanceUpdates.single().id)
         assertEquals(BigDecimal.valueOf(0.1), clientBalanceUpdates.single().newBalance)
         assertEquals(BigDecimal.ZERO, clientBalanceUpdates.single().newReserved)
-
-        walletOperationsProcessor.sendNotification("id", "type", "messageId")
     }
 
     @Test
     fun testNotChangedBalance() {
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(null, true)
 
-        val now = Date()
         walletOperationsProcessor.preProcess(listOf(
                 WalletOperation("Client1", "BTC", BigDecimal.valueOf(0.1), BigDecimal.valueOf(0.1)),
                 WalletOperation("Client1", "BTC", BigDecimal.valueOf(0.1), BigDecimal.valueOf(0.1)),
                 WalletOperation("Client2", "BTC", BigDecimal.valueOf(0.00000001), BigDecimal.ZERO),
-                WalletOperation("Client2", "BTC", BigDecimal.valueOf(0.00000001),  BigDecimal.valueOf(0.00000001)),
-                WalletOperation("Client2", "BTC", BigDecimal.valueOf(-0.00000002),  BigDecimal.valueOf(-0.00000001)),
+                WalletOperation("Client2", "BTC", BigDecimal.valueOf(0.00000001), BigDecimal.valueOf(0.00000001)),
+                WalletOperation("Client2", "BTC", BigDecimal.valueOf(-0.00000002), BigDecimal.valueOf(-0.00000001)),
                 WalletOperation("Client3", "BTC", BigDecimal.valueOf(0.1), BigDecimal.valueOf(0.1))))
 
         walletOperationsProcessor.preProcess(listOf(
@@ -196,14 +191,12 @@ class WalletOperationsProcessorTest : AbstractTest() {
         assertEquals(BigDecimal.ZERO, clientBalanceUpdates.single().oldReserved)
         assertEquals(BigDecimal.valueOf(0.2), clientBalanceUpdates.single().newBalance)
         assertEquals(BigDecimal.valueOf(0.2), clientBalanceUpdates.single().newReserved)
-
-        walletOperationsProcessor.sendNotification("id", "type", "messageId")
     }
 
     private fun validate(clientId: String, assetId: String, oldBalance: Double, oldReserved: Double, newBalance: Double, newReserved: Double): Boolean {
         return try {
             validateBalanceChange(clientId, assetId, BigDecimal.valueOf(oldBalance), BigDecimal.valueOf(oldReserved),
-                    BigDecimal.valueOf(newBalance),BigDecimal.valueOf(newReserved))
+                    BigDecimal.valueOf(newBalance), BigDecimal.valueOf(newReserved))
             true
         } catch (e: BalanceException) {
             false

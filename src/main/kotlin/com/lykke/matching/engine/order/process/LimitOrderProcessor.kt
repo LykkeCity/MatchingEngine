@@ -3,7 +3,7 @@ package com.lykke.matching.engine.order.process
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.order.OrderStatus
@@ -23,7 +23,7 @@ import java.math.BigDecimal
 @Component
 class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputValidator,
                           private val limitOrderBusinessValidator: LimitOrderBusinessValidator,
-                          private val applicationSettingsCache: ApplicationSettingsCache,
+                          private val applicationSettingsHolder: ApplicationSettingsHolder,
                           private val matchingEngine: MatchingEngine,
                           private val matchingResultHandlingHelper: MatchingResultHandlingHelper) : OrderProcessor<LimitOrder> {
 
@@ -54,7 +54,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         val assetPair = orderContext.executionContext.assetPairsById[order.assetPairId]
         val baseAsset = assetPair?.let { orderContext.executionContext.assetsById[assetPair.baseAssetId] }
         try {
-            limitOrderInputValidator.validateLimitOrder(applicationSettingsCache.isTrustedClient(order.clientId),
+            limitOrderInputValidator.validateLimitOrder(applicationSettingsHolder.isTrustedClient(order.clientId),
                     order,
                     assetPair,
                     order.assetPairId,
@@ -68,7 +68,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
     private fun performBusinessValidation(orderContext: LimitOrderExecutionContext): OrderValidationResult {
         val order = orderContext.order
         try {
-            limitOrderBusinessValidator.performValidation(applicationSettingsCache.isTrustedClient(order.clientId),
+            limitOrderBusinessValidator.performValidation(applicationSettingsHolder.isTrustedClient(order.clientId),
                     order,
                     orderContext.availableLimitAssetBalance!!,
                     orderContext.limitVolume!!,
@@ -124,7 +124,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
                 orderBook.getOrderBook(!order.isBuySide()),
                 executionContext.messageId,
                 orderContext.availableLimitAssetBalance!!,
-                applicationSettingsCache.limitOrderPriceDeviationThreshold(order.assetPairId),
+                applicationSettingsHolder.limitOrderPriceDeviationThreshold(order.assetPairId),
                 executionContext = executionContext)
         orderContext.matchingResult = matchingResult
         val orderCopy = matchingResult.orderCopy as LimitOrder
@@ -233,7 +233,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
             else -> {
                 val limitAsset = orderContext.limitAsset!!
                 orderCopy.reservedLimitVolume = if (orderCopy.isBuySide()) NumberUtils.setScaleRoundDown(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy) else orderCopy.getAbsRemainingVolume()
-                if (!applicationSettingsCache.isTrustedClient(orderCopy.clientId)) {
+                if (!applicationSettingsHolder.isTrustedClient(orderCopy.clientId)) {
                     val newReservedBalance = NumberUtils.setScaleRoundHalfUp(orderCopy.reservedLimitVolume!!, limitAsset.accuracy)
                     orderContext.ownWalletOperations!!.add(WalletOperation(orderCopy.clientId,
                             limitAsset.assetId,
@@ -320,7 +320,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         orderContext.executionContext.orderBooksHolder.addOrder(order)
         addOrderToReport(orderContext.order.copy(), orderContext.executionContext)
 
-        if (!applicationSettingsCache.isTrustedClient(order.clientId)) {
+        if (!applicationSettingsHolder.isTrustedClient(order.clientId)) {
             orderContext.executionContext.info("${getOrderInfo(order)} added to order book")
         }
         return ProcessedOrder(order, true)

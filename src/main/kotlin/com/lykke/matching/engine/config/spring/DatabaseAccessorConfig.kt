@@ -66,7 +66,6 @@ open class DatabaseAccessorConfig {
 
 
     //<editor-fold desc="Persist listeners">
-
     @Bean
     open fun walletOperationsPersistListener(updatedWalletsQueue: BlockingQueue<AccountPersistEvent>,
                                              balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder): QueueConsumer<AccountPersistEvent>? {

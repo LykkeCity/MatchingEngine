@@ -3,7 +3,7 @@ package com.lykke.matching.engine.order.process.common
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.process.context.OrderExecutionContext
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
-class MatchingResultHandlingHelper(private val applicationSettingsCache: ApplicationSettingsCache) {
+class MatchingResultHandlingHelper(private val applicationSettingsHolder: ApplicationSettingsHolder) {
 
     fun preProcessCancelledOppositeOrders(orderExecutionContext: OrderExecutionContext<*>) {
         val date = orderExecutionContext.executionContext.date
@@ -64,7 +64,7 @@ class MatchingResultHandlingHelper(private val applicationSettingsCache: Applica
     }
 
     fun isOrderForTrustedClientsReport(order: LimitOrder): Boolean {
-        return !order.isPartiallyMatched() && applicationSettingsCache.isTrustedClient(order.clientId)
+        return !order.isPartiallyMatched() && applicationSettingsHolder.isTrustedClient(order.clientId)
     }
 
     fun processCancelledOppositeOrders(orderExecutionContext: OrderExecutionContext<*>) {

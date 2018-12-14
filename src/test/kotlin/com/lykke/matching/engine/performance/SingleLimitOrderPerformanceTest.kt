@@ -5,7 +5,6 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.PrintUtils
-import com.lykke.matching.engine.utils.getSetting
 import org.junit.Ignore
 import org.junit.Test
 import java.math.BigDecimal
@@ -26,7 +25,7 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
         testBackOfficeDatabaseAccessor.addAsset(Asset("ETH", 6))
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client3"))
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "Client3", "Client3", true)
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5))
