@@ -165,6 +165,22 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         }
     }
 
+    private fun processRejectedMatchingResult(orderContext: LimitOrderExecutionContext): ProcessedOrder {
+        val matchingResult = orderContext.matchingResult!!
+        if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
+            matchingResultHandlingHelper.preProcessCancelledOppositeOrders(orderContext)
+            matchingResultHandlingHelper.preProcessCancelledOrdersWalletOperations(orderContext)
+            matchingResultHandlingHelper.processCancelledOppositeOrders(orderContext)
+            val orderBook = orderContext.executionContext.orderBooksHolder
+                    .getChangedOrderBookCopy(orderContext.order.assetPairId)
+            orderContext.matchingResult!!.cancelledLimitOrders.forEach {
+                orderBook.removeOrder(it.origin!!)
+            }
+        }
+        addOrderToReportIfNotTrusted(orderContext.order, orderContext.executionContext)
+        return ProcessedOrder(orderContext.order, false)
+    }
+
     private fun processMatchingResult(orderContext: LimitOrderExecutionContext): ProcessedOrder {
         val matchingResult = orderContext.matchingResult!!
 

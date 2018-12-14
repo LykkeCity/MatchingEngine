@@ -257,9 +257,10 @@ abstract class AbstractPerformanceTest {
                 balancesHolder,
                 applicationSettingsHolder,
                 messageProcessingStatusHolder,
-                priceDeviationThresholdHolder,
                 performanceStatsHolder,
-                TestUUIDHolder())
+                midPriceHolder,
+                TestUUIDHolder(),
+                priceDeviationThresholdHolder)
 
         val marketOrderValidator = MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder)
         marketOrderService = MarketOrderService(matchingEngine,

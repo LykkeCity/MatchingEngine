@@ -56,7 +56,8 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                              private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
                              private val performanceStatsHolder: PerformanceStatsHolder,
                              private val midPriceHolder: MidPriceHolder,
-                             private val uuidHolder: UUIDHolder) : AbstractService {
+                             private val uuidHolder: UUIDHolder,
+                             private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)

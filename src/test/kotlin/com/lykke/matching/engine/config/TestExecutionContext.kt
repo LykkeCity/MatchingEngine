@@ -111,7 +111,6 @@ open class TestExecutionContext {
                 limitOrderBusinessValidator,
                 applicationSettingsHolder,
                 matchingEngine,
-                priveDeviationThresholdHolder,
                 matchingResultHandlingHelper)
     }
 

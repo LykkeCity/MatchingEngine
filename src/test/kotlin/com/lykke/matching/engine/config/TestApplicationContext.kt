@@ -347,12 +347,18 @@ open class TestApplicationContext {
                                      stopOrderBookProcessor: StopOrderBookProcessor,
                                      executionDataApplyService: ExecutionDataApplyService,
                                      previousLimitOrdersProcessor: PreviousLimitOrdersProcessor,
-                                     performanceStatsHolder: PerformanceStatsHolder): SingleLimitOrderService {
+                                     performanceStatsHolder: PerformanceStatsHolder,
+                                     priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
+                                     midPriceHolder: MidPriceHolder,
+                                     applicationSettingsHolder: ApplicationSettingsHolder): SingleLimitOrderService {
         return SingleLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
                 executionDataApplyService,
                 previousLimitOrdersProcessor,
+                priceDeviationThresholdHolder,
+                midPriceHolder,
+                applicationSettingsHolder,
                 performanceStatsHolder)
     }
 
@@ -368,7 +374,9 @@ open class TestApplicationContext {
                                     applicationSettingsHolder: ApplicationSettingsHolder,
                                     messageProcessingStatusHolder: MessageProcessingStatusHolder,
                                     performanceStatsHolder: PerformanceStatsHolder,
-                                    testUUIDHolder: TestUUIDHolder): MultiLimitOrderService {
+                                    testUUIDHolder: TestUUIDHolder,
+                                    midPriceHolder: MidPriceHolder,
+                                    priceDeviationThreshold: PriceDeviationThresholdHolder): MultiLimitOrderService {
         return MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
@@ -380,7 +388,9 @@ open class TestApplicationContext {
                 applicationSettingsHolder,
                 messageProcessingStatusHolder,
                 performanceStatsHolder,
-                testUUIDHolder())
+                midPriceHolder,
+                testUUIDHolder(),
+                priceDeviationThreshold)
     }
 
     @Bean
