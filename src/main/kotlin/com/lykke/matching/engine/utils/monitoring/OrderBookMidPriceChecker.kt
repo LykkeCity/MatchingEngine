@@ -17,7 +17,7 @@ class OrderBookMidPriceChecker {
     fun checkOrderBook(refMidPriceDangerousChangeEvent: RefMidPriceDangerousChangeEvent) {
         val assetPairId = refMidPriceDangerousChangeEvent.assetPairId
         val executionContext = refMidPriceDangerousChangeEvent.executionContext
-        val orderBook = executionContext?.orderBooksHolder?.getChangedCopyOrOriginalOrderBook(assetPairId) ?: return
+        val orderBook = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPairId) ?: return
         val midPrice = orderBook.getMidPrice()
         val threshold = executionContext.assetPairsById[assetPairId]?.midPriceDeviationThreshold ?: return
 

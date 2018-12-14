@@ -125,6 +125,8 @@ abstract class AbstractPerformanceTest {
 
     val performanceStatsHolder = PerformanceStatsHolder()
 
+    private var messageProcessingStatusHolder = Mockito.mock(MessageProcessingStatusHolder::class.java)
+
     private fun clearMessageQueues() {
         rabbitEventsQueue.clear()
         rabbitTrustedClientsEventsQueue.clear()

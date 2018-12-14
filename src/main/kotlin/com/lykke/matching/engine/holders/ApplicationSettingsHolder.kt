@@ -40,7 +40,6 @@ class ApplicationSettingsHolder(val applicationSettingsCache: ApplicationSetting
         messageProcessingSwitch = getSettingValueByName(allSettingGroups, AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH)
 
         moPriceDeviationThresholds = getSettingValueByName(allSettingGroups, AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD)
-        midPriceDeviationThresholds = getSettingValueByName(allSettingGroups, AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD)
     }
 
     fun isTrustedClient(client: String): Boolean {
@@ -98,7 +97,6 @@ class ApplicationSettingsHolder(val applicationSettingsCache: ApplicationSetting
             AvailableSettingGroup.TRUSTED_CLIENTS -> trustedClients
             AvailableSettingGroup.DISABLED_ASSETS -> disabledAssets
             AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD -> moPriceDeviationThresholds
-            AvailableSettingGroup.MID_PRICE_DEVIATION_THRESHOLD -> midPriceDeviationThresholds
             AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH -> messageProcessingSwitch
             else -> null
         }

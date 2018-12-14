@@ -7,6 +7,7 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
+import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Service
 import java.util.Date

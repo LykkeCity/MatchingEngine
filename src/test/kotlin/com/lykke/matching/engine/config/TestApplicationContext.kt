@@ -300,12 +300,18 @@ open class TestApplicationContext {
                                         assetsHolder: AssetsHolder,
                                         reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                         reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
-                                        messageSequenceNumberHolder: MessageSequenceNumberHolder): ReservedCashInOutOperationService {
+                                        messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                        messageSender: MessageSender,
+                                        messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                        performanceStatsHolder: PerformanceStatsHolder): ReservedCashInOutOperationService {
         return ReservedCashInOutOperationService(assetsHolder,
                 balancesHolder,
                 reservedCashOperationQueue,
                 reservedCashInOutOperationValidator,
-                messageSequenceNumberHolder)
+                messageSequenceNumberHolder,
+                messageSender,
+                messageProcessingStatusHolder,
+                performanceStatsHolder)
     }
 
     @Bean
@@ -322,8 +328,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun disabledFunctionalityRulesHolder(applicationSettingsCache: ApplicationSettingsCache): DisabledFunctionalityRulesHolder {
-        return DisabledFunctionalityRulesHolder(applicationSettingsCache)
+    open fun disabledFunctionalityRulesHolder(applicationSettingsCache: ApplicationSettingsCache, assetsPairsHolder: AssetsPairsHolder): DisabledFunctionalityRulesHolder {
+        return DisabledFunctionalityRulesHolder(applicationSettingsCache, assetsPairsHolder)
     }
 
     @Bean
@@ -374,8 +380,7 @@ open class TestApplicationContext {
                 applicationSettingsHolder,
                 messageProcessingStatusHolder,
                 performanceStatsHolder,
-                testUUIDHolder(),
-                messageProcessingStatusHolder)
+                testUUIDHolder())
     }
 
     @Bean
@@ -726,10 +731,23 @@ open class TestApplicationContext {
     @Bean
     open fun singleLimitOrderPreprocessor(limitOrderInputQueue: BlockingQueue<MessageWrapper>,
                                           preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                                          messageProcessingStatusHolder: MessageProcessingStatusHolder,
                                           @Qualifier("singleLimitOrderContextPreprocessorLogger")
                                           logger: ThrottlingLogger): SingleLimitOrderPreprocessor {
         return SingleLimitOrderPreprocessor(limitOrderInputQueue,
-                preProcessedMessageQueue,
+                messageProcessingStatusHolder,
                 logger)
+    }
+
+    @Bean
+    open fun midPriceHolder(readOnlyMidPriceDatabaseAccessor: TestReadOnlyMidPriceDatabaseAccessor,
+                            applicationSettingsCache: ApplicationSettingsCache,
+                            orderBookMidPriceChecker: OrderBookMidPriceChecker): MidPriceHolder {
+        return MidPriceHolder(100, readOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
+    }
+
+    @Bean
+    open fun orderBookMidPriceChecker(): OrderBookMidPriceChecker {
+        return OrderBookMidPriceChecker()
     }
 }
