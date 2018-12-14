@@ -71,7 +71,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
             return
         }
 
-        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(assetPair, OperationType.TRADE)) {
+        if (messageProcessingStatusHolder.isTradeDisabled(assetPair)) {
             writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }

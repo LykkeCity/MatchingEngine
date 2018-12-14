@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
-import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
@@ -37,9 +36,7 @@ class SingleLimitOrderPreprocessor(private val preProcessedMessageQueue: Blockin
         val singleLimitOrderParsedData = singleLimitOrderContextParser.parse(messageWrapper)
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
-        if (!messageProcessingStatusHolder.isMessageProcessingEnabled(
-                        singleLimitContext.assetPair,
-                        OperationType.TRADE)) {
+        if (messageProcessingStatusHolder.isTradeDisabled(singleLimitContext.assetPair)) {
             writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }

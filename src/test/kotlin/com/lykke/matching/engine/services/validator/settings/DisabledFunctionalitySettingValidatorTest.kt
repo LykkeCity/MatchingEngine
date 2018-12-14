@@ -54,18 +54,23 @@ class DisabledFunctionalitySettingValidatorTest {
 
     @Test(expected = ValidationException::class)
     fun testAssetDoesNotExist() {
-        disabledFunctionalitySettingValidator.validate(DisabledFunctionalityRuleDto(null, "TEST", "", OperationType.CASH_IN_OUT.name, true, "test", "test"))
+        disabledFunctionalitySettingValidator.validate(DisabledFunctionalityRuleDto(null, "TEST", "", OperationType.CASH_IN.name, true, "test", "test"))
     }
 
     @Test(expected = ValidationException::class)
     fun testAssetPairDoesNotExist() {
-        disabledFunctionalitySettingValidator.validate(DisabledFunctionalityRuleDto(null, "TEST", "", OperationType.CASH_IN_OUT.name, true, "test", "test"))
+        disabledFunctionalitySettingValidator.validate(DisabledFunctionalityRuleDto(null, "TEST", "", OperationType.CASH_OUT.name, true, "test", "test"))
     }
 
     @Test(expected = ValidationException::class)
     fun operationDoesNotExist() {
         disabledFunctionalitySettingValidator.validate(DisabledFunctionalityRuleDto(null, "TEST", "", "NOT_EXIST", true, "test", "test"))
 
+    }
+
+    @Test(expected = ValidationException::class)
+    fun nonTradOperationSuppliedWithAssetPair() {
+        disabledFunctionalitySettingValidator.validate(DisabledFunctionalityRuleDto(null, null, "BTCUSD", OperationType.CASH_OUT.name, true, "test", "test"))
     }
 
     @Test

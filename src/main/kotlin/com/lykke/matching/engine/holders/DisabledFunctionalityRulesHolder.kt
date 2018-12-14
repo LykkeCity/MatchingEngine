@@ -3,6 +3,7 @@ package com.lykke.matching.engine.holders
 import com.google.gson.Gson
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.daos.DisabledFunctionalityData
 import com.lykke.matching.engine.daos.DisabledFunctionalityRule
 import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
@@ -13,165 +14,128 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
-import org.springframework.util.CollectionUtils
-import org.springframework.util.StringUtils
 import javax.annotation.PostConstruct
 
 @Component
-class DisabledFunctionalityRulesHolder(val applicationSettingsCache: ApplicationSettingsCache) {
-    private val disabledFunctionalityRulesByAssetPairId = HashMap<String, MutableSet<DisabledFunctionalityRule>>()
-    private val disabledFunctionalityRulesByAssetId = HashMap<String, MutableSet<DisabledFunctionalityRule>>()
-    private val disabledFunctionalityRules = HashSet<DisabledFunctionalityRule>()
+class DisabledFunctionalityRulesHolder(val applicationSettingsCache: ApplicationSettingsCache,
+                                       val assetsPairsHolder: AssetsPairsHolder) {
+
+    @Volatile
+    private var disabledFunctionalityData = DisabledFunctionalityData()
 
     @Autowired
     private lateinit var gson: Gson
 
-    fun isDisabled(asset: Asset?, operationType: OperationType): Boolean {
-        if (asset == null) {
-            return disabledFunctionalityRules.any { isRuleMatch(null, null, operationType, it) }
+    fun isTradeDisabled(assetPair: AssetPair?): Boolean {
+        val disabledFunctionalityDataToCheck = disabledFunctionalityData
+
+        if (assetPair == null) {
+            return disabledFunctionalityDataToCheck.disabledOperations.contains(OperationType.TRADE)
         }
 
-        val rules = getRules(asset)
-
-        if (CollectionUtils.isEmpty(rules)) {
-            return false
-        }
-
-        return rules.any { isRuleMatch(null, asset, operationType, it) }
+        return disabledFunctionalityDataToCheck.disabledOperations.contains(OperationType.TRADE)
+                || disabledFunctionalityDataToCheck.disabledAssetPairIds.contains(assetPair.assetPairId)
     }
 
-    fun isDisabled(assetPair: AssetPair?, operationType: OperationType): Boolean {
-        if (assetPair == null) {
-            return disabledFunctionalityRules.any { isRuleMatch(null, null, operationType, it) }
+    fun isCashInDisabled(asset: Asset?): Boolean {
+        val disabledFunctionalityDataToCheck = disabledFunctionalityData
+
+        if (asset == null) {
+            return disabledFunctionalityDataToCheck.disabledOperations.contains(OperationType.CASH_IN)
         }
 
-        val rules = getRules(assetPair)
+        return disabledFunctionalityDataToCheck.disabledOperations.contains(OperationType.CASH_IN)
+                || (disabledFunctionalityDataToCheck.disabledOperationsByAsset[asset.assetId]?.contains(OperationType.CASH_IN)
+                ?: false)
+                || disabledFunctionalityDataToCheck.disabledAssetIds.contains(asset.assetId)
 
-        if (CollectionUtils.isEmpty(rules)) {
-            return false
+    }
+
+    fun isCashOutDisabled(asset: Asset?): Boolean {
+        val disabledFunctionalityDataToCheck = disabledFunctionalityData
+
+        if (asset == null) {
+            return disabledFunctionalityDataToCheck.disabledOperations.contains(OperationType.CASH_OUT)
         }
 
-        return rules.any { isRuleMatch(assetPair, null, operationType, it) }
+        return disabledFunctionalityDataToCheck.disabledOperations.contains(OperationType.CASH_OUT)
+                || (disabledFunctionalityDataToCheck.disabledOperationsByAsset[asset.assetId]?.contains(OperationType.CASH_OUT)
+                ?: false)
+                || disabledFunctionalityDataToCheck.disabledAssetIds.contains(asset.assetId)
+    }
+
+    fun isCashTransferDisabled(asset: Asset?): Boolean {
+        val disabledFunctionalityDataToCheck = disabledFunctionalityData
+
+        if (asset == null) {
+            return disabledFunctionalityDataToCheck.disabledOperations.contains(OperationType.CASH_TRANSFER)
+        }
+
+        return disabledFunctionalityDataToCheck.disabledOperations.contains(OperationType.CASH_TRANSFER)
+                || (disabledFunctionalityDataToCheck.disabledOperationsByAsset[asset.assetId]?.contains(OperationType.CASH_TRANSFER)
+                ?: false)
+                || disabledFunctionalityDataToCheck.disabledAssetIds.contains(asset.assetId)
     }
 
     @PostConstruct
     private fun init() {
+        val disabledAssetPairIds = HashSet<String>()
+        val disabledOperations = HashSet<OperationType>()
+        val disabledAssetIds = HashSet<String>()
+        val disabledOperationsByAsset = HashMap<String, MutableSet<OperationType>>()
+
         applicationSettingsCache.getSettingsGroup(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES, true)?.settings?.forEach {
-            addRule(gson.fromJson(it.value, DisabledFunctionalityRule::class.java))
+            val disabledRule = gson.fromJson(it.value, DisabledFunctionalityRule::class.java)
+
+            if (disabledRule.assetPairId != null) {
+                disabledAssetPairIds.add(disabledRule.assetPairId)
+            }
+
+            if (disabledRule.assetId != null) {
+                if (disabledRule.operationType == OperationType.TRADE) {
+                    disabledAssetPairIds.addAll(assetsPairsHolder.getAssetPairsByAssetId(disabledRule.assetId).map { it.assetPairId })
+                    return@forEach
+                }
+
+                if (disabledRule.operationType == null) {
+                    disabledAssetPairIds.addAll(assetsPairsHolder.getAssetPairsByAssetId(disabledRule.assetId).map { it.assetPairId })
+                    disabledAssetIds.add(disabledRule.assetId)
+                    return@forEach
+                } else {
+                    val disabledOperationsForAsset = disabledOperationsByAsset.getOrPut(disabledRule.assetId) { HashSet() }
+                    disabledOperationsForAsset.add(disabledRule.operationType)
+                    return@forEach
+                }
+            }
+
+            if (disabledRule.operationType != null && disabledRule.assetId == null && disabledRule.assetPairId == null) {
+                disabledOperations.add(disabledRule.operationType)
+            }
         }
+
+        disabledFunctionalityData = DisabledFunctionalityData(disabledAssetPairIds = disabledAssetPairIds,
+                disabledOperations = disabledOperations,
+                disabledAssetIds = disabledAssetIds,
+                disabledOperationsByAsset = disabledOperationsByAsset)
+
     }
 
     @EventListener
     private fun onSettingCreateOrUpdate(applicationSettingUpdateEvent: ApplicationSettingCreateOrUpdateEvent) {
-        val setting = applicationSettingUpdateEvent.setting
-        if (applicationSettingUpdateEvent.settingGroup != AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES) {
-            return
-        }
-
-        val rule = gson.fromJson(setting.value, DisabledFunctionalityRule::class.java)
-        if (setting.enabled) {
-            addRule(rule)
-        } else {
-            removeRule(rule)
-        }
+        init()
     }
 
     @EventListener
     private fun onSettingRemove(applicationSettingDeleteEvent: ApplicationSettingDeleteEvent) {
-        if (applicationSettingDeleteEvent.settingGroup != AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES) {
-            return
-        }
-
-        removeRule(gson.fromJson(applicationSettingDeleteEvent.setting.value, DisabledFunctionalityRule::class.java))
+        init()
     }
 
     @EventListener
     private fun onSettingGroupRemove(applicationGroupDeleteEvent: ApplicationGroupDeleteEvent) {
-        if (applicationGroupDeleteEvent.availableSettingGroup != AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES) {
-            return
-        }
-
-        clear()
-    }
-
-    private fun getRules(asset: Asset): Set<DisabledFunctionalityRule> {
-        val result = HashSet<DisabledFunctionalityRule>()
-
-        disabledFunctionalityRulesByAssetId[asset.assetId]?.let {
-            result.addAll(it)
-        }
-
-        result.addAll(disabledFunctionalityRules)
-
-        return result
-    }
-
-    private fun getRules(assetPair: AssetPair): Set<DisabledFunctionalityRule> {
-        val result = HashSet<DisabledFunctionalityRule>()
-
-        disabledFunctionalityRulesByAssetPairId[assetPair.assetPairId]?.let {
-            result.addAll(it)
-        }
-
-        disabledFunctionalityRulesByAssetId[assetPair.baseAssetId]?.let {
-            result.addAll(it)
-        }
-
-        disabledFunctionalityRulesByAssetId[assetPair.quotingAssetId]?.let {
-            result.addAll(it)
-        }
-
-        result.addAll(disabledFunctionalityRules)
-
-        return result
-    }
-
-    private fun addRule(rule: DisabledFunctionalityRule) {
-        if (rule.assetPairId == null && rule.assetId == null) {
-            disabledFunctionalityRules.add(rule)
-            return
-        }
-
-        if (rule.assetId != null) {
-            val rules = disabledFunctionalityRulesByAssetId.getOrPut(rule.assetId) { HashSet() }
-            rules.add(rule)
-        }
-
-        if (rule.assetPairId != null) {
-            val rules = disabledFunctionalityRulesByAssetPairId.getOrPut(rule.assetPairId) { HashSet() }
-            rules.add(rule)
-        }
-
+        init()
     }
 
     private fun clear() {
-        disabledFunctionalityRules.clear()
-        disabledFunctionalityRulesByAssetId.clear()
-        disabledFunctionalityRulesByAssetPairId.clear()
-    }
-
-    private fun removeRule(rule: DisabledFunctionalityRule) {
-        disabledFunctionalityRules.remove(rule)
-        disabledFunctionalityRulesByAssetPairId[rule.assetPairId]?.remove(rule)
-        disabledFunctionalityRulesByAssetId[rule.assetId]?.remove(rule)
-    }
-
-    private fun isRuleMatch(assetPair: AssetPair?,
-                            asset: Asset?,
-                            operationType: OperationType?,
-                            disableRule: DisabledFunctionalityRule): Boolean {
-        return (StringUtils.isEmpty(disableRule.assetId) || asset == null || asset.assetId == disableRule.assetId)
-                && isAssetPairMatch(assetPair, disableRule)
-                && (disableRule.operationType == null || operationType == null || operationType == disableRule.operationType)
-    }
-
-    private fun isAssetPairMatch(assetPair: AssetPair?, disableRule: DisabledFunctionalityRule): Boolean {
-        if (assetPair == null || StringUtils.isEmpty(disableRule.assetId)) {
-            return true
-        }
-
-        return assetPair.baseAssetId == disableRule.assetId
-                || assetPair.quotingAssetId == disableRule.assetId
-                || assetPair.assetPairId == disableRule.assetPairId
+        disabledFunctionalityData = DisabledFunctionalityData()
     }
 }

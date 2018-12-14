@@ -2,7 +2,6 @@ package com.lykke.matching.engine.holders
 
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.utils.monitoring.HealthMonitor
 import org.springframework.stereotype.Component
 
@@ -11,16 +10,20 @@ open class MessageProcessingStatusHolder(private val generalHealthMonitor: Healt
                                          private val applicationSettingsHolder: ApplicationSettingsHolder,
                                          private val disabledFunctionalityRulesHolder: DisabledFunctionalityRulesHolder) {
 
-    fun isMessageProcessingEnabled(operationType: OperationType): Boolean {
-        return isMessageProcessingEnabled(assetPair = null, operationType = operationType)
+    fun isTradeDisabled(assetPair: AssetPair?): Boolean {
+        return !applicationSettingsHolder.isMessageProcessingEnabled() || disabledFunctionalityRulesHolder.isTradeDisabled(assetPair)
     }
 
-    fun isMessageProcessingEnabled(assetPair: AssetPair?, operationType: OperationType): Boolean {
-        return applicationSettingsHolder.isMessageProcessingEnabled() && !disabledFunctionalityRulesHolder.isDisabled(assetPair, operationType)
+    fun isCashInDisabled(asset: Asset?): Boolean {
+        return !applicationSettingsHolder.isMessageProcessingEnabled() || disabledFunctionalityRulesHolder.isCashInDisabled(asset)
     }
 
-    fun isMessageProcessingEnabled(asset: Asset?, operationType: OperationType): Boolean {
-        return applicationSettingsHolder.isMessageProcessingEnabled() && !disabledFunctionalityRulesHolder.isDisabled(asset, operationType)
+    fun isCashOutDisabled(asset: Asset?): Boolean {
+        return !applicationSettingsHolder.isMessageProcessingEnabled() || disabledFunctionalityRulesHolder.isCashOutDisabled(asset)
+    }
+
+    fun isCashTransferDisabled(asset: Asset?): Boolean {
+        return !applicationSettingsHolder.isMessageProcessingEnabled() || disabledFunctionalityRulesHolder.isCashTransferDisabled(asset)
     }
 
     fun isMessageProcessingEnabled(): Boolean {

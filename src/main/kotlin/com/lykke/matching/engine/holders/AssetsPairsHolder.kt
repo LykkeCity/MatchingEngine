@@ -18,4 +18,8 @@ class AssetsPairsHolder @Autowired constructor(private val assetPairsCache: Asse
     fun getAssetPair(assetId1: String, assetId2: String): AssetPair {
         return assetPairsCache.getAssetPair(assetId1, assetId2) ?: throw Exception("Unable to find asset pair for ($assetId1 & $assetId2)")
     }
+
+    fun getAssetPairsByAssetId(assetId: String): Set<AssetPair> {
+        return assetPairsCache.getAssetPairByAssetId(assetId)
+    }
 }

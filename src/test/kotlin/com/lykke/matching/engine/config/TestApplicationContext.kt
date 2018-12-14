@@ -67,6 +67,7 @@ import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import com.lykke.utils.logging.ThrottlingLogger
 import org.mockito.Mockito
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
@@ -299,18 +300,12 @@ open class TestApplicationContext {
                                         assetsHolder: AssetsHolder,
                                         reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                         reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
-                                        messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                        messageSender: MessageSender,
-                                        messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                                        performanceStatsHolder: PerformanceStatsHolder): ReservedCashInOutOperationService {
+                                        messageSequenceNumberHolder: MessageSequenceNumberHolder): ReservedCashInOutOperationService {
         return ReservedCashInOutOperationService(assetsHolder,
                 balancesHolder,
                 reservedCashOperationQueue,
                 reservedCashInOutOperationValidator,
-                messageSequenceNumberHolder,
-                messageSender,
-                messageProcessingStatusHolder,
-                performanceStatsHolder)
+                messageSequenceNumberHolder)
     }
 
     @Bean
@@ -379,7 +374,8 @@ open class TestApplicationContext {
                 applicationSettingsHolder,
                 messageProcessingStatusHolder,
                 performanceStatsHolder,
-                testUUIDHolder())
+                testUUIDHolder(),
+                messageProcessingStatusHolder)
     }
 
     @Bean
@@ -728,14 +724,12 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun orderBookMidPriceChecker(): OrderBookMidPriceChecker {
-        return OrderBookMidPriceChecker()
-    }
-
-    @Bean
-    open fun midPriceHolder(readOnlyMidPriceDatabaseAccessor: TestReadOnlyMidPriceDatabaseAccessor,
-                            applicationSettingsCache: ApplicationSettingsCache,
-                            orderBookMidPriceChecker: OrderBookMidPriceChecker): MidPriceHolder {
-        return MidPriceHolder(100, readOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
+    open fun singleLimitOrderPreprocessor(limitOrderInputQueue: BlockingQueue<MessageWrapper>,
+                                          preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                                          @Qualifier("singleLimitOrderContextPreprocessorLogger")
+                                          logger: ThrottlingLogger): SingleLimitOrderPreprocessor {
+        return SingleLimitOrderPreprocessor(limitOrderInputQueue,
+                preProcessedMessageQueue,
+                logger)
     }
 }
