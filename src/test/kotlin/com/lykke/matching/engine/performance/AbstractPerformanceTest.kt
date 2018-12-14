@@ -178,7 +178,7 @@ abstract class AbstractPerformanceTest {
                 LimitOrderCancelOperationContextParser(),
                 LimitOrderMassCancelOperationContextParser())
 
-        val midPriceHolder = MidPriceHolder(10000, TestReadOnlyMidPriceDatabaseAccessor(), OrderBookMidPriceChecker(genericLimitOrderService, PriceDeviationThresholdHolder(applicationSettingsHolder)))
+        val midPriceHolder = MidPriceHolder(10000, TestReadOnlyMidPriceDatabaseAccessor(), OrderBookMidPriceChecker())
         genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder)
 
         val executionEventsSequenceNumbersGenerator = ExecutionEventsSequenceNumbersGenerator(messageSequenceNumberHolder)
