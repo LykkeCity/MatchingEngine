@@ -198,9 +198,11 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                     lowerPrice = lowerPrice,
                     upperLimitPrice = upperLimitPrice,
                     upperPrice = upperPrice,
-                    previousExternalId = previousExternalId
-//                    timeInForce = if (currentOrder.hasTimeInForce()) OrderTimeInForce.getByExternalId(currentOrder.timeInForce) else null,
-//                    expiryTime = if (currentOrder.hasExpiryTime()) Date(currentOrder.expiryTime) else null
+                    previousExternalId = previousExternalId,
+                    timeInForce = null,
+                    expiryTime = null,
+                    parentOrderExternalId = null,
+                    childOrderExternalId = null
             )
 
             filter.checkAndAdd(order)
