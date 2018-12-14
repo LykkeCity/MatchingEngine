@@ -1,8 +1,6 @@
 package com.lykke.matching.engine.utils.monitoring
 
 import com.lykke.matching.engine.common.events.RefMidPriceDangerousChangeEvent
-import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
-import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
@@ -10,24 +8,24 @@ import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
-class OrderBookMidPriceChecker(private val genericLimitOrderService: GenericLimitOrderService,
-                               private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder) {
+class OrderBookMidPriceChecker {
     companion object {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
         private val LOGGER = Logger.getLogger(OrderBookMidPriceChecker::class.java)
     }
 
-    fun checkOrderBook(referencePriceReadyEvent: RefMidPriceDangerousChangeEvent) {
-        val assetPairId = referencePriceReadyEvent.assetPairId
-        val orderBook = genericLimitOrderService.getOrderBook(assetPairId)
+    fun checkOrderBook(refMidPriceDangerousChangeEvent: RefMidPriceDangerousChangeEvent) {
+        val assetPairId = refMidPriceDangerousChangeEvent.assetPairId
+        val executionContext = refMidPriceDangerousChangeEvent.executionContext
+        val orderBook = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPairId)
         val midPrice = orderBook.getMidPrice()
-        val threshold = priceDeviationThresholdHolder.getMidPriceDeviationThreshold(assetPairId, referencePriceReadyEvent.executionContext) ?: return
+        val threshold = executionContext.assetPairsById[assetPairId]?.midPriceDeviationThreshold ?: return
 
-        val lowerBound = getLowerBound(referencePriceReadyEvent.refMidPrice, threshold)
-        val upperBound = getUpperBound(referencePriceReadyEvent.refMidPrice, threshold)
+        val lowerBound = getLowerBound(refMidPriceDangerousChangeEvent.refMidPrice, threshold)
+        val upperBound = getUpperBound(refMidPriceDangerousChangeEvent.refMidPrice, threshold)
         if (!OrderValidationUtils.isMidPriceValid(midPrice, lowerBound, upperBound)) {
             val message = "Order book ${orderBook.assetPairId}, mid price $midPrice is out of reference mid price range " +
-                    "lowerBound $lowerBound, upperBound: $upperBound, event is triggered by orders cancel change: ${referencePriceReadyEvent.executionContext.executionContextForCancelOperation}" +
+                    "lowerBound $lowerBound, upperBound: $upperBound, event is triggered by orders cancel change: ${executionContext.executionContextForCancelOperation}" +
                     " All market orders and taker limit orders will be rejected"
             LOGGER.warn(message)
             METRICS_LOGGER.logError(message)

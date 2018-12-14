@@ -697,9 +697,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun orderBookMidPriceChecker(genericLimitOrderService: GenericLimitOrderService,
-                                      priceDeviationThresholdHolder: PriceDeviationThresholdHolder): OrderBookMidPriceChecker {
-        return OrderBookMidPriceChecker(genericLimitOrderService, priceDeviationThresholdHolder)
+    open fun orderBookMidPriceChecker(): OrderBookMidPriceChecker {
+        return OrderBookMidPriceChecker()
     }
 
     @Bean
