@@ -5,7 +5,6 @@ import com.lykke.matching.engine.balance.WalletOperationsProcessor
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage

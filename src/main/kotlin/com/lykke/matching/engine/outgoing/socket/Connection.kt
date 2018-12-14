@@ -54,8 +54,7 @@ class Connection(val socket: Socket,
                             LOGGER.error("Unsupported message type: $type")
                         }
                     }
-                } catch (e: Exception) {
-                }
+                } catch (e: Exception) { }
             }
 
             val now = Date()

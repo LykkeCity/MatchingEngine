@@ -3,9 +3,8 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.MarketOrder
+import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
-import com.lykke.matching.engine.daos.v2.FeeInstruction
-import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
@@ -17,7 +16,6 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.InvalidFee
 import com.lykke.matching.engine.order.OrderStatus.InvalidValue
@@ -29,15 +27,27 @@ import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
 import com.lykke.matching.engine.order.OrderStatus.Processing
 import com.lykke.matching.engine.order.OrderStatus.ReservedVolumeGreaterThanBalance
-import com.lykke.matching.engine.order.OrderStatus.TooHighMidPriceDeviation
 import com.lykke.matching.engine.order.OrderStatus.TooHighPriceDeviation
+import com.lykke.matching.engine.services.validators.impl.OrderValidationException
+import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
+import com.lykke.matching.engine.services.validators.MarketOrderValidator
+import com.lykke.matching.engine.utils.PrintUtils
+import com.lykke.matching.engine.utils.NumberUtils
+import com.lykke.matching.engine.utils.order.MessageStatusUtils
+import com.lykke.matching.engine.daos.v2.FeeInstruction
+import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.holders.MidPriceHolder
+import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.process.context.MarketOrderExecutionContext
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
-import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
+import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
-import com.lykke.matching.engine.services.validators.MarketOrderValidator
+import com.lykke.matching.engine.services.utils.MidPriceUtils
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -48,7 +58,8 @@ import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
-import java.util.*
+import java.util.Date
+import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 @Service
@@ -117,7 +128,6 @@ class MarketOrderService @Autowired constructor(
             return
         }
 
-
         val executionContext = executionContextFactory.create(messageWrapper.messageId!!,
                 messageWrapper.id!!,
                 MessageType.MARKET_ORDER,
@@ -130,19 +140,10 @@ class MarketOrderService @Autowired constructor(
         val midPriceDeviationThreshold = priceDeviationThresholdHolder.getMidPriceDeviationThreshold(assetPair.assetPairId, executionContext)
         val marketOrderPriceDeviationThreshold = priceDeviationThresholdHolder.getMarketOrderPriceDeviationThreshold(assetPair.assetPairId, executionContext)
 
-        var lowerMidPriceBound: BigDecimal? = null
-        var upperMidPriceBound: BigDecimal? = null
-        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, executionContext)
 
-        if (midPriceDeviationThreshold != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
-            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * midPriceDeviationThreshold)
-            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * midPriceDeviationThreshold)
-        }
-
+        val (lowerMidPriceBound, upperMidPriceBound) = MidPriceUtils.getMidPricesInterval(midPriceDeviationThreshold, midPriceHolder.getReferenceMidPrice(assetPair, executionContext))
 
         val marketOrderExecutionContext = MarketOrderExecutionContext(order, executionContext)
-        marketOrderExecutionContext.lowerMidPriceBound = lowerMidPriceBound
-        marketOrderExecutionContext.upperMidPriceBound = upperMidPriceBound
         val assetOrderBook = genericLimitOrderService.getOrderBook(order.assetPairId)
         if (!OrderValidationUtils.isMidPriceValid(assetOrderBook.getMidPrice(), lowerMidPriceBound, upperMidPriceBound)) {
             val message = "Market order (id=${order.externalId}, assetPairId = ${order.assetPairId}), " +
@@ -150,7 +151,7 @@ class MarketOrderService @Autowired constructor(
                     "already aut of range lowerBound: ${NumberUtils.roundForPrint(lowerMidPriceBound)}, upperBound: ${NumberUtils.roundForPrint(upperMidPriceBound)}"
             executionContext.error(message)
             executionContext.controlsError(message)
-            order.updateStatus(TooHighMidPriceDeviation, now)
+            order.updateStatus(OrderStatus.TooHighMidPriceDeviation, now)
             sendErrorNotification(messageWrapper, order, now)
             return
         }
@@ -158,8 +159,6 @@ class MarketOrderService @Autowired constructor(
         val matchingResult = matchingEngine.match(order,
                 getOrderBook(order),
                 messageWrapper.messageId!!,
-                lowerMidPriceBound = lowerMidPriceBound,
-                upperMidPriceBound = upperMidPriceBound,
                 moPriceDeviationThreshold = marketOrderPriceDeviationThreshold,
                 executionContext = executionContext)
         marketOrderExecutionContext.matchingResult = matchingResult
@@ -173,12 +172,11 @@ class MarketOrderService @Autowired constructor(
             InvalidVolumeAccuracy,
             InvalidVolume,
             InvalidValue,
-            TooHighPriceDeviation,
-            TooHighMidPriceDeviation -> {
+            TooHighPriceDeviation -> {
                 processRejectedMatchingResult(marketOrderExecutionContext)
             }
             Matched -> {
-                processMatchedStatus(marketOrderExecutionContext, messageWrapper.messageId!!)
+                processMatchedStatus(marketOrderExecutionContext, assetPair, messageWrapper.messageId!!)
             }
             else -> {
                 executionContext.error("Not handled order status: ${matchingResult.orderCopy.status}")
@@ -223,6 +221,7 @@ class MarketOrderService @Autowired constructor(
     }
 
     private fun processMatchedStatus(marketOrderExecutionContext: MarketOrderExecutionContext,
+                                     assetPair: AssetPair,
                                      messageId: String) {
         val matchingResult = marketOrderExecutionContext.matchingResult!!
         val executionContext = marketOrderExecutionContext.executionContext
@@ -230,24 +229,23 @@ class MarketOrderService @Autowired constructor(
 
         matchingResultHandlingHelper.formOppositeOrderBookAfterMatching(marketOrderExecutionContext)
 
+        val (lowerMidPriceBound, upperMidPriceBound) = MidPriceUtils.getMidPricesInterval(priceDeviationThresholdHolder.getMidPriceDeviationThreshold(order.assetPairId, executionContext), midPriceHolder.getReferenceMidPrice(assetPair, executionContext))
         val newMidPrice = getMidPrice(genericLimitOrderService.getOrderBook(order.assetPairId).getBestPrice(order.isBuySide()),
                 matchingResult.orderBook.peek()?.price ?: BigDecimal.ZERO, marketOrderExecutionContext.executionContext.assetPairsById[order.assetPairId]!!)
-
-        if (!OrderValidationUtils.isMidPriceValid(newMidPrice, marketOrderExecutionContext.lowerMidPriceBound, marketOrderExecutionContext.upperMidPriceBound)) {
+        if (!OrderValidationUtils.isMidPriceValid(newMidPrice, lowerMidPriceBound, upperMidPriceBound)) {
             val message = "Market order (id: ${order.externalId}, assetPairId = ${order.assetPairId}) mid price control failed, " +
-                    "m = ${NumberUtils.roundForPrint(newMidPrice)}, l = ${NumberUtils.roundForPrint(marketOrderExecutionContext.lowerMidPriceBound)}, " +
-                    "u = ${NumberUtils.roundForPrint(marketOrderExecutionContext.upperMidPriceBound)}"
+                    "m = ${NumberUtils.roundForPrint(newMidPrice)}, l = ${NumberUtils.roundForPrint(lowerMidPriceBound)}, " +
+                    "u = ${NumberUtils.roundForPrint(upperMidPriceBound)}"
             executionContext.error(message)
             executionContext.controlsError(message)
-            order.updateStatus(TooHighMidPriceDeviation, executionContext.date)
+            order.updateStatus(OrderStatus.TooHighMidPriceDeviation, executionContext.date)
             processRejectedMatchingResult(marketOrderExecutionContext)
             return
         }
 
         executionContext.controlsInfo("Market order (id: ${order.externalId}, assetPairId = ${order.assetPairId}), mid price control passed, " +
-                "m = ${NumberUtils.roundForPrint(newMidPrice)}, l = ${NumberUtils.roundForPrint(marketOrderExecutionContext.lowerMidPriceBound)}, " +
-                "u = ${NumberUtils.roundForPrint(marketOrderExecutionContext.upperMidPriceBound)}")
-
+                "m = ${NumberUtils.roundForPrint(newMidPrice)}, l = ${NumberUtils.roundForPrint(lowerMidPriceBound)}, " +
+                "u = ${NumberUtils.roundForPrint(upperMidPriceBound)}")
         if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
             matchingResultHandlingHelper.preProcessCancelledOppositeOrders(marketOrderExecutionContext)
         }
@@ -274,8 +272,7 @@ class MarketOrderService @Autowired constructor(
             if (matchingResult.uncompletedLimitOrderCopy != null) {
                 matchingResultHandlingHelper.processUncompletedOppositeOrder(marketOrderExecutionContext)
             }
-
-            if (newMidPrice != null) {
+            newMidPrice?.let {
                 executionContext.currentTransactionMidPriceHolder.addMidPrice(order.assetPairId, newMidPrice, executionContext)
             }
 
@@ -294,10 +291,12 @@ class MarketOrderService @Autowired constructor(
     private fun getOrderBook(order: MarketOrder) =
             genericLimitOrderService.getOrderBook(order.assetPairId).getOrderBook(!order.isBuySide())
 
+    private fun getAssetPair(order: MarketOrder) = assetsPairsHolder.getAssetPair(order.assetPairId)
 
     private fun parse(array: ByteArray): ProtocolMessages.MarketOrder {
         return ProtocolMessages.MarketOrder.parseFrom(array)
     }
+
 
     private fun writePersistenceErrorResponse(messageWrapper: MessageWrapper, order: MarketOrder) {
         val message = "Unable to save result data"

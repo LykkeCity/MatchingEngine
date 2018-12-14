@@ -136,6 +136,7 @@ abstract class AbstractTest {
 
     @Autowired
     protected lateinit var executionContextFactory: ExecutionContextFactory
+
     @Autowired
     @Qualifier("rabbitCashInOutQueue")
     protected lateinit var cashInOutQueue:  BlockingQueue<CashOperation>

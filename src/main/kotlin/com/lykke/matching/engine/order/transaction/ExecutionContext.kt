@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.order.transaction
 
 import com.lykke.matching.engine.balance.WalletOperationsProcessor
@@ -31,7 +30,6 @@ open class ExecutionContext(val messageId: String,
                             private val controlsLogger: Logger) {
 
     var tradeIndex: Long = 0
-    var removeAllMidPrices = false
     var executionContextForCancelOperation = false
 
     private val clientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
@@ -94,8 +92,8 @@ open class ExecutionContext(val messageId: String,
 
     fun apply() {
         walletOperationsProcessor.apply()
-        orderBooksHolder.apply(date, currentTransactionMidPriceHolder, this)
-        stopOrderBooksHolder.apply(date, currentTransactionMidPriceHolder, this)
+        orderBooksHolder.apply(date)
+        stopOrderBooksHolder.apply(date)
 
         currentTransactionMidPriceHolder.apply(this)
     }

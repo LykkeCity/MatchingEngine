@@ -299,46 +299,6 @@ class MidPriceHolderTest {
         assertEquals(expectedReferencePrice, midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date())))
     }
 
-    @Test
-    fun getRefMidPriceWithNotSavedCurrentMidPricesExistTest() {
-        //given
-        val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
-        val midPrices = ArrayList(getRandomMidPrices(1, "EURUSD"))
-        testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
-        val midPriceHolder = MidPriceHolder(50, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
-        Thread.sleep(100)
-
-        //when
-        val savedMidPrices = getRandomBigDecimalList(3)
-        val notSavedMidPrices = getRandomBigDecimalList(3)
-
-        val sum = notSavedMidPrices.reduceRight { num, acc -> num.add(acc) }
-        midPriceHolder.addMidPrices(assetPair, savedMidPrices, getExecutionContext(Date()))
-
-
-        val refMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date()), sum, BigDecimal.valueOf(notSavedMidPrices.size.toLong()))
-        //then
-        assertEquals(getExpectedRefPrice(savedMidPrices.plus(notSavedMidPrices), assetPair.accuracy), refMidPrice)
-    }
-
-    @Test
-    fun getRefMidPriceWithNotSavedCurrentMidPricesDoesNotExistTest() {
-        //given
-        val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
-        val midPrices = ArrayList(getRandomMidPrices(1, "EURUSD"))
-        testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
-        val midPriceHolder = MidPriceHolder(50, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
-        Thread.sleep(100)
-
-        //when
-        val notSavedMidPrices = getRandomBigDecimalList(3)
-        val sum = notSavedMidPrices.reduceRight { num, acc -> num.add(acc) }
-
-        val refMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date()), sum, BigDecimal.valueOf(notSavedMidPrices.size.toLong()))
-        //then
-        assertEquals(getExpectedRefPrice(notSavedMidPrices, assetPair.accuracy), refMidPrice)
-    }
-
     private fun getRandomBigDecimalList(size: Int): List<BigDecimal> {
         val result = ArrayList<BigDecimal>()
         IntRange(0, size - 1).forEach { result.add(getRandomBigDecimal()) }

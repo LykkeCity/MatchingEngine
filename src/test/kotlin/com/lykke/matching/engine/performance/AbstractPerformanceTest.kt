@@ -85,8 +85,7 @@ abstract class AbstractPerformanceTest {
 
     protected val secondaryStopOrdersDatabaseAccessor = TestFileStopOrderDatabaseAccessor()
     protected val primaryStopOrdersDatabaseAccessor = TestStopOrderBookDatabaseAccessor(secondaryStopOrdersDatabaseAccessor)
-
-    private var stopOrdersDatabaseAccessorsHolder = StopOrdersDatabaseAccessorsHolder(primaryStopOrdersDatabaseAccessor, secondaryStopOrdersDatabaseAccessor)
+    private val stopOrdersDatabaseAccessorsHolder = StopOrdersDatabaseAccessorsHolder(primaryStopOrdersDatabaseAccessor, secondaryStopOrdersDatabaseAccessor)
     private val priceDeviationThresholdHolder = PriceDeviationThresholdHolder(applicationSettingsHolder)
 
     protected lateinit var assetPairsCache: AssetPairsCache
@@ -215,7 +214,6 @@ abstract class AbstractPerformanceTest {
                 LimitOrderBusinessValidatorImpl(),
                 applicationSettingsHolder,
                 matchingEngine,
-                PriceDeviationThresholdHolder(applicationSettingsHolder),
                 matchingResultHandlingHelper)
 
         val stopOrderProcessor = StopLimitOrderProcessor(limitOrderInputValidator,
@@ -244,6 +242,9 @@ abstract class AbstractPerformanceTest {
                 stopOrderBookProcessor,
                 executionDataApplyService,
                 previousLimitOrdersProcessor,
+                priceDeviationThresholdHolder,
+                midPriceHolder,
+                applicationSettingsHolder,
                 performanceStatsHolder)
 
         multiLimitOrderService = MultiLimitOrderService(executionContextFactory,
@@ -256,6 +257,7 @@ abstract class AbstractPerformanceTest {
                 balancesHolder,
                 applicationSettingsHolder,
                 messageProcessingStatusHolder,
+                priceDeviationThresholdHolder,
                 performanceStatsHolder,
                 TestUUIDHolder())
 

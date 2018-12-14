@@ -116,7 +116,7 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
 
         executionContext.addTrustedClientsLimitOrdersWithTrades(limitOrdersCancelResult.trustedClientsOrdersWithTrades)
         executionContext.addTrustedClientsLimitOrdersWithTrades(stopLimitOrdersResult.trustedClientsOrdersWithTrades)
-        executionContext.currentTransactionMidPriceHolder.addMidPrices(getMidPrices(limitOrdersCancelResult.assetOrderBooks), executionContext)
+        executionContext.currentTransactionMidPriceHolder.addMidPrices(getMidPricesByAssetPairIdMap(limitOrdersCancelResult.assetOrderBooks), executionContext)
         if (cancelAll) {
             executionContext.currentTransactionMidPriceHolder.setRemoveAllFlag()
         }
@@ -132,17 +132,16 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
                 .mapValues { it.value.single() }
     }
 
-    private fun getMidPrices(assetPairIdToAssetOrderBook: Map<String, AssetOrderBook>): Map<String, List<BigDecimal>> {
+    private fun getMidPricesByAssetPairIdMap(assetPairIdToAssetOrderBook: Map<String, AssetOrderBook>): Map<String, BigDecimal> {
         if (cancelAll) {
             return emptyMap()
         }
 
-        val result = HashMap<String, MutableList<BigDecimal>>()
+        val result = HashMap<String, BigDecimal>()
 
         assetPairIdToAssetOrderBook.forEach { assetPairId, orderBook ->
             orderBook.getMidPrice()?.let {
-                val list = result.getOrPut(assetPairId) { ArrayList() }
-                list.add(it)
+                result[assetPairId] = it
             }
         }
 

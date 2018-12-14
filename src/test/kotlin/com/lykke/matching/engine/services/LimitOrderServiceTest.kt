@@ -1771,6 +1771,7 @@ class LimitOrderServiceTest : AbstractTest() {
         //when
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = 0.3)))
 
+
         //then
         assertEquals(BigDecimal.valueOf(9500), midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("BTCUSD"), executionContextMock))
     }

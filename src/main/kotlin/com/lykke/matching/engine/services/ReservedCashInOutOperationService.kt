@@ -1,8 +1,8 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
-import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder

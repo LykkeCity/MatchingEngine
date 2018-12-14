@@ -44,8 +44,6 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
               orderBook: PriorityBlockingQueue<LimitOrder>,
               messageId: String,
               balance: BigDecimal? = null,
-              lowerMidPriceBound: BigDecimal? = null,
-              upperMidPriceBound: BigDecimal? = null,
               moPriceDeviationThreshold: BigDecimal? = null,
               executionContext: ExecutionContext): MatchingResult {
         val balancesGetter = executionContext.walletOperationsProcessor
@@ -59,7 +57,7 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
 
         var remainingVolume = order.getAbsVolume()
         val matchedOrders = LinkedList<CopyWrapper<LimitOrder>>()
-        val skipLimitOrders = ArrayList<LimitOrder>()
+        val skipLimitOrders = HashSet<LimitOrder>()
         val cancelledLimitOrders = HashSet<CopyWrapper<LimitOrder>>()
         var totalLimitPrice = BigDecimal.ZERO
         var totalVolume = BigDecimal.ZERO
@@ -185,14 +183,6 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
                     executionContext.info("Added order ($limitOrderInfo) to cancelled limit orders: ${e.message}")
                     cancelledLimitOrders.add(limitOrderCopyWrapper)
                     continue
-                }
-
-                val midPrice = getMidPrice(skipLimitOrders, bestAsk, bestBid, isBuy)
-
-                if (!checkMidPrice(lowerMidPriceBound, upperMidPriceBound, midPrice)) {
-                    executionContext.info("Invalid mid price order(${order.externalId}), lowerMidPriceBound=$lowerMidPriceBound, upperMidPriceBound=$upperMidPriceBound, midPrice=$midPrice")
-                    order.updateStatus(OrderStatus.TooHighMidPriceDeviation, now)
-                    return MatchingResult(orderWrapper, cancelledLimitOrders)
                 }
 
                 val takerFees = try {
@@ -393,7 +383,7 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
         return MatchingResult(orderWrapper,
                 cancelledLimitOrders,
                 matchedOrders,
-                skipLimitOrders.toSet(),
+                skipLimitOrders,
                 completedLimitOrders,
                 matchedUncompletedLimitOrderWrapper,
                 uncompletedLimitOrderWrapper,
@@ -462,31 +452,6 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
             order.isStraight() -> order.getAbsVolume() * executionPrice <= assetPair.maxValue
             else -> order.getAbsVolume() <= assetPair.maxValue
         }
-    }
-
-    private fun checkMidPrice(lowerMidPriceBound: BigDecimal?, upperMidPriceBound: BigDecimal?, midPrice: BigDecimal?): Boolean {
-        return OrderValidationUtils.isMidPriceValid(midPrice, lowerMidPriceBound, upperMidPriceBound)
-    }
-
-    private fun getMidPrice(skipLimitOrders: List<LimitOrder>, bestAsk: BigDecimal?, bestBid: BigDecimal?, isBuy: Boolean): BigDecimal? {
-        val orderSideBestPrice = if (isBuy) bestBid else bestAsk
-        val bestOppositePrice = if (isBuy) bestAsk else bestBid
-
-        if (orderSideBestPrice == null
-                || NumberUtils.equalsIgnoreScale(orderSideBestPrice, BigDecimal.ZERO)
-                || (skipLimitOrders.isEmpty()
-                        && (bestOppositePrice == null || NumberUtils.equalsIgnoreScale(bestOppositePrice, BigDecimal.ZERO)))) {
-            return null
-        }
-
-
-        val resultBestOppositePrice = if (!skipLimitOrders.isEmpty()) {
-            skipLimitOrders.first().price
-        } else {
-            bestOppositePrice
-        }
-
-        return NumberUtils.divideWithMaxScale(resultBestOppositePrice!! + orderSideBestPrice, BigDecimal.valueOf(2))
     }
 
     private fun checkAndReduceBalance(order: LimitOrder,

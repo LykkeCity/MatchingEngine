@@ -16,8 +16,6 @@ abstract class OrderExecutionContext<T: Order>(val order: T,
         executionContext.assetPairsById[order.assetPairId]?.let { executionContext.assetsById[it.quotingAssetId] }
     }
 
-    var lowerMidPriceBound: BigDecimal? = null
-    var upperMidPriceBound: BigDecimal? = null
     var matchingResult: MatchingResult? = null
     var cancelledOppositeClientsOrders: List<LimitOrder>? = null
     var cancelledOppositeTrustedClientsOrders: List<LimitOrder>? = null
