@@ -568,7 +568,7 @@ class ClientMultiLimitOrderTest : AbstractTest() {
         val report = testClientLimitOrderListener.getQueue().first() as LimitOrdersReport
         assertEquals(5, report.orders.size)
 
-        assertTrue(genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).map { it.externalId } == listOf("3"))
+        assertEquals(genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).map { it.externalId }, listOf("3"))
 
         assertEquals(1, clientsEventsQueue.size)
         assertEquals(5, (clientsEventsQueue.poll() as ExecutionEvent).orders.size)

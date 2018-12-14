@@ -201,12 +201,6 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
                     executionContext.info("Invalid fee for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}, marketBalance: ${getMarketBalance(availableBalances, order, asset)} : ${e.message}")
                     return MatchingResult(orderWrapper, cancelledLimitOrders)
                 }
-                if (takerFees.isNotEmpty()) {
-                    executionContext.info("Taker fee transfers: ${takerFees.map { it.transfer }}")
-                }
-                if (makerFees.isNotEmpty()) {
-                    executionContext.info("Maker fee transfers: ${makerFees.map { it.transfer }}")
-                }
 
                 val matchedLimitOrderCopyWrapper = CopyWrapper(limitOrder)
                 val limitOrderCopy = matchedLimitOrderCopyWrapper.copy

@@ -81,7 +81,9 @@ class LimitOrder(id: String,
         return LimitOrder(id, externalId, assetPairId, clientId, volume, price, status, statusDate, createdAt,
                 registered, remainingVolume, lastMatchTime, reservedLimitVolume, fee as? LimitOrderFeeInstruction,
                 fees?.map { it as NewLimitOrderFeeInstruction }, type, lowerLimitPrice, lowerPrice, upperLimitPrice,
-                upperPrice, previousExternalId, timeInForce, expiryTime,
+                upperPrice, previousExternalId,
+                timeInForce,
+                expiryTime,
                 parentOrderExternalId,
                 childOrderExternalId)
     }
