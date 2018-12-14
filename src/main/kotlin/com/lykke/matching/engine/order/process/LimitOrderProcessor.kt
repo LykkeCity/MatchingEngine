@@ -108,11 +108,11 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
     private fun processValidOrder(orderContext: LimitOrderExecutionContext): ProcessedOrder {
         val order = orderContext.order
         val orderBook = orderContext.executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId)
-        if (orderBook.leadToNegativeSpread(order)) {
-            return matchOrder(orderContext)
+        return if (orderBook.leadToNegativeSpread(order)) {
+            matchOrder(orderContext)
+        } else {
+            addOrderToOrderBook(orderContext)
         }
-
-        return addOrderToOrderBook(orderContext)
     }
 
     private fun matchOrder(orderContext: LimitOrderExecutionContext): ProcessedOrder {

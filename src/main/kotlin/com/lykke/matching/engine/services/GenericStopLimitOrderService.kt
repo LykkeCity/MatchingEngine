@@ -71,18 +71,20 @@ class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder
     override fun removeOrdersFromMapsAndSetStatus(orders: Collection<LimitOrder>, status: OrderStatus?, date: Date?) {
         orders.forEach { order ->
             val removedOrder = stopLimitOrdersMap.remove(order.externalId)
-            if (removedOrder != null) {
-                clientStopLimitOrdersMap[order.clientId]?.remove(removedOrder)
-                if (status != null) {
-                    removedOrder.updateStatus(status, date!!)
-                }
+            clientStopLimitOrdersMap[order.clientId]?.remove(removedOrder)
+            if (removedOrder != null && status != null) {
+                removedOrder.updateStatus(status, date!!)
             }
         }
     }
+
     override fun getOrderBook(assetPairId: String) = stopLimitOrdersQueues.getOrPut(assetPairId) { AssetStopOrderBook(assetPairId) }!!
+
     fun getOrder(uid: String) = stopLimitOrdersMap[uid]
+
     override fun setOrderBook(assetPairId: String, assetOrderBook: AssetStopOrderBook) {
         stopLimitOrdersQueues[assetPairId] = assetOrderBook
     }
+
     fun createCurrentTransactionOrderBooksHolder() = CurrentTransactionStopOrderBooksHolder(this)
 }

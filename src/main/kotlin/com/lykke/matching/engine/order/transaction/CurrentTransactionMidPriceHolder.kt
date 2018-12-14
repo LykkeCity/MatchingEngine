@@ -21,12 +21,12 @@ class CurrentTransactionMidPriceHolder(private val midPriceHolder: MidPriceHolde
         midPrices.add(midPrice)
     }
 
-    fun addMidPrices(midPricesByAssetPairId: Map<String, List<BigDecimal>>, executionContext: ExecutionContext) {
+    fun addMidPrices(midPricesByAssetPairId: Map<String, BigDecimal>, executionContext: ExecutionContext) {
         midPricesByAssetPairId.forEach { assetPairId, midPrices ->
             if (!isPersistOfMidPricesNeeded(assetPairId, executionContext)) {
                 return@forEach
             }
-            (midPriceByAssetPair.getOrPut(assetPairId) { ArrayList() }).addAll(midPrices)
+            (midPriceByAssetPair.getOrPut(assetPairId) { ArrayList() }).add(midPrices)
         }
     }
 
@@ -40,10 +40,6 @@ class CurrentTransactionMidPriceHolder(private val midPriceHolder: MidPriceHolde
         }
 
         return MidPricePersistenceData(midPricesList, removeAll)
-    }
-
-    fun getRefMidPrice(assetPairId: String, executionContext: ExecutionContext): BigDecimal {
-        return midPriceHolder.getReferenceMidPrice(executionContext.assetPairsById[assetPairId]!!, executionContext)
     }
 
     fun setRemoveAllFlag() {

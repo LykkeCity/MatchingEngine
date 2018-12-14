@@ -58,7 +58,7 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
 
         var remainingVolume = order.getAbsVolume()
         val matchedOrders = LinkedList<CopyWrapper<LimitOrder>>()
-        val skipLimitOrders = ArrayList<LimitOrder>()
+        val skipLimitOrders = HashSet<LimitOrder>()
         val cancelledLimitOrders = HashSet<CopyWrapper<LimitOrder>>()
         var totalLimitPrice = BigDecimal.ZERO
         var totalVolume = BigDecimal.ZERO
@@ -372,7 +372,7 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
         return MatchingResult(orderWrapper,
                 cancelledLimitOrders,
                 matchedOrders,
-                skipLimitOrders.toSet(),
+                skipLimitOrders,
                 completedLimitOrders,
                 matchedUncompletedLimitOrderWrapper,
                 uncompletedLimitOrderWrapper,

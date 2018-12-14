@@ -92,8 +92,8 @@ open class ExecutionContext(val messageId: String,
 
     fun apply() {
         walletOperationsProcessor.apply()
-        orderBooksHolder.apply(date, this)
-        stopOrderBooksHolder.apply(date, this)
+        orderBooksHolder.apply(date)
+        stopOrderBooksHolder.apply(date)
 
         currentTransactionMidPriceHolder.apply(this)
     }
