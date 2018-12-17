@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -15,7 +15,7 @@ import java.util.Date
 @Service
 class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOrderService,
                                    private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
-                                   private val settings: ApplicationSettingsCache,
+                                   private val applicationSettingsHolder: ApplicationSettingsHolder,
                                    private val performanceStatsHolder: PerformanceStatsHolder): AbstractService {
 
     companion object {
@@ -58,11 +58,11 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        messageWrapper.messageId = if(message.hasMessageId()) message.messageId else message.uid.toString()
+        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid.toString()
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
         messageWrapper.id = message.uid
-        messageWrapper.processedMessage = if (settings.isTrustedClient(message.clientId))
+        messageWrapper.processedMessage = if (applicationSettingsHolder.isTrustedClient(message.clientId))
             null
         else
             ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)

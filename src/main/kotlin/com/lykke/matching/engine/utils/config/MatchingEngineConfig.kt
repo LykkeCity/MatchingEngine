@@ -39,5 +39,9 @@ data class MatchingEngineConfig(
         val walletsMigration: Boolean,
         val writeBalancesToSecondaryDb: Boolean,
         val ordersMigration: Boolean,
-        val writeOrdersToSecondaryDb: Boolean
+        val writeOrdersToSecondaryDb: Boolean,
+        val disableBlobHistory: Boolean?,
+        val disableBestPriceHistory: Boolean?,
+        val disableCandlesHistory: Boolean?,
+        val disableHourCandlesHistory: Boolean?
 )
