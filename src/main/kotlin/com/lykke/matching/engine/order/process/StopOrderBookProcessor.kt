@@ -3,13 +3,14 @@ package com.lykke.matching.engine.order.process
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
 class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcessor,
-                             private val applicationSettingsCache: ApplicationSettingsCache) {
+                             private val applicationSettingsHolder: ApplicationSettingsHolder) {
 
     fun checkAndExecuteStopLimitOrders(executionContext: ExecutionContext): List<ProcessedOrder> {
         val processedOrders = mutableListOf<ProcessedOrder>()
@@ -50,7 +51,7 @@ class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcesso
     private fun reduceReservedBalance(order: LimitOrder, executionContext: ExecutionContext) {
         val reservedVolume = order.reservedLimitVolume!!
         order.reservedLimitVolume = null
-        if (applicationSettingsCache.isTrustedClient(order.clientId)) {
+        if (applicationSettingsHolder.isTrustedClient(order.clientId)) {
             return
         }
         val assetPair = executionContext.assetPairsById[order.assetPairId]!!

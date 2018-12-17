@@ -27,7 +27,6 @@ import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.getSetting
 import org.springframework.beans.factory.annotation.Autowired
-import com.lykke.matching.engine.utils.getSetting
 
 
 @RunWith(SpringRunner::class)

@@ -2,8 +2,10 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.balance.BalanceException
+import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -30,6 +32,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                                                                 private val balancesHolder: BalancesHolder,
                                                                 private val reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                                                 private val reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
+                                                                private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
                                                                 private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                                                 private val messageSender: MessageSender) : AbstractService {
 
@@ -42,6 +45,13 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
             parseMessage(messageWrapper)
         }
         val message = getMessage(messageWrapper)
+        val asset = assetsHolder.getAsset(message.assetId)
+        if ((isCashIn(message.reservedVolume) && messageProcessingStatusHolder.isCashInDisabled(asset)) ||
+                (!isCashIn(message.reservedVolume) && messageProcessingStatusHolder.isCashOutDisabled(asset))) {
+            writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+            return
+        }
+
         LOGGER.debug("Processing reserved cash in/out messageId: ${messageWrapper.messageId} " +
                 "operation (${message.id}) for client ${message.clientId}, " +
                 "asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.reservedVolume)}")
@@ -57,7 +67,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
             return
         }
 
-        val accuracy = assetsHolder.getAsset(operation.assetId).accuracy
+        val accuracy = asset.accuracy
 
         val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
         try {
@@ -126,6 +136,10 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(status.type)
         )
+    }
+
+    private fun isCashIn(amount: Double): Boolean {
+        return amount > 0
     }
 
     private fun sendEvent(sequenceNumber: Long,
