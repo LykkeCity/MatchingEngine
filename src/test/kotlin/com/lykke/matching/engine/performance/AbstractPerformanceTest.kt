@@ -247,7 +247,8 @@ abstract class AbstractPerformanceTest {
                 assetsPairsHolder,
                 balancesHolder,
                 applicationSettingsHolder,
-                messageProcessingStatusHolder)
+                messageProcessingStatusHolder,
+                performanceStatsHolder)
 
         val marketOrderValidator = MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder)
         marketOrderService = MarketOrderService(matchingEngine,
@@ -262,7 +263,8 @@ abstract class AbstractPerformanceTest {
                 applicationSettingsHolder,
                 messageSequenceNumberHolder,
                 notificationSender,
-                performanceStatsHolder)
+                performanceStatsHolder,
+                messageProcessingStatusHolder)
 
     }
 }
