@@ -7,7 +7,7 @@ import com.lykke.matching.engine.web.dto.SettingDto
 import org.springframework.stereotype.Component
 
 @Component
-class MessageProcessingSwitchSettingValidator:  SettingValidator {
+class MessageProcessingSwitchSettingValidator: SettingValidator {
     companion object {
         val SUPPORTED_VALUE = "stop"
     }

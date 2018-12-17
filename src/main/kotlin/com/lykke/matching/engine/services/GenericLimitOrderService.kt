@@ -7,7 +7,6 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
-import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
 import com.lykke.matching.engine.order.transaction.CurrentTransactionOrderBooksHolder
@@ -20,6 +19,7 @@ import java.util.ArrayList
 import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
+import java.util.Optional
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.PriorityBlockingQueue
@@ -29,8 +29,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
                                                       private val assetsHolder: AssetsHolder,
                                                       private val assetsPairsHolder: AssetsPairsHolder,
                                                       private val balancesHolder: BalancesHolder,
-                                                      private val quotesUpdateQueue: BlockingQueue<QuotesUpdate>,
-                                                      private val tradeInfoQueue: BlockingQueue<TradeInfo>) : AbstractGenericLimitOrderService<AssetOrderBook> {
+                                                      private val tradeInfoQueue: Optional<BlockingQueue<TradeInfo>>) : AbstractGenericLimitOrderService<AssetOrderBook> {
 
     companion object {
         private val LOGGER = Logger.getLogger(GenericLimitOrderService::class.java.name)
@@ -66,7 +65,6 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     fun addOrder(order: LimitOrder) {
         limitOrdersMap[order.externalId] = order
         clientLimitOrdersMap.getOrPut(order.clientId) { ArrayList() }.add(order)
-        quotesUpdateQueue.put(QuotesUpdate(order.assetPairId, order.price, order.volume))
     }
 
     override fun addOrders(orders: Collection<LimitOrder>) {
@@ -150,7 +148,9 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     }
 
     fun putTradeInfo(tradeInfo: TradeInfo) {
-        tradeInfoQueue.put(tradeInfo)
+        if (tradeInfoQueue.isPresent) {
+            tradeInfoQueue.get().put(tradeInfo)
+        }
     }
 
     fun buildMarketProfile(): List<BestPrice> {

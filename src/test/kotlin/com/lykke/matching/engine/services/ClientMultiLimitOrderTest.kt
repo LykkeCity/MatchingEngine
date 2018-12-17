@@ -42,11 +42,6 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as Outgo
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class ClientMultiLimitOrderTest : AbstractTest() {
 
-    @Autowired
-    private lateinit var testSettingDatabaseAccessor: TestSettingsDatabaseAccessor
-
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
 
     @TestConfiguration
     open class Config {
@@ -61,6 +56,12 @@ class ClientMultiLimitOrderTest : AbstractTest() {
             return testBackOfficeDatabaseAccessor
         }
     }
+
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
+
+    @Autowired
+    private lateinit var testSettingDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @Before
     fun setUp() {

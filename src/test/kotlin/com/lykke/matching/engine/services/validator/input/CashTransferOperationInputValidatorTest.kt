@@ -16,7 +16,6 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.input.CashTransferOperationInputValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
-import com.lykke.matching.engine.utils.getSetting
 import junit.framework.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -92,8 +91,7 @@ class CashTransferOperationInputValidatorTest {
     fun testAssetEnabled() {
         //given
         val cashTransferOperationBuilder = getCashTransferOperationBuilder()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS, getSetting(ASSET_ID))
-        applicationSettingsCache.update()
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.DISABLED_ASSETS, ASSET_ID, ASSET_ID, true)
         cashTransferOperationBuilder.volume = -1.0
 
         //when
