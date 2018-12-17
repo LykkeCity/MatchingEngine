@@ -58,6 +58,7 @@ class FeeProcessorTest {
         open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
             val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
             testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 4))
 
             return testBackOfficeDatabaseAccessor
         }

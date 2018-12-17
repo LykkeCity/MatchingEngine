@@ -5,10 +5,8 @@ import com.lykke.matching.engine.balance.WalletOperationsProcessor
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
-import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolder
 import org.apache.log4j.Logger
@@ -83,39 +81,6 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         }
 
         return BigDecimal.ZERO
-    }
-
-    fun updateBalance(processedMessage: ProcessedMessage?,
-                      messageSequenceNumber: Long?,
-                      clientId: String,
-                      assetId: String,
-                      balance: BigDecimal): Boolean {
-        val currentTransactionBalancesHolder = createCurrentTransactionBalancesHolder()
-        currentTransactionBalancesHolder.updateBalance(clientId, assetId, balance)
-        val balancesData = currentTransactionBalancesHolder.persistenceData()
-        val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage, null, null, messageSequenceNumber))
-        if (!persisted) {
-            return false
-        }
-        currentTransactionBalancesHolder.apply()
-        return true
-    }
-
-    fun updateReservedBalance(processedMessage: ProcessedMessage?,
-                              messageSequenceNumber: Long?,
-                              clientId: String,
-                              assetId: String,
-                              balance: BigDecimal,
-                              skipForTrustedClient: Boolean = true): Boolean {
-        val currentTransactionBalancesHolder = createCurrentTransactionBalancesHolder()
-        currentTransactionBalancesHolder.updateReservedBalance(clientId, assetId, balance)
-        val balancesData = currentTransactionBalancesHolder.persistenceData()
-        val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage, null, null, messageSequenceNumber))
-        if (!persisted) {
-            return false
-        }
-        currentTransactionBalancesHolder.apply()
-        return true
     }
 
     fun insertOrUpdateWallets(wallets: Collection<Wallet>, messageSequenceNumber: Long?) {

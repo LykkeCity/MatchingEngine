@@ -54,6 +54,7 @@ class StopLimitOrderTest : AbstractTest() {
 
             testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
             testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 8))
 
             return testBackOfficeDatabaseAccessor
         }

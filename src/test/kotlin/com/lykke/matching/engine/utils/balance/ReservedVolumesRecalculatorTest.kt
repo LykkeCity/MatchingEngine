@@ -7,6 +7,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
@@ -30,7 +31,6 @@ import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
-import com.lykke.matching.engine.utils.getSetting
 import java.util.concurrent.BlockingQueue
 
 @RunWith(SpringRunner::class)
@@ -51,6 +51,7 @@ class ReservedVolumesRecalculatorTest {
 
             return testBackOfficeDatabaseAccessor
         }
+
         @Bean
         @Primary
         open fun testDictionariesDatabaseAccessor(): TestDictionariesDatabaseAccessor {
@@ -60,15 +61,6 @@ class ReservedVolumesRecalculatorTest {
 
             return testDictionariesDatabaseAccessor
         }
-
-        @Bean
-        @Primary
-        open fun testConfig(): TestSettingsDatabaseAccessor {
-            val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("trustedClient"))
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("trustedClient2"))
-            return testSettingsDatabaseAccessor
-        }
     }
 
     @Autowired
@@ -77,7 +69,8 @@ class ReservedVolumesRecalculatorTest {
     @Autowired
     lateinit var testOrderBookWrapper: TestOrderBookWrapper
 
-    @Autowired private
+    @Autowired
+    private
     lateinit var balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder
 
     @Autowired
@@ -94,6 +87,9 @@ class ReservedVolumesRecalculatorTest {
 
     @Autowired
     lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
+
+    @Autowired
+    lateinit var applicationSettingsCache: ApplicationSettingsCache
 
     @Before
     fun setUp() {
@@ -134,6 +130,9 @@ class ReservedVolumesRecalculatorTest {
 
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 990.0)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "USD", 1.0)
+
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "trustedClient", "trustedClient", true)
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "trustedClient2", "trustedClient2", true)
     }
 
     @Test
@@ -152,7 +151,7 @@ class ReservedVolumesRecalculatorTest {
         assertEquals(BigDecimal.valueOf(2080.0), testWalletDatabaseAccessor.getReservedBalance("Client2", "USD"))
 
         assertEquals(7, reservedVolumesDatabaseAccessor.corrections.size)
-        assertEquals("1,2", reservedVolumesDatabaseAccessor.corrections.first { NumberUtils.equalsIgnoreScale(it.newReserved, BigDecimal.valueOf( 0.7)) }.orderIds)
+        assertEquals("1,2", reservedVolumesDatabaseAccessor.corrections.first { NumberUtils.equalsIgnoreScale(it.newReserved, BigDecimal.valueOf(0.7)) }.orderIds)
         assertEquals("3,4", reservedVolumesDatabaseAccessor.corrections.first { NumberUtils.equalsIgnoreScale(it.newReserved, BigDecimal.valueOf(2080.0)) }.orderIds)
 
         assertEquals(1, balanceUpdateHandlerTest.balanceUpdateQueue.size)
