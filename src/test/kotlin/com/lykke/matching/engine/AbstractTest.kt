@@ -2,19 +2,21 @@ package com.lykke.matching.engine
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.wallet.AssetBalance
+import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.notification.*
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
+import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
@@ -88,9 +90,6 @@ abstract class AbstractTest {
     protected lateinit var minVolumeOrderCanceller: MinVolumeOrderCanceller
 
     @Autowired
-    protected lateinit var genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory
-
-    @Autowired
     protected lateinit var testTrustedClientsLimitOrderListener: TestTrustedClientsLimitOrderListener
 
     @Autowired
@@ -148,9 +147,7 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
 
-    private var initialized = false
     protected open fun initServices() {
-        initialized = true
         testWalletDatabaseAccessor = balancesDatabaseAccessorsHolder.primaryAccessor as TestWalletDatabaseAccessor
         stopOrderDatabaseAccessor = stopOrdersDatabaseAccessorsHolder.primaryAccessor as TestStopOrderBookDatabaseAccessor
         clearMessageQueues()
@@ -210,6 +207,7 @@ abstract class AbstractTest {
     open fun tearDown() {
         assertEqualsDbAndCacheLimitOrders()
         assertEqualsDbAndCacheStopLimitOrders()
+        assertEqualsDbAndCacheBalances()
     }
 
     private fun assertEqualsDbAndCacheLimitOrders() {
@@ -258,6 +256,42 @@ abstract class AbstractTest {
         assertEquals(order1.lastMatchTime, order2.lastMatchTime)
         assertEquals(order1.reservedLimitVolume, order2.reservedLimitVolume)
         assertEquals(order1.price, order2.price)
+    }
+
+    private fun assertEqualsDbAndCacheBalances() {
+        val primaryDbWallets = balancesDatabaseAccessorsHolder.primaryAccessor.loadWallets()
+        val secondaryDbWallets = balancesDatabaseAccessorsHolder.secondaryAccessor?.loadWallets()
+        val cacheWallets = balancesHolder.wallets.toMap()
+        checkBalances(primaryDbWallets, cacheWallets)
+        secondaryDbWallets?.let { checkBalances(it, cacheWallets) }
+    }
+
+    private fun checkBalances(wallets1: Map<String, Wallet>, wallets2: Map<String, Wallet>) {
+        val balances1ByClientAndAsset = balancesByClientAndAsset(wallets1)
+        val balances2ByClientAndAsset = balancesByClientAndAsset(wallets2)
+
+        assertEquals(wallets1.size, wallets2.size)
+        balances1ByClientAndAsset.forEach { id, assetBalance1 ->
+            val assetBalance2 = balances2ByClientAndAsset[id] ?: throw Exception("Balances lists are different")
+            assertEqualsBalances(assetBalance1, assetBalance2)
+        }
+    }
+
+    private fun balancesByClientAndAsset(wallets: Map<String, Wallet>): Map<String, AssetBalance> {
+        return wallets.values.flatMap { wallet ->
+            wallet.balances.values.filter { assetBalance ->
+                NumberUtils.equalsIgnoreScale(assetBalance.balance, BigDecimal.ZERO)
+            }
+        }.groupBy { assetBalance ->
+            assetBalance.clientId + ";" + assetBalance.asset
+        }.mapValues { it.value.single() }
+    }
+
+    private fun assertEqualsBalances(balance1: AssetBalance, balance2: AssetBalance) {
+        assertEquals(balance1.asset, balance2.asset)
+        assertEquals(balance1.clientId, balance2.clientId)
+        assertEquals(balance1.balance.toDouble(), balance2.balance.toDouble())
+        assertEquals(balance1.reserved.toDouble(), balance2.reserved.toDouble())
     }
 
     protected fun assertEventBalanceUpdate(clientId: String,
