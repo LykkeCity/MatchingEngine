@@ -66,7 +66,7 @@ class LimitOrdersCancelHelper(private val cancellerFactory: GenericLimitOrdersCa
         val end = System.nanoTime()
 
         currentTransactionDataHolder.getMessageType()?.let {
-            performanceStatsHolder.addWriteResponseTime(it.type ,end - start)
+            performanceStatsHolder.addWriteResponseTime(it.type, end - start)
         }
     }
 
@@ -82,7 +82,7 @@ class LimitOrdersCancelHelper(private val cancellerFactory: GenericLimitOrdersCa
         val end = System.nanoTime()
 
         currentTransactionDataHolder.getMessageType()?.let {
-            performanceStatsHolder.addWriteResponseTime(it.type ,end - start)
+            performanceStatsHolder.addWriteResponseTime(it.type, end - start)
         }
     }
 }

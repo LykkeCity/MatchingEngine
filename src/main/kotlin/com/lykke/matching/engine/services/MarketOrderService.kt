@@ -226,7 +226,7 @@ class MarketOrderService @Autowired constructor(
         val start = System.nanoTime()
         writeResponse(messageWrapper, order, MessageStatus.RUNTIME, message)
         val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.MULTI_LIMIT_ORDER.type, end - start)
+        performanceStatsHolder.addWriteResponseTime(MessageType.MARKET_ORDER.type, end - start)
         return
     }
 
@@ -241,7 +241,7 @@ class MarketOrderService @Autowired constructor(
         val start = System.nanoTime()
         messageWrapper.writeMarketOrderResponse(marketOrderResponse)
         val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.MULTI_LIMIT_ORDER.type, end - start)
+        performanceStatsHolder.addWriteResponseTime(MessageType.MARKET_ORDER.type, end - start)
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
@@ -258,6 +258,6 @@ class MarketOrderService @Autowired constructor(
         messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder()
                 .setStatus(status.type))
         val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.MULTI_LIMIT_ORDER.type, end - start)
+        performanceStatsHolder.addWriteResponseTime(MessageType.MARKET_ORDER.type, end - start)
     }
 }
