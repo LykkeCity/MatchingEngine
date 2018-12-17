@@ -8,7 +8,7 @@ import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.parsers.data.CashInOutParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
-import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.AbstractMessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.DUPLICATE
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -27,41 +27,39 @@ import java.math.BigDecimal
 import java.util.concurrent.BlockingQueue
 
 @Component
-class CashInOutPreprocessor(
-        private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
-        private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
-        private val cashInOutOperationPreprocessorPersistenceManager: PersistenceManager,
-        private val processedMessagesCache: ProcessedMessagesCache,
-        private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-        @Qualifier("cashInOutPreProcessingLogger")
-        private val logger: ThrottlingLogger) : MessagePreprocessor {
+class CashInOutPreprocessor(cashInOutContextParser: CashInOutContextParser,
+                            preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                            private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
+                            private val cashInOutOperationPreprocessorPersistenceManager: PersistenceManager,
+                            private val processedMessagesCache: ProcessedMessagesCache,
+                            private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                            @Qualifier("cashInOutPreProcessingLogger")
+                            private val logger: ThrottlingLogger) :
+        AbstractMessagePreprocessor<CashInOutParsedData>(cashInOutContextParser,
+                messageProcessingStatusHolder,
+                preProcessedMessageQueue,
+                logger) {
 
     companion object {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     @Autowired
-    private lateinit var cashInOutContextParser: CashInOutContextParser
-
-    @Autowired
     private lateinit var cashInOutOperationInputValidator: CashInOutOperationInputValidator
 
-    override fun preProcess(messageWrapper: MessageWrapper) {
-        val parsedData = cashInOutContextParser.parse(messageWrapper)
+    override fun preProcessParsedData(parsedData: CashInOutParsedData): Boolean {
         val cashInOutContext = parsedData.messageWrapper.context as CashInOutContext
         if ((isCashIn(cashInOutContext.cashInOutOperation.amount) && messageProcessingStatusHolder.isCashInDisabled(cashInOutContext.cashInOutOperation.asset)) ||
                 (!isCashIn(cashInOutContext.cashInOutOperation.amount) && messageProcessingStatusHolder.isCashOutDisabled(cashInOutContext.cashInOutOperation.asset))) {
             writeResponse(parsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
-            return
+            return false
         }
 
         if (!validateData(parsedData)) {
-            return
+            return false
         }
 
-        if (!isMessageDuplicated(parsedData)) {
-            preProcessedMessageQueue.put(parsedData.messageWrapper)
-        }
+        return !isMessageDuplicated(parsedData)
     }
 
     private fun validateData(cashInOutParsedData: CashInOutParsedData): Boolean {
@@ -107,10 +105,6 @@ class CashInOutPreprocessor(
         }
 
         return false
-    }
-
-    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(status.type))
     }
 
     private fun writeErrorResponse(messageWrapper: MessageWrapper,

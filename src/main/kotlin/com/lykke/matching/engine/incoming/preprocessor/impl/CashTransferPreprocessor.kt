@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
-import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.daos.context.CashTransferContext
 import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
@@ -9,7 +8,7 @@ import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.parsers.data.CashTransferParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
-import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.AbstractMessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.DUPLICATE
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -27,41 +26,38 @@ import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
 
 @Component
-class CashTransferPreprocessor(
-        private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
-        private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
-        private val cashTransferPreprocessorPersistenceManager: PersistenceManager,
-        private val processedMessagesCache: ProcessedMessagesCache,
-        private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-        @Qualifier("cashTransferPreProcessingLogger")
-        private val logger: ThrottlingLogger
-): MessagePreprocessor {
+class CashTransferPreprocessor(contextParser: CashTransferContextParser,
+                               preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                               private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
+                               private val cashTransferPreprocessorPersistenceManager: PersistenceManager,
+                               private val processedMessagesCache: ProcessedMessagesCache,
+                               private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                               @Qualifier("cashTransferPreProcessingLogger")
+                               private val logger: ThrottlingLogger) :
+        AbstractMessagePreprocessor<CashTransferParsedData>(contextParser,
+                messageProcessingStatusHolder,
+                preProcessedMessageQueue,
+                logger) {
 
     companion object {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     @Autowired
-    private lateinit var contextParser: CashTransferContextParser
-
-    @Autowired
     private lateinit var cashTransferOperationInputValidator: CashTransferOperationInputValidator
 
-    override fun preProcess(messageWrapper: MessageWrapper) {
-        val cashTransferParsedData = contextParser.parse(messageWrapper)
-        val cashTransferContext = cashTransferParsedData.messageWrapper.context as CashTransferContext
+    override fun preProcessParsedData(parsedData: CashTransferParsedData): Boolean {
+        val cashTransferContext = parsedData.messageWrapper.context as CashTransferContext
         if (messageProcessingStatusHolder.isCashTransferDisabled(cashTransferContext.transferOperation.asset)) {
-            writeResponse(cashTransferParsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
-            return
+            writeResponse(parsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+            return false
         }
 
-        if (!validateData(cashTransferParsedData)) {
-            return
+        if (!validateData(parsedData)) {
+            return false
         }
 
-        if (!isMessageDuplicated(cashTransferParsedData)) {
-            preProcessedMessageQueue.put(messageWrapper)
-        }
+        return !isMessageDuplicated(parsedData)
     }
 
     fun validateData(cashTransferParsedData: CashTransferParsedData): Boolean {
@@ -107,10 +103,6 @@ class CashTransferPreprocessor(
             return true
         }
         return false
-    }
-
-    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(status.type))
     }
 
     private fun writeErrorResponse(messageWrapper: MessageWrapper,
