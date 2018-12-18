@@ -5,6 +5,8 @@ import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.context.CashTransferContext
 import com.lykke.matching.engine.daos.fee.v2.Fee
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.exception.PersistenceException
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
@@ -40,7 +42,8 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                                    private val feeProcessor: FeeProcessor,
                                    private val cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator,
                                    private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                   private val messageSender: MessageSender) : AbstractService {
+                                   private val messageSender: MessageSender,
+                                   private val persistenceManager: PersistenceManager) : AbstractService {
     override fun parseMessage(messageWrapper: MessageWrapper) {
         //do nothing
     }
@@ -121,7 +124,11 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         walletProcessor.preProcess(operations)
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
-        val updated = walletProcessor.persistBalances(cashTransferContext.processedMessage, null, null, sequenceNumber)
+        val updated = persistenceManager.persist(PersistenceData(walletProcessor.persistenceData(),
+                cashTransferContext.processedMessage,
+                null,
+                null,
+                sequenceNumber))
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {

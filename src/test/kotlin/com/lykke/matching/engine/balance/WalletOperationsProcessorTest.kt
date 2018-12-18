@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -69,7 +70,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
                     )
             )
         }
-        assertTrue(walletOperationsProcessor.persistBalances(null, null, null, null))
+        assertTrue(persistenceManager.persist(PersistenceData( walletOperationsProcessor.persistenceData(), null, null, null, null)))
         walletOperationsProcessor.apply().sendNotification("id", "type", "test")
 
         assertBalance("Client1", "BTC", 0.5, 0.0)
@@ -110,7 +111,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
                         WalletOperation("Client1", "BTC", BigDecimal.ZERO, BigDecimal.valueOf(-0.1))
                 ), true)
 
-        assertTrue(walletOperationsProcessor.persistBalances(null, null, null, null))
+        assertTrue(persistenceManager.persist(PersistenceData(walletOperationsProcessor.persistenceData(), null, null, null, null)))
         walletOperationsProcessor.apply().sendNotification("id", "type","test")
 
         assertBalance("Client1", "BTC", 0.0, -0.1)

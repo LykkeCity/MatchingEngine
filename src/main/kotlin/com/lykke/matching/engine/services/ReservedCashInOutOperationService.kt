@@ -2,7 +2,8 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.balance.BalanceException
-import com.lykke.matching.engine.daos.OperationType
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
@@ -29,7 +30,8 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                                                                 private val balancesHolder: BalancesHolder,
                                                                 private val reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                                                 private val reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
-                                                                private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : AbstractService {
+                                                                private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                                                private val persistenceManager: PersistenceManager) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(ReservedCashInOutOperationService::class.java.name)
@@ -73,7 +75,11 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
             return
         }
 
-        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage, null, null, null)
+        val updated = persistenceManager.persist(PersistenceData(walletProcessor.persistenceData(),
+                messageWrapper.processedMessage,
+                null,
+                null,
+                null))
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {

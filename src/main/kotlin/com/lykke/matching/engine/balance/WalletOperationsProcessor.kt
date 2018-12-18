@@ -3,12 +3,7 @@ package com.lykke.matching.engine.balance
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
-import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.BalancesData
-import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
-import com.lykke.matching.engine.database.common.entity.PersistenceData
-import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -25,17 +20,16 @@ import java.util.Date
 class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
                                 private val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
                                 private val applicationSettingsHolder: ApplicationSettingsHolder,
-                                private val persistenceManager: PersistenceManager,
                                 private val assetsHolder: AssetsHolder,
                                 private val validate: Boolean,
-                                private val logger: Logger?): BalancesGetter {
+                                private val logger: Logger?) : BalancesGetter {
 
     companion object {
         private val LOGGER = Logger.getLogger(WalletOperationsProcessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-   private val clientBalanceUpdatesByClientIdAndAssetId = HashMap<String, ClientBalanceUpdate>()
+    private val clientBalanceUpdatesByClientIdAndAssetId = HashMap<String, ClientBalanceUpdate>()
 
     fun preProcess(operations: Collection<WalletOperation>, forceApply: Boolean = false): WalletOperationsProcessor {
         if (operations.isEmpty()) {
@@ -59,20 +53,24 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         }
 
         if (validate) {
-            try {
-                changedAssetBalances.values.forEach { validateBalanceChange(it) }
-            } catch (e: BalanceException) {
-                if (!forceApply) {
-                    throw e
-                }
-                val message = "Force applying of invalid balance: ${e.message}"
-                (logger ?: LOGGER).error(message)
-                METRICS_LOGGER.logError(message, e)
-            }
+            validateChangedAssetBalances(changedAssetBalances, forceApply)
         }
 
         changedAssetBalances.forEach { processChangedAssetBalance(it.value) }
         return this
+    }
+
+    private fun validateChangedAssetBalances(changedAssetBalances: HashMap<String, ChangedAssetBalance>, forceApply: Boolean) {
+        try {
+            changedAssetBalances.values.forEach { validateBalanceChange(it) }
+        } catch (e: BalanceException) {
+            if (!forceApply) {
+                throw e
+            }
+            val message = "Force applying of invalid balance: ${e.message}"
+            (logger ?: LOGGER).error(message)
+            METRICS_LOGGER.logError(message, e)
+        }
     }
 
     private fun processChangedAssetBalance(changedAssetBalance: ChangedAssetBalance) {
@@ -112,17 +110,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
 
     fun persistenceData(): BalancesData {
         return currentTransactionBalancesHolder.persistenceData()
-    }
-
-    fun persistBalances(processedMessage: ProcessedMessage?,
-                        orderBooksData: OrderBooksPersistenceData?,
-                        stopOrderBooksData: OrderBooksPersistenceData?,
-                        messageSequenceNumber: Long?): Boolean {
-        return persistenceManager.persist(PersistenceData(persistenceData(),
-                processedMessage,
-                orderBooksData,
-                stopOrderBooksData,
-                messageSequenceNumber))
     }
 
     fun sendNotification(id: String, type: String, messageId: String) {

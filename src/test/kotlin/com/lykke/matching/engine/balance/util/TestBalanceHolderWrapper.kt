@@ -1,6 +1,8 @@
 package com.lykke.matching.engine.balance.util
 
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import org.apache.log4j.Logger
@@ -8,7 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import java.math.BigDecimal
 
 class TestBalanceHolderWrapper @Autowired constructor(private val balanceUpdateHandlerTest: BalanceUpdateHandlerTest,
-                                                      private val balancesHolder: BalancesHolder) {
+                                                      private val balancesHolder: BalancesHolder,
+                                                      private val persistenceManager: PersistenceManager) {
 
     companion object {
         val logger = Logger.getLogger(TestBalanceHolderWrapper::class.java.name)
@@ -19,7 +22,7 @@ class TestBalanceHolderWrapper @Autowired constructor(private val balanceUpdateH
         val currentBalance = balancesHolder.getBalance(clientId, assetId)
         walletProcessor.preProcess(listOf(WalletOperation(clientId, assetId, BigDecimal.valueOf(balance).minus(currentBalance))))
                 .apply()
-        walletProcessor.persistBalances(null, null, null, null)
+        persistenceManager.persist(PersistenceData(walletProcessor.persistenceData(), null, null, null, null))
         balanceUpdateHandlerTest.clear()
     }
 
@@ -29,7 +32,7 @@ class TestBalanceHolderWrapper @Autowired constructor(private val balanceUpdateH
 
         walletProcessor.preProcess(listOf(WalletOperation(clientId, assetId, BigDecimal.ZERO, BigDecimal.valueOf(reservedBalance).minus(currentReservedBalance))))
                 .apply()
-        walletProcessor.persistBalances(null, null, null, null)
+        persistenceManager.persist(PersistenceData(walletProcessor.persistenceData(), null, null, null, null))
         balanceUpdateHandlerTest.clear()
     }
 }

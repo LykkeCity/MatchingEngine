@@ -5,6 +5,7 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.context.CashTransferContext
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
@@ -54,8 +55,8 @@ class CashTransferOperationBusinessValidatorTest {
 
         @Bean
         @Primary
-        open fun testBalanceHolderWrapper(balanceUpdateHandlerTest: BalanceUpdateHandlerTest, balancesHolder: BalancesHolder): TestBalanceHolderWrapper {
-            val testBalanceHolderWrapper = TestBalanceHolderWrapper(balanceUpdateHandlerTest, balancesHolder)
+        open fun testBalanceHolderWrapper(balanceUpdateHandlerTest: BalanceUpdateHandlerTest, balancesHolder: BalancesHolder, persistenceManager: PersistenceManager): TestBalanceHolderWrapper {
+            val testBalanceHolderWrapper = TestBalanceHolderWrapper(balanceUpdateHandlerTest, balancesHolder, persistenceManager)
             testBalanceHolderWrapper.updateBalance(CLIENT_NAME1, ASSET_ID, 100.0)
             testBalanceHolderWrapper.updateReservedBalance(CLIENT_NAME1, ASSET_ID, 50.0)
             return testBalanceHolderWrapper
