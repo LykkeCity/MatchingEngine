@@ -43,18 +43,18 @@ class PerformanceStatsLogger @Autowired constructor(private val monitoringDataba
                     "persist count: ${typeStats.persistsCount}, " +
                     "total time: $totalTime")
 
-            monitoringDatabaseAccessor.savePerformanceStats(TypePerformanceStats(now,
-                    AppVersion.VERSION,
-                    type,
-                    inputQueueTime,
-                    preProcessingTime,
-                    preProcessedMessageQueueTime,
-                    processingTime,
-                    persistTime,
-                    totalTime,
-                    writeResponseTime,
-                    typeStats.count,
-                    typeStats.persistsCount))
+            monitoringDatabaseAccessor.savePerformanceStats(TypePerformanceStats(timestamp =  now,
+                    appVersion =  AppVersion.VERSION,
+                    type = type,
+                    inputQueueTime =  inputQueueTime,
+                    preProcessingTime =  preProcessingTime,
+                    preProcessedMessageQueueTime =  preProcessedMessageQueueTime,
+                    processingTime =  processingTime,
+                    persistTime =  persistTime,
+                    writeResponseTime =  writeResponseTime,
+                    totalTime =  totalTime,
+                    count =  typeStats.count,
+                    persistCount =  typeStats.persistsCount))
         }
     }
 }
