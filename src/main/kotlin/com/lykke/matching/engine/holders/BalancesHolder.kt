@@ -98,18 +98,6 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
 
     fun isTrustedClient(clientId: String) = applicationSettingsHolder.isTrustedClient(clientId)
 
-    fun createWalletProcessor(logger: Logger?, validate: Boolean = true): WalletOperationsProcessor {
-        return WalletOperationsProcessor(this,
-                createCurrentTransactionBalancesHolder(),
-                applicationSettingsHolder,
-                persistenceManager,
-                assetsHolder,
-                validate,
-                logger)
-    }
-
-    private fun createCurrentTransactionBalancesHolder() = CurrentTransactionBalancesHolder(this)
-
     fun setWallets(wallets: Collection<Wallet>) {
         wallets.forEach { wallet ->
             this.wallets[wallet.clientId] = wallet

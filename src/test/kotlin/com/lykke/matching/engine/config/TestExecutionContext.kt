@@ -1,8 +1,8 @@
 package com.lykke.matching.engine.config
 
+import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -46,11 +46,11 @@ open class TestExecutionContext {
     }
 
     @Bean
-    open fun executionContextFactory(balancesHolder: BalancesHolder,
+    open fun executionContextFactory(walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                                      genericLimitOrderService: GenericLimitOrderService,
                                      genericStopLimitOrderService: GenericStopLimitOrderService,
                                      assetsHolder: AssetsHolder): ExecutionContextFactory {
-        return ExecutionContextFactory(balancesHolder,
+        return ExecutionContextFactory(walletOperationsProcessorFactory,
                 genericLimitOrderService,
                 genericStopLimitOrderService,
                 assetsHolder)

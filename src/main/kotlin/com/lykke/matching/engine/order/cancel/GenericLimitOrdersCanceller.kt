@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.order.cancel
 
+import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
@@ -23,7 +24,8 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
                                   dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
                                   assetsHolder: AssetsHolder,
                                   private val assetsPairsHolder: AssetsPairsHolder,
-                                  private val balancesHolder: BalancesHolder,
+                                  balancesHolder: BalancesHolder,
+                                  private val walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                                   genericLimitOrderService: GenericLimitOrderService,
                                   genericStopLimitOrderService: GenericStopLimitOrderService,
                                   private val date: Date,
@@ -91,7 +93,7 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
                 assetPairsById,
                 date,
                 LOGGER,
-                walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, validateBalances))
+                walletOperationsProcessor = walletOperationsProcessorFactory.create(LOGGER, validateBalances))
 
         executionContext.walletOperationsProcessor.preProcess(limitOrdersCancelResult.walletOperations
                 .plus(stopLimitOrdersResult.walletOperations))

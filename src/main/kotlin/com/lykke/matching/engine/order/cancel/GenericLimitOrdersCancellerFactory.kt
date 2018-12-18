@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.order.cancel
 
+import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -22,6 +23,7 @@ class GenericLimitOrdersCancellerFactory @Autowired constructor(private val exec
                                                                 private val assetsHolder: AssetsHolder,
                                                                 private val assetsPairsHolder: AssetsPairsHolder,
                                                                 private val balancesHolder: BalancesHolder,
+                                                                private val walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                                                                 private val genericLimitOrderService: GenericLimitOrderService,
                                                                 private val genericStopLimitOrderService: GenericStopLimitOrderService) {
 
@@ -34,6 +36,7 @@ class GenericLimitOrdersCancellerFactory @Autowired constructor(private val exec
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
+                walletOperationsProcessorFactory,
                 genericLimitOrderService,
                 genericStopLimitOrderService,
                 date,

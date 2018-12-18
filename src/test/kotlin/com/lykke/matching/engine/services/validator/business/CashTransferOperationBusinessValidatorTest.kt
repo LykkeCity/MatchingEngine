@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services.validator.business
 
+import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
@@ -55,8 +56,10 @@ class CashTransferOperationBusinessValidatorTest {
 
         @Bean
         @Primary
-        open fun testBalanceHolderWrapper(balanceUpdateHandlerTest: BalanceUpdateHandlerTest, balancesHolder: BalancesHolder, persistenceManager: PersistenceManager): TestBalanceHolderWrapper {
-            val testBalanceHolderWrapper = TestBalanceHolderWrapper(balanceUpdateHandlerTest, balancesHolder, persistenceManager)
+        open fun testBalanceHolderWrapper(balanceUpdateHandlerTest: BalanceUpdateHandlerTest, balancesHolder: BalancesHolder,
+                                          walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
+                                          persistenceManager: PersistenceManager): TestBalanceHolderWrapper {
+            val testBalanceHolderWrapper = TestBalanceHolderWrapper(balanceUpdateHandlerTest, balancesHolder, walletOperationsProcessorFactory, persistenceManager)
             testBalanceHolderWrapper.updateBalance(CLIENT_NAME1, ASSET_ID, 100.0)
             testBalanceHolderWrapper.updateReservedBalance(CLIENT_NAME1, ASSET_ID, 50.0)
             return testBalanceHolderWrapper

@@ -2,10 +2,10 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.balance.BalanceException
+import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -27,7 +27,7 @@ import java.util.concurrent.BlockingQueue
 
 @Service
 class ReservedCashInOutOperationService @Autowired constructor (private val assetsHolder: AssetsHolder,
-                                                                private val balancesHolder: BalancesHolder,
+                                                                private val walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                                                                 private val reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                                                 private val reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
                                                                 private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
@@ -66,7 +66,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
 
         val accuracy = asset.accuracy
 
-        val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
+        val walletProcessor = walletOperationsProcessorFactory.create(LOGGER)
         try {
             walletProcessor.preProcess(listOf(operation))
         } catch (e: BalanceException) {

@@ -19,6 +19,7 @@ import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import org.springframework.beans.factory.annotation.Autowired
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -42,13 +43,16 @@ class WalletOperationsProcessorTest : AbstractTest() {
         }
     }
 
+    @Autowired
+    private lateinit var walletOperationsProcessorFactory: WalletOperationsProcessorFactory
+
     @Test
     fun testPreProcessWalletOperations() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
         testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC",  0.1)
         initServices()
 
-        val walletOperationsProcessor = balancesHolder.createWalletProcessor(null, true)
+        val walletOperationsProcessor = walletOperationsProcessorFactory.create(null, true)
 
         walletOperationsProcessor.preProcess(
                 listOf(
@@ -104,7 +108,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
     fun testForceProcessInvalidWalletOperations() {
         initServices()
 
-        val walletOperationsProcessor = balancesHolder.createWalletProcessor(null, true)
+        val walletOperationsProcessor = walletOperationsProcessorFactory.create(null, true)
 
         walletOperationsProcessor.preProcess(
                 listOf(

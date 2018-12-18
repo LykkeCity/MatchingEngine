@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
+import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.context.CashTransferContext
@@ -11,7 +12,6 @@ import com.lykke.matching.engine.exception.PersistenceException
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.singleFeeTransfer
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.INVALID_FEE
@@ -36,7 +36,7 @@ import java.util.LinkedList
 import java.util.concurrent.BlockingQueue
 
 @Service
-class CashTransferOperationService(private val balancesHolder: BalancesHolder,
+class CashTransferOperationService(private val walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                                    private val notificationQueue: BlockingQueue<CashTransferOperation>,
                                    private val dbTransferOperationQueue: BlockingQueue<TransferOperation>,
                                    private val feeProcessor: FeeProcessor,
@@ -120,7 +120,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         val fees = feeProcessor.processFee(operation.fees, receiptOperation, operations)
 
-        val walletProcessor = balancesHolder.createWalletProcessor(LOGGER, false)
+        val walletProcessor = walletOperationsProcessorFactory.create(LOGGER, false)
         walletProcessor.preProcess(operations)
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
