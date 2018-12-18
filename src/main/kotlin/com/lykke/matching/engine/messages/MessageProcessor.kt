@@ -208,12 +208,12 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
 
         val preProcessedMessageQueueTime = startMessageProcessingTime - preProcessedMessageQueueStartTime
 
-        performanceStatsHolder.addMessage(messageWrapper.type,
-                inputQueueTime,
-                preProcessedMessageQueueTime,
-                preProcessingTime,
-                processingTime,
-                totalTime)
+        performanceStatsHolder.addMessage(type = messageWrapper.type,
+                inputQueueTime = inputQueueTime,
+                preProcessedQueueTime =  preProcessedMessageQueueTime,
+                preProcessingTime =  preProcessingTime,
+                processingTime =  processingTime,
+                totalTime = totalTime)
     }
 
     private fun initServicesMap(): Map<MessageType, AbstractService> {
