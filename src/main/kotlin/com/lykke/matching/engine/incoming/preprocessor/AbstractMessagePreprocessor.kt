@@ -53,7 +53,7 @@ abstract class AbstractMessagePreprocessor<T : ParsedData>(private val contextPa
 
     protected abstract fun preProcessParsedData(parsedData: T): Boolean
 
-    protected fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String? = null) {
+    protected open fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String? = null) {
         val responseBuilder = ProtocolMessages.NewResponse.newBuilder().setStatus(status.type)
         message?.let { responseBuilder.setStatusReason(it) }
         messageWrapper.writeNewResponse(responseBuilder)
