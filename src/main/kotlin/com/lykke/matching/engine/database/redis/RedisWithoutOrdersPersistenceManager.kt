@@ -58,7 +58,7 @@ class RedisWithoutOrdersPersistenceManager(
             }
             true
         } catch (e: Exception) {
-            val message = "Unable to save data (${data.details()})"
+            val message = "Unable to save data (${data.getSummary()})"
             LOGGER.error(message, e)
             METRICS_LOGGER.logError(message, e)
             false

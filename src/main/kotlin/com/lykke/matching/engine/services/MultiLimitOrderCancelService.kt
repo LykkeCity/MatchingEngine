@@ -68,7 +68,7 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
             ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)
     }
 
-    private fun writeErrorResponse(messageWrapper: MessageWrapper, status: MessageStatus, errorMessage: String? = null) {
+    private fun writeErrorResponse(messageWrapper: MessageWrapper, status: MessageStatus, errorMessage: String) {
         val start = System.nanoTime()
         messageWrapper.writeNewResponse(
                 ProtocolMessages.NewResponse.newBuilder()

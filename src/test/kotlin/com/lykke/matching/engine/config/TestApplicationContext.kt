@@ -393,7 +393,7 @@ open class TestApplicationContext {
                                 marketOrderValidator: MarketOrderValidator,
                                 messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                 messageSender: MessageSender,
-                                performanceStatsHolder: PerformanceStatsHolder,                                applicationSettingsHolder: ApplicationSettingsHolder,
+                                performanceStatsHolder: PerformanceStatsHolder, applicationSettingsHolder: ApplicationSettingsHolder,
                                 messageProcessingStatusHolder: MessageProcessingStatusHolder): MarketOrderService {
         return MarketOrderService(matchingEngine,
                 executionContextFactory,

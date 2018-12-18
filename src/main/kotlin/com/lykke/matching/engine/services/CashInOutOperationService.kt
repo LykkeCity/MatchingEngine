@@ -128,10 +128,10 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
         ))
     }
 
-    fun writeResponse(messageWrapper: MessageWrapper, setMatchingEngineId: String, status: MessageStatus) {
+    fun writeResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus) {
         val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setMatchingEngineId(setMatchingEngineId)
+                .setMatchingEngineId(matchingEngineOperationId)
                 .setStatus(status.type))
         val end = System.nanoTime()
         performanceStatsHolder.addWriteResponseTime(MessageType.CASH_IN_OUT_OPERATION.type, end - start)

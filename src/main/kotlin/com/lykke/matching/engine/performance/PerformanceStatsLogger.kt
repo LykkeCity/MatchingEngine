@@ -44,8 +44,8 @@ class PerformanceStatsLogger @Autowired constructor(private val monitoringDataba
                     "total time: $totalTime")
 
             monitoringDatabaseAccessor.savePerformanceStats(TypePerformanceStats(now,
-                    type,
                     AppVersion.VERSION,
+                    type,
                     inputQueueTime,
                     preProcessingTime,
                     preProcessedMessageQueueTime,
