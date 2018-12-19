@@ -111,16 +111,6 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun performanceStatsHolder(): PerformanceStatsHolder {
-        return PerformanceStatsHolder()
-    }
-
-    @Bean
-    open fun currentTransactionDataHolder(): CurrentTransactionDataHolder {
-        return CurrentTransactionDataHolder()
-    }
-
-    @Bean
     open fun assetHolder(backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor): AssetsHolder {
         return AssetsHolder(assetCache(backOfficeDatabaseAccessor))
     }
