@@ -125,7 +125,8 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse
                 .newBuilder()
                 .setMatchingEngineId(matchingEngineOperationId)
-                .setStatus(status.type).setStatusReason(errorMessage))
+                .setStatus(status.type)
+                .setStatusReason(errorMessage))
     }
 
     private fun isCashIn(amount: Double): Boolean {
