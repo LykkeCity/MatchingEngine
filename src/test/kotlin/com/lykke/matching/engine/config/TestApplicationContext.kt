@@ -104,12 +104,9 @@ open class TestApplicationContext {
 
     @Bean
     open fun balanceHolder(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
-                           persistenceManager: PersistenceManager,
                            balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
-                           applicationSettingsHolder: ApplicationSettingsHolder,
-                           backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor): BalancesHolder {
-        return BalancesHolder(balancesDatabaseAccessorsHolder, persistenceManager, assetHolder(backOfficeDatabaseAccessor),
-                balanceUpdateQueue, applicationSettingsHolder)
+                           applicationSettingsHolder: ApplicationSettingsHolder): BalancesHolder {
+        return BalancesHolder(balancesDatabaseAccessorsHolder, balanceUpdateQueue, applicationSettingsHolder)
     }
 
     @Bean
@@ -138,14 +135,15 @@ open class TestApplicationContext {
                                          stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
                                          testReservedVolumesDatabaseAccessor: TestReservedVolumesDatabaseAccessor,
                                          assetHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder,
-                                         balancesHolder: BalancesHolder, applicationSettingsHolder: ApplicationSettingsHolder,
+                                         balancesHolder: BalancesHolder,
+                                         balancesService: BalancesService, applicationSettingsHolder: ApplicationSettingsHolder,
                                          messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                          messageSender: MessageSender): ReservedVolumesRecalculator {
 
         return ReservedVolumesRecalculator(testOrderDatabaseAccessorHolder, stopOrdersDatabaseAccessorsHolder,
                 testReservedVolumesDatabaseAccessor, assetHolder,
                 assetsPairsHolder, balancesHolder, applicationSettingsHolder,
-                false, messageSequenceNumberHolder, messageSender)
+                false, messageSequenceNumberHolder, messageSender, balancesService)
     }
 
     @Bean
@@ -694,5 +692,10 @@ open class TestApplicationContext {
                                               assetsHolder: AssetsHolder,
                                               balancesHolder: BalancesHolder): WalletOperationsProcessorFactory {
         return WalletOperationsProcessorFactory(currentTransactionBalancesHolderFactory, applicationSettingsHolder, assetsHolder, balancesHolder)
+    }
+
+    @Bean
+    open fun balancesService(balancesHolder: BalancesHolder, persistenceManager: PersistenceManager): BalancesService {
+        return BalancesServiceImpl(balancesHolder, persistenceManager)
     }
 }

@@ -156,8 +156,6 @@ abstract class AbstractPerformanceTest {
                 ordersDatabaseAccessorsHolder,
                 stopOrdersDatabaseAccessorsHolder)
         balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder,
-                persistenceManager,
-                assetsHolder,
                 balanceUpdateQueue,
                 applicationSettingsHolder)
 

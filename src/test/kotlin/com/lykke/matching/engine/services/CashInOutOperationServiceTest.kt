@@ -47,7 +47,10 @@ class CashInOutOperationServiceTest : AbstractTest() {
     private lateinit var messageBuilder: MessageBuilder
 
     @Autowired
-    protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
+    private lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
+
+    @Autowired
+    private lateinit var balancesService: BalancesService
 
     @TestConfiguration
     open class Config {
@@ -244,7 +247,7 @@ class CashInOutOperationServiceTest : AbstractTest() {
 
     @Test
     fun testRounding() {
-        balancesHolder.insertOrUpdateWallets(listOf(Wallet("Client1", listOf(AssetBalance("Client1","Asset1", BigDecimal.valueOf(29.99))))), null)
+        balancesService.insertOrUpdateWallets(listOf(Wallet("Client1", listOf(AssetBalance("Client1","Asset1", BigDecimal.valueOf(29.99))))), null)
         cashInOutOperationService.processMessage(messageBuilder.buildCashInOutWrapper("Client1", "Asset1", -0.01))
         val balance = testWalletDatabaseAccessor.getBalance("Client1", "Asset1")
 

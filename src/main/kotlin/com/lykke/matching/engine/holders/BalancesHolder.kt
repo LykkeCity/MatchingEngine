@@ -1,14 +1,9 @@
 package com.lykke.matching.engine.holders
 
 import com.lykke.matching.engine.balance.BalancesGetter
-import com.lykke.matching.engine.balance.WalletOperationsProcessor
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
-import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.common.entity.BalancesData
-import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
-import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolder
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
@@ -16,8 +11,6 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAccessorsHolder,
-                     private val persistenceManager: PersistenceManager,
-                     private val assetsHolder: AssetsHolder,
                      private val balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
                      private val applicationSettingsHolder: ApplicationSettingsHolder): BalancesGetter {
 
@@ -81,12 +74,6 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         }
 
         return BigDecimal.ZERO
-    }
-
-    fun insertOrUpdateWallets(wallets: Collection<Wallet>, messageSequenceNumber: Long?) {
-        persistenceManager.persist(PersistenceData(BalancesData(wallets, wallets.flatMap { it.balances.values }), null, null, null,
-                messageSequenceNumber = messageSequenceNumber))
-        update()
     }
 
     fun sendBalanceUpdate(balanceUpdate: BalanceUpdate) {
