@@ -48,9 +48,10 @@ class CashInOutPreprocessor(cashInOutContextParser: CashInOutContextParser,
     private lateinit var cashInOutOperationInputValidator: CashInOutOperationInputValidator
 
     override fun preProcessParsedData(parsedData: CashInOutParsedData): Boolean {
-        val cashInOutContext = parsedData.messageWrapper.context as CashInOutContext
-        if ((isCashIn(cashInOutContext.cashInOutOperation.amount) && messageProcessingStatusHolder.isCashInDisabled(cashInOutContext.cashInOutOperation.asset)) ||
-                (!isCashIn(cashInOutContext.cashInOutOperation.amount) && messageProcessingStatusHolder.isCashOutDisabled(cashInOutContext.cashInOutOperation.asset))) {
+        val parsedMessageWrapper = parsedData.messageWrapper
+        val context = parsedMessageWrapper.context as CashInOutContext
+        if ((isCashIn(context.cashInOutOperation.amount) && messageProcessingStatusHolder.isCashInDisabled(context.cashInOutOperation.asset)) ||
+                (!isCashIn(context.cashInOutOperation.amount) && messageProcessingStatusHolder.isCashOutDisabled(context.cashInOutOperation.asset))) {
             writeResponse(parsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return false
         }
@@ -59,7 +60,15 @@ class CashInOutPreprocessor(cashInOutContextParser: CashInOutContextParser,
             return false
         }
 
-        return !isMessageDuplicated(parsedData)
+        if (isMessageDuplicated(parsedData)) {
+            writeResponse(parsedMessageWrapper, DUPLICATE)
+            val errorMessage = "Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}"
+            logger.info(errorMessage)
+            METRICS_LOGGER.logError(errorMessage)
+            return false
+        }
+
+        return true
     }
 
     private fun validateData(cashInOutParsedData: CashInOutParsedData): Boolean {
@@ -97,14 +106,7 @@ class CashInOutPreprocessor(cashInOutContextParser: CashInOutContextParser,
     private fun isMessageDuplicated(cashInOutParsedData: CashInOutParsedData): Boolean {
         val parsedMessageWrapper = cashInOutParsedData.messageWrapper
         val context = cashInOutParsedData.messageWrapper.context as CashInOutContext
-        if (cashOperationIdDatabaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
-            writeResponse(parsedMessageWrapper, DUPLICATE)
-            logger.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
-            METRICS_LOGGER.logError("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
-            return true
-        }
-
-        return false
+        return cashOperationIdDatabaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)
     }
 
     private fun writeErrorResponse(messageWrapper: MessageWrapper,
