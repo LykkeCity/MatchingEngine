@@ -26,7 +26,6 @@ import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
-import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.utils.MultiOrderFilter
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Service
@@ -44,8 +43,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                              private val assetsPairsHolder: AssetsPairsHolder,
                              private val balancesHolder: BalancesHolder,
                              private val applicationSettingsHolder: ApplicationSettingsHolder,
-                             private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                             private val performanceStatsHolder: PerformanceStatsHolder) : AbstractService {
+                             private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
@@ -277,18 +275,12 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
     }
 
     fun writeResponse(messageWrapper: MessageWrapper, responseBuilder: ProtocolMessages.MultiLimitOrderResponse.Builder) {
-        val start = System.nanoTime()
         messageWrapper.writeMultiLimitOrderResponse(responseBuilder)
-        val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.MULTI_LIMIT_ORDER.type, end - start)
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         val assetPairId = (messageWrapper.parsedMessage as ProtocolMessages.MultiLimitOrder).assetPairId
-        val start = System.nanoTime()
         messageWrapper.writeMultiLimitOrderResponse(ProtocolMessages.MultiLimitOrderResponse.newBuilder()
                 .setStatus(status.type).setAssetPairId(assetPairId))
-        val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.MULTI_LIMIT_ORDER.type, end - start)
     }
 }

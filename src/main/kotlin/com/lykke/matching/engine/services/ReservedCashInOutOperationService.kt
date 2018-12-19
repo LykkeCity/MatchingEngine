@@ -2,7 +2,6 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.balance.BalanceException
-import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
@@ -11,7 +10,6 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
-import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -30,8 +28,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                                                                 private val balancesHolder: BalancesHolder,
                                                                 private val reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                                                 private val reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
-                                                                private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                                                                private val performanceStatsHolder: PerformanceStatsHolder) : AbstractService {
+                                                                private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(ReservedCashInOutOperationService::class.java.name)
@@ -111,35 +108,24 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
     }
 
     fun writeResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus) {
-        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setMatchingEngineId(matchingEngineOperationId)
                 .setStatus(status.type)
         )
-        val end = System.nanoTime()
-
-        performanceStatsHolder.addWriteResponseTime(MessageType.RESERVED_CASH_IN_OUT_OPERATION.type, end - start)
     }
 
 
     override fun writeResponse(messageWrapper: MessageWrapper,  status: MessageStatus) {
-        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(status.type)
         )
-        val end = System.nanoTime()
-
-        performanceStatsHolder.addWriteResponseTime(MessageType.RESERVED_CASH_IN_OUT_OPERATION.type, end - start)
     }
 
     fun writeErrorResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus, errorMessage: String = StringUtils.EMPTY) {
-        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse
                 .newBuilder()
                 .setMatchingEngineId(matchingEngineOperationId)
                 .setStatus(status.type).setStatusReason(errorMessage))
-        val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.RESERVED_CASH_IN_OUT_OPERATION.type, end - start)
     }
 
     private fun isCashIn(amount: Double): Boolean {

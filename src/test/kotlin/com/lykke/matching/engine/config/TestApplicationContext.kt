@@ -269,10 +269,9 @@ open class TestApplicationContext {
                                        feeProcessor: FeeProcessor,
                                        cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator,
                                        messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                       messageSender: MessageSender,
-                                       performanceStatsHolder: PerformanceStatsHolder): CashInOutOperationService {
+                                       messageSender: MessageSender): CashInOutOperationService {
         return CashInOutOperationService(balancesHolder, rabbitCashInOutQueue, feeProcessor,
-                cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender, performanceStatsHolder)
+                cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
     }
 
     @Bean
@@ -303,10 +302,9 @@ open class TestApplicationContext {
                                         assetsHolder: AssetsHolder,
                                         reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                         reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
-                                        messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                                        performanceStatsHolder: PerformanceStatsHolder): ReservedCashInOutOperationService {
+                                        messageProcessingStatusHolder: MessageProcessingStatusHolder): ReservedCashInOutOperationService {
         return ReservedCashInOutOperationService(assetsHolder, balancesHolder, reservedCashOperationQueue,
-                reservedCashInOutOperationValidator, messageProcessingStatusHolder, performanceStatsHolder)
+                reservedCashInOutOperationValidator, messageProcessingStatusHolder)
     }
 
     @Bean
@@ -346,14 +344,12 @@ open class TestApplicationContext {
                                      genericLimitOrdersProcessor: GenericLimitOrdersProcessor,
                                      stopOrderBookProcessor: StopOrderBookProcessor,
                                      executionDataApplyService: ExecutionDataApplyService,
-                                     previousLimitOrdersProcessor: PreviousLimitOrdersProcessor,
-                                     performanceStatsHolder: PerformanceStatsHolder): SingleLimitOrderService {
+                                     previousLimitOrdersProcessor: PreviousLimitOrdersProcessor): SingleLimitOrderService {
         return SingleLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
                 executionDataApplyService,
-                previousLimitOrdersProcessor,
-                performanceStatsHolder)
+                previousLimitOrdersProcessor)
     }
 
     @Bean
@@ -366,8 +362,7 @@ open class TestApplicationContext {
                                     assetsPairsHolder: AssetsPairsHolder,
                                     balancesHolder: BalancesHolder,
                                     applicationSettingsHolder: ApplicationSettingsHolder,
-                                    messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                                    performanceStatsHolder: PerformanceStatsHolder): MultiLimitOrderService {
+                                    messageProcessingStatusHolder: MessageProcessingStatusHolder): MultiLimitOrderService {
         return MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
@@ -377,8 +372,7 @@ open class TestApplicationContext {
                 assetsPairsHolder,
                 balancesHolder,
                 applicationSettingsHolder,
-                messageProcessingStatusHolder,
-                performanceStatsHolder)
+                messageProcessingStatusHolder)
     }
 
     @Bean
@@ -393,7 +387,7 @@ open class TestApplicationContext {
                                 marketOrderValidator: MarketOrderValidator,
                                 messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                 messageSender: MessageSender,
-                                performanceStatsHolder: PerformanceStatsHolder, applicationSettingsHolder: ApplicationSettingsHolder,
+                                applicationSettingsHolder: ApplicationSettingsHolder,
                                 messageProcessingStatusHolder: MessageProcessingStatusHolder): MarketOrderService {
         return MarketOrderService(matchingEngine,
                 executionContextFactory,
@@ -407,7 +401,6 @@ open class TestApplicationContext {
                 applicationSettingsHolder,
                 messageSequenceNumberHolder,
                 messageSender,
-                performanceStatsHolder,
                 messageProcessingStatusHolder)
     }
 
@@ -574,10 +567,9 @@ open class TestApplicationContext {
     open fun cashTransferOperationService(balancesHolder: BalancesHolder, notification: BlockingQueue<CashTransferOperation>,
                                           dbTransferOperationQueue: BlockingQueue<TransferOperation>, feeProcessor: FeeProcessor,
                                           cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator, messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                          messageSender: MessageSender,
-                                          performanceStatsHolder: PerformanceStatsHolder): CashTransferOperationService {
+                                          messageSender: MessageSender): CashTransferOperationService {
         return CashTransferOperationService(balancesHolder, notification, dbTransferOperationQueue, feeProcessor,
-                cashTransferOperationBusinessValidator, messageSequenceNumberHolder, messageSender, performanceStatsHolder)
+                cashTransferOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
     }
 
     @Bean
@@ -636,10 +628,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun limitOrdersCancelHelper(cancellerFactory: GenericLimitOrdersCancellerFactory,
-                                     performanceStatsHolder: PerformanceStatsHolder,
-                                     currentTransactionDataHolder: CurrentTransactionDataHolder): LimitOrdersCancelHelper {
-        return LimitOrdersCancelHelper(cancellerFactory, performanceStatsHolder, currentTransactionDataHolder)
+    open fun limitOrdersCancelHelper(cancellerFactory: GenericLimitOrdersCancellerFactory): LimitOrdersCancelHelper {
+        return LimitOrdersCancelHelper(cancellerFactory)
     }
 
     @Bean
@@ -647,9 +637,8 @@ open class TestApplicationContext {
                                      genericStopLimitOrderService: GenericStopLimitOrderService,
                                      cancellerFactory: GenericLimitOrdersCancellerFactory,
                                      validator: LimitOrderCancelOperationBusinessValidator,
-                                     limitOrdersCancelHelper: LimitOrdersCancelHelper,
-                                     performanceStatsHolder: PerformanceStatsHolder): LimitOrderCancelService {
-        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelHelper, performanceStatsHolder)
+                                     limitOrdersCancelHelper: LimitOrdersCancelHelper): LimitOrderCancelService {
+        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelHelper)
     }
 
     @Bean
@@ -666,19 +655,17 @@ open class TestApplicationContext {
     open fun limitOrderMassCancelService(genericLimitOrderService: GenericLimitOrderService,
                                          genericStopLimitOrderService: GenericStopLimitOrderService,
                                          cancellerFactory: GenericLimitOrdersCancellerFactory,
-                                         limitOrdersCancelHelper: LimitOrdersCancelHelper,
-                                         performanceStatsHolder: PerformanceStatsHolder): LimitOrderMassCancelService {
-        return LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, limitOrdersCancelHelper, performanceStatsHolder)
+                                         limitOrdersCancelHelper: LimitOrdersCancelHelper): LimitOrderMassCancelService {
+        return LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, limitOrdersCancelHelper)
     }
 
     @Bean
     open fun multiLimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService,
                                           genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                           applicationSettingsHolder: ApplicationSettingsHolder,
-                                          assetsPairsHolder: AssetsPairsHolder,
-                                          performanceStatsHolder: PerformanceStatsHolder): MultiLimitOrderCancelService {
+                                          assetsPairsHolder: AssetsPairsHolder): MultiLimitOrderCancelService {
         return MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory,
-                applicationSettingsHolder, performanceStatsHolder)
+                applicationSettingsHolder)
     }
 
     @Bean

@@ -38,7 +38,6 @@ import com.lykke.matching.engine.order.process.context.MarketOrderExecutionConte
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
-import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -61,7 +60,6 @@ class MarketOrderService @Autowired constructor(
         private val applicationSettingsHolder: ApplicationSettingsHolder,
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
         private val messageSender: MessageSender,
-        private val performanceStatsHolder: PerformanceStatsHolder,
         private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
@@ -223,10 +221,7 @@ class MarketOrderService @Autowired constructor(
     private fun writePersistenceErrorResponse(messageWrapper: MessageWrapper, order: MarketOrder) {
         val message = "Unable to save result data"
         LOGGER.error("$order: $message")
-        val start = System.nanoTime()
         writeResponse(messageWrapper, order, MessageStatus.RUNTIME, message)
-        val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.MARKET_ORDER.type, end - start)
         return
     }
 
@@ -238,10 +233,7 @@ class MarketOrderService @Autowired constructor(
         } else if (reason != null) {
             marketOrderResponse.statusReason = reason
         }
-        val start = System.nanoTime()
         messageWrapper.writeMarketOrderResponse(marketOrderResponse)
-        val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.MARKET_ORDER.type, end - start)
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
@@ -254,10 +246,7 @@ class MarketOrderService @Autowired constructor(
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val start = System.nanoTime()
         messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder()
                 .setStatus(status.type))
-        val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.MARKET_ORDER.type, end - start)
     }
 }
