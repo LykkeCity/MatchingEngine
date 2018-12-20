@@ -14,6 +14,7 @@ import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -1373,6 +1374,93 @@ class MultiLimitOrderServiceTest : AbstractTest() {
 
         assertOrderBookSize("LKK1YLKK", true, 0)
         assertBalance("Client1", "LKK", 1.0, 0.0)
+    }
+
+    @Test
+    fun multilimitOrderSellPriceDeviation() {
+        //given
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.01)))
+        initServices()
+
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 10000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC", 2.0)
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 6000.0, volume = -1.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 5000.0, volume = 1.0)))
+        assertEquals(BigDecimal.valueOf(5500.0), midPriceHolder.getReferenceMidPrice(assetsPairHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
+
+        //when
+        clearMessageQueues()
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client3", listOf(IncomingLimitOrder(-1.0, 5500.0))))
+
+        //then
+        assertEquals(BigDecimal.valueOf(5500.0), midPriceHolder.getReferenceMidPrice(assetsPairHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
+        assertEquals(1, clientsEventsQueue.size)
+        val executionEvent = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, executionEvent.orders.size)
+        assertEquals(OutgoingOrderStatus.REJECTED, executionEvent.orders.single().status)
+        assertEquals(OrderRejectReason.TOO_HIGH_MID_PRICE_DEVIATION, executionEvent.orders.single().rejectReason)
+        assertOrderBookSize("BTCUSD", false, 1)
+        assertOrderBookSize("BTCUSD", true, 1)
+    }
+
+    @Test
+    fun midPriceIsRecordedOnlyOnceForMultilimitOrder() {
+        //given
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.01)))
+        initServices()
+
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 10000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC", 3.0)
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 6000.0, volume = -1.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 5000.0, volume = 1.0)))
+        assertEquals(BigDecimal.valueOf(5500.0), midPriceHolder.getReferenceMidPrice(assetsPairHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
+
+        //when
+        clearMessageQueues()
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client3", listOf(IncomingLimitOrder(-1.0, 5990.0),
+                IncomingLimitOrder(-1.0, 5990.0))))
+
+        //then
+        assertEquals(BigDecimal.valueOf(5497.5), midPriceHolder.getReferenceMidPrice(assetsPairHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
+        assertEquals(1, clientsEventsQueue.size)
+        val executionEvent = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(2, executionEvent.orders.size)
+    }
+
+    @Test
+    fun multilimitOrderBuyPriceDeviation() {
+        //given
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.01)))
+        initServices()
+
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 10000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 10000.0)
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 6000.0, volume = -1.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 5000.0, volume = 1.0)))
+        assertEquals(BigDecimal.valueOf(5500.0), midPriceHolder.getReferenceMidPrice(assetsPairHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
+
+        //when
+        clearMessageQueues()
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client3", listOf(IncomingLimitOrder(1.0, 5500.0))))
+
+        //then
+        assertEquals(BigDecimal.valueOf(5500.0), midPriceHolder.getReferenceMidPrice(assetsPairHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
+        assertEquals(1, clientsEventsQueue.size)
+        val executionEvent = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, executionEvent.orders.size)
+        assertEquals(OutgoingOrderStatus.REJECTED, executionEvent.orders.single().status)
+        assertEquals(OrderRejectReason.TOO_HIGH_MID_PRICE_DEVIATION, executionEvent.orders.single().rejectReason)
+        assertOrderBookSize("BTCUSD", false, 1)
+        assertOrderBookSize("BTCUSD", true, 1)
     }
 
     @Test
