@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.order.transaction
 
-import com.lykke.matching.engine.balance.WalletOperationsProcessor
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.deduplication.ProcessedMessage
@@ -34,9 +33,6 @@ class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                controlsLogger: Logger,
                assetsById: Map<String, Asset> = getAssetsByIdMap(assetPairsById),
                preProcessorValidationResultsByOrderId: Map<String, OrderValidationResult> = emptyMap(),
-               walletOperationsProcessor: WalletOperationsProcessor = balancesHolder.createWalletProcessor(logger),
-               orderBooksHolder: CurrentTransactionOrderBooksHolder = genericLimitOrderService.createCurrentTransactionOrderBooksHolder(),
-               stopOrderBooksHolder: CurrentTransactionStopOrderBooksHolder = genericStopLimitOrderService.createCurrentTransactionOrderBooksHolder(),
                currentTransactionMidPriceHolder: CurrentTransactionMidPriceHolder = CurrentTransactionMidPriceHolder(midPriceHolder, priceDeviationThresholdHolder)): ExecutionContext {
         return ExecutionContext(messageId,
                 requestId,
@@ -45,9 +41,9 @@ class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                 assetPairsById,
                 assetsById,
                 preProcessorValidationResultsByOrderId,
-                walletOperationsProcessor,
-                orderBooksHolder,
-                stopOrderBooksHolder,
+                balancesHolder.createWalletProcessor(logger),
+                genericLimitOrderService.createCurrentTransactionOrderBooksHolder(),
+                genericStopLimitOrderService.createCurrentTransactionOrderBooksHolder(),
                 currentTransactionMidPriceHolder,
                 date,
                 logger,

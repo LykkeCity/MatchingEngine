@@ -28,6 +28,8 @@ class ExecutionPersistenceService(private val persistenceManager: PersistenceMan
 
         if (persisted) {
             executionContext.apply()
+        } else {
+            executionContext.error("Unable to persist result")
         }
         return persisted
     }

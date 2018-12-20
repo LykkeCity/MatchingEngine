@@ -71,8 +71,6 @@ abstract class AbstractPerformanceTest {
     protected lateinit var multiLimitOrderService: MultiLimitOrderService
     protected lateinit var marketOrderService: MarketOrderService
 
-    protected lateinit var genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory
-
     protected lateinit var assetsHolder: AssetsHolder
     protected lateinit var balancesHolder: BalancesHolder
     protected lateinit var assetsPairsHolder: AssetsPairsHolder
@@ -144,6 +142,7 @@ abstract class AbstractPerformanceTest {
         testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
         applicationSettingsCache = ApplicationSettingsCache(testSettingsDatabaseAccessor, ApplicationEventPublisher {})
         applicationSettingsHolder = ApplicationSettingsHolder(applicationSettingsCache)
+        val limitOrdersCanceller = LimitOrdersCancellerImpl(applicationSettingsHolder)
 
         assetCache = AssetsCache(testBackOfficeDatabaseAccessor)
         assetsHolder = AssetsHolder(assetCache)
@@ -225,17 +224,7 @@ abstract class AbstractPerformanceTest {
 
         val stopOrderBookProcessor = StopOrderBookProcessor(limitOrderProcessor, applicationSettingsHolder)
 
-        genericLimitOrdersCancellerFactory = GenericLimitOrdersCancellerFactory(executionContextFactory,
-                stopOrderBookProcessor,
-                executionDataApplyService,
-                testDictionariesDatabaseAccessor,
-                assetsHolder,
-                assetsPairsHolder,
-                balancesHolder,
-                genericLimitOrderService,
-                genericStopLimitOrderService)
-
-        val previousLimitOrdersProcessor = PreviousLimitOrdersProcessor(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
+        val previousLimitOrdersProcessor = PreviousLimitOrdersProcessor(genericLimitOrderService, genericStopLimitOrderService, limitOrdersCanceller)
 
         singleLimitOrderService = SingleLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
