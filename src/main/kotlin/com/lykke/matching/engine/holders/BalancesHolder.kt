@@ -3,16 +3,12 @@ package com.lykke.matching.engine.holders
 import com.lykke.matching.engine.balance.BalancesGetter
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
-import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
-import java.util.concurrent.BlockingQueue
 
 @Component
-class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAccessorsHolder,
-                     private val balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
-                     private val applicationSettingsHolder: ApplicationSettingsHolder): BalancesGetter {
+class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAccessorsHolder): BalancesGetter {
 
     companion object {
         private val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
@@ -75,15 +71,6 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
 
         return BigDecimal.ZERO
     }
-
-    fun sendBalanceUpdate(balanceUpdate: BalanceUpdate) {
-        if (balanceUpdate.balances.isNotEmpty()) {
-            LOGGER.info(balanceUpdate.toString())
-            balanceUpdateQueue.put(balanceUpdate)
-        }
-    }
-
-    fun isTrustedClient(clientId: String) = applicationSettingsHolder.isTrustedClient(clientId)
 
     fun setWallets(wallets: Collection<Wallet>) {
         wallets.forEach { wallet ->

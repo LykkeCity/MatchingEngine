@@ -190,7 +190,7 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
             }
 
             reservedVolumesDatabaseAccessor.addCorrectionsInfo(corrections)
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(operationId, MessageType.LIMIT_ORDER.name, now, balanceUpdates, operationId))
+            balancesService.sendBalanceUpdate(BalanceUpdate(operationId, MessageType.LIMIT_ORDER.name, now, balanceUpdates, operationId))
             cashInOutEvents.forEach { messageSender.sendMessage(it) }
 
         }

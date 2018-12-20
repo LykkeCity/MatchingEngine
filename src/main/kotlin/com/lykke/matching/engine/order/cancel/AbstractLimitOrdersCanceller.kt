@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -21,6 +22,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                                                                           private val assetsHolder: AssetsHolder,
                                                                           private val assetsPairsHolder: AssetsPairsHolder,
                                                                           private val balancesHolder: BalancesHolder,
+                                                                          private val applicationSettingsHolder: ApplicationSettingsHolder,
                                                                           private val genericLimitOrderService: AbstractGenericLimitOrderService<TAssetOrderBook>,
                                                                           private val date: Date) {
 
@@ -89,7 +91,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
         val walletOperations = LinkedList<WalletOperation>()
 
         orderInfo.allOrders.forEach { order ->
-            val isTrustedClientOrder = balancesHolder.isTrustedClient(order.clientId)
+            val isTrustedClientOrder = applicationSettingsHolder.isTrustedClient(order.clientId)
 
             if (!isTrustedClientOrder) {
                 val limitAssetId = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
@@ -163,7 +165,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                 .stream()
                 .flatMap { it.allOrders.stream() }
                 .forEach { order ->
-                    val isTrustedClientOrder = balancesHolder.isTrustedClient(order.clientId)
+                    val isTrustedClientOrder = applicationSettingsHolder.isTrustedClient(order.clientId)
                     if (isTrustedClientOrder && !order.isPartiallyMatched()) {
                         trustedClientsOrdersWithTrades.add(LimitOrderWithTrades(order))
                     } else {
