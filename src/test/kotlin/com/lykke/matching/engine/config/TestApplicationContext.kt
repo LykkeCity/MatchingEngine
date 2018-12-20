@@ -402,7 +402,6 @@ open class TestApplicationContext {
                 assetsPairsHolder,
                 rabbitSwapQueue,
                 marketOrderValidator,
-                applicationSettingsHolder,
                 messageSequenceNumberHolder,
                 priceDeviationThreshold,
                 midPriceHolder,

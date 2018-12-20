@@ -61,7 +61,6 @@ class MarketOrderService @Autowired constructor(
         private val assetsPairsHolder: AssetsPairsHolder,
         private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
         private val marketOrderValidator: MarketOrderValidator,
-        private val applicationSettingsHolder: ApplicationSettingsHolder,
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
         private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
         private val midPriceHolder: MidPriceHolder,

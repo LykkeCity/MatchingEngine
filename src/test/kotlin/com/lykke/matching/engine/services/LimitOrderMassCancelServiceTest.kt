@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
@@ -10,7 +9,11 @@ import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestReadOnlyMidPriceDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
@@ -20,7 +23,9 @@ import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.assertEquals
+import com.lykke.matching.engine.utils.getExecutionContext
 import com.lykke.matching.engine.utils.getSetting
+import com.lykke.matching.engine.utils.monitoring.OrderBookMidPriceChecker
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,6 +37,7 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
+import java.util.*
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 
@@ -61,16 +67,30 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
             testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("TrustedClient"))
             return testSettingsDatabaseAccessor
         }
+
+        @Bean
+        @Primary
+        open fun midPriceHolder(readOnlyMidPriceDatabaseAccessor: TestReadOnlyMidPriceDatabaseAccessor,
+                                applicationSettingsCache: ApplicationSettingsCache,
+                                orderBookMidPriceChecker: OrderBookMidPriceChecker): MidPriceHolder {
+            return MidPriceHolder(100000, readOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
+        }
     }
 
     @Autowired
     private lateinit var messageBuilder: MessageBuilder
 
+    @Autowired
+    private lateinit var midPriceHolder: MidPriceHolder
+
+    @Autowired
+    private lateinit var assetsPairsHolder: AssetsPairsHolder
+
     @Before
     fun setUp() {
 
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 5))
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 2))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 5, midPriceDeviationThreshold = BigDecimal.valueOf(0.1)))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 2, midPriceDeviationThreshold = BigDecimal.valueOf(0.1)))
 
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 100.0)
@@ -244,5 +264,18 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
         assertEquals(2, event.orders.size)
         assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "m1" }.status)
         assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "m2" }.status)
+    }
+
+    @Test
+    fun testMidPriceIsUpdatedAfterMassCancel() {
+        setOrders()
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = -0.01, price = 10000.0)))
+        val actual = midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("EURUSD"), getExecutionContext(Date(), executionContextFactory))
+        assertEquals(BigDecimal.valueOf(1.2), actual)
+        assertEquals(BigDecimal.valueOf(7875), midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
+
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper("TrustedClient", "BTCUSD"))
+        assertEquals(BigDecimal.valueOf(7916.66667), midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
     }
 }

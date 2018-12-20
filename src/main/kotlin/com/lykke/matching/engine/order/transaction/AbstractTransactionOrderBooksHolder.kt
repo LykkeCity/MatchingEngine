@@ -51,6 +51,10 @@ abstract class AbstractTransactionOrderBooksHolder<AssetOrderBook : AbstractAsse
         addRemovedOrders(orders, replacedOrders)
     }
 
+    fun isOrderBookChanged(): Boolean {
+        return !changedBuySides.isEmpty() || !changedSellSides.isEmpty()
+    }
+
     fun apply(date: Date) {
         genericLimitOrderService.removeOrdersFromMapsAndSetStatus(completedOrders)
         genericLimitOrderService.removeOrdersFromMapsAndSetStatus(cancelledOrders, OrderStatus.Cancelled, date)

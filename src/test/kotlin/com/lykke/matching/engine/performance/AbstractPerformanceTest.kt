@@ -262,7 +262,6 @@ abstract class AbstractPerformanceTest {
                 assetsPairsHolder,
                 rabbitSwapQueue,
                 marketOrderValidator,
-                applicationSettingsHolder,
                 messageSequenceNumberHolder,
                 PriceDeviationThresholdHolder(applicationSettingsHolder),
                 midPriceHolder,
