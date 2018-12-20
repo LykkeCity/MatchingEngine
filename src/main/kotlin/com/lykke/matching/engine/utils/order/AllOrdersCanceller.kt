@@ -28,8 +28,6 @@ class AllOrdersCanceller @Autowired constructor(private val genericLimitOrderSer
         private val LOGGER = Logger.getLogger(AllOrdersCanceller::class.java.name)
     }
 
-    // todo flag of all orders removal
-
     override fun run(args: ApplicationArguments?) {
         if (cancelAllOrders) {
             cancelAllOrders()
@@ -55,6 +53,7 @@ class AllOrdersCanceller @Autowired constructor(private val genericLimitOrderSer
                 Date(),
                 null,
                 null,
+                true,
                 LOGGER))
 
         LOGGER.info("Completed to cancel all orders")

@@ -25,13 +25,20 @@ class LimitOrdersCancelExecutorImpl(private val assetsPairsHolder: AssetsPairsHo
                     processedMessage,
                     createAssetPairsByIdMapForOrders(plus(limitOrders, stopLimitOrders)),
                     Date(),
+                    logger,
                     logger)
+
+            executionContext.executionContextForCancelOperation = true
 
             limitOrdersCanceller.cancelOrders(limitOrders,
                     emptyList(),
                     stopLimitOrders,
                     emptyList(),
                     executionContext)
+
+            if (cancelAll) {
+                executionContext.currentTransactionMidPriceHolder.setRemoveAllFlag()
+            }
 
             stopOrderBookProcessor.checkAndExecuteStopLimitOrders(executionContext)
 

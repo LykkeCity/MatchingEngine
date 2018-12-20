@@ -54,6 +54,7 @@ class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHold
                     Date(),
                     null,
                     null,
+                    false,
                     LOGGER))
         } catch (e: BalanceException) {
             LOGGER.error("Unable to process wallet operations due to invalid balance: ${e.message}", e)

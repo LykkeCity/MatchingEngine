@@ -30,8 +30,8 @@ import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExecutionEventSender
 import com.lykke.matching.engine.order.ExecutionPersistenceService
 import com.lykke.matching.engine.order.ExpiryOrdersQueue
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.*
+import com.lykke.matching.engine.order.process.common.LimitOrdersCancellerImpl
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.transaction.ExecutionEventsSequenceNumbersGenerator

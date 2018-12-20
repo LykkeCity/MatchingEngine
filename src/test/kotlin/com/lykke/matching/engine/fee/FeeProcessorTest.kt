@@ -604,7 +604,7 @@ class FeeProcessorTest {
     }
 
     private fun createBalancesGetter(): BalancesGetter {
-        return balancesHolder.createWalletProcessor(null, true)
+        return balancesHolder.createWalletProcessor(null)
     }
 }
 
