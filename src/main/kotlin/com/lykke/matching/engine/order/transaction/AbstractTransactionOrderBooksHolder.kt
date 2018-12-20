@@ -29,10 +29,6 @@ abstract class AbstractTransactionOrderBooksHolder<AssetOrderBook : AbstractAsse
         }
     }
 
-    fun setOrderBook(orderBook: AssetOrderBook) {
-        assetOrderBookCopiesByAssetPairId[orderBook.assetPairId] = orderBook
-    }
-
     fun addOrder(order: LimitOrder) {
         getChangedOrderBookCopy(order.assetPairId).addOrder(order)
         newOrdersByExternalId[order.externalId] = order

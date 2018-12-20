@@ -47,7 +47,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
         testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC",  0.1)
         initServices()
 
-        val walletOperationsProcessor = balancesHolder.createWalletProcessor(null, true)
+        val walletOperationsProcessor = balancesHolder.createWalletProcessor(null)
 
         walletOperationsProcessor.preProcess(
                 listOf(
@@ -103,7 +103,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
     fun testForceProcessInvalidWalletOperations() {
         initServices()
 
-        val walletOperationsProcessor = balancesHolder.createWalletProcessor(null, true)
+        val walletOperationsProcessor = balancesHolder.createWalletProcessor(null)
 
         walletOperationsProcessor.preProcess(
                 listOf(

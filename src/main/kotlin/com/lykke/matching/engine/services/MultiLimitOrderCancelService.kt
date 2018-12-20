@@ -6,14 +6,14 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
+import com.lykke.matching.engine.order.process.common.CancelRequest
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Component
 import java.util.Date
 
 @Component
 class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOrderService,
-                                   private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
+                                   private val limitOrdersCancelServiceHelper: LimitOrdersCancelServiceHelper,
                                    private val applicationSettingsHolder: ApplicationSettingsHolder) : AbstractService {
 
     companion object {
@@ -28,27 +28,24 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
 
         val now = Date()
         val ordersToCancel = limitOrderService.searchOrders(message.clientId, message.assetPairId, message.isBuy)
-        if (ordersToCancel.isNotEmpty()) {
-            val updated = genericLimitOrdersCancellerFactory.create(LOGGER, now)
-                    .preProcessLimitOrders(ordersToCancel)
-                    .applyFull(messageWrapper, message.uid, messageWrapper.messageId!!,
-                            messageWrapper.processedMessage,
-                            MessageType.MULTI_LIMIT_ORDER_CANCEL,
-                            false)
-            messageWrapper.triedToPersist = true
-            messageWrapper.persisted = updated
-            if (!updated) {
-                LOGGER.debug("Unable to save result for multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy}")
-                messageWrapper.writeNewResponse(
-                        ProtocolMessages.NewResponse.newBuilder()
-                                .setStatus(MessageStatus.RUNTIME.type)
-                                .setStatusReason("Unable to save result"))
-                return
-            }
+        if (ordersToCancel.isEmpty()) {
+            writeResponse(messageWrapper, MessageStatus.OK)
+            return
         }
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setStatus(MessageStatus.OK.type))
-        LOGGER.debug("Multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy} processed")
+        val updateSuccessful = limitOrdersCancelServiceHelper.cancelOrdersAndWriteResponse(CancelRequest(ordersToCancel,
+                emptyList(),
+                message.assetPairId,
+                messageWrapper.messageId!!,
+                message.uid,
+                MessageType.MULTI_LIMIT_ORDER_CANCEL,
+                now,
+                messageWrapper.processedMessage,
+                messageWrapper,
+                LOGGER))
+
+        if (updateSuccessful) {
+            LOGGER.debug("Multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy} processed")
+        }
     }
 
     private fun getMessage(messageWrapper: MessageWrapper) =
