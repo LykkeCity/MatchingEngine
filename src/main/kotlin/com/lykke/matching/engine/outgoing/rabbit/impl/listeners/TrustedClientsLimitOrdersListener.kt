@@ -3,7 +3,7 @@ package com.lykke.matching.engine.outgoing.rabbit.impl.listeners
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.outgoing.rabbit.events.RabbitFailureEvent
-import com.lykke.matching.engine.outgoing.rabbit.events.RabbitRecoverEvent
+import com.lykke.matching.engine.outgoing.rabbit.events.RabbitReadyEvent
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.monitoring.HealthMonitorEvent
 import com.lykke.matching.engine.utils.monitoring.MonitoredComponent
@@ -18,6 +18,9 @@ import javax.annotation.PostConstruct
 
 @Component
 class TrustedClientsLimitOrdersListener {
+
+    @Volatile
+    private var failed = false
 
     @Autowired
     private lateinit var trustedClientsLimitOrdersQueue: BlockingDeque<LimitOrdersReport>
@@ -44,7 +47,9 @@ class TrustedClientsLimitOrdersListener {
 
     @EventListener
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
-        if(rabbitFailureEvent.publisherName == TrustedClientsLimitOrdersListener::class.java.simpleName) {
+        if (rabbitFailureEvent.publisherName == TrustedClientsLimitOrdersListener::class.java.simpleName) {
+            failed = true
+            logRmqFail(rabbitFailureEvent.publisherName)
             rabbitFailureEvent.failedEvent?.let {
                 trustedClientsLimitOrdersQueue.putFirst(it as LimitOrdersReport)
             }
@@ -53,9 +58,11 @@ class TrustedClientsLimitOrdersListener {
     }
 
     @EventListener
-    fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
-        if (rabbitRecoverEvent.publisherName == TrustedClientsLimitOrdersListener::class.java.simpleName) {
-            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
+    fun onReady(rabbitReadyEvent: RabbitReadyEvent) {
+        if (rabbitReadyEvent.publisherName == TrustedClientsLimitOrdersListener::class.java.simpleName && failed) {
+            failed = false
+            logRmqRecover(rabbitReadyEvent.publisherName)
+            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitReadyEvent.publisherName))
         }
     }
 }
