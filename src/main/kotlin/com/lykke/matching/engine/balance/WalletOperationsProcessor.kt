@@ -6,18 +6,18 @@ import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolder
 import com.lykke.matching.engine.order.transaction.WalletAssetBalance
+import com.lykke.matching.engine.services.BalancesService
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.Date
 
-class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
+class WalletOperationsProcessor(private val balancesService: BalancesService,
                                 private val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
                                 private val applicationSettingsHolder: ApplicationSettingsHolder,
                                 private val assetsHolder: AssetsHolder,
@@ -114,7 +114,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
 
     fun sendNotification(id: String, type: String, messageId: String) {
         if (clientBalanceUpdatesByClientIdAndAssetId.isNotEmpty()) {
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), clientBalanceUpdatesByClientIdAndAssetId.values.toList(), messageId))
+            balancesService.sendBalanceUpdate(BalanceUpdate(id, type, Date(), clientBalanceUpdatesByClientIdAndAssetId.values.toList(), messageId))
         }
     }
 

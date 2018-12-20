@@ -52,7 +52,6 @@ import com.lykke.matching.engine.services.validators.business.*
 import com.lykke.matching.engine.services.validators.business.impl.*
 import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.ReservedCashInOutOperationValidatorImpl
-import com.lykke.matching.engine.services.validators.impl.*
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
 import com.lykke.matching.engine.services.validators.input.CashTransferOperationInputValidator
@@ -106,7 +105,7 @@ open class TestApplicationContext {
     open fun balanceHolder(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
                            balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
                            applicationSettingsHolder: ApplicationSettingsHolder): BalancesHolder {
-        return BalancesHolder(balancesDatabaseAccessorsHolder, balanceUpdateQueue, applicationSettingsHolder)
+        return BalancesHolder(balancesDatabaseAccessorsHolder)
     }
 
     @Bean
@@ -411,12 +410,15 @@ open class TestApplicationContext {
                                                 clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                                 trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                                 walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
-                                                messageSequenceNumberHolder: MessageSequenceNumberHolder, messageSender: MessageSender): GenericLimitOrdersCancellerFactory {
+                                                messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                                messageSender: MessageSender,
+                                                applicationSettingsHolder: ApplicationSettingsHolder): GenericLimitOrdersCancellerFactory {
         return GenericLimitOrdersCancellerFactory(executionContextFactory,
                 stopOrderBookProcessor,
                 executionDataApplyService,
                 dictionariesDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, walletOperationsProcessorFactory,
                 genericLimitOrderService,
+                applicationSettingsHolder,
                 genericStopLimitOrderService)
     }
 
@@ -690,12 +692,14 @@ open class TestApplicationContext {
     open fun walletOperationsProcessorFactory(currentTransactionBalancesHolderFactory: CurrentTransactionBalancesHolderFactory,
                                               applicationSettingsHolder: ApplicationSettingsHolder,
                                               assetsHolder: AssetsHolder,
-                                              balancesHolder: BalancesHolder): WalletOperationsProcessorFactory {
-        return WalletOperationsProcessorFactory(currentTransactionBalancesHolderFactory, applicationSettingsHolder, assetsHolder, balancesHolder)
+                                              balancesService: BalancesService): WalletOperationsProcessorFactory {
+        return WalletOperationsProcessorFactory(currentTransactionBalancesHolderFactory, applicationSettingsHolder, assetsHolder, balancesService)
     }
 
     @Bean
-    open fun balancesService(balancesHolder: BalancesHolder, persistenceManager: PersistenceManager): BalancesService {
-        return BalancesServiceImpl(balancesHolder, persistenceManager)
+    open fun balancesService(balancesHolder: BalancesHolder,
+                             persistenceManager: PersistenceManager,
+                             balanceUpdateQueue: BlockingQueue<BalanceUpdate>): BalancesService {
+        return BalancesServiceImpl(balancesHolder, persistenceManager, balanceUpdateQueue)
     }
 }

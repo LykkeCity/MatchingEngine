@@ -77,6 +77,7 @@ abstract class AbstractPerformanceTest {
 
     protected lateinit var assetsHolder: AssetsHolder
     protected lateinit var balancesHolder: BalancesHolder
+    protected lateinit var balancesService: BalancesService
     protected lateinit var assetsPairsHolder: AssetsPairsHolder
     protected lateinit var assetCache: AssetsCache
     protected lateinit var balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder
@@ -128,7 +129,7 @@ abstract class AbstractPerformanceTest {
     val currentTransactionBalancesHolderFactory = CurrentTransactionBalancesHolderFactory(balancesHolder)
 
     val walletOperationsProcessorFactory = WalletOperationsProcessorFactory(currentTransactionBalancesHolderFactory,
-            applicationSettingsHolder, assetsHolder, balancesHolder)
+            applicationSettingsHolder, assetsHolder, balancesService)
 
     private fun clearMessageQueues() {
         rabbitEventsQueue.clear()
@@ -155,9 +156,8 @@ abstract class AbstractPerformanceTest {
         persistenceManager = TestPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor,
                 ordersDatabaseAccessorsHolder,
                 stopOrdersDatabaseAccessorsHolder)
-        balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder,
-                balanceUpdateQueue,
-                applicationSettingsHolder)
+        balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder)
+        balancesService = BalancesServiceImpl(balancesHolder, persistenceManager, balanceUpdateQueue)
 
         testBalanceHolderWrapper = TestBalanceHolderWrapper(BalanceUpdateHandlerTest(balanceUpdateQueue), balancesHolder, walletOperationsProcessorFactory, persistenceManager)
         assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
@@ -231,6 +231,7 @@ abstract class AbstractPerformanceTest {
                 balancesHolder,
                 walletOperationsProcessorFactory,
                 genericLimitOrderService,
+                applicationSettingsHolder,
                 genericStopLimitOrderService)
 
         val previousLimitOrdersProcessor = PreviousLimitOrdersProcessor(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)

@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -19,11 +20,13 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
                            assetsPairsHolder: AssetsPairsHolder,
                            balancesHolder: BalancesHolder,
                            genericLimitOrderService: GenericLimitOrderService,
+                           applicationSettingsHolder: ApplicationSettingsHolder,
                            date: Date) :
         AbstractLimitOrdersCanceller<AssetOrderBook, LimitOrdersCancelResult>(dictionariesDatabaseAccessor,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
+                applicationSettingsHolder,
                 genericLimitOrderService,
                 date) {
 

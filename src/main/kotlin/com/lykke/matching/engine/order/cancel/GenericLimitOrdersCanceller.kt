@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -28,6 +29,7 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
                                   private val walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                                   genericLimitOrderService: GenericLimitOrderService,
                                   genericStopLimitOrderService: GenericStopLimitOrderService,
+                                  applicationSettingsHolder: ApplicationSettingsHolder,
                                   private val date: Date,
                                   private val LOGGER: Logger) {
 
@@ -36,12 +38,14 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
             assetsPairsHolder,
             balancesHolder,
             genericLimitOrderService,
+            applicationSettingsHolder,
             date)
 
     private val stopLimitOrdersCanceller = StopLimitOrdersCanceller(dictionariesDatabaseAccessor,
             assetsHolder,
             assetsPairsHolder,
             balancesHolder,
+            applicationSettingsHolder,
             genericStopLimitOrderService,
             date)
 
