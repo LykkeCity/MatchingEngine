@@ -2,21 +2,18 @@ package com.lykke.matching.engine.protection
 
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestReadOnlyMidPriceDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
-import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.assertEquals
+import com.lykke.matching.engine.utils.getExecutionContext
 import com.lykke.matching.engine.utils.monitoring.OrderBookMidPriceChecker
-import org.apache.log4j.Logger
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
@@ -72,7 +69,7 @@ class MidPriceHolderTest {
         val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
         Thread.sleep(150)
-        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date()))
+        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date(), executionContextFactory))
 
         //then
         assertEquals(getExpectedReferencePrice(midPrices, assetPair.accuracy), referenceMidPrice)
@@ -85,10 +82,10 @@ class MidPriceHolderTest {
         val midPriceHolder = MidPriceHolder(40, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
 
         //then
-        assertEquals(BigDecimal.ZERO, midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date())))
+        assertEquals(BigDecimal.ZERO, midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date(), executionContextFactory)))
         testOrderBookWrapper.addLimitOrder(MessageBuilder.buildLimitOrder(price = 10.0, volume = -500.0))
         testOrderBookWrapper.addLimitOrder(MessageBuilder.buildLimitOrder(price = 16.0, volume = 400.0))
-        assertEquals(BigDecimal.valueOf(13), midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date())))
+        assertEquals(BigDecimal.valueOf(13), midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date(), executionContextFactory)))
     }
 
     @Test
@@ -97,7 +94,7 @@ class MidPriceHolderTest {
         val midPriceHolder = MidPriceHolder(1000, testReadOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
 
         //then
-        assertEquals(BigDecimal.ZERO, midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("EURUSD"),  getExecutionContext(Date())))
+        assertEquals(BigDecimal.ZERO, midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("EURUSD"), getExecutionContext(Date(), executionContextFactory)))
     }
 
     @Test
@@ -108,9 +105,9 @@ class MidPriceHolderTest {
         //when
         val midPrice = BigDecimal("1.11")
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
-        midPriceHolder.addMidPrice(assetPair, midPrice, getExecutionContext(Date()))
+        midPriceHolder.addMidPrice(assetPair, midPrice, getExecutionContext(Date(), executionContextFactory))
         Thread.sleep(150)
-        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date()))
+        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date(), executionContextFactory))
 
         //then
         assertEquals(midPrice, referenceMidPrice)
@@ -129,9 +126,9 @@ class MidPriceHolderTest {
         midPrices.add(midPrice)
 
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
-        midPriceHolder.addMidPrice(assetPair, midPrice.midPrice, getExecutionContext(Date()))
+        midPriceHolder.addMidPrice(assetPair, midPrice.midPrice, getExecutionContext(Date(), executionContextFactory))
         Thread.sleep(150)
-        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date()))
+        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date(), executionContextFactory))
 
         //then
         assertEquals(getExpectedReferencePrice(midPrices, assetPair.accuracy), referenceMidPrice)
@@ -151,12 +148,12 @@ class MidPriceHolderTest {
             val date = Date()
             val midPrice = getRandomBigDecimal()
             midPrices.add(MidPrice("EURUSD", midPrice, date.time))
-            midPriceHolder.addMidPrice(assetPair, midPrice,  getExecutionContext(Date()))
+            midPriceHolder.addMidPrice(assetPair, midPrice, getExecutionContext(Date(), executionContextFactory))
         }
 
         Thread.sleep(1500)
 
-        assertEquals(getExpectedReferencePrice(midPrices, assetPair.accuracy), midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date())))
+        assertEquals(getExpectedReferencePrice(midPrices, assetPair.accuracy), midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date(), executionContextFactory)))
     }
 
     @Test
@@ -173,11 +170,11 @@ class MidPriceHolderTest {
             val date = Date()
             val midPrice = getRandomBigDecimal()
             midPrices.add(MidPrice("EURUSD", midPrice, date.time))
-            midPriceHolder.addMidPrice(assetPair, midPrice, getExecutionContext(Date()))
+            midPriceHolder.addMidPrice(assetPair, midPrice, getExecutionContext(Date(), executionContextFactory))
         }
 
-        Thread.sleep(1500)
-        assertEquals(getExpectedReferencePrice(midPrices, assetPair.accuracy), midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date())))
+        Thread.sleep(150)
+        assertEquals(getExpectedReferencePrice(midPrices, assetPair.accuracy), midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date(), executionContextFactory)))
     }
 
     @Test
@@ -191,10 +188,10 @@ class MidPriceHolderTest {
         //when
         Thread.sleep(70)
         val notExpiredMidPrices = ArrayList(getRandomMidPrices(4, "EURUSD"))
-        notExpiredMidPrices.forEach { midPriceHolder.addMidPrice(assetPair, it.midPrice, getExecutionContext(Date())) }
+        notExpiredMidPrices.forEach { midPriceHolder.addMidPrice(assetPair, it.midPrice, getExecutionContext(Date(), executionContextFactory)) }
 
         Thread.sleep(50)
-        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date()))
+        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date(), executionContextFactory))
         val expectedReferencePrice = getExpectedReferencePrice(notExpiredMidPrices, assetPair.accuracy)
 
         //then
@@ -212,9 +209,9 @@ class MidPriceHolderTest {
         //when
         Thread.sleep(100)
         val notExpiredMidPrices = ArrayList(getRandomMidPrices(4, "EURUSD"))
-        notExpiredMidPrices.forEach { midPriceHolder.addMidPrice(assetPair, it.midPrice, getExecutionContext(Date())) }
+        notExpiredMidPrices.forEach { midPriceHolder.addMidPrice(assetPair, it.midPrice, getExecutionContext(Date(), executionContextFactory)) }
 
-        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date()))
+        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date(), executionContextFactory))
         val expectedReferencePrice = getExpectedReferencePrice(notExpiredMidPrices, assetPair.accuracy)
 
         //then
@@ -231,7 +228,7 @@ class MidPriceHolderTest {
 
         //when
         Thread.sleep(100)
-        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date()))
+        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date(), executionContextFactory))
         val expectedReferencePrice = getExpectedReferencePrice(midPricesToExpire, assetPair.accuracy)
 
         //then
@@ -251,8 +248,8 @@ class MidPriceHolderTest {
         //when
         val assetPairEURUSD = assetsPairsHolder.getAssetPair("EURUSD")
         val assetPairEURCHF = assetsPairsHolder.getAssetPair("EURCHF")
-        val referenceMidPriceEURUSD = midPriceHolder.getReferenceMidPrice(assetPairEURUSD, getExecutionContext(Date()))
-        val referenceMidPriceEURCHF = midPriceHolder.getReferenceMidPrice(assetPairEURCHF, getExecutionContext(Date()))
+        val referenceMidPriceEURUSD = midPriceHolder.getReferenceMidPrice(assetPairEURUSD, getExecutionContext(Date(), executionContextFactory))
+        val referenceMidPriceEURCHF = midPriceHolder.getReferenceMidPrice(assetPairEURCHF, getExecutionContext(Date(), executionContextFactory))
 
         //then
         assertEquals(getExpectedReferencePrice(midPricesEURUSD, assetPairEURUSD.accuracy), referenceMidPriceEURUSD)
@@ -270,11 +267,11 @@ class MidPriceHolderTest {
         //when
         midPriceHolder.clear()
         Thread.sleep(150)
-        val clearedReferenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date()))
-        midPriceHolder.addMidPrice(assetPair, BigDecimal.TEN, getExecutionContext(Date()))
+        val clearedReferenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date(), executionContextFactory))
+        midPriceHolder.addMidPrice(assetPair, BigDecimal.TEN, getExecutionContext(Date(), executionContextFactory))
         Thread.sleep(150)
 
-        val newReferenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date()))
+        val newReferenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date(), executionContextFactory))
 
         //then
         assertEquals(BigDecimal.ZERO, clearedReferenceMidPrice)
@@ -295,8 +292,8 @@ class MidPriceHolderTest {
 
         //then
         val expectedReferencePrice = getExpectedReferencePrice(midPrices, assetPair.accuracy)
-        assertEquals(expectedReferencePrice, midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date())))
-        assertEquals(expectedReferencePrice, midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date())))
+        assertEquals(expectedReferencePrice, midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date(), executionContextFactory)))
+        assertEquals(expectedReferencePrice, midPriceHolder.getReferenceMidPrice(assetPair, getExecutionContext(Date(), executionContextFactory)))
     }
 
     private fun getRandomBigDecimalList(size: Int): List<BigDecimal> {
@@ -330,14 +327,5 @@ class MidPriceHolderTest {
         return NumberUtils.setScaleRoundUp(NumberUtils.divideWithMaxScale(sum, BigDecimal.valueOf(midPrices.size.toLong())), accuracy)
     }
 
-    private fun getExecutionContext(date: Date): ExecutionContext {
-        return executionContextFactory.create("test",
-                "test",
-                MessageType.LIMIT_ORDER,
-                null,
-                emptyMap(),
-                date,
-                Logger.getLogger(""),
-                Logger.getLogger(""))
-    }
+
 }

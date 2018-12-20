@@ -150,38 +150,44 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
         val (lowerMidPriceBound, upperMidPriceBound) = MidPriceUtils.getMidPricesInterval(priceDeviationThresholdHolder.getMidPriceDeviationThreshold(assetPair.assetPairId, executionContext),
                 midPriceHolder.getReferenceMidPrice(assetPair, executionContext))
 
-        if (!isOrderBookMidPriceValidBeforeMatching(executionContext, lowerMidPriceBound, upperMidPriceBound, assetPair)) {
-            processOrderBookMidPriceInvalidBeforeMatching(executionContext, processingMultiLimitOrder, assetPair, upperMidPriceBound, lowerMidPriceBound)
+        if (!isOrderBookMidPriceValidBeforeProcessing(executionContext, lowerMidPriceBound, upperMidPriceBound, assetPair)) {
+            processOrderBookMidPriceInvalidBeforeProcessing(executionContext, processingMultiLimitOrder, assetPair, upperMidPriceBound, lowerMidPriceBound)
         }
 
         val processedOrders = genericLimitOrdersProcessor.processOrders(processingMultiLimitOrder.orders, executionContext)
 
-        val midPriceAfterOrderMatching = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPair.assetPairId).getMidPrice()
-        val midPriceValid = OrderValidationUtils.isMidPriceValid(midPriceAfterOrderMatching, lowerMidPriceBound, upperMidPriceBound)
+        val midPriceAfterOrderProcessing =
+                if (executionContext.orderBooksHolder.isOrderBookChanged()) {
+                    executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPair.assetPairId).getMidPrice()
+                } else {
+                    null
+                }
+
+        val midPriceValid = OrderValidationUtils.isMidPriceValid(midPriceAfterOrderProcessing, lowerMidPriceBound, upperMidPriceBound)
         return if (!midPriceValid) {
-            return processMidPriceIsInvalidAfterMatching(
+            return processMidPriceIsInvalidAfterProcessing(
                     messageWrapper,
                     inputMultiLimitOrder,
                     assetPair,
                     lowerMidPriceBound,
                     upperMidPriceBound,
-                    midPriceAfterOrderMatching,
+                    midPriceAfterOrderProcessing,
                     now)
         } else {
-            processMidPriceIsValidAfterMatching(executionContext,
+            processMidPriceIsValidAfterProcessing(executionContext,
                     inputMultiLimitOrder,
                     lowerMidPriceBound,
                     upperMidPriceBound,
-                    midPriceAfterOrderMatching)
+                    midPriceAfterOrderProcessing)
             OrdersProcessingResult(executionContext, processedOrders)
         }
     }
 
-    private fun processMidPriceIsValidAfterMatching(executionContext: ExecutionContext,
-                                                    multiLimitOrder: MultiLimitOrder,
-                                                    lowerMidPriceBound: BigDecimal?,
-                                                    upperMidPriceBound: BigDecimal?,
-                                                    midPrice: BigDecimal?) {
+    private fun processMidPriceIsValidAfterProcessing(executionContext: ExecutionContext,
+                                                      multiLimitOrder: MultiLimitOrder,
+                                                      lowerMidPriceBound: BigDecimal?,
+                                                      upperMidPriceBound: BigDecimal?,
+                                                      midPrice: BigDecimal?) {
         midPrice?.let {
             executionContext.currentTransactionMidPriceHolder.addMidPrice(multiLimitOrder.assetPairId, midPrice, executionContext)
         }
@@ -192,13 +198,13 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
         }
     }
 
-    private fun processMidPriceIsInvalidAfterMatching(messageWrapper: MessageWrapper,
-                                                      multiLimitOrder: MultiLimitOrder,
-                                                      assetPair: AssetPair,
-                                                      lowerMidPriceBound: BigDecimal?,
-                                                      upperMidPriceBound: BigDecimal?,
-                                                      midPriceAfterMatching: BigDecimal?,
-                                                      now: Date): OrdersProcessingResult {
+    private fun processMidPriceIsInvalidAfterProcessing(messageWrapper: MessageWrapper,
+                                                        multiLimitOrder: MultiLimitOrder,
+                                                        assetPair: AssetPair,
+                                                        lowerMidPriceBound: BigDecimal?,
+                                                        upperMidPriceBound: BigDecimal?,
+                                                        midPriceAfterMatching: BigDecimal?,
+                                                        now: Date): OrdersProcessingResult {
         val freshExecutionContext = getExecutionContextWithProcessedPrevOrders(messageWrapper, multiLimitOrder, assetPair, now)
 
         if (!applicationSettingsHolder.isTrustedClient(multiLimitOrder.clientId)) {
@@ -211,19 +217,19 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
         return OrdersProcessingResult(freshExecutionContext, rejectOrders(OrderStatus.TooHighMidPriceDeviation, freshExecutionContext, multiLimitOrder, now))
     }
 
-    private fun isOrderBookMidPriceValidBeforeMatching(executionContext: ExecutionContext,
-                                                       lowerMidPriceBound: BigDecimal?,
-                                                       upperMidPriceBound: BigDecimal?,
-                                                       assetPair: AssetPair): Boolean {
+    private fun isOrderBookMidPriceValidBeforeProcessing(executionContext: ExecutionContext,
+                                                         lowerMidPriceBound: BigDecimal?,
+                                                         upperMidPriceBound: BigDecimal?,
+                                                         assetPair: AssetPair): Boolean {
         val orderBookMidPriceBeforeOrdersMatching = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPair.assetPairId).getMidPrice()
         return OrderValidationUtils.isMidPriceValid(orderBookMidPriceBeforeOrdersMatching, lowerMidPriceBound, upperMidPriceBound)
     }
 
-    private fun processOrderBookMidPriceInvalidBeforeMatching(executionContext: ExecutionContext,
-                                                              multiLimitOrder: MultiLimitOrder,
-                                                              assetPair: AssetPair,
-                                                              upperMidPriceBound: BigDecimal?,
-                                                              lowerMidPriceBound: BigDecimal?) {
+    private fun processOrderBookMidPriceInvalidBeforeProcessing(executionContext: ExecutionContext,
+                                                                multiLimitOrder: MultiLimitOrder,
+                                                                assetPair: AssetPair,
+                                                                upperMidPriceBound: BigDecimal?,
+                                                                lowerMidPriceBound: BigDecimal?) {
         val orderBookMidPriceBeforeOrdersMatching = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPair.assetPairId).getMidPrice()
 
 

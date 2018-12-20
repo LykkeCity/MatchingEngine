@@ -59,7 +59,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") val refreshM
         midPriceRecalculationCount = 0
     }
 
-    fun isMidPriceChanged(assetPairId: String, newMidPrice: BigDecimal): Boolean {
+    private fun isMidPriceChanged(assetPairId: String, newMidPrice: BigDecimal): Boolean {
         val midPrices = midPricesByAssetPairId[assetPairId]
         if (CollectionUtils.isEmpty(midPrices)) {
             return false
