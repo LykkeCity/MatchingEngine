@@ -8,7 +8,7 @@ import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.parsers.data.CashTransferParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
-import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.AbstractMessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.DUPLICATE
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -26,41 +26,47 @@ import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
 
 @Component
-class CashTransferPreprocessor(
-        private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
-        private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
-        private val cashTransferPreprocessorPersistenceManager: PersistenceManager,
-        private val processedMessagesCache: ProcessedMessagesCache,
-        private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-        @Qualifier("cashTransferPreProcessingLogger")
-        private val logger: ThrottlingLogger
-): MessagePreprocessor {
+class CashTransferPreprocessor(contextParser: CashTransferContextParser,
+                               preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                               private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
+                               private val cashTransferPreprocessorPersistenceManager: PersistenceManager,
+                               private val processedMessagesCache: ProcessedMessagesCache,
+                               private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                               @Qualifier("cashTransferPreProcessingLogger")
+                               private val logger: ThrottlingLogger) :
+        AbstractMessagePreprocessor<CashTransferParsedData>(contextParser,
+                messageProcessingStatusHolder,
+                preProcessedMessageQueue,
+                logger) {
 
     companion object {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     @Autowired
-    private lateinit var contextParser: CashTransferContextParser
-
-    @Autowired
     private lateinit var cashTransferOperationInputValidator: CashTransferOperationInputValidator
 
-    override fun preProcess(messageWrapper: MessageWrapper) {
-        val cashTransferParsedData = contextParser.parse(messageWrapper)
-        val cashTransferContext = cashTransferParsedData.messageWrapper.context as CashTransferContext
-        if (messageProcessingStatusHolder.isCashTransferDisabled(cashTransferContext.transferOperation.asset)) {
-            writeResponse(cashTransferParsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
-            return
+    override fun preProcessParsedData(parsedData: CashTransferParsedData): Boolean {
+        val parsedMessageWrapper = parsedData.messageWrapper
+        val context = parsedMessageWrapper.context as CashTransferContext
+        if (messageProcessingStatusHolder.isCashTransferDisabled(context.transferOperation.asset)) {
+            writeResponse(parsedMessageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+            return false
         }
 
-        if (!validateData(cashTransferParsedData)) {
-            return
+        if (!validateData(parsedData)) {
+            return false
         }
 
-        if (!isMessageDuplicated(cashTransferParsedData)) {
-            preProcessedMessageQueue.put(messageWrapper)
+        if (isMessageDuplicated(parsedData)) {
+            writeResponse(parsedMessageWrapper, DUPLICATE)
+            val errorMessage = "Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}"
+            logger.info(errorMessage)
+            METRICS_LOGGER.logError(errorMessage)
+            return false
         }
+
+        return true
     }
 
     fun validateData(cashTransferParsedData: CashTransferParsedData): Boolean {
@@ -98,18 +104,7 @@ class CashTransferPreprocessor(
     private fun isMessageDuplicated(cashTransferParsedData: CashTransferParsedData): Boolean {
         val parsedMessageWrapper = cashTransferParsedData.messageWrapper
         val context = parsedMessageWrapper.context as CashTransferContext
-
-        if (cashOperationIdDatabaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
-            writeResponse(parsedMessageWrapper, DUPLICATE)
-            logger.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
-            METRICS_LOGGER.logError("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
-            return true
-        }
-        return false
-    }
-
-    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(status.type))
+        return cashOperationIdDatabaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)
     }
 
     private fun writeErrorResponse(messageWrapper: MessageWrapper,
