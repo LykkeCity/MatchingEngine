@@ -9,7 +9,7 @@ import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.parsers.data.CashInOutParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
-import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.AbstractMessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.DUPLICATE
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -28,41 +28,48 @@ import java.math.BigDecimal
 import java.util.concurrent.BlockingQueue
 
 @Component
-class CashInOutPreprocessor(
-        private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
-        private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
-        private val cashInOutOperationPreprocessorPersistenceManager: PersistenceManager,
-        private val processedMessagesCache: ProcessedMessagesCache,
-        private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-        @Qualifier("cashInOutPreProcessingLogger")
-        private val logger: ThrottlingLogger): MessagePreprocessor {
+class CashInOutPreprocessor(cashInOutContextParser: CashInOutContextParser,
+                            preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                            private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
+                            private val cashInOutOperationPreprocessorPersistenceManager: PersistenceManager,
+                            private val processedMessagesCache: ProcessedMessagesCache,
+                            private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                            @Qualifier("cashInOutPreProcessingLogger")
+                            private val logger: ThrottlingLogger) :
+        AbstractMessagePreprocessor<CashInOutParsedData>(cashInOutContextParser,
+                messageProcessingStatusHolder,
+                preProcessedMessageQueue,
+                logger) {
 
     companion object {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     @Autowired
-    private lateinit var cashInOutContextParser: CashInOutContextParser
-
-    @Autowired
     private lateinit var cashInOutOperationInputValidator: CashInOutOperationInputValidator
 
-    override fun preProcess(messageWrapper: MessageWrapper) {
-        val parsedData = cashInOutContextParser.parse(messageWrapper)
-        val cashInOutContext = parsedData.messageWrapper.context as CashInOutContext
-        if ((isCashIn(cashInOutContext.cashInOutOperation.amount) && messageProcessingStatusHolder.isCashInDisabled(cashInOutContext.cashInOutOperation.asset)) ||
-                (!isCashIn(cashInOutContext.cashInOutOperation.amount) && messageProcessingStatusHolder.isCashOutDisabled(cashInOutContext.cashInOutOperation.asset))) {
+    override fun preProcessParsedData(parsedData: CashInOutParsedData): Boolean {
+        val parsedMessageWrapper = parsedData.messageWrapper
+        val context = parsedMessageWrapper.context as CashInOutContext
+        if ((isCashIn(context.cashInOutOperation.amount) && messageProcessingStatusHolder.isCashInDisabled(context.cashInOutOperation.asset)) ||
+                (!isCashIn(context.cashInOutOperation.amount) && messageProcessingStatusHolder.isCashOutDisabled(context.cashInOutOperation.asset))) {
             writeResponse(parsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
-            return
+            return false
         }
 
         if (!validateData(parsedData)) {
-            return
+            return false
         }
 
-        if (!isMessageDuplicated(parsedData)) {
-            preProcessedMessageQueue.put(parsedData.messageWrapper)
+        if (isMessageDuplicated(parsedData)) {
+            writeResponse(parsedMessageWrapper, DUPLICATE)
+            val errorMessage = "Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}"
+            logger.info(errorMessage)
+            METRICS_LOGGER.logError(errorMessage)
+            return false
         }
+
+        return true
     }
 
     private fun validateData(cashInOutParsedData: CashInOutParsedData): Boolean {
@@ -100,18 +107,7 @@ class CashInOutPreprocessor(
     private fun isMessageDuplicated(cashInOutParsedData: CashInOutParsedData): Boolean {
         val parsedMessageWrapper = cashInOutParsedData.messageWrapper
         val context = cashInOutParsedData.messageWrapper.context as CashInOutContext
-        if (cashOperationIdDatabaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
-            writeResponse(parsedMessageWrapper, DUPLICATE)
-            logger.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
-            METRICS_LOGGER.logError("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
-            return true
-        }
-
-        return false
-    }
-
-    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(status.type))
+        return cashOperationIdDatabaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)
     }
 
     private fun writeErrorResponse(messageWrapper: MessageWrapper,

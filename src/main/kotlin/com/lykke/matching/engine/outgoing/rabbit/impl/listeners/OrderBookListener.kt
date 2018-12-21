@@ -3,7 +3,7 @@ package com.lykke.matching.engine.outgoing.rabbit.impl.listeners
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.outgoing.rabbit.events.RabbitFailureEvent
-import com.lykke.matching.engine.outgoing.rabbit.events.RabbitRecoverEvent
+import com.lykke.matching.engine.outgoing.rabbit.events.RabbitReadyEvent
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.monitoring.HealthMonitorEvent
 import com.lykke.matching.engine.utils.monitoring.MonitoredComponent
@@ -48,7 +48,7 @@ class OrderBookListener {
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == OrderBookListener::class.java.simpleName) {
             failed = true
-            logFail(rabbitFailureEvent.publisherName)
+            logRmqFail(rabbitFailureEvent.publisherName)
             rabbitFailureEvent.failedEvent?.let {
                 rabbitOrderBookQueue.putFirst(it as OrderBook)
             }
@@ -57,11 +57,11 @@ class OrderBookListener {
     }
 
     @EventListener
-    fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
-        if (rabbitRecoverEvent.publisherName == OrderBookListener::class.java.simpleName) {
+    fun onReady(rabbitReadyEvent: RabbitReadyEvent) {
+        if (rabbitReadyEvent.publisherName == OrderBookListener::class.java.simpleName && failed) {
             failed = false
-            logRecover(rabbitRecoverEvent.publisherName)
-            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
+            logRmqRecover(rabbitReadyEvent.publisherName)
+            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitReadyEvent.publisherName))
         }
     }
 }

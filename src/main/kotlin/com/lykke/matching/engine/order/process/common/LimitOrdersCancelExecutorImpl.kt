@@ -38,6 +38,10 @@ class LimitOrdersCancelExecutorImpl(private val assetsPairsHolder: AssetsPairsHo
 
             if (cancelAll) {
                 executionContext.currentTransactionMidPriceHolder.setRemoveAllFlag()
+            } else {
+                executionContext.currentTransactionMidPriceHolder.addMidPrices(
+                        executionContext.orderBooksHolder.getChangedOrderBooksMidPricesByAssetPairIdMap(),
+                        executionContext)
             }
 
             stopOrderBookProcessor.checkAndExecuteStopLimitOrders(executionContext)
