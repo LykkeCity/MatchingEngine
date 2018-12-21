@@ -30,7 +30,8 @@ class BalancesServiceImpl(private val balancesHolder: BalancesHolder,
                 null,
                 null,
                 null,
-                messageSequenceNumber = messageSequenceNumber))
+                messageSequenceNumber,
+                null))
         if (!updated) {
             val message = "Can not persist balances data, wallets: ${wallets.size}"
             LOGGER.error(message)

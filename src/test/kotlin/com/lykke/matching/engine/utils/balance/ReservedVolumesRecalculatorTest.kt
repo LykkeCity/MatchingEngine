@@ -102,10 +102,10 @@ class ReservedVolumesRecalculatorTest {
         testOrderBookWrapper.addStopLimitOrder(buildLimitOrder(uid = "4", clientId = "Client2", assetId = "BTCUSD", type = LimitOrderType.STOP_LIMIT, volume = 0.1, lowerLimitPrice = 10000.0, lowerPrice = 10900.0))
 
         testBalanceHolderWrapper.updateBalance("trustedClient", "BTC", 10.0)
-        testBalanceHolderWrapper.updateReservedBalance("trustedClient", "BTC", 2.0, false)
+        testBalanceHolderWrapper.updateReservedBalance("trustedClient", "BTC", 2.0)
         // negative reserved balance
         testBalanceHolderWrapper.updateBalance("trustedClient2", "BTC", 1.0)
-        testBalanceHolderWrapper.updateReservedBalance("trustedClient2", "BTC", -0.001, false)
+        testBalanceHolderWrapper.updateReservedBalance("trustedClient2", "BTC", -0.001)
 
         testBalanceHolderWrapper.updateBalance("Client3", "BTC", 0.0)
         testBalanceHolderWrapper.updateReservedBalance("Client3", "BTC", -0.001)

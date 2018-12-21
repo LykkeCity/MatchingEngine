@@ -2,12 +2,10 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.messages.MessageStatus
@@ -88,7 +86,8 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                 messageWrapper.processedMessage,
                 null,
                 null,
-                sequenceNumber))
+                sequenceNumber,
+                null))
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {

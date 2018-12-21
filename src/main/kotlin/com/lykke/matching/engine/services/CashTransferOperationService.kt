@@ -12,6 +12,7 @@ import com.lykke.matching.engine.exception.PersistenceException
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.singleFeeTransfer
+import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.*
@@ -34,6 +35,7 @@ import java.util.concurrent.BlockingQueue
 
 @Service
 class CashTransferOperationService(private val walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
+                                   private val balancesHolder: BalancesHolder,
                                    private val notificationQueue: BlockingQueue<CashTransferOperation>,
                                    private val dbTransferOperationQueue: BlockingQueue<TransferOperation>,
                                    private val feeProcessor: FeeProcessor,
@@ -116,7 +118,7 @@ class CashTransferOperationService(private val walletOperationsProcessorFactory:
 
         val fees = feeProcessor.processFee(operation.fees, receiptOperation, operations, balancesGetter = balancesHolder)
 
-        val walletProcessor = walletOperationsProcessorFactory.create(LOGGER, false)
+        val walletProcessor = walletOperationsProcessorFactory.create(LOGGER)
         walletProcessor.preProcess(operations, true)
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
@@ -124,7 +126,8 @@ class CashTransferOperationService(private val walletOperationsProcessorFactory:
                 cashTransferContext.processedMessage,
                 null,
                 null,
-                sequenceNumber))
+                sequenceNumber,
+                null))
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {

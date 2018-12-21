@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.fee
 
 import com.lykke.matching.engine.balance.BalancesGetter
+import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
@@ -51,6 +52,9 @@ class FeeProcessorTest {
 
     @Autowired
     lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
+
+    @Autowired
+    lateinit var walletOperationsProcessorFactory: WalletOperationsProcessorFactory
 
     @TestConfiguration
     open class Config {
@@ -605,7 +609,7 @@ class FeeProcessorTest {
     }
 
     private fun createBalancesGetter(): BalancesGetter {
-        return balancesHolder.createWalletProcessor(null)
+        return walletOperationsProcessorFactory.create(null)
     }
 }
 

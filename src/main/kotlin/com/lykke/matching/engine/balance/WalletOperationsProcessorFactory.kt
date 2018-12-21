@@ -12,13 +12,12 @@ class WalletOperationsProcessorFactory(private val currentTransactionBalancesHol
                                        private val applicationSettingsHolder: ApplicationSettingsHolder,
                                        private val assetsHolder: AssetsHolder,
                                        private val balancesService: BalancesService) {
-    fun create(logger: Logger?, validate: Boolean = true): WalletOperationsProcessor {
+    fun create(logger: Logger?): WalletOperationsProcessor {
 
         return WalletOperationsProcessor(balancesService,
                 currentTransactionBalancesHolderFactory.create(),
                 applicationSettingsHolder,
                 assetsHolder,
-                validate,
                 logger)
     }
 }

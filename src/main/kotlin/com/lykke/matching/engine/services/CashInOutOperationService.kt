@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
+import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.INVALID_FEE
@@ -19,6 +20,7 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
+import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -31,12 +33,14 @@ import java.util.concurrent.BlockingQueue
 
 @Service
 class CashInOutOperationService(private val rabbitCashInOutQueue: BlockingQueue<CashOperation>,
+                                private val balancesHolder: BalancesHolder,
                                 private val feeProcessor: FeeProcessor,
                                 private val walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                                 private val cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator,
                                 private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                 private val messageSender: MessageSender,
-                                private val persistenceManager: PersistenceManager) : AbstractService {
+                                private val persistenceManager: PersistenceManager,
+                                private val performanceStatsHolder: PerformanceStatsHolder) : AbstractService {
     override fun parseMessage(messageWrapper: MessageWrapper) {
         //do nothing
     }
@@ -87,7 +91,8 @@ class CashInOutOperationService(private val rabbitCashInOutQueue: BlockingQueue<
                 cashInOutContext.processedMessage,
                 null,
                 null,
-                sequenceNumber))
+                sequenceNumber,
+                null))
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {
