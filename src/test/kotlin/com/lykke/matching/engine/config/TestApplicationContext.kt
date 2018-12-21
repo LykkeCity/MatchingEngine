@@ -39,7 +39,6 @@ import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
-import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.CashInOutOperationService
 import com.lykke.matching.engine.services.CashTransferOperationService
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -263,8 +262,7 @@ open class TestApplicationContext {
                                        cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator,
                                        messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                        messageSender: MessageSender,
-                                       persistenceManager: PersistenceManager,
-                                       performanceStatsHolder: PerformanceStatsHolder): CashInOutOperationService {
+                                       persistenceManager: PersistenceManager): CashInOutOperationService {
         return CashInOutOperationService(rabbitCashInOutQueue, balancesHolder, feeProcessor, walletOperationsProcessorFactory,
                 cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender, persistenceManager)
     }
@@ -300,8 +298,7 @@ open class TestApplicationContext {
                                         messageProcessingStatusHolder: MessageProcessingStatusHolder,
                                         persistenceManager: PersistenceManager,
                                         messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                        messageSender: MessageSender,
-                                        performanceStatsHolder: PerformanceStatsHolder): ReservedCashInOutOperationService {
+                                        messageSender: MessageSender): ReservedCashInOutOperationService {
         return ReservedCashInOutOperationService(assetsHolder, walletOperationsProcessorFactory, reservedCashOperationQueue,
                 reservedCashInOutOperationValidator,
                 messageSequenceNumberHolder,
@@ -343,7 +340,6 @@ open class TestApplicationContext {
                                      stopOrderBookProcessor: StopOrderBookProcessor,
                                      executionDataApplyService: ExecutionDataApplyService,
                                      previousLimitOrdersProcessor: PreviousLimitOrdersProcessor,
-                                     performanceStatsHolder: PerformanceStatsHolder,
                                      priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
                                      midPriceHolder: MidPriceHolder,
                                      applicationSettingsHolder: ApplicationSettingsHolder): SingleLimitOrderService {
@@ -368,7 +364,6 @@ open class TestApplicationContext {
                                     balancesHolder: BalancesHolder,
                                     applicationSettingsHolder: ApplicationSettingsHolder,
                                     messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                                    performanceStatsHolder: PerformanceStatsHolder,
                                     testUUIDHolder: TestUUIDHolder,
                                     midPriceHolder: MidPriceHolder,
                                     priceDeviationThreshold: PriceDeviationThresholdHolder): MultiLimitOrderService {
@@ -382,7 +377,6 @@ open class TestApplicationContext {
                 balancesHolder,
                 applicationSettingsHolder,
                 messageProcessingStatusHolder,
-                performanceStatsHolder,
                 midPriceHolder,
                 testUUIDHolder(),
                 priceDeviationThreshold)
@@ -406,8 +400,7 @@ open class TestApplicationContext {
                                 priceDeviationThreshold: PriceDeviationThresholdHolder,
                                 midPriceHolder: MidPriceHolder,
                                 applicationSettingsCache: ApplicationSettingsCache,
-                                messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                                performanceStatsHolder: PerformanceStatsHolder): MarketOrderService {
+                                messageProcessingStatusHolder: MessageProcessingStatusHolder): MarketOrderService {
         return MarketOrderService(matchingEngine,
                 executionContextFactory,
                 stopOrderBookProcessor,
@@ -590,7 +583,7 @@ open class TestApplicationContext {
                                           dbTransferOperationQueue: BlockingQueue<TransferOperation>, feeProcessor: FeeProcessor,
                                           balancesHolder: BalancesHolder,
                                           cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator, messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                          messageSender: MessageSender, persistenceManager: PersistenceManager, performanceStatsHolder: PerformanceStatsHolder): CashTransferOperationService {
+                                          messageSender: MessageSender, persistenceManager: PersistenceManager): CashTransferOperationService {
         return CashTransferOperationService(walletOperationsProcessorFactory,balancesHolder,  notification, dbTransferOperationQueue, feeProcessor,
                 cashTransferOperationBusinessValidator, messageSequenceNumberHolder, messageSender, persistenceManager)
     }
@@ -654,9 +647,8 @@ open class TestApplicationContext {
     open fun limitOrderCancelService(genericLimitOrderService: GenericLimitOrderService,
                                      genericStopLimitOrderService: GenericStopLimitOrderService,
                                      validator: LimitOrderCancelOperationBusinessValidator,
-                                     limitOrdersCancelServiceHelper: LimitOrdersCancelServiceHelper,
-                                     performanceStatsHolder: PerformanceStatsHolder): LimitOrderCancelService {
-        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelServiceHelper, performanceStatsHolder)
+                                     limitOrdersCancelServiceHelper: LimitOrdersCancelServiceHelper): LimitOrderCancelService {
+        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelServiceHelper)
     }
 
     @Bean
@@ -672,8 +664,7 @@ open class TestApplicationContext {
     @Bean
     open fun limitOrderMassCancelService(genericLimitOrderService: GenericLimitOrderService,
                                          genericStopLimitOrderService: GenericStopLimitOrderService,
-                                         limitOrdersCancelServiceHelper: LimitOrdersCancelServiceHelper,
-                                         performanceStatsHolder: PerformanceStatsHolder): LimitOrderMassCancelService {
+                                         limitOrdersCancelServiceHelper: LimitOrdersCancelServiceHelper): LimitOrderMassCancelService {
         return LimitOrderMassCancelService(genericLimitOrderService,
                 genericStopLimitOrderService,
                 limitOrdersCancelServiceHelper)
@@ -682,8 +673,7 @@ open class TestApplicationContext {
     @Bean
     open fun multiLimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService,
                                           limitOrdersCancelServiceHelper: LimitOrdersCancelServiceHelper,
-                                          applicationSettingsHolder: ApplicationSettingsHolder,
-                                          performanceStatsHolder: PerformanceStatsHolder): MultiLimitOrderCancelService {
+                                          applicationSettingsHolder: ApplicationSettingsHolder): MultiLimitOrderCancelService {
         return MultiLimitOrderCancelService(genericLimitOrderService,
                 limitOrdersCancelServiceHelper,
                 applicationSettingsHolder)

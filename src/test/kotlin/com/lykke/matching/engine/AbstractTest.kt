@@ -147,12 +147,6 @@ abstract class AbstractTest {
     protected lateinit var cashInOutOperationService: CashInOutOperationService
 
     @Autowired
-    protected lateinit var messageProcessingStatusHolder: MessageProcessingStatusHolder
-
-    @Autowired
-    private lateinit var performanceStatsHolder: PerformanceStatsHolder
-
-    @Autowired
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
 
     protected open fun initServices() {

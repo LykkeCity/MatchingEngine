@@ -26,7 +26,6 @@ import com.lykke.matching.engine.holders.TestUUIDHolder
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
 import com.lykke.matching.engine.matching.MatchingEngine
-import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExecutionEventSender
 import com.lykke.matching.engine.order.ExecutionPersistenceService
@@ -128,7 +127,6 @@ abstract class AbstractPerformanceTest {
     val walletOperationsProcessorFactory = WalletOperationsProcessorFactory(currentTransactionBalancesHolderFactory,
             applicationSettingsHolder, assetsHolder, balancesService)
 
-    val performanceStatsHolder = PerformanceStatsHolder()
 
     private var messageProcessingStatusHolder = Mockito.mock(MessageProcessingStatusHolder::class.java)
 
@@ -254,7 +252,6 @@ abstract class AbstractPerformanceTest {
                 balancesHolder,
                 applicationSettingsHolder,
                 messageProcessingStatusHolder,
-                performanceStatsHolder,
                 midPriceHolder,
                 TestUUIDHolder(),
                 priceDeviationThresholdHolder)
@@ -273,8 +270,7 @@ abstract class AbstractPerformanceTest {
                 priceDeviationThresholdHolder,
                 midPriceHolder,
                 messageProcessingStatusHolder,
-                notificationSender,
-                messageProcessingStatusHolder)
+                notificationSender)
 
     }
 }

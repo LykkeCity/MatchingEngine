@@ -38,7 +38,7 @@ class CashInOutOperationService(private val rabbitCashInOutQueue: BlockingQueue<
                                 private val cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator,
                                 private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                 private val messageSender: MessageSender,
-                                private val persistenceManager: PersistenceManager, ) : AbstractService {
+                                private val persistenceManager: PersistenceManager) : AbstractService {
     override fun parseMessage(messageWrapper: MessageWrapper) {
         //do nothing
     }
