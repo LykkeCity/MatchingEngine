@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
-import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.daos.context.CashTransferContext
 import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
@@ -34,7 +33,7 @@ class CashTransferPreprocessor(
         private val cashTransferPreprocessorPersistenceManager: PersistenceManager,
         private val processedMessagesCache: ProcessedMessagesCache,
         private val messageProcessingStatusHolder: MessageProcessingStatusHolder
-) : MessagePreprocessor, Thread(CashTransferPreprocessor::class.java.name) {
+): MessagePreprocessor, Thread(CashTransferPreprocessor::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(CashTransferPreprocessor::class.java.name)

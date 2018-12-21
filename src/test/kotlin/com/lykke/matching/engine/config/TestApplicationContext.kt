@@ -3,7 +3,6 @@ package com.lykke.matching.engine.config
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.spring.JsonConfig
 import com.lykke.matching.engine.config.spring.QueueConfig
-import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
@@ -19,9 +18,6 @@ import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedDa
 import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.*
-import com.lykke.matching.engine.holders.*
-import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
-import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPreprocessor
@@ -302,18 +298,17 @@ open class TestApplicationContext {
     }
 
     @Bean
+    open fun applicationSettingsHistoryDatabaseAccessor(): SettingsHistoryDatabaseAccessor {
+        return Mockito.mock(SettingsHistoryDatabaseAccessor::class.java)
+    }
+
+    @Bean
     open fun applicationSettingsService(settingsDatabaseAccessor: SettingsDatabaseAccessor,
                                         applicationSettingsCache: ApplicationSettingsCache,
                                         settingsHistoryDatabaseAccessor: SettingsHistoryDatabaseAccessor,
                                         applicationEventPublisher: ApplicationEventPublisher): ApplicationSettingsService {
         return ApplicationSettingsServiceImpl(settingsDatabaseAccessor, applicationSettingsCache, settingsHistoryDatabaseAccessor, applicationEventPublisher)
     }
-
-    @Bean
-    open fun applicationSettingsHistoryDatabaseAccessor(): SettingsHistoryDatabaseAccessor {
-        return Mockito.mock(SettingsHistoryDatabaseAccessor::class.java)
-    }
-
 
     @Bean
     open fun disabledFunctionalityRulesHolder(applicationSettingsCache: ApplicationSettingsCache,

@@ -49,9 +49,9 @@ import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorIm
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.utils.logging.ThrottlingLogger
-import java.util.Optional
 import org.mockito.Mockito
 import org.springframework.context.ApplicationEventPublisher
+import java.util.Optional
 import java.util.concurrent.LinkedBlockingQueue
 
 abstract class AbstractPerformanceTest {
