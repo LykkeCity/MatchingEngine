@@ -20,6 +20,10 @@ class BalancesServiceImpl(private val balancesHolder: BalancesHolder,
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
+    /**
+     * Persists wallets to the db and updates values in cache,
+     * Note: this method will not send balance updates notifications
+     */
     override fun insertOrUpdateWallets(wallets: Collection<Wallet>, messageSequenceNumber: Long?): Boolean {
         val updated = persistenceManager.persist(PersistenceData(BalancesData(wallets,
                 wallets.flatMap { it.balances.values }),
