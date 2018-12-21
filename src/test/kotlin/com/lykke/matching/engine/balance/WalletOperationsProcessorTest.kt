@@ -8,6 +8,7 @@ import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
+import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.getSetting
@@ -21,6 +22,13 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
+import kotlin.test.assertEquals
+import com.lykke.matching.engine.utils.assertEquals
+import org.springframework.beans.factory.annotation.Autowired
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import kotlin.test.*
 
 @RunWith(SpringRunner::class)
@@ -42,6 +50,9 @@ class WalletOperationsProcessorTest : AbstractTest() {
     }
 
     @Autowired
+    private lateinit var walletOperationsProcessorFactory: WalletOperationsProcessorFactory
+
+    @Autowired
     private lateinit var settingsDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @Test
@@ -50,7 +61,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
         testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC", 0.1)
         initServices()
 
-        val walletOperationsProcessor = balancesHolder.createWalletProcessor(null)
+        val walletOperationsProcessor = walletOperationsProcessorFactory.create(null)
 
         walletOperationsProcessor.preProcess(
                 listOf(
@@ -72,7 +83,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
                     )
             )
         }
-        assertTrue(walletOperationsProcessor.persistBalances(null, null, null, null))
+        assertTrue(persistenceManager.persist(PersistenceData( walletOperationsProcessor.persistenceData(), null, null, null, null)))
         walletOperationsProcessor.apply().sendNotification("id", "type", "test")
 
         assertBalance("Client1", "BTC", 0.5, 0.0)
@@ -106,15 +117,15 @@ class WalletOperationsProcessorTest : AbstractTest() {
     fun testForceProcessInvalidWalletOperations() {
         initServices()
 
-        val walletOperationsProcessor = balancesHolder.createWalletProcessor(null)
+        val walletOperationsProcessor = walletOperationsProcessorFactory.create(null)
 
         walletOperationsProcessor.preProcess(
                 listOf(
                         WalletOperation("Client1", "BTC", BigDecimal.ZERO, BigDecimal.valueOf(-0.1))
                 ), true)
 
-        assertTrue(walletOperationsProcessor.persistBalances(null, null, null, null))
-        walletOperationsProcessor.apply().sendNotification("id", "type", "test")
+        assertTrue(persistenceManager.persist(PersistenceData(walletOperationsProcessor.persistenceData(), null, null, null, null)))
+        walletOperationsProcessor.apply().sendNotification("id", "type","test")
 
         assertBalance("Client1", "BTC", 0.0, -0.1)
     }

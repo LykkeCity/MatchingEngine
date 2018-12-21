@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.config
 
+import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.spring.JsonConfig
 import com.lykke.matching.engine.config.spring.QueueConfig
@@ -32,6 +33,7 @@ import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.process.common.LimitOrdersCancelExecutor
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
+import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolderFactory
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.*
@@ -48,6 +50,7 @@ import com.lykke.matching.engine.services.validators.business.LimitOrderCancelOp
 import com.lykke.matching.engine.services.validators.business.impl.*
 import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.ReservedCashInOutOperationValidatorImpl
+import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
 import com.lykke.matching.engine.services.validators.input.CashTransferOperationInputValidator
 import com.lykke.matching.engine.services.validators.input.LimitOrderCancelOperationInputValidator
@@ -98,12 +101,9 @@ open class TestApplicationContext {
 
     @Bean
     open fun balanceHolder(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
-                           persistenceManager: PersistenceManager,
                            balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
-                           applicationSettingsHolder: ApplicationSettingsHolder,
-                           backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor): BalancesHolder {
-        return BalancesHolder(balancesDatabaseAccessorsHolder, persistenceManager, assetHolder(backOfficeDatabaseAccessor),
-                 balanceUpdateQueue, applicationSettingsHolder)
+                           applicationSettingsHolder: ApplicationSettingsHolder): BalancesHolder {
+        return BalancesHolder(balancesDatabaseAccessorsHolder)
     }
 
     @Bean
@@ -142,13 +142,14 @@ open class TestApplicationContext {
                                          stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
                                          testReservedVolumesDatabaseAccessor: TestReservedVolumesDatabaseAccessor,
                                          assetHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder,
-                                         balancesHolder: BalancesHolder, applicationSettingsHolder: ApplicationSettingsHolder,
+                                         balancesHolder: BalancesHolder,
+                                         balancesService: BalancesService, applicationSettingsHolder: ApplicationSettingsHolder,
                                          messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                          messageSender: MessageSender): ReservedVolumesRecalculator {
         return ReservedVolumesRecalculator(testOrderDatabaseAccessorHolder, stopOrdersDatabaseAccessorsHolder,
                 testReservedVolumesDatabaseAccessor, assetHolder,
                 assetsPairsHolder, balancesHolder, applicationSettingsHolder,
-                false, messageSequenceNumberHolder, messageSender)
+                false, messageSequenceNumberHolder, messageSender, balancesService)
     }
 
     @Bean
@@ -199,8 +200,10 @@ open class TestApplicationContext {
 
     @Bean
     open fun testBalanceHolderWrapper(balanceUpdateHandlerTest: BalanceUpdateHandlerTest,
-                                      balancesHolder: BalancesHolder): TestBalanceHolderWrapper {
-        return TestBalanceHolderWrapper(balanceUpdateHandlerTest, balancesHolder)
+                                      balancesHolder: BalancesHolder,
+                                      persistenceManager: PersistenceManager,
+                                      walletOperationsProcessorFactory: WalletOperationsProcessorFactory): TestBalanceHolderWrapper {
+        return TestBalanceHolderWrapper(balanceUpdateHandlerTest, balancesHolder, walletOperationsProcessorFactory, persistenceManager)
     }
 
     @Bean
@@ -259,15 +262,15 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashInOutOperationService(balancesHolder: BalancesHolder,
+    open fun cashInOutOperationService(walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                                        rabbitCashInOutQueue: BlockingQueue<CashOperation>,
                                        feeProcessor: FeeProcessor,
                                        cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator,
                                        messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                        messageSender: MessageSender,
-                                       performanceStatsHolder: PerformanceStatsHolder): CashInOutOperationService {
-        return CashInOutOperationService(balancesHolder, rabbitCashInOutQueue, feeProcessor,
-                cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender, performanceStatsHolder)
+                                       persistenceManager: PersistenceManager): CashInOutOperationService {
+        return CashInOutOperationService(rabbitCashInOutQueue, feeProcessor, walletOperationsProcessorFactory,
+                cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender, persistenceManager)
     }
 
     @Bean
@@ -294,22 +297,14 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun reservedCashInOutOperation(balancesHolder: BalancesHolder,
+    open fun reservedCashInOutOperation(walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                                         assetsHolder: AssetsHolder,
                                         reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                         reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
-                                        messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                        messageSender: MessageSender,
                                         messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                                        performanceStatsHolder: PerformanceStatsHolder): ReservedCashInOutOperationService {
-        return ReservedCashInOutOperationService(assetsHolder,
-                balancesHolder,
-                reservedCashOperationQueue,
-                reservedCashInOutOperationValidator,
-                messageSequenceNumberHolder,
-                messageSender,
-                messageProcessingStatusHolder,
-                performanceStatsHolder)
+                                        persistenceManager: PersistenceManager): ReservedCashInOutOperationService {
+        return ReservedCashInOutOperationService(assetsHolder, walletOperationsProcessorFactory, reservedCashOperationQueue,
+                reservedCashInOutOperationValidator, messageProcessingStatusHolder, persistenceManager)
     }
 
     @Bean
@@ -590,13 +585,12 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashTransferOperationService(balancesHolder: BalancesHolder, notification: BlockingQueue<CashTransferOperation>,
+    open fun cashTransferOperationService(walletOperationsProcessorFactory: WalletOperationsProcessorFactory, notification: BlockingQueue<CashTransferOperation>,
                                           dbTransferOperationQueue: BlockingQueue<TransferOperation>, feeProcessor: FeeProcessor,
                                           cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator, messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                          messageSender: MessageSender,
-                                          performanceStatsHolder: PerformanceStatsHolder): CashTransferOperationService {
-        return CashTransferOperationService(balancesHolder, notification, dbTransferOperationQueue, feeProcessor,
-                cashTransferOperationBusinessValidator, messageSequenceNumberHolder, messageSender, performanceStatsHolder)
+                                          messageSender: MessageSender, persistenceManager: PersistenceManager): CashTransferOperationService {
+        return CashTransferOperationService(walletOperationsProcessorFactory, notification, dbTransferOperationQueue, feeProcessor,
+                cashTransferOperationBusinessValidator, messageSequenceNumberHolder, messageSender, persistenceManager)
     }
 
     @Bean
@@ -743,5 +737,25 @@ open class TestApplicationContext {
     @Bean
     open fun orderBookMidPriceChecker(): OrderBookMidPriceChecker {
         return OrderBookMidPriceChecker()
+    }
+
+    @Bean
+    open fun currentTransactionBalancesHolderFactory(balancesHolder: BalancesHolder): CurrentTransactionBalancesHolderFactory {
+        return CurrentTransactionBalancesHolderFactory(balancesHolder)
+    }
+
+    @Bean
+    open fun walletOperationsProcessorFactory(currentTransactionBalancesHolderFactory: CurrentTransactionBalancesHolderFactory,
+                                              applicationSettingsHolder: ApplicationSettingsHolder,
+                                              assetsHolder: AssetsHolder,
+                                              balancesService: BalancesService): WalletOperationsProcessorFactory {
+        return WalletOperationsProcessorFactory(currentTransactionBalancesHolderFactory, applicationSettingsHolder, assetsHolder, balancesService)
+    }
+
+    @Bean
+    open fun balancesService(balancesHolder: BalancesHolder,
+                             persistenceManager: PersistenceManager,
+                             balanceUpdateQueue: BlockingQueue<BalanceUpdate>): BalancesService {
+        return BalancesServiceImpl(balancesHolder, persistenceManager, balanceUpdateQueue)
     }
 }
