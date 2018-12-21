@@ -10,7 +10,6 @@ import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedDat
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.process.context.StopLimitOrderContext
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
-import com.lykke.matching.engine.services.validators.impl.OrderFatalValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.NumberUtils
@@ -81,7 +80,7 @@ class LimitOrderInputValidatorImpl(val applicationSettingsHolder: ApplicationSet
 
     private fun validateAsset(assetPair: AssetPair?, assetPairId: String) {
         if (assetPair == null) {
-            throw OrderFatalValidationException("Unable to find asset pair $assetPairId")
+            throw OrderValidationException(OrderStatus.UnknownAsset, "Unable to find asset pair $assetPairId")
         }
 
         if (applicationSettingsHolder.isAssetDisabled(assetPair.baseAssetId) || applicationSettingsHolder.isAssetDisabled(assetPair.quotingAssetId)) {

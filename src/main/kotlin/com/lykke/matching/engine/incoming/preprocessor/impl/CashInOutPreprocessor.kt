@@ -59,7 +59,9 @@ class CashInOutPreprocessor(
             return
         }
 
-        performDeduplicationCheck(parsedData)
+        if (!isMessageDuplicated(parsedData)) {
+            preProcessedMessageQueue.put(parsedData.messageWrapper)
+        }
     }
 
     private fun validateData(cashInOutParsedData: CashInOutParsedData): Boolean {
@@ -94,16 +96,17 @@ class CashInOutPreprocessor(
         }
     }
 
-    private fun performDeduplicationCheck(cashInOutParsedData: CashInOutParsedData) {
+    private fun isMessageDuplicated(cashInOutParsedData: CashInOutParsedData): Boolean {
         val parsedMessageWrapper = cashInOutParsedData.messageWrapper
         val context = cashInOutParsedData.messageWrapper.context as CashInOutContext
         if (cashOperationIdDatabaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
             writeResponse(parsedMessageWrapper, DUPLICATE)
             LOGGER.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
             METRICS_LOGGER.logError("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
-        } else {
-            preProcessedMessageQueue.put(parsedMessageWrapper)
+            return true
         }
+
+        return false
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
@@ -129,11 +132,13 @@ class CashInOutPreprocessor(
 
     override fun run() {
         while (true) {
-            val message = cashInOutInputQueue.take()
+            val messageWrapper = cashInOutInputQueue.take()
             try {
-                preProcess(message)
+                messageWrapper.messagePreProcessorStartTimestamp = System.nanoTime()
+                preProcess(messageWrapper)
+                messageWrapper.messagePreProcessorEndTimestamp = System.nanoTime()
             } catch (exception: Exception) {
-                handlePreprocessingException(exception, message)
+                handlePreprocessingException(exception, messageWrapper)
             }
         }
     }
@@ -141,16 +146,16 @@ class CashInOutPreprocessor(
     private fun handlePreprocessingException(exception: Exception, message: MessageWrapper) {
         try {
             val context = message.context
-            CashTransferPreprocessor.LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
+            LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
                     if (context != null) "Error details: $context" else "", exception)
 
-            CashTransferPreprocessor.METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
+            METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
             writeResponse(message, RUNTIME)
         } catch (e: Exception) {
             val errorMessage = "Got error during message preprocessing failure handling"
             e.addSuppressed(exception)
-            CashTransferPreprocessor.LOGGER.error(errorMessage, e)
-            CashTransferPreprocessor.METRICS_LOGGER.logError(errorMessage, e)
+            LOGGER.error(errorMessage, e)
+            METRICS_LOGGER.logError(errorMessage, e)
         }
     }
 }

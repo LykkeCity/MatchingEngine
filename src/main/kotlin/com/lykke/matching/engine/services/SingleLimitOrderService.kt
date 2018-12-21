@@ -13,8 +13,10 @@ import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.log4j.Logger
+import org.springframework.stereotype.Service
 import java.util.*
 
+@Service
 class SingleLimitOrderService(private val executionContextFactory: ExecutionContextFactory,
                               private val genericLimitOrdersProcessor: GenericLimitOrdersProcessor,
                               private val stopOrderBookProcessor: StopOrderBookProcessor,
@@ -105,10 +107,6 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
                               status: MessageStatus,
                               internalOrderId: String?,
                               statusReason: String? = null) {
-        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
-            return
-        }
         val builder = ProtocolMessages.NewResponse.newBuilder().setStatus(status.type)
         internalOrderId?.let { builder.setMatchingEngineId(internalOrderId) }
         statusReason?.let { builder.setStatusReason(it) }

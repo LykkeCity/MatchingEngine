@@ -19,6 +19,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
+import com.lykke.matching.engine.socket.TestClientHandler
 import java.math.BigDecimal
 import java.util.*
 
@@ -282,14 +283,6 @@ companion object {
                     sourceClientId, targetClientId, assetIds,
                     if (makerFeeModificator != null) BigDecimal.valueOf(makerFeeModificator) else null))
         }
-
-        fun buildBalanceUpdateWrapper(clientId: String, assetId: String, amount: Double, uid: String = "123"): MessageWrapper {
-            return MessageWrapper("Test", MessageType.BALANCE_UPDATE.type, ProtocolMessages.BalanceUpdate.newBuilder()
-                    .setUid(uid)
-                    .setClientId(clientId)
-                    .setAssetId(assetId)
-                    .setAmount(amount).build().toByteArray(), null)
-        }
     }
 
     fun buildTransferWrapper(fromClientId: String,
@@ -373,7 +366,7 @@ companion object {
         order.upperLimitPrice?.let { builder.setUpperLimitPrice(it.toDouble()) }
         order.upperPrice?.let { builder.setUpperPrice(it.toDouble()) }
         val messageWrapper = singleLimitOrderContextParser
-                .parse(MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null, messageId = "test", id = "test"))
+                .parse(MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), TestClientHandler(), messageId = "test", id = "test"))
                 .messageWrapper
 
         val singleLimitContext = messageWrapper.context as SingleLimitOrderContext

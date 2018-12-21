@@ -71,10 +71,10 @@ class LimitOrderServiceTest : AbstractTest() {
     }
 
     @Autowired
-    private lateinit var messageBuilder: MessageBuilder
+    private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @Autowired
-    private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
+    private lateinit var messageBuilder: MessageBuilder
 
     @Before
     fun setUp() {

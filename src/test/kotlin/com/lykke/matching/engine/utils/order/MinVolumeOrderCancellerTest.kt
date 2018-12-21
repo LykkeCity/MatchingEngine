@@ -8,7 +8,6 @@ import com.lykke.matching.engine.daos.IncomingLimitOrder
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -38,9 +37,6 @@ import kotlin.test.assertNull
 class MinVolumeOrderCancellerTest : AbstractTest() {
 
     @Autowired
-    private lateinit var recalculator: ReservedVolumesRecalculator
-
-    @Autowired
     private lateinit var messageBuilder: MessageBuilder
 
     @TestConfiguration
@@ -67,7 +63,8 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
     }
 
-    private lateinit var canceller: MinVolumeOrderCanceller
+    @Autowired
+    private lateinit var recalculator: ReservedVolumesRecalculator
 
     @Before
     fun setUp() {

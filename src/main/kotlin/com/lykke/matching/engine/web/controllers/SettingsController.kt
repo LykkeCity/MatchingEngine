@@ -51,11 +51,21 @@ class SettingsController {
         }
     }
 
+    @ApiOperation("Get all settings of all setting groups")
+    @ApiResponses(
+            ApiResponse(code = 200, message = "Success"),
+            ApiResponse(code = 500, message = "Internal server error occurred")
+    )
+    @GetMapping("/all", produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun getAllSettingGroups(@RequestParam("enabled", required = false) enabled: Boolean? = null): Set<SettingsGroupDto> {
+        return applicationSettingsService.getAllSettingGroups(enabled)
+    }
+
     @ApiOperation("Get setting for given setting group and setting name")
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),
             ApiResponse(code = 400, message = "Supplied group name is not supported"),
-            ApiResponse(code = 404, message = "Setting not found"),
+            ApiResponse(code = 404, message = "Supplied setting was not found"),
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
     @GetMapping("/{settingGroupName}/setting/{settingName}", produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -70,17 +80,11 @@ class SettingsController {
         }
     }
 
-    @ApiOperation("Get all settings of all setting groups")
+    @ApiOperation("Get list of supported setting groups")
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
-    @GetMapping("/all", produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun getAllSettingGroups(@RequestParam("enabled", required = false) enabled: Boolean? = null): Set<SettingsGroupDto> {
-        return applicationSettingsService.getAllSettingGroups(enabled)
-    }
-
-    @ApiOperation("Get list of supported setting groups")
     @GetMapping("/supported", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getSupportedSettings(): Set<String> {
         return AvailableSettingGroup.values().map { it.settingGroupName }.toSet()
@@ -145,6 +149,11 @@ class SettingsController {
     }
 
     @ExceptionHandler
+    private fun handleApplicationValidationException(request: HttpServletRequest, exception: SettingNotFoundException): ResponseEntity<*> {
+        return ResponseEntity(exception.message, HttpStatus.NOT_FOUND)
+    }
+
+    @ExceptionHandler
     private fun handleApplicationValidationException(request: HttpServletRequest, exception: ValidationException): ResponseEntity<*> {
         return ResponseEntity(exception.message, HttpStatus.BAD_REQUEST)
     }
@@ -162,10 +171,5 @@ class SettingsController {
     @ExceptionHandler
     private fun handleInvalidSettingGroup(request: HttpServletRequest, exception: InvalidSettingGroupException): ResponseEntity<String> {
         return ResponseEntity(exception.message, HttpStatus.BAD_REQUEST)
-    }
-
-    @ExceptionHandler
-    private fun handleSettingNotFound(request: HttpServletRequest, exception: SettingNotFoundException): ResponseEntity<String> {
-        return ResponseEntity(exception.message, HttpStatus.NOT_FOUND)
     }
 }

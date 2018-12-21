@@ -1,5 +1,8 @@
 package com.lykke.matching.engine.config.spring
 
+import com.google.gson.*
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
+import com.lykke.matching.engine.services.validators.settings.SettingValidator
 import com.google.gson.Gson
 import com.google.gson.*
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
@@ -13,7 +16,6 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.http.converter.json.GsonHttpMessageConverter
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
-import springfox.documentation.spring.web.json.Json
 import springfox.documentation.swagger.web.UiConfigurationBuilder
 import springfox.documentation.swagger.web.UiConfiguration
 

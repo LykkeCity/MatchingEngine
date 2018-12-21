@@ -88,29 +88,6 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
     }
 
     private fun parseMessage(messageWrapper: MessageWrapper): SingleLimitOrderContext {
-        return if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            parseOldMessage(messageWrapper)
-        } else {
-            parseNewMessage(messageWrapper)
-        }
-    }
-
-    private fun parseOldMessage(messageWrapper: MessageWrapper): SingleLimitOrderContext {
-        val oldMessage = parseOldLimitOrder(messageWrapper.byteArray)
-        val uid = UUID.randomUUID().toString()
-        val messageId = if (oldMessage.hasMessageId()) oldMessage.messageId else oldMessage.uid.toString()
-
-        val limitOrder = LimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, BigDecimal.valueOf(oldMessage.volume),
-                BigDecimal.valueOf(oldMessage.price), OrderStatus.InOrderBook.name, null, Date(oldMessage.timestamp), null, BigDecimal.valueOf(oldMessage.volume), null,
-                type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
-
-        logger.info("Got old limit order messageId: $messageId id: ${oldMessage.uid}, client ${oldMessage.clientId}")
-
-        return getContext(messageId, limitOrder, oldMessage.cancelAllPreviousLimitOrders,
-                ProcessedMessage(messageWrapper.type, oldMessage.timestamp, messageId))
-    }
-
-    private fun parseNewMessage(messageWrapper: MessageWrapper): SingleLimitOrderContext {
         val message = parseLimitOrder(messageWrapper.byteArray)
         val messageId = if (message.hasMessageId()) message.messageId else message.uid
 
