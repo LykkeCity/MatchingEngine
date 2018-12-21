@@ -21,7 +21,6 @@ import com.lykke.matching.engine.outgoing.messages.TradeInfo
 import com.lykke.matching.engine.outgoing.messages.v2.builders.bigDecimalToString
 import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import com.lykke.matching.engine.services.GenericLimitOrderService
-import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils.Companion.checkExecutionPriceDeviation
 import com.lykke.matching.engine.utils.NumberUtils
 import org.springframework.stereotype.Component

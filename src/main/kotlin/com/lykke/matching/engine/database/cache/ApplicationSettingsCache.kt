@@ -77,8 +77,8 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
     }
 
     @Synchronized
-    fun getSetting(settingGroupName: AvailableSettingGroup, settingName: String): Setting? {
-        return getSettingsGroup(settingGroupName)?.let {
+    fun getSetting(settingGroup: AvailableSettingGroup, settingName: String, enabled: Boolean? = null): Setting? {
+        return getSettingsGroup(settingGroup, enabled)?.let {
             it.settings.find { it.name == settingName }
         }
     }

@@ -194,8 +194,6 @@ class WalletOperationsProcessorTest : AbstractTest() {
         assertEquals(BigDecimal.ZERO, clientBalanceUpdates.single().oldReserved)
         assertEquals(BigDecimal.valueOf(0.2), clientBalanceUpdates.single().newBalance)
         assertEquals(BigDecimal.valueOf(0.2), clientBalanceUpdates.single().newReserved)
-
-        walletOperationsProcessor.sendNotification("id", "type", "messageId")
     }
 
     private fun validate(clientId: String, assetId: String, oldBalance: Double, oldReserved: Double, newBalance: Double, newReserved: Double): Boolean {

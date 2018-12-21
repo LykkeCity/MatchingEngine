@@ -68,9 +68,9 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
     @Synchronized
     override fun createOrUpdateSetting(settingsGroup: AvailableSettingGroup, settingDto: SettingDto) {
         settingGroupToValidator[settingsGroup]?.forEach { it.validate(settingDto) }
-        val previousSetting = getSetting(settingsGroup, settingDto.name)
 
-        val commentWithOperationPrefix = getCommentWithOperationPrefix(settingsGroup, settingDto)
+        val previousSetting = getSetting(settingsGroup, settingDto.name)
+        val commentWithOperationPrefix = getCommentWithOperationPrefix(getSettingOperation(previousSetting, settingDto), settingDto.comment!!)
 
         val setting = toSetting(settingDto)
         settingsDatabaseAccessor.createOrUpdateSetting(settingsGroup, setting)
@@ -157,11 +157,6 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
     private fun getCommentWithOperationPrefix(prefix: SettingOperation, comment: String): String {
         return COMMENT_FORMAT.format(prefix, comment)
-    }
-
-    private fun getCommentWithOperationPrefix(settingsGroup: AvailableSettingGroup, setting: SettingDto): String {
-        val previousSetting = getSetting(settingsGroup, setting.name)
-        return getCommentWithOperationPrefix(getSettingOperation(previousSetting, setting), setting.comment!!)
     }
 
     private fun getSettingOperation(previousSettingState: SettingDto?, nextSettingState: SettingDto): SettingOperation {
