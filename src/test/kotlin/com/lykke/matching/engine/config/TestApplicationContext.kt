@@ -40,6 +40,14 @@ import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
+import com.lykke.matching.engine.services.CashInOutOperationService
+import com.lykke.matching.engine.services.CashTransferOperationService
+import com.lykke.matching.engine.services.GenericLimitOrderService
+import com.lykke.matching.engine.services.GenericStopLimitOrderService
+import com.lykke.matching.engine.services.MarketOrderService
+import com.lykke.matching.engine.services.MessageSender
+import com.lykke.matching.engine.services.MultiLimitOrderService
+import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
@@ -50,10 +58,10 @@ import com.lykke.matching.engine.services.validators.business.LimitOrderCancelOp
 import com.lykke.matching.engine.services.validators.business.impl.*
 import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.ReservedCashInOutOperationValidatorImpl
+import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
 import com.lykke.matching.engine.services.validators.input.CashTransferOperationInputValidator
 import com.lykke.matching.engine.services.validators.input.LimitOrderCancelOperationInputValidator
-import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.services.validators.input.impl.CashInOutOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.CashTransferOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
@@ -103,16 +111,6 @@ open class TestApplicationContext {
                            balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
                            applicationSettingsHolder: ApplicationSettingsHolder): BalancesHolder {
         return BalancesHolder(balancesDatabaseAccessorsHolder)
-    }
-
-    @Bean
-    open fun performanceStatsHolder(): PerformanceStatsHolder {
-        return PerformanceStatsHolder()
-    }
-
-    @Bean
-    open fun currentTransactionDataHolder(): CurrentTransactionDataHolder {
-        return CurrentTransactionDataHolder()
     }
 
     @Bean
@@ -268,7 +266,7 @@ open class TestApplicationContext {
                                        persistenceManager: PersistenceManager,
                                        performanceStatsHolder: PerformanceStatsHolder): CashInOutOperationService {
         return CashInOutOperationService(rabbitCashInOutQueue, balancesHolder, feeProcessor, walletOperationsProcessorFactory,
-                cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender, persistenceManager, performanceStatsHolder)
+                cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender, persistenceManager)
     }
 
     @Bean
@@ -309,7 +307,6 @@ open class TestApplicationContext {
                 messageSequenceNumberHolder,
                 messageSender,
                 messageProcessingStatusHolder,
-                performanceStatsHolder,
                 persistenceManager)
     }
 
@@ -357,8 +354,7 @@ open class TestApplicationContext {
                 previousLimitOrdersProcessor,
                 priceDeviationThresholdHolder,
                 midPriceHolder,
-                applicationSettingsHolder,
-                performanceStatsHolder)
+                applicationSettingsHolder)
     }
 
     @Bean
@@ -425,8 +421,7 @@ open class TestApplicationContext {
                 priceDeviationThreshold,
                 midPriceHolder,
                 messageProcessingStatusHolder,
-                messageSender,
-                performanceStatsHolder)
+                messageSender)
     }
 
     @Bean
@@ -597,7 +592,7 @@ open class TestApplicationContext {
                                           cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator, messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                           messageSender: MessageSender, persistenceManager: PersistenceManager, performanceStatsHolder: PerformanceStatsHolder): CashTransferOperationService {
         return CashTransferOperationService(walletOperationsProcessorFactory,balancesHolder,  notification, dbTransferOperationQueue, feeProcessor,
-                cashTransferOperationBusinessValidator, messageSequenceNumberHolder, messageSender, persistenceManager, performanceStatsHolder)
+                cashTransferOperationBusinessValidator, messageSequenceNumberHolder, messageSender, persistenceManager)
     }
 
     @Bean
@@ -681,8 +676,7 @@ open class TestApplicationContext {
                                          performanceStatsHolder: PerformanceStatsHolder): LimitOrderMassCancelService {
         return LimitOrderMassCancelService(genericLimitOrderService,
                 genericStopLimitOrderService,
-                limitOrdersCancelServiceHelper,
-                performanceStatsHolder)
+                limitOrdersCancelServiceHelper)
     }
 
     @Bean
@@ -692,8 +686,7 @@ open class TestApplicationContext {
                                           performanceStatsHolder: PerformanceStatsHolder): MultiLimitOrderCancelService {
         return MultiLimitOrderCancelService(genericLimitOrderService,
                 limitOrdersCancelServiceHelper,
-                applicationSettingsHolder,
-                performanceStatsHolder)
+                applicationSettingsHolder)
     }
 
     @Bean

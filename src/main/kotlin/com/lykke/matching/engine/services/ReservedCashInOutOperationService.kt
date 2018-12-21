@@ -15,7 +15,6 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
-import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -36,7 +35,6 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                                                                 private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                                                 private val messageSender: MessageSender,
                                                                 private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                                                                private val performanceStatsHolder: PerformanceStatsHolder,
                                                                 private val persistenceManager: PersistenceManager) : AbstractService {
 
     companion object {
@@ -130,35 +128,25 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
     }
 
     fun writeResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus) {
-        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setMatchingEngineId(matchingEngineOperationId)
                 .setStatus(status.type)
         )
-        val end = System.nanoTime()
-
-        performanceStatsHolder.addWriteResponseTime(MessageType.RESERVED_CASH_IN_OUT_OPERATION.type, end - start)
     }
 
 
     override fun writeResponse(messageWrapper: MessageWrapper,  status: MessageStatus) {
-        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(status.type)
         )
-        val end = System.nanoTime()
-
-        performanceStatsHolder.addWriteResponseTime(MessageType.RESERVED_CASH_IN_OUT_OPERATION.type, end - start)
     }
 
     fun writeErrorResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus, errorMessage: String = StringUtils.EMPTY) {
-        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse
                 .newBuilder()
                 .setMatchingEngineId(matchingEngineOperationId)
-                .setStatus(status.type).setStatusReason(errorMessage))
-        val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.RESERVED_CASH_IN_OUT_OPERATION.type, end - start)
+                .setStatus(status.type)
+                .setStatusReason(errorMessage))
     }
 
     private fun sendEvent(sequenceNumber: Long,

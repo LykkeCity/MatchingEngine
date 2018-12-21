@@ -162,7 +162,6 @@ abstract class AbstractTest {
         assetsCache.update()
         assetPairsCache.update()
         applicationSettingsCache.update()
-
         applicationSettingsHolder.update()
     }
 

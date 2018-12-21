@@ -42,8 +42,7 @@ class CashTransferOperationService(private val walletOperationsProcessorFactory:
                                    private val cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator,
                                    private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                    private val messageSender: MessageSender,
-                                   private val persistenceManager: PersistenceManager,
-                                   private val performanceStatsHolder: PerformanceStatsHolder) : AbstractService {
+                                   private val persistenceManager: PersistenceManager) : AbstractService {
     override fun parseMessage(messageWrapper: MessageWrapper) {
         //do nothing
     }
@@ -149,33 +148,24 @@ class CashTransferOperationService(private val walletOperationsProcessorFactory:
     }
 
     fun writeResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus) {
-        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setMatchingEngineId(matchingEngineOperationId)
                 .setStatus(status.type))
-        val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.CASH_TRANSFER_OPERATION.type, end - start)
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(status.type))
-        val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.CASH_TRANSFER_OPERATION.type, end - start)
     }
 
     private fun writeErrorResponse(messageWrapper: MessageWrapper,
                                    context: CashTransferContext,
                                    status: MessageStatus,
                                    errorMessage: String = StringUtils.EMPTY) {
-        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setMatchingEngineId(context.transferOperation.matchingEngineOperationId)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
-        val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.CASH_TRANSFER_OPERATION.type, end - start)
         LOGGER.info("Cash transfer operation (${context.transferOperation.externalId}) from client ${context.transferOperation.fromClientId} " +
                 "to client ${context.transferOperation.toClientId}, asset ${context.transferOperation.asset}," +
                 " volume: ${NumberUtils.roundForPrint(context.transferOperation.volume)}: $errorMessage")

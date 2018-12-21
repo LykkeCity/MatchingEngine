@@ -242,8 +242,7 @@ abstract class AbstractPerformanceTest {
                 previousLimitOrdersProcessor,
                 priceDeviationThresholdHolder,
                 midPriceHolder,
-                applicationSettingsHolder,
-                performanceStatsHolder)
+                applicationSettingsHolder)
 
         multiLimitOrderService = MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
@@ -275,7 +274,7 @@ abstract class AbstractPerformanceTest {
                 midPriceHolder,
                 messageProcessingStatusHolder,
                 notificationSender,
-                performanceStatsHolder
-        )
+                messageProcessingStatusHolder)
+
     }
 }

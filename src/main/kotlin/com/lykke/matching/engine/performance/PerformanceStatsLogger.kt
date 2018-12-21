@@ -33,7 +33,7 @@ class PerformanceStatsLogger @Autowired constructor(private val monitoringDataba
             val totalTime = PrintUtils.convertToString2(typeStats.totalTime.toDouble() / typeStats.count)
             val processingTime = PrintUtils.convertToString2(typeStats.processingTime.toDouble() / typeStats.count)
             val persistTime = PrintUtils.convertToString2(typeStats.persistTime.toDouble() / typeStats.persistsCount)
-            val writeResponseTime = PrintUtils.convertToString2(typeStats.writeResponseTime.toDouble() / typeStats.writeResponseCount)
+            val writeResponseTime = PrintUtils.convertToString2(typeStats.writeResponseTime.toDouble() / typeStats.count)
             LOGGER.info("App version: ${AppVersion.VERSION}, $type: count: ${typeStats.count}, " +
                     (inputQueueTime?.let { "input queue time: $it, " } ?: "") +
                     (preProcessingTime?.let { "pre processing time: $it, " } ?: "") +
@@ -43,18 +43,18 @@ class PerformanceStatsLogger @Autowired constructor(private val monitoringDataba
                     "persist count: ${typeStats.persistsCount}, " +
                     "total time: $totalTime")
 
-            monitoringDatabaseAccessor.savePerformanceStats(TypePerformanceStats(now,
-                    type,
-                    AppVersion.VERSION,
-                    inputQueueTime,
-                    preProcessingTime,
-                    preProcessedMessageQueueTime,
-                    processingTime,
-                    persistTime,
-                    totalTime,
-                    writeResponseTime,
-                    typeStats.count,
-                    typeStats.persistsCount))
+            monitoringDatabaseAccessor.savePerformanceStats(TypePerformanceStats(timestamp =  now,
+                    appVersion =  AppVersion.VERSION,
+                    type = type,
+                    inputQueueTime =  inputQueueTime,
+                    preProcessingTime =  preProcessingTime,
+                    preProcessedMessageQueueTime =  preProcessedMessageQueueTime,
+                    processingTime =  processingTime,
+                    persistTime =  persistTime,
+                    writeResponseTime =  writeResponseTime,
+                    totalTime =  totalTime,
+                    count =  typeStats.count,
+                    persistCount =  typeStats.persistsCount))
         }
     }
 }
