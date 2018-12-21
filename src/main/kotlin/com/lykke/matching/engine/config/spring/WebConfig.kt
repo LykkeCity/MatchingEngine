@@ -1,12 +1,8 @@
 package com.lykke.matching.engine.config.spring
 
-import com.google.gson.*
-import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.services.validators.settings.SettingValidator
 import com.google.gson.Gson
-import com.google.gson.*
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
-import com.lykke.matching.engine.services.validators.settings.SettingValidator
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.catalina.connector.Connector
 import org.springframework.beans.factory.annotation.Autowired
