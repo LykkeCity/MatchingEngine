@@ -158,11 +158,9 @@ abstract class AbstractPerformanceTest {
         assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
         assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
 
-        genericLimitOrderService = GenericLimitOrderService(ordersDatabaseAccessorsHolder,
-                assetsHolder,
-                assetsPairsHolder,
-                balancesHolder,
-                Optional.of(tradeInfoQueue))
+        genericLimitOrderService = GenericLimitOrderService(ordersDatabaseAccessorsHolder, Optional.of(tradeInfoQueue))
+
+        feeProcessor = FeeProcessor(assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
