@@ -192,11 +192,9 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun testBalanceHolderWrapper(balanceUpdateHandlerTest: BalanceUpdateHandlerTest,
-                                      balancesHolder: BalancesHolder,
-                                      persistenceManager: PersistenceManager,
-                                      walletOperationsProcessorFactory: WalletOperationsProcessorFactory): TestBalanceHolderWrapper {
-        return TestBalanceHolderWrapper(balanceUpdateHandlerTest, balancesHolder, walletOperationsProcessorFactory, persistenceManager)
+    open fun testBalanceHolderWrapper(balancesHolder: BalancesHolder,
+                                      balancesService: BalancesService): TestBalanceHolderWrapper {
+        return TestBalanceHolderWrapper(balancesService, balancesHolder)
     }
 
     @Bean

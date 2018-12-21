@@ -6,14 +6,13 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.context.CashTransferContext
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
+import com.lykke.matching.engine.services.BalancesService
 import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import junit.framework.Assert
@@ -56,10 +55,9 @@ class CashTransferOperationBusinessValidatorTest {
 
         @Bean
         @Primary
-        open fun testBalanceHolderWrapper(balanceUpdateHandlerTest: BalanceUpdateHandlerTest, balancesHolder: BalancesHolder,
-                                          walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
-                                          persistenceManager: PersistenceManager): TestBalanceHolderWrapper {
-            val testBalanceHolderWrapper = TestBalanceHolderWrapper(balanceUpdateHandlerTest, balancesHolder, walletOperationsProcessorFactory, persistenceManager)
+        open fun testBalanceHolderWrapper(balancesService: BalancesService,
+                                          balancesHolder: BalancesHolder): TestBalanceHolderWrapper {
+            val testBalanceHolderWrapper = TestBalanceHolderWrapper(balancesService, balancesHolder)
             testBalanceHolderWrapper.updateBalance(CLIENT_NAME1, ASSET_ID, 100.0)
             testBalanceHolderWrapper.updateReservedBalance(CLIENT_NAME1, ASSET_ID, 50.0)
             return testBalanceHolderWrapper
