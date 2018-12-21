@@ -9,6 +9,7 @@ import com.lykke.matching.engine.matching.UpdatedOrderBookAndOrder
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
+import java.math.BigDecimal
 import java.util.Date
 import java.util.HashMap
 import java.util.concurrent.PriorityBlockingQueue
@@ -26,6 +27,18 @@ open class CurrentTransactionOrderBooksHolder(private val genericLimitOrderServi
             addChangedSide(limitOrder)
             defaultValue()
         }
+    }
+
+    fun getChangedOrderBooksMidPricesByAssetPairIdMap(): Map<String, BigDecimal> {
+        val result = HashMap<String, BigDecimal>()
+
+        assetOrderBookCopiesByAssetPairId.forEach { assetPairId, orderBook ->
+            orderBook.getMidPrice()?.let {
+                result[assetPairId] = it
+            }
+        }
+
+        return result
     }
 
     override fun getPersistenceData(): OrderBooksPersistenceData {
