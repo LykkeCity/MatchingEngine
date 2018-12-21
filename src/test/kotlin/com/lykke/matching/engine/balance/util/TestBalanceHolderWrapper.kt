@@ -3,16 +3,12 @@ package com.lykke.matching.engine.balance.util
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.services.BalancesService
-import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import java.math.BigDecimal
 
 class TestBalanceHolderWrapper @Autowired constructor(private val balancesService: BalancesService,
                                                       private val balancesHolder: BalancesHolder) {
 
-    companion object {
-        val logger = Logger.getLogger(TestBalanceHolderWrapper::class.java.name)
-    }
 
     fun updateBalance(clientId: String, assetId: String, balance: Double) {
         val wallet = balancesHolder.wallets[clientId] ?: Wallet(clientId)
