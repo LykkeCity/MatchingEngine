@@ -107,10 +107,10 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
     private fun handlePreprocessingException(exception: Exception, message: MessageWrapper) {
         try {
             val context = message.context
-            CashTransferPreprocessor.LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
+            LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
                     if (context != null) "Error details: $context" else "", exception)
 
-            CashTransferPreprocessor.METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
+            METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
             writeResponse(message, MessageStatus.RUNTIME)
         } catch (e: Exception) {
             val errorMessage = "Got error during message preprocessing failure handling"
