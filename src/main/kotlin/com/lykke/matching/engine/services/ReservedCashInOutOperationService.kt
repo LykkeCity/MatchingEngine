@@ -2,9 +2,10 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.daos.OperationType
+import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.messages.MessageStatus
@@ -14,7 +15,6 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
-import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -29,13 +29,13 @@ import java.util.concurrent.BlockingQueue
 
 @Service
 class ReservedCashInOutOperationService @Autowired constructor (private val assetsHolder: AssetsHolder,
-                                                                private val balancesHolder: BalancesHolder,
+                                                                private val walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                                                                 private val reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                                                 private val reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
                                                                 private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                                                 private val messageSender: MessageSender,
                                                                 private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                                                                private val performanceStatsHolder: PerformanceStatsHolder) : AbstractService {
+                                                                private val persistenceManager: PersistenceManager) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(ReservedCashInOutOperationService::class.java.name)
@@ -70,7 +70,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
 
         val accuracy = asset.accuracy
 
-        val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
+        val walletProcessor = walletOperationsProcessorFactory.create(LOGGER)
         try {
             walletProcessor.preProcess(listOf(operation), allowTrustedClientReservedBalanceOperation = true)
         } catch (e: BalanceException) {
@@ -80,7 +80,12 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         }
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
-        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage, null, null, sequenceNumber)
+        val updated = persistenceManager.persist(PersistenceData(walletProcessor.persistenceData(),
+                messageWrapper.processedMessage,
+                null,
+                null,
+                sequenceNumber,
+                null))
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {
@@ -123,35 +128,25 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
     }
 
     fun writeResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus) {
-        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setMatchingEngineId(matchingEngineOperationId)
                 .setStatus(status.type)
         )
-        val end = System.nanoTime()
-
-        performanceStatsHolder.addWriteResponseTime(MessageType.RESERVED_CASH_IN_OUT_OPERATION.type, end - start)
     }
 
 
     override fun writeResponse(messageWrapper: MessageWrapper,  status: MessageStatus) {
-        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(status.type)
         )
-        val end = System.nanoTime()
-
-        performanceStatsHolder.addWriteResponseTime(MessageType.RESERVED_CASH_IN_OUT_OPERATION.type, end - start)
     }
 
     fun writeErrorResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus, errorMessage: String = StringUtils.EMPTY) {
-        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse
                 .newBuilder()
                 .setMatchingEngineId(matchingEngineOperationId)
-                .setStatus(status.type).setStatusReason(errorMessage))
-        val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.RESERVED_CASH_IN_OUT_OPERATION.type, end - start)
+                .setStatus(status.type)
+                .setStatusReason(errorMessage))
     }
 
     private fun sendEvent(sequenceNumber: Long,

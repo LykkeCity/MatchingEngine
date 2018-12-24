@@ -1,10 +1,11 @@
 package com.lykke.matching.engine.order.transaction
 
+import com.lykke.matching.engine.balance.WalletOperationsProcessor
+import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
 import com.lykke.matching.engine.messages.MessageType
@@ -16,7 +17,7 @@ import org.springframework.stereotype.Component
 import java.util.*
 
 @Component
-class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
+class ExecutionContextFactory(private val walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                               private val genericLimitOrderService: GenericLimitOrderService,
                               private val genericStopLimitOrderService: GenericStopLimitOrderService,
                               private val midPriceHolder: MidPriceHolder,
@@ -33,6 +34,9 @@ class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                controlsLogger: Logger,
                assetsById: Map<String, Asset> = getAssetsByIdMap(assetPairsById),
                preProcessorValidationResultsByOrderId: Map<String, OrderValidationResult> = emptyMap(),
+               walletOperationsProcessor: WalletOperationsProcessor = walletOperationsProcessorFactory.create(logger),
+               orderBooksHolder: CurrentTransactionOrderBooksHolder = genericLimitOrderService.createCurrentTransactionOrderBooksHolder(),
+               stopOrderBooksHolder: CurrentTransactionStopOrderBooksHolder = genericStopLimitOrderService.createCurrentTransactionOrderBooksHolder(),
                currentTransactionMidPriceHolder: CurrentTransactionMidPriceHolder = CurrentTransactionMidPriceHolder(midPriceHolder, priceDeviationThresholdHolder)): ExecutionContext {
         return ExecutionContext(messageId,
                 requestId,
@@ -41,7 +45,7 @@ class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                 assetPairsById,
                 assetsById,
                 preProcessorValidationResultsByOrderId,
-                balancesHolder.createWalletProcessor(logger),
+                walletOperationsProcessorFactory.create(logger),
                 genericLimitOrderService.createCurrentTransactionOrderBooksHolder(),
                 genericStopLimitOrderService.createCurrentTransactionOrderBooksHolder(),
                 currentTransactionMidPriceHolder,

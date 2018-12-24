@@ -25,7 +25,7 @@ class TypePerformanceStats(
                 "preProcessedMessageQueueTime='$preProcessedMessageQueueTime', " +
                 "processingTime='$processingTime', " +
                 "persistTime='$persistTime', " +
-                "writeResponseTime='$writeResponseTime', "
+                "writeResponseTime='$writeResponseTime', " +
                 "totalTime='$totalTime', " +
                 "count=$count, " +
                 "persistCount=$persistCount)"

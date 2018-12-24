@@ -10,7 +10,6 @@ class PerformanceStats(
     var persistsCount: Long = 0
     var processingTime: Long = 0
     var writeResponseTime: Long = 0
-    var writeResponseCount: Long = 0
     var count: Long = 0
     var totalTime: Long = 0
 }

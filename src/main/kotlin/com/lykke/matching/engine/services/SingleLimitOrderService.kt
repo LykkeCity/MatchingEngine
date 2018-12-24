@@ -23,7 +23,6 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.services.utils.MidPriceUtils
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.utils.NumberUtils
-import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.log4j.Logger
@@ -39,8 +38,7 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
                               private val previousLimitOrdersProcessor: PreviousLimitOrdersProcessor,
                               private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
                               private val midPriceHolder: MidPriceHolder,
-                              private val applicationSettingsHolder: ApplicationSettingsHolder,
-                              val performanceStatsHolder: PerformanceStatsHolder) : AbstractService {
+                              private val applicationSettingsHolder: ApplicationSettingsHolder) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(SingleLimitOrderService::class.java.name)
         private val STATS_LOGGER = Logger.getLogger("${SingleLimitOrderService::class.java.name}.stats")
@@ -248,10 +246,7 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val start = System.nanoTime()
         writeResponse(messageWrapper, status, null)
-        val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.LIMIT_ORDER.type, end - start)
     }
 
 
@@ -262,10 +257,7 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
         val builder = ProtocolMessages.NewResponse.newBuilder().setStatus(status.type)
         internalOrderId?.let { builder.setMatchingEngineId(internalOrderId) }
         statusReason?.let { builder.setStatusReason(it) }
-        val start = System.nanoTime()
         messageWrapper.writeNewResponse(builder)
-        val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.LIMIT_ORDER.type, end - start)
     }
 
 }

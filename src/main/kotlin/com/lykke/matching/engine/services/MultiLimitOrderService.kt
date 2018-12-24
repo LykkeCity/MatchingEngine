@@ -5,7 +5,6 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.MultiLimitOrder
 import com.lykke.matching.engine.daos.order.OrderTimeInForce
-import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -31,7 +30,6 @@ import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
-import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.order.process.ProcessedOrder
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
@@ -54,7 +52,6 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                              private val balancesHolder: BalancesHolder,
                              private val applicationSettingsHolder: ApplicationSettingsHolder,
                              private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                             private val performanceStatsHolder: PerformanceStatsHolder,
                              private val midPriceHolder: MidPriceHolder,
                              private val uuidHolder: UUIDHolder,
                              private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder) : AbstractService {
@@ -424,19 +421,13 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
     }
 
     fun writeResponse(messageWrapper: MessageWrapper, responseBuilder: ProtocolMessages.MultiLimitOrderResponse.Builder) {
-        val start = System.nanoTime()
         messageWrapper.writeMultiLimitOrderResponse(responseBuilder)
-        val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.MULTI_LIMIT_ORDER.type, end - start)
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         val assetPairId = (messageWrapper.parsedMessage as ProtocolMessages.MultiLimitOrder).assetPairId
-        val start = System.nanoTime()
         messageWrapper.writeMultiLimitOrderResponse(ProtocolMessages.MultiLimitOrderResponse.newBuilder()
                 .setStatus(status.type).setAssetPairId(assetPairId))
-        val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.MULTI_LIMIT_ORDER.type, end - start)
     }
 
 }
