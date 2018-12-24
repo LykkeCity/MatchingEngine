@@ -17,7 +17,7 @@ import java.util.*
 class LimitOrderBusinessValidatorTest {
 
     private companion object {
-        val ASSET_PAIR_ID = "BTCUSD"
+        private const val ASSET_PAIR_ID = "BTCUSD"
     }
 
     @Test(expected = OrderValidationException::class)

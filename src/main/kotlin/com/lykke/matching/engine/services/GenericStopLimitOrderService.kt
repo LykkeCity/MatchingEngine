@@ -28,7 +28,7 @@ class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder
 
     fun update() {
         stopLimitOrdersMap.values.forEach {
-            expiryOrdersQueue.removeOrder(it)
+            expiryOrdersQueue.removeIfOrderHasExpiryTime(it)
         }
         stopLimitOrdersQueues.clear()
         stopLimitOrdersMap.clear()
@@ -46,7 +46,7 @@ class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder
 
     fun addOrder(order: LimitOrder) {
         stopLimitOrdersMap[order.externalId] = order
-        expiryOrdersQueue.addOrder(order)
+        expiryOrdersQueue.addIfOrderHasExpiryTime(order)
         clientStopLimitOrdersMap.getOrPut(order.clientId) { ArrayList() }.add(order)
     }
 
@@ -69,7 +69,7 @@ class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder
     override fun cancelLimitOrders(orders: Collection<LimitOrder>, date: Date) {
         orders.forEach { order ->
             val ord = stopLimitOrdersMap.remove(order.externalId)
-            expiryOrdersQueue.removeOrder(order)
+            expiryOrdersQueue.removeIfOrderHasExpiryTime(order)
             clientStopLimitOrdersMap[order.clientId]?.remove(order)
             if (ord != null) {
                 ord.updateStatus(OrderStatus.Cancelled, date)
@@ -80,12 +80,10 @@ class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder
     override fun removeOrdersFromMapsAndSetStatus(orders: Collection<LimitOrder>, status: OrderStatus?, date: Date?) {
         orders.forEach { order ->
             val removedOrder = stopLimitOrdersMap.remove(order.externalId)
-            if (removedOrder != null) {
-                clientStopLimitOrdersMap[order.clientId]?.remove(removedOrder)
-                expiryOrdersQueue.removeOrder(order)
-                if (status != null) {
-                    removedOrder.updateStatus(status, date!!)
-                }
+            clientStopLimitOrdersMap[order.clientId]?.remove(removedOrder)
+            expiryOrdersQueue.removeIfOrderHasExpiryTime(order)
+            if (removedOrder != null && status != null) {
+                removedOrder.updateStatus(status, date!!)
             }
         }
     }
