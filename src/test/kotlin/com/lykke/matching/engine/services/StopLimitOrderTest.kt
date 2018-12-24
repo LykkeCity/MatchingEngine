@@ -14,6 +14,7 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderType
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -801,11 +802,11 @@ class StopLimitOrderTest : AbstractTest() {
         assertOrderBookSize("BTCUSD", false, 0)
         assertOrderBookSize("BTCUSD", true, 1)
 
-        assertEquals(2, clientsEventsQueue.size)
-        val stopOrderEvent = clientsEventsQueue.last() as ExecutionEvent
-        assertEquals(1, stopOrderEvent.orders.size)
-        assertEquals(1, stopOrderEvent.balanceUpdates?.size)
-        assertEquals(OutgoingOrderStatus.CANCELLED, stopOrderEvent.orders.single().status)
+        assertEquals(1, clientsEventsQueue.size)
+        val stopOrderEvent = clientsEventsQueue.single() as ExecutionEvent
+        assertEquals(2, stopOrderEvent.orders.size)
+        assertEquals(2, stopOrderEvent.balanceUpdates?.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, stopOrderEvent.orders.single { it.orderType == OrderType.STOP_LIMIT }.status)
 
         assertBalance("Client1", "BTC", 1.0, 0.0)
     }

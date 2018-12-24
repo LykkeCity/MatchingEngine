@@ -95,7 +95,7 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
                     && (order.takePrice() == null || (if (isBuy) order.takePrice()!! >= workingOrderBook.peek().price else order.takePrice()!! <= workingOrderBook.peek().price))) {
                 val limitOrderOrigin = workingOrderBook.poll()
                 if (limitOrderOrigin.isExpired(now)) {
-                    LOGGER.info("Added order (id: ${limitOrderOrigin.externalId}) to cancelled limit orders due to expired time")
+                    executionContext.info("Added order (id: ${limitOrderOrigin.externalId}) to cancelled limit orders due to expired time")
                     cancelledLimitOrders.add(CopyWrapper(limitOrderOrigin))
                     continue
                 }

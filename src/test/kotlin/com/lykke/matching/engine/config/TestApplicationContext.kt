@@ -23,6 +23,7 @@ import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocesso
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPreprocessor
 import com.lykke.matching.engine.matching.MatchingEngine
+import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExpiryOrdersQueue
