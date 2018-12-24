@@ -44,17 +44,6 @@ message MultiLimitOrderResponse {
     required string messageId = 6;
 }
 
-message CashOperation {
-    required int64 uid = 1;
-    required string clientId = 2;
-    required int64 timestamp = 3;
-    required string assetId = 4;
-    required double amount = 5;
-    required string bussinesId = 6;
-    required bool sendToBitcoin = 7;
-    optional string messageId = 8;
-}
-
 message CashInOutOperation {
     required string id = 1;
     required string clientId = 2;
@@ -76,18 +65,6 @@ message CashTransferOperation {
     optional double overdraftLimit = 8;
     repeated Fee fees = 9;
     optional string messageId = 10;
-}
-
-message CashSwapOperation {
-    required string id = 1;
-    required string clientId1 = 2;
-    required string assetId1 = 3;
-    required double volume1 = 4;
-    required string clientId2 = 5;
-    required string assetId2 = 6;
-    required double volume2 = 7;
-    required int64 timestamp = 8;
-    optional string messageId = 9;
 }
 
 message OldLimitOrder {
@@ -129,6 +106,8 @@ enum LimitOrderType {
 enum OrderTimeInForce {
     GTC = 0;
     GTD = 1;
+    IOC = 2;
+    FOK = 3;
 }
 
 message OldMarketOrder {
@@ -184,22 +163,6 @@ message LimitOrderMassCancel {
     optional string messageId = 5;
 }
 
-message BalanceUpdate {
-    required string uid = 1;
-    required string clientId = 2;
-    required string assetId = 3;
-    required double amount = 4;
-    optional string messageId = 5;
-}
-
-message OldBalanceUpdate {
-    required int64 uid = 1;
-    required string clientId = 2;
-    required string assetId = 3;
-    required double amount = 4;
-    optional string messageId = 5;
-}
-
 message OldMultiLimitOrder {
     required int64 uid = 1;
     required int64 timestamp = 2;
@@ -226,12 +189,17 @@ message MultiLimitOrder {
     message Order {
         required string uid = 1;
         required double volume = 2;
-        required double price = 3;
+        optional double price = 3;
         optional LimitOrderFee fee = 4;
         repeated LimitOrderFee fees = 5;
         optional string oldUid = 6;
         optional int32 timeInForce = 7;
         optional int64 expiryTime = 8;
+        optional int32 type = 9;
+        optional double lowerLimitPrice = 10;
+        optional double lowerPrice = 11;
+        optional double upperLimitPrice = 12;
+        optional double upperPrice = 13;
     }
 
     repeated Order orders = 5;
@@ -252,22 +220,6 @@ message WalletCredentialsReload {
     optional string clientId = 2;
 }
 
-message SubscribeToBalanceUpdate {
-}
-
-message BalanceNotification {
-    required string clientId = 1;
-}
-
-message SubscribeToQuotesUpdate {
-}
-
-message QuotesUpdate {
-    required string assetId = 1;
-    required double price = 2;
-    required double volume = 3;
-}
-
 message OrderBookSnapshot {
     required string asset = 1;
     required bool isBuy = 2;
@@ -279,14 +231,6 @@ message OrderBookSnapshot {
     }
 
     repeated OrderBookLevel levels = 4;
-}
-
-message ReservedBalanceUpdate {
-    required string uid = 1;
-    required string clientId = 2;
-    required string assetId = 3;
-    required double reservedAmount = 4;
-    optional string messageId = 5;
 }
 
 message ReservedCashInOutOperation {

@@ -4,14 +4,10 @@ import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
-import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
-import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
-import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
@@ -23,7 +19,6 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitO
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.assertEquals
-import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
@@ -32,12 +27,12 @@ import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
-import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
@@ -46,6 +41,8 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as Outgo
 @SpringBootTest(classes = [(TestApplicationContext::class), (MultiLimitOrderServiceTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MultiLimitOrderServiceTest: AbstractTest() {
+
+
     @TestConfiguration
     open class Config {
         @Bean
@@ -67,24 +64,19 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         @Bean
         @Primary
-        open fun testConfig(): TestSettingsDatabaseAccessor {
+        open fun testSettingsDatabaseAccessor(): TestSettingsDatabaseAccessor {
             val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client1"))
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client5"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client1"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client5"))
             return testSettingsDatabaseAccessor
         }
     }
-
-
-    @Autowired
-    private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @Autowired
     private lateinit var messageBuilder: MessageBuilder
 
     @Autowired
     private lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
-
 
     @Before
     fun setUp() {
@@ -621,7 +613,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Test
     fun testAddAndMatchAndCancel() {
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client3"))
+        applicationSettingsCache.createOrUpdateSettingValue (AvailableSettingGroup.TRUSTED_CLIENTS, "Client3", "Client3", true)
 
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.26170853)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC",  0.001)
@@ -1001,7 +993,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         val event = trustedClientsEventsQueue.poll() as ExecutionEvent
         assertEquals(5, event.orders.size)
 
-        assertTrue(genericLimitOrderService.getOrderBook("BTCEUR").getOrderBook(true).map { it.externalId } == listOf("3"))
+        assertEquals(genericLimitOrderService.getOrderBook("BTCEUR").getOrderBook(true).map { it.externalId }, listOf("3"))
     }
 
     @Test
@@ -1350,8 +1342,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     fun testCancelAllOrdersOfExTrustedClient() {
         testBalanceHolderWrapper.updateBalance("Client1", "LKK", 1.0)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.name, getSetting("Client1"))
-        applicationSettingsCache.update()
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "Client1", "Client1", true)
 
         // OrderBook orders with reservedLimitVolume=null
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "LKK1YLKK", volume = 5.0, price = 0.021))
@@ -1359,8 +1350,9 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         assertBalance("Client1", "LKK", 1.0, 0.0)
 
-        testSettingsDatabaseAccessor.clear()
-        applicationSettingsCache.update()
+        AvailableSettingGroup.values().forEach {
+            applicationSettingsCache.deleteSettingGroup(it)
+        }
 
         reservedVolumesRecalculator.recalculate()
 
@@ -1373,5 +1365,4 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertOrderBookSize("LKK1YLKK", true, 0)
         assertBalance("Client1", "LKK", 1.0, 0.0)
     }
-
 }

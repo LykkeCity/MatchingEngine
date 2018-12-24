@@ -6,7 +6,7 @@ import com.lykke.matching.engine.daos.balance.ClientOrdersReservedVolume
 import com.lykke.matching.engine.daos.balance.ReservedVolumeCorrection
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -14,7 +14,6 @@ import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
@@ -33,7 +32,6 @@ import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
 import java.util.UUID
-import java.util.concurrent.BlockingQueue
 
 @Component
 @Order(3)
@@ -43,9 +41,8 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
                                                          private val assetsHolder: AssetsHolder,
                                                          private val assetsPairsHolder :AssetsPairsHolder,
                                                          private val balancesHolder: BalancesHolder,
-                                                         private val applicationSettingsCache: ApplicationSettingsCache,
+                                                         private val applicationSettingsHolder: ApplicationSettingsHolder,
                                                          @Value("#{Config.me.correctReservedVolumes}") private val correctReservedVolumes: Boolean,
-                                                         private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
                                                          private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                                          private val messageSender: MessageSender) : ApplicationRunner {
     override fun run(args: ApplicationArguments?) {
@@ -79,7 +76,7 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
         var count = 1
 
         val handleOrder: (order: LimitOrder, isStopOrder: Boolean) -> Unit = { order, isStopOrder->
-            if (!applicationSettingsCache.isTrustedClient(order.clientId)) {
+            if (!applicationSettingsHolder.isTrustedClient(order.clientId)) {
                 try {
                     if (isStopOrder) {
                         LOGGER.info("${count++} Client:${order.clientId}, id: ${order.externalId}, asset:${order.assetPairId}, lowerLimitPrice:${order.lowerLimitPrice}, lowerPrice:${order.lowerPrice}, upperLimitPrice:${order.upperLimitPrice}, upperPrice:${order.upperPrice}, volume:${order.volume}, date:${order.registered}, status:${order.status}, reserved: ${order.reservedLimitVolume}}")
@@ -192,9 +189,6 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
             balancesHolder.insertOrUpdateWallets(updatedWallets, sequenceNumber)
             reservedVolumesDatabaseAccessor.addCorrectionsInfo(corrections)
             balancesHolder.sendBalanceUpdate(BalanceUpdate(operationId, MessageType.LIMIT_ORDER.name, now, balanceUpdates, operationId))
-            updatedWallets.map { it.clientId }.toSet().forEach {
-                balanceUpdateNotificationQueue.put(BalanceUpdateNotification(it))
-            }
             cashInOutEvents.forEach { messageSender.sendMessage(it) }
 
         }

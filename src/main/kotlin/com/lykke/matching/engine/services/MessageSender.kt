@@ -16,5 +16,4 @@ class MessageSender(private val clientsEventsQueue: BlockingQueue<Event<*>>,
     fun sendMessage(message: Event<*>) {
         clientsEventsQueue.put(message)
     }
-
 }

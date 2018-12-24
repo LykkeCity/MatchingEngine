@@ -65,8 +65,8 @@ class ReservedVolumesRecalculatorTest {
         @Primary
         open fun testConfig(): TestSettingsDatabaseAccessor {
             val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("trustedClient"))
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("trustedClient2"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("trustedClient"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("trustedClient2"))
             return testSettingsDatabaseAccessor
         }
     }
@@ -165,8 +165,6 @@ class ReservedVolumesRecalculatorTest {
         assertBalanceUpdateNotification("Client1", "USD", 10.0, 1.0, 0.0, balanceUpdate.balances)
         assertBalanceUpdateNotification("Client1", "EUR", 10.0, 3.0, 0.7, balanceUpdate.balances)
         assertBalanceUpdateNotification("Client2", "USD", 990.0, 1.0, 2080.0, balanceUpdate.balances)
-
-        assertEquals(5, balanceUpdateHandlerTest.balanceUpdateNotificationQueue.size)
 
         assertEquals(7, clientsEventsQueue.size)
         assertEvent(false, "trustedClient", "BTC", "10", "2", "0", clientsEventsQueue)

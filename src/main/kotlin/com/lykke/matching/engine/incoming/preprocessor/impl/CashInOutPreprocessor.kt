@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
 import com.lykke.matching.engine.daos.context.CashInOutContext
@@ -6,6 +5,7 @@ import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.parsers.data.CashInOutParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
@@ -23,6 +23,7 @@ import com.lykke.utils.logging.ThrottlingLogger
 import org.apache.commons.lang3.StringUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.math.BigDecimal
 import java.util.concurrent.BlockingQueue
 
 @Component
@@ -31,7 +32,8 @@ class CashInOutPreprocessor(
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
         private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
         private val cashInOutOperationPreprocessorPersistenceManager: PersistenceManager,
-        private val processedMessagesCache: ProcessedMessagesCache): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
+        private val processedMessagesCache: ProcessedMessagesCache,
+        private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(CashInOutPreprocessor::class.java.name)
@@ -46,12 +48,20 @@ class CashInOutPreprocessor(
 
     override fun preProcess(messageWrapper: MessageWrapper) {
         val parsedData = cashInOutContextParser.parse(messageWrapper)
+        val cashInOutContext = parsedData.messageWrapper.context as CashInOutContext
+        if ((isCashIn(cashInOutContext.cashInOutOperation.amount) && messageProcessingStatusHolder.isCashInDisabled(cashInOutContext.cashInOutOperation.asset)) ||
+                (!isCashIn(cashInOutContext.cashInOutOperation.amount) && messageProcessingStatusHolder.isCashOutDisabled(cashInOutContext.cashInOutOperation.asset))) {
+            writeResponse(parsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+            return
+        }
 
         if (!validateData(parsedData)) {
             return
         }
 
-        performDeduplicationCheck(parsedData)
+        if (!isMessageDuplicated(parsedData)) {
+            preProcessedMessageQueue.put(parsedData.messageWrapper)
+        }
     }
 
     private fun validateData(cashInOutParsedData: CashInOutParsedData): Boolean {
@@ -86,16 +96,17 @@ class CashInOutPreprocessor(
         }
     }
 
-    private fun performDeduplicationCheck(cashInOutParsedData: CashInOutParsedData) {
+    private fun isMessageDuplicated(cashInOutParsedData: CashInOutParsedData): Boolean {
         val parsedMessageWrapper = cashInOutParsedData.messageWrapper
         val context = cashInOutParsedData.messageWrapper.context as CashInOutContext
         if (cashOperationIdDatabaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
             writeResponse(parsedMessageWrapper, DUPLICATE)
             LOGGER.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
             METRICS_LOGGER.logError("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
-        } else {
-            preProcessedMessageQueue.put(parsedMessageWrapper)
+            return true
         }
+
+        return false
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
@@ -115,13 +126,19 @@ class CashInOutPreprocessor(
                 "asset ${context.cashInOutOperation.asset!!.assetId}, amount: ${NumberUtils.roundForPrint(context.cashInOutOperation.amount)}: $errorMessage")
     }
 
+    private fun isCashIn(amount: BigDecimal): Boolean {
+        return amount > BigDecimal.ZERO
+    }
+
     override fun run() {
         while (true) {
-            val message = cashInOutInputQueue.take()
+            val messageWrapper = cashInOutInputQueue.take()
             try {
-                preProcess(message)
+                messageWrapper.messagePreProcessorStartTimestamp = System.nanoTime()
+                preProcess(messageWrapper)
+                messageWrapper.messagePreProcessorEndTimestamp = System.nanoTime()
             } catch (exception: Exception) {
-                handlePreprocessingException(exception, message)
+                handlePreprocessingException(exception, messageWrapper)
             }
         }
     }
@@ -129,16 +146,16 @@ class CashInOutPreprocessor(
     private fun handlePreprocessingException(exception: Exception, message: MessageWrapper) {
         try {
             val context = message.context
-            CashTransferPreprocessor.LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
+            LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
                     if (context != null) "Error details: $context" else "", exception)
 
-            CashTransferPreprocessor.METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
+            METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
             writeResponse(message, RUNTIME)
         } catch (e: Exception) {
             val errorMessage = "Got error during message preprocessing failure handling"
             e.addSuppressed(exception)
-            CashTransferPreprocessor.LOGGER.error(errorMessage, e)
-            CashTransferPreprocessor.METRICS_LOGGER.logError(errorMessage, e)
+            LOGGER.error(errorMessage, e)
+            METRICS_LOGGER.logError(errorMessage, e)
         }
     }
 }

@@ -33,7 +33,6 @@ import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
-import com.lykke.matching.engine.utils.getSetting
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (InvalidBalanceTest.Config::class)])
@@ -218,9 +217,8 @@ class InvalidBalanceTest : AbstractTest() {
 
         initServices()
 
-        testSettingDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client1"))
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "Client1", "Client1", true)
 
-        applicationSettingsCache.update()
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("ETHUSD", "Client1", listOf(
                 IncomingLimitOrder(-0.1, 1000.0, "1"),
                 IncomingLimitOrder(-0.05, 1010.0, "2"),
@@ -229,6 +227,7 @@ class InvalidBalanceTest : AbstractTest() {
         testBalanceHolderWrapper.updateReservedBalance("Client1", "ETH", reservedBalance = 0.09)
         testSettingDatabaseAccessor.clear()
         applicationSettingsCache.update()
+        applicationSettingsHolder.update()
 
         clearMessageQueues()
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "4", clientId = "Client2", assetId = "ETHUSD", volume = 0.25, price = 1100.0)))
@@ -264,14 +263,14 @@ class InvalidBalanceTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 275.0)
 
         initServices()
-        testSettingDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client1"))
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "Client1", "Client1", true)
 
-        applicationSettingsCache.update()
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("ETHUSD", "Client1",
                 listOf(IncomingLimitOrder(-0.05, 1010.0, "1"))))
         testBalanceHolderWrapper.updateBalance("Client1", "ETH", 0.04)
         testSettingDatabaseAccessor.clear()
         applicationSettingsCache.update()
+        applicationSettingsHolder.update()
 
         testClientLimitOrderListener.clear()
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "2", clientId = "Client2", assetId = "ETHUSD", volume = 0.25, price = 1100.0)))

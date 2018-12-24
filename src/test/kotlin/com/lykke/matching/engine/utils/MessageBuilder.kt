@@ -20,6 +20,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
+import com.lykke.matching.engine.socket.TestClientHandler
 import java.math.BigDecimal
 import java.util.*
 
@@ -204,11 +205,16 @@ companion object {
             orders.forEach { order ->
                 val orderBuilder = ProtocolMessages.MultiLimitOrder.Order.newBuilder()
                         .setVolume(order.volume)
-                        .setPrice(order.price)
+                order.price?.let { orderBuilder.price = it }
                 order.feeInstruction?.let { orderBuilder.fee = buildLimitOrderFee(it) }
                 order.feeInstructions.forEach { orderBuilder.addFees(buildNewLimitOrderFee(it)) }
                 orderBuilder.uid = order.uid
                 order.oldUid?.let { orderBuilder.oldUid = order.oldUid }
+                order.type?.let { orderBuilder.type = it.externalId }
+                order.lowerLimitPrice?.let { orderBuilder.lowerLimitPrice = it }
+                order.lowerPrice?.let { orderBuilder.lowerPrice = it }
+                order.upperLimitPrice?.let { orderBuilder.upperLimitPrice = it }
+                order.upperPrice?.let { orderBuilder.upperPrice = it }
                 multiOrderBuilder.addOrders(orderBuilder.build())
             }
             return multiOrderBuilder.build()
@@ -281,14 +287,6 @@ companion object {
                     sourceClientId, targetClientId, assetIds,
                     if (makerFeeModificator != null) BigDecimal.valueOf(makerFeeModificator) else null))
         }
-
-        fun buildBalanceUpdateWrapper(clientId: String, assetId: String, amount: Double, uid: String = "123"): MessageWrapper {
-            return MessageWrapper("Test", MessageType.BALANCE_UPDATE.type, ProtocolMessages.BalanceUpdate.newBuilder()
-                    .setUid(uid)
-                    .setClientId(clientId)
-                    .setAssetId(assetId)
-                    .setAmount(amount).build().toByteArray(), null)
-        }
     }
 
     fun buildTransferWrapper(fromClientId: String,
@@ -322,7 +320,6 @@ companion object {
 
         return cashInOutContextParser.parse(MessageWrapper("Test", MessageType.CASH_IN_OUT_OPERATION.type, builder.build().toByteArray(), null)).messageWrapper
     }
-
 
     fun buildLimitOrderCancelWrapper(uid: String) = buildLimitOrderCancelWrapper(listOf(uid))
 
@@ -375,7 +372,7 @@ companion object {
         order.expiryTime?.let { builder.setExpiryTime(it.time) }
         order.timeInForce?.let { builder.setTimeInForce(it.externalId) }
         val messageWrapper = singleLimitOrderContextParser
-                .parse(MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null, messageId = "test", id = "test"))
+                .parse(MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), TestClientHandler(), messageId = "test", id = "test"))
                 .messageWrapper
 
         val singleLimitContext = messageWrapper.context as SingleLimitOrderContext

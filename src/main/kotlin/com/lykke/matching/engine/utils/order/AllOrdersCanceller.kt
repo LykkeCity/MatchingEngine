@@ -49,7 +49,7 @@ class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: A
 
         preProcessLimitOrders()
         preProcessStopOrders()
-        genericLimitOrdersCanceller.applyFull(operationId, operationId, null,
+        genericLimitOrdersCanceller.applyFull(null, operationId, operationId, null,
                 MessageType.LIMIT_ORDER, true)
         LOGGER.info("Completed to cancel all orders")
     }

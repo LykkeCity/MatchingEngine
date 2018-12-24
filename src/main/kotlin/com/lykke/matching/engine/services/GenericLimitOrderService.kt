@@ -3,16 +3,11 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.BestPrice
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
-import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.ExpiryOrdersQueue
+import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
-import com.lykke.matching.engine.utils.NumberUtils
-import org.apache.log4j.Logger
+import com.lykke.matching.engine.order.transaction.CurrentTransactionOrderBooksHolder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
@@ -20,29 +15,20 @@ import java.util.ArrayList
 import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
+import java.util.Optional
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.PriorityBlockingQueue
 
 @Component
 class GenericLimitOrderService @Autowired constructor(private val orderBookDatabaseAccessorHolder: OrdersDatabaseAccessorsHolder,
-                                                      private val assetsHolder: AssetsHolder,
-                                                      private val assetsPairsHolder: AssetsPairsHolder,
-                                                      private val balancesHolder: BalancesHolder,
-                                                      private val quotesUpdateQueue: BlockingQueue<QuotesUpdate>,
-                                                      private val tradeInfoQueue: BlockingQueue<TradeInfo>,
-                                                      applicationSettingsCache: ApplicationSettingsCache,
+                                                      private val tradeInfoQueue: Optional<BlockingQueue<TradeInfo>>,
                                                       private val expiryOrdersQueue: ExpiryOrdersQueue) : AbstractGenericLimitOrderService<AssetOrderBook> {
-
-    companion object {
-        private val LOGGER = Logger.getLogger(GenericLimitOrderService::class.java.name)
-    }
 
     //asset -> orderBook
     private val limitOrdersQueues = ConcurrentHashMap<String, AssetOrderBook>()
     private val limitOrdersMap = HashMap<String, LimitOrder>()
     private val clientLimitOrdersMap = HashMap<String, MutableList<LimitOrder>>()
-    private val walletOperationsCalculator: WalletOperationsCalculator = WalletOperationsCalculator(assetsPairsHolder, balancesHolder, applicationSettingsCache)
     var initialOrdersCount = 0
 
     init {
@@ -73,20 +59,11 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
         limitOrdersMap[order.externalId] = order
         clientLimitOrdersMap.getOrPut(order.clientId) { ArrayList() }.add(order)
         expiryOrdersQueue.addOrder(order)
-        quotesUpdateQueue.put(QuotesUpdate(order.assetPairId, order.price, order.volume))
     }
 
-    fun addOrders(orders: List<LimitOrder>) {
+    override fun addOrders(orders: Collection<LimitOrder>) {
         orders.forEach { order ->
             addOrder(order)
-        }
-    }
-
-    fun moveOrdersToDone(orders: List<LimitOrder>) {
-        orders.forEach { order ->
-            limitOrdersMap.remove(order.externalId)
-            clientLimitOrdersMap[order.clientId]?.remove(order)
-            expiryOrdersQueue.removeOrder(order)
         }
     }
 
@@ -102,25 +79,12 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
         limitOrdersQueues.getOrPut(assetPair) { AssetOrderBook(assetPair) }.setOrderBook(isBuy, book)
     }
 
-    fun checkAndReduceBalance(order: LimitOrder, volume: BigDecimal, limitBalances: MutableMap<String, BigDecimal>): Boolean {
-        val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
-        val limitAssetId = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
-        val availableBalance = limitBalances[order.clientId] ?: balancesHolder.getAvailableReservedBalance(order.clientId, limitAssetId)
-        val accuracy = assetsHolder.getAsset(limitAssetId).accuracy
-        val result = availableBalance >= volume
-        LOGGER.debug("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${NumberUtils.roundForPrint(availableBalance)} >= ${NumberUtils.roundForPrint(volume)} = $result")
-        if (result) {
-            limitBalances[order.clientId] = NumberUtils.setScaleRoundHalfUp(availableBalance - volume, accuracy)
-        }
-        return result
-    }
-
     fun getOrder(uid: String) = limitOrdersMap[uid]
 
     fun searchOrders(clientId: String, assetPair: String?, isBuy: Boolean?): List<LimitOrder> {
-        val result = LinkedList<LimitOrder>()
+        val result = mutableListOf<LimitOrder>()
         clientLimitOrdersMap[clientId]?.forEach { limitOrder ->
-            if (limitOrder.assetPairId == (assetPair ?: limitOrder.assetPairId) && limitOrder.isBuySide() == (isBuy ?: limitOrder.isBuySide())) {
+            if ((assetPair == null || limitOrder.assetPairId == assetPair) && (isBuy == null || limitOrder.isBuySide() == isBuy)) {
                 result.add(limitOrder)
             }
         }
@@ -156,8 +120,21 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
         }
     }
 
+    override fun removeOrdersFromMapsAndSetStatus(orders: Collection<LimitOrder>, status: OrderStatus?, date: Date?) {
+        orders.forEach { order ->
+            val removedOrder = limitOrdersMap.remove(order.externalId)
+            clientLimitOrdersMap[order.clientId]?.remove(removedOrder)
+            expiryOrdersQueue.removeOrder(order)
+            if (removedOrder != null && status != null) {
+                removedOrder.updateStatus(status, date!!)
+            }
+        }
+    }
+
     fun putTradeInfo(tradeInfo: TradeInfo) {
-        tradeInfoQueue.put(tradeInfo)
+        if (tradeInfoQueue.isPresent) {
+            tradeInfoQueue.get().put(tradeInfo)
+        }
     }
 
     fun buildMarketProfile(): List<BestPrice> {
@@ -174,7 +151,5 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
         return result
     }
 
-    fun calculateWalletOperationsForCancelledOrders(orders: List<LimitOrder>): CancelledOrdersOperationsResult {
-        return walletOperationsCalculator.calculateForCancelledOrders(orders)
-    }
+    fun createCurrentTransactionOrderBooksHolder() = CurrentTransactionOrderBooksHolder(this)
 }
