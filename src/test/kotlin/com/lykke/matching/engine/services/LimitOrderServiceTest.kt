@@ -13,6 +13,7 @@ import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
+import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -73,10 +74,10 @@ class LimitOrderServiceTest : AbstractTest() {
     }
 
     @Autowired
-    private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
+    private lateinit var messageBuilder: MessageBuilder
 
     @Autowired
-    private lateinit var messageBuilder: MessageBuilder
+    private lateinit var expiryOrdersQueue: ExpiryOrdersQueue
 
     @Before
     fun setUp() {
@@ -1780,9 +1781,12 @@ class LimitOrderServiceTest : AbstractTest() {
 
         Thread.sleep(600)
 
+        assertEquals(1, expiryOrdersQueue.getExpiredOrdersExternalIds(Date()).size)
+
         clearMessageQueues()
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", volume = -15.0, price = 1.1)))
 
+        assertEquals(0, expiryOrdersQueue.getExpiredOrdersExternalIds(Date()).size)
         assertOrderBookSize("EURUSD", true, 1)
         assertEquals(1, clientsEventsQueue.size)
         val event = clientsEventsQueue.poll() as ExecutionEvent
@@ -1803,6 +1807,7 @@ class LimitOrderServiceTest : AbstractTest() {
         Thread.sleep(10)
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(order))
 
+        assertEquals(0, expiryOrdersQueue.getExpiredOrdersExternalIds(Date()).size)
         assertOrderBookSize("EURUSD", true, 0)
         assertEquals(1, clientsEventsQueue.size)
         val event = clientsEventsQueue.poll() as ExecutionEvent

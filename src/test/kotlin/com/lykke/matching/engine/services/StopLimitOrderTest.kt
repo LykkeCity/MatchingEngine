@@ -11,6 +11,7 @@ import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
@@ -67,6 +68,9 @@ class StopLimitOrderTest : AbstractTest() {
 
     @Autowired
     private lateinit var messageBuilder: MessageBuilder
+
+    @Autowired
+    private lateinit var expiryOrdersQueue: ExpiryOrdersQueue
 
     @Before
     fun setUp() {
@@ -773,6 +777,7 @@ class StopLimitOrderTest : AbstractTest() {
         Thread.sleep(10)
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(order))
 
+        assertEquals(0, expiryOrdersQueue.getExpiredOrdersExternalIds(Date()).size)
         assertStopOrderBookSize("BTCUSD", false, 0)
         assertEquals(1, clientsEventsQueue.size)
         val event = clientsEventsQueue.poll() as ExecutionEvent
@@ -791,13 +796,15 @@ class StopLimitOrderTest : AbstractTest() {
                 timeInForce = OrderTimeInForce.GTD,
                 expiryTime = Date(Date().time + 300))))
 
-        clearMessageQueues()
-
         Thread.sleep(500)
 
+        assertEquals(1, expiryOrdersQueue.getExpiredOrdersExternalIds(Date()).size)
+
+        clearMessageQueues()
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD",
                 volume = 1.0, price = 1.0)))
 
+        assertEquals(0, expiryOrdersQueue.getExpiredOrdersExternalIds(Date()).size)
         assertStopOrderBookSize("BTCUSD", false, 0)
         assertOrderBookSize("BTCUSD", false, 0)
         assertOrderBookSize("BTCUSD", true, 1)
