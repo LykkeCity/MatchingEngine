@@ -85,19 +85,20 @@ class CurrentTransactionBalancesHolder(private val walletsManager: WalletsManage
             return newBalancesData
         }
 
-        val clientIdFromNewData = newBalancesData.wallets.map { it.clientId }.toSet()
+        val clientIdToAssetIdFromNewData = newBalancesData.balances.map { "${it.clientId} it.asset}" }.toSet()
+        val clientIdsFromNewWallets = newBalancesData.wallets.map { it.clientId }.toSet()
 
         val resultWalletList = ArrayList<Wallet>(newBalancesData.wallets)
         val resultAssetBalanceList = ArrayList<AssetBalance>(newBalancesData.balances)
 
         oldBalancesData.wallets.forEach {
-            if (!clientIdFromNewData.contains(it.clientId)) {
+            if (!clientIdsFromNewWallets.contains(it.clientId)) {
                 resultWalletList.add(it)
             }
         }
 
         oldBalancesData.balances.forEach {
-            if (!clientIdFromNewData.contains(it.clientId)) {
+            if (!clientIdToAssetIdFromNewData.contains("${it.clientId}_${it.asset}")) {
                 resultAssetBalanceList.add(it)
             }
         }
