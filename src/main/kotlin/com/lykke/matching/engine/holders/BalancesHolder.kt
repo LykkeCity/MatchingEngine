@@ -2,10 +2,10 @@ package com.lykke.matching.engine.holders
 
 import com.lykke.matching.engine.balance.BalancesGetter
 import com.lykke.matching.engine.balance.WalletOperationsProcessor
+import com.lykke.matching.engine.balance.WalletsManager
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
@@ -21,7 +21,8 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
                      private val persistenceManager: PersistenceManager,
                      private val assetsHolder: AssetsHolder,
                      private val balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
-                     private val applicationSettingsHolder: ApplicationSettingsHolder): BalancesGetter {
+                     private val applicationSettingsHolder: ApplicationSettingsHolder): BalancesGetter, WalletsManager {
+
 
     companion object {
         private val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
@@ -52,6 +53,10 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
 
     fun getBalance(clientId: String, assetId: String): BigDecimal {
         return getBalances(clientId)[assetId]?.balance ?: BigDecimal.ZERO
+    }
+
+    override fun getWallet(clientId: String): Wallet? {
+        return wallets[clientId]
     }
 
     override fun getReservedBalance(clientId: String, assetId: String): BigDecimal {
@@ -145,7 +150,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
 
     private fun createCurrentTransactionBalancesHolder() = CurrentTransactionBalancesHolder(this)
 
-    fun setWallets(wallets: Collection<Wallet>) {
+    override fun setWallets(wallets: Collection<Wallet>) {
         wallets.forEach { wallet ->
             this.wallets[wallet.clientId] = wallet
         }
