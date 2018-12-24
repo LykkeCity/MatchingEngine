@@ -54,7 +54,7 @@ class AssetStopOrderBookTest {
         assertNotNull(order)
         assertEquals("order4", order!!.externalId)
 
-        // the same limit price and the best own price
+        // the same limit price and the best own price - in this case the earlier order must be returned
         orderBook.addOrder(buildLimitOrder(
                 uid = "order5", assetId = "AssetPair", volume = 1.0, type = LimitOrderType.STOP_LIMIT,
                 lowerLimitPrice = 1.15, lowerPrice = 1.21, upperLimitPrice = 1.25, upperPrice = 1.4
@@ -62,11 +62,11 @@ class AssetStopOrderBookTest {
 
         order = orderBook.getOrder(BigDecimal.valueOf(1.15), true, true)
         assertNotNull(order)
-        assertEquals("order5", order!!.externalId)
+        assertEquals("order3", order!!.externalId)
 
         order = orderBook.getOrder(BigDecimal.valueOf(1.25), true, false)
         assertNotNull(order)
-        assertEquals("order5", order!!.externalId)
+        assertEquals("order4", order!!.externalId)
     }
 
     @Test
@@ -84,7 +84,7 @@ class AssetStopOrderBookTest {
         assertNotNull(order)
         assertEquals("order2", order!!.externalId)
 
-        // the same limit price and the best own price
+        // the same limit price and the best own price - in this case the earlier order must be returned
         orderBook.addOrder(buildLimitOrder(
                 uid = "order5", assetId = "AssetPair", volume = -1.0, type = LimitOrderType.STOP_LIMIT,
                 lowerLimitPrice = 1.0, lowerPrice = 0.94, upperLimitPrice = 1.14, upperPrice = 1.1
@@ -92,10 +92,10 @@ class AssetStopOrderBookTest {
 
         order = orderBook.getOrder(BigDecimal.valueOf(1.0), false, true)
         assertNotNull(order)
-        assertEquals("order5", order!!.externalId)
+        assertEquals("order1", order!!.externalId)
 
         order = orderBook.getOrder(BigDecimal.valueOf(1.14), false, false)
         assertNotNull(order)
-        assertEquals("order5", order!!.externalId)
+        assertEquals("order2", order!!.externalId)
     }
 }
