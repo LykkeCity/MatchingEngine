@@ -4,7 +4,6 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
@@ -23,19 +22,20 @@ import java.math.BigDecimal
 import java.util.Date
 
 class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
-                                private val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
+                                val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
                                 private val applicationSettingsHolder: ApplicationSettingsHolder,
                                 private val persistenceManager: PersistenceManager,
                                 private val assetsHolder: AssetsHolder,
                                 val validate: Boolean,
-                                private val logger: Logger?): BalancesGetter {
+                                private val logger: Logger?,
+                                private val previousWalletOperationsProcessor: WalletOperationsProcessor? = null) : BalancesGetter {
 
     companion object {
         private val LOGGER = Logger.getLogger(WalletOperationsProcessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-   private val clientBalanceUpdatesByClientIdAndAssetId = HashMap<String, ClientBalanceUpdate>()
+    private val clientBalanceUpdatesByClientIdAndAssetId = HashMap<String, ClientBalanceUpdate>()
 
     fun preProcess(operations: Collection<WalletOperation>, forceApply: Boolean = false): WalletOperationsProcessor {
         if (operations.isEmpty()) {
@@ -106,6 +106,8 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
     }
 
     fun apply(): WalletOperationsProcessor {
+        applyChangesToPrevWalletProcessor()
+
         currentTransactionBalancesHolder.apply()
         return this
     }
@@ -153,6 +155,21 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
 
     override fun getReservedBalance(clientId: String, assetId: String): BigDecimal {
         return getChangedCopyOrOriginalAssetBalance(clientId, assetId).reserved
+    }
+
+    private fun applyChangesToPrevWalletProcessor() {
+        if (previousWalletOperationsProcessor == null) {
+            return
+        }
+
+        this.clientBalanceUpdatesByClientIdAndAssetId.forEach { key, balance ->
+            val balanceUpdate = previousWalletOperationsProcessor.clientBalanceUpdatesByClientIdAndAssetId.getOrPut(key) {
+                balance
+            }
+
+            balanceUpdate.newBalance = balance.newBalance
+            balanceUpdate.newReserved = balance.newBalance
+        }
     }
 
     private fun isTrustedClientReservedBalanceOperation(operation: WalletOperation): Boolean {
