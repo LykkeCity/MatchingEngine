@@ -20,18 +20,21 @@ class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                               private val genericStopLimitOrderService: GenericStopLimitOrderService,
                               private val assetsHolder: AssetsHolder) {
 
-//    fun create(executionContext: ExecutionContext): ExecutionContext {
-//        return ExecutionContext(executionContext.messageId,
-//                executionContext.requestId,
-//                executionContext.messageType,
-//                executionContext.processedMessage,
-//                executionContext.assetPairsById,
-//                executionContext.assetsById,
-//                executionContext.preProcessorValidationResultsByOrderId,
-//
-//                executionContext.date,
-//                executionContext.logger)
-//    }
+    fun create(executionContext: ExecutionContext): ExecutionContext {
+        return ExecutionContext(executionContext.messageId,
+                executionContext.requestId,
+                executionContext.messageType,
+                executionContext.processedMessage,
+                executionContext.assetPairsById,
+                executionContext.assetsById,
+                executionContext.preProcessorValidationResultsByOrderId,
+                balancesHolder.createWalletProcessor(executionContext.walletOperationsProcessor.currentTransactionBalancesHolder.createCurrenTransactionBalancesHolder(),
+                        executionContext.logger, executionContext.walletOperationsProcessor.validate),
+                CurrentTransactionOrderBooksHolder(executionContext.orderBooksHolder),
+                CurrentTransactionStopOrderBooksHolder(executionContext.stopOrderBooksHolder),
+                executionContext.date,
+                executionContext.logger)
+    }
 
     fun create(messageId: String,
                requestId: String,

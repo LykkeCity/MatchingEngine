@@ -33,6 +33,10 @@ class CurrentTransactionBalancesHolder(private val walletsManager: WalletsManage
         walletsManager.setWallets(changedWalletsByClientId.values)
     }
 
+    fun createCurrenTransactionBalancesHolder(): CurrentTransactionBalancesHolder {
+        return CurrentTransactionBalancesHolder(this)
+    }
+
     fun getWalletAssetBalance(clientId: String, assetId: String): WalletAssetBalance {
         val wallet = changedWalletsByClientId.getOrPut(clientId) {
             copyWallet(walletsManager.getWallet(clientId)) ?: Wallet(clientId)

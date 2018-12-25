@@ -4,13 +4,13 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.services.AbstractGenericLimitOrderService
 import com.lykke.matching.engine.services.AssetStopOrderBook
-import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import java.math.BigDecimal
 import java.util.Date
 
-class CurrentTransactionStopOrderBooksHolder(private val genericStopLimitOrderService: GenericStopLimitOrderService)
-    : AbstractTransactionOrderBooksHolder<AssetStopOrderBook, GenericStopLimitOrderService>(genericStopLimitOrderService) {
+class CurrentTransactionStopOrderBooksHolder(ordersService: AbstractGenericLimitOrderService<AssetStopOrderBook>)
+    : AbstractTransactionOrderBooksHolder<AssetStopOrderBook, AbstractGenericLimitOrderService<AssetStopOrderBook>>(ordersService) {
 
     fun pollStopOrderToExecute(assetPairId: String,
                                bestBidPrice: BigDecimal,
@@ -52,7 +52,7 @@ class CurrentTransactionStopOrderBooksHolder(private val genericStopLimitOrderSe
 
     override fun applySpecificPart(date: Date) {
         assetOrderBookCopiesByAssetPairId.forEach { assetPairId, orderBook ->
-            genericStopLimitOrderService.setOrderBook(assetPairId, orderBook)
+            ordersService.setOrderBook(assetPairId, orderBook)
         }
     }
 
