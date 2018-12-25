@@ -5,6 +5,7 @@ import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.parsers.data.CashTransferParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
@@ -30,8 +31,9 @@ class CashTransferPreprocessor(
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
         private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
         private val cashTransferPreprocessorPersistenceManager: PersistenceManager,
-        private val processedMessagesCache: ProcessedMessagesCache
-) : MessagePreprocessor, Thread(CashTransferPreprocessor::class.java.name) {
+        private val processedMessagesCache: ProcessedMessagesCache,
+        private val messageProcessingStatusHolder: MessageProcessingStatusHolder
+): MessagePreprocessor, Thread(CashTransferPreprocessor::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(CashTransferPreprocessor::class.java.name)
@@ -46,12 +48,19 @@ class CashTransferPreprocessor(
 
     override fun preProcess(messageWrapper: MessageWrapper) {
         val cashTransferParsedData = contextParser.parse(messageWrapper)
+        val cashTransferContext = cashTransferParsedData.messageWrapper.context as CashTransferContext
+        if (messageProcessingStatusHolder.isCashTransferDisabled(cashTransferContext.transferOperation.asset)) {
+            writeResponse(cashTransferParsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+            return
+        }
 
         if (!validateData(cashTransferParsedData)) {
             return
         }
 
-        performDeduplicationCheck(cashTransferParsedData)
+        if (!isMessageDuplicated(cashTransferParsedData)) {
+            preProcessedMessageQueue.put(messageWrapper)
+        }
     }
 
     fun validateData(cashTransferParsedData: CashTransferParsedData): Boolean {
@@ -86,7 +95,7 @@ class CashTransferPreprocessor(
         }
     }
 
-    private fun performDeduplicationCheck(cashTransferParsedData: CashTransferParsedData) {
+    private fun isMessageDuplicated(cashTransferParsedData: CashTransferParsedData): Boolean {
         val parsedMessageWrapper = cashTransferParsedData.messageWrapper
         val context = parsedMessageWrapper.context as CashTransferContext
 
@@ -94,9 +103,9 @@ class CashTransferPreprocessor(
             writeResponse(parsedMessageWrapper, DUPLICATE)
             LOGGER.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
             METRICS_LOGGER.logError("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
-        } else {
-            preProcessedMessageQueue.put(parsedMessageWrapper)
+            return true
         }
+        return false
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
@@ -118,11 +127,13 @@ class CashTransferPreprocessor(
 
     override fun run() {
         while (true) {
-            val message = cashTransferInputQueue.take()
+            val messageWrapper = cashTransferInputQueue.take()
             try {
-                preProcess(message)
+                messageWrapper.messagePreProcessorStartTimestamp = System.nanoTime()
+                preProcess(messageWrapper)
+                messageWrapper.messagePreProcessorEndTimestamp = System.nanoTime()
             } catch (exception: Exception) {
-                handlePreprocessingException(exception, message)
+                handlePreprocessingException(exception, messageWrapper)
             }
         }
     }

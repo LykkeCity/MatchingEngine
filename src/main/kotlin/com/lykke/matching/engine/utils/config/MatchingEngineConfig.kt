@@ -20,7 +20,6 @@ data class MatchingEngineConfig(
         val candleSaverInterval: Long,
         val hoursCandleSaverInterval: Long,
         val whiteList: String?,
-        val migrate: Boolean,
         val correctReservedVolumes: Boolean,
         val cancelMinVolumeOrders: Boolean,
         val cancelAllOrders: Boolean,
@@ -30,7 +29,6 @@ data class MatchingEngineConfig(
         val stopOrderBookPath: String,
         val queueConfig: QueueConfig,
         val name: String,
-        val trustedClients: Set<String>,
         val aliveStatus: AliveStatusConfig,
         val processedMessagesPath: String,
         val processedMessagesInterval: Long,
@@ -41,5 +39,9 @@ data class MatchingEngineConfig(
         val walletsMigration: Boolean,
         val writeBalancesToSecondaryDb: Boolean,
         val ordersMigration: Boolean,
-        val writeOrdersToSecondaryDb: Boolean
+        val writeOrdersToSecondaryDb: Boolean,
+        val disableBlobHistory: Boolean?,
+        val disableBestPriceHistory: Boolean?,
+        val disableCandlesHistory: Boolean?,
+        val disableHourCandlesHistory: Boolean?
 )

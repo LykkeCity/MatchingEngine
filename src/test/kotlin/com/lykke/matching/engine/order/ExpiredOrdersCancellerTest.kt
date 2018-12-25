@@ -40,7 +40,7 @@ class ExpiredOrdersCancellerTest : AbstractTest() {
         val now = Date()
         orders.addAll(listOf(buildLimitOrder(timeInForce = OrderTimeInForce.GTD, expiryTime = date(now, 500), uid = "1"),
                 buildLimitOrder(timeInForce = OrderTimeInForce.GTD, expiryTime = date(now, 1500), uid = "2")))
-        orders.forEach { expiryOrdersQueue.addOrder(it) }
+        orders.forEach { expiryOrdersQueue.addIfOrderHasExpiryTime(it) }
     }
 
     @Test
@@ -58,7 +58,7 @@ class ExpiredOrdersCancellerTest : AbstractTest() {
         assertEquals("1", message.limitOrderIdList.single())
 
         limitOrderCancelInputQueue.clear()
-        expiryOrdersQueue.removeOrder(orders[0])
+        expiryOrdersQueue.removeIfOrderHasExpiryTime(orders[0])
 
         Thread.sleep(800)
         service.cancelExpiredOrders()

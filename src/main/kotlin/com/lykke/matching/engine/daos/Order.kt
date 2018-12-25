@@ -62,6 +62,7 @@ abstract class Order(
     override fun applyToOrigin(origin: Copyable) {
         origin as Order
         origin.status = status
+        origin.statusDate = statusDate
         origin.reservedLimitVolume = reservedLimitVolume
     }
 }

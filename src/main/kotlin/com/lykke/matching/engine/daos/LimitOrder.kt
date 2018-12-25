@@ -85,6 +85,7 @@ class LimitOrder(id: String,
         origin as LimitOrder
         origin.remainingVolume = remainingVolume
         origin.lastMatchTime = lastMatchTime
+        origin.price = price
     }
 
     fun hasExpiryTime(): Boolean {
