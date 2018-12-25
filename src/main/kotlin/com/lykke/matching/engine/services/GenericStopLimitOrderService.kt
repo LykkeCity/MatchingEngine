@@ -11,7 +11,7 @@ import java.util.HashMap
 import java.util.concurrent.ConcurrentHashMap
 
 @Component
-class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder) : AbstractGenericLimitOrderService<AssetStopOrderBook> {
+class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder) : AbstractGenericLimitOrderService<AssetStopOrderBook>{
 
     var initialStopOrdersCount = 0
     private val stopLimitOrdersQueues = ConcurrentHashMap<String, AssetStopOrderBook>()
@@ -55,16 +55,6 @@ class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder
             }
         }
         return result
-    }
-
-    override fun cancelLimitOrders(orders: Collection<LimitOrder>, date: Date) {
-        orders.forEach { order ->
-            val ord = stopLimitOrdersMap.remove(order.externalId)
-            clientStopLimitOrdersMap[order.clientId]?.remove(order)
-            if (ord != null) {
-                ord.updateStatus(OrderStatus.Cancelled, date)
-            }
-        }
     }
 
     override fun removeOrdersFromMapsAndSetStatus(orders: Collection<LimitOrder>, status: OrderStatus?, date: Date?) {

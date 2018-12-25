@@ -102,16 +102,6 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
         return clientLimitOrdersMap[order.clientId]?.remove(order) ?: false
     }
 
-    override fun cancelLimitOrders(orders: Collection<LimitOrder>, date: Date) {
-        orders.forEach { order ->
-            val ord = limitOrdersMap.remove(order.externalId)
-            clientLimitOrdersMap[order.clientId]?.remove(order)
-            if (ord != null) {
-                ord.updateStatus(Cancelled, date)
-            }
-        }
-    }
-
     override fun removeOrdersFromMapsAndSetStatus(orders: Collection<LimitOrder>, status: OrderStatus?, date: Date?) {
         orders.forEach { order ->
             val removedOrder = limitOrdersMap.remove(order.externalId)

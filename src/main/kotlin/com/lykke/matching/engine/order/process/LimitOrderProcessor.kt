@@ -72,7 +72,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
                     order,
                     orderContext.availableLimitAssetBalance!!,
                     orderContext.limitVolume!!,
-                    orderContext.executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId))
+                    orderContext.executionContext.orderBooksHolder.getOrderBook(order.assetPairId))
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, false, e.message, e.orderStatus)
         }
@@ -108,7 +108,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
 
     private fun processValidOrder(orderContext: LimitOrderExecutionContext): ProcessedOrder {
         val order = orderContext.order
-        val orderBook = orderContext.executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId)
+        val orderBook = orderContext.executionContext.orderBooksHolder.getOrderBook(order.assetPairId)
         return if (orderBook.leadToNegativeSpread(order)) {
             matchOrder(orderContext)
         } else {
@@ -119,7 +119,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
     private fun matchOrder(orderContext: LimitOrderExecutionContext): ProcessedOrder {
         val executionContext = orderContext.executionContext
         val order = orderContext.order
-        val orderBook = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId)
+        val orderBook = executionContext.orderBooksHolder.getOrderBook(order.assetPairId)
         val matchingResult = matchingEngine.match(order,
                 orderBook.getOrderBook(!order.isBuySide()),
                 executionContext.messageId,
@@ -247,7 +247,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
 
     private fun processOppositeOrders(orderContext: LimitOrderExecutionContext) {
         val matchingResult = orderContext.matchingResult!!
-        orderContext.executionContext.orderBooksHolder.addCompletedOrders(matchingResult.completedLimitOrders.map { it.origin!! })
+        orderContext.executionContext.orderBooksHolder.removeOrdersFromMapsAndSetStatus(matchingResult.completedLimitOrders.map { it.origin!! })
 
         if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
             matchingResultHandlingHelper.processCancelledOppositeOrders(orderContext)

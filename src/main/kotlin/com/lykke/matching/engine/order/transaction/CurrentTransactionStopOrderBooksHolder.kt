@@ -27,7 +27,7 @@ class CurrentTransactionStopOrderBooksHolder(private val genericStopLimitOrderSe
         if (bestOppositePrice <= BigDecimal.ZERO) {
             return null
         }
-        val stopOrderBook = getChangedCopyOrOriginalOrderBook(assetPairId)
+        val stopOrderBook = getOrderBook(assetPairId)
         var order: LimitOrder?
         var orderPrice: BigDecimal? = null
         order = stopOrderBook.getOrder(bestOppositePrice, isBuySide, true)
@@ -42,7 +42,7 @@ class CurrentTransactionStopOrderBooksHolder(private val genericStopLimitOrderSe
         if (order == null) {
             return null
         }
-        addRemovedOrders(listOf(order), completedOrders)
+        removeOrdersFromMapsAndSetStatus(listOf(order))
         getChangedOrderBookCopy(assetPairId).removeOrder(order)
         val orderCopy = order.copy()
         orderCopy.price = orderPrice!!
@@ -59,11 +59,7 @@ class CurrentTransactionStopOrderBooksHolder(private val genericStopLimitOrderSe
     override fun getPersistenceData(): OrderBooksPersistenceData {
         val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
         val ordersToSave = mutableListOf<LimitOrder>()
-        val ordersToRemove = ArrayList<LimitOrder>(completedOrders.size + cancelledOrders.size + replacedOrders.size)
-
-        ordersToRemove.addAll(completedOrders)
-        ordersToRemove.addAll(cancelledOrders)
-        ordersToRemove.addAll(replacedOrders)
+        val ordersToRemove = ArrayList<LimitOrder>(removeOrdersByStatus.values.flatMap { it })
 
         assetOrderBookCopiesByAssetPairId.forEach { assetPairId, orderBook ->
             if (changedBuySides.contains(assetPairId)) {

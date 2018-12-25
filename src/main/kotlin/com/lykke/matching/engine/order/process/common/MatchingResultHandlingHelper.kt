@@ -69,7 +69,7 @@ class MatchingResultHandlingHelper(private val applicationSettingsHolder: Applic
 
     fun processCancelledOppositeOrders(orderExecutionContext: OrderExecutionContext<*>) {
         val originalCancelledLimitOrders = orderExecutionContext.matchingResult!!.cancelledLimitOrders.map { it.origin!! }
-        orderExecutionContext.executionContext.orderBooksHolder.addCancelledOrders(originalCancelledLimitOrders)
+        orderExecutionContext.executionContext.orderBooksHolder.removeOrdersFromMapsAndSetStatus(originalCancelledLimitOrders, OrderStatus.Cancelled)
         orderExecutionContext.executionContext.addClientsLimitOrdersWithTrades(orderExecutionContext.cancelledOppositeClientsOrders!!.map { LimitOrderWithTrades(it) })
         orderExecutionContext.executionContext.addTrustedClientsLimitOrdersWithTrades(orderExecutionContext.cancelledOppositeTrustedClientsOrders!!.map { LimitOrderWithTrades(it) })
     }
@@ -77,7 +77,7 @@ class MatchingResultHandlingHelper(private val applicationSettingsHolder: Applic
     fun processUncompletedOppositeOrder(orderExecutionContext: OrderExecutionContext<*>) {
         val uncompletedLimitOrder = orderExecutionContext.matchingResult!!.uncompletedLimitOrder!!
         if (orderExecutionContext.isUncompletedOrderCancelled) {
-            orderExecutionContext.executionContext.orderBooksHolder.addCancelledOrders(listOf(uncompletedLimitOrder))
+            orderExecutionContext.executionContext.orderBooksHolder.removeOrdersFromMapsAndSetStatus(listOf(uncompletedLimitOrder), OrderStatus.Cancelled)
         } else {
             orderExecutionContext.matchingResult!!.orderBook.put(uncompletedLimitOrder)
         }

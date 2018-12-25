@@ -75,12 +75,12 @@ class PreviousLimitOrdersProcessor(private val genericLimitOrderService: Generic
         }
 
         executionContext.walletOperationsProcessor.preProcess(cancelResult.walletOperations.plus(stopOrdersCancelResult.walletOperations), true)
-        cancelResult.assetOrderBooks[context.assetPairId]?.let { executionContext.orderBooksHolder.setOrderBook(it) }
-        stopOrdersCancelResult.assetOrderBooks[context.assetPairId]?.let { executionContext.stopOrderBooksHolder.setOrderBook(it) }
-        executionContext.orderBooksHolder.addCancelledOrders(ordersToCancel)
-        executionContext.orderBooksHolder.addReplacedOrders(ordersToReplace)
-        executionContext.stopOrderBooksHolder.addCancelledOrders(stopOrdersToCancel)
-        executionContext.stopOrderBooksHolder.addReplacedOrders(stopOrdersToReplace)
+        cancelResult.assetOrderBooks[context.assetPairId]?.let { executionContext.orderBooksHolder.setOrderBook(it.assetPairId, it) }
+        stopOrdersCancelResult.assetOrderBooks[context.assetPairId]?.let { executionContext.stopOrderBooksHolder.setOrderBook(it.assetPairId, it) }
+        executionContext.orderBooksHolder.removeOrdersFromMapsAndSetStatus(ordersToCancel, OrderStatus.Cancelled)
+        executionContext.orderBooksHolder.removeOrdersFromMapsAndSetStatus(ordersToReplace, OrderStatus.Replaced)
+        executionContext.stopOrderBooksHolder.removeOrdersFromMapsAndSetStatus(stopOrdersToCancel, OrderStatus.Cancelled)
+        executionContext.stopOrderBooksHolder.removeOrdersFromMapsAndSetStatus(stopOrdersToReplace, OrderStatus.Replaced)
         executionContext.addClientsLimitOrdersWithTrades(cancelResult.clientsOrdersWithTrades
                 .plus(stopOrdersCancelResult.clientsOrdersWithTrades))
         executionContext.addTrustedClientsLimitOrdersWithTrades(cancelResult.trustedClientsOrdersWithTrades

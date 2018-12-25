@@ -168,7 +168,7 @@ class MarketOrderService @Autowired constructor(
 
                 if (preProcessResult) {
                     matchingResult.apply()
-                    executionContext.orderBooksHolder.addCompletedOrders(matchingResult.completedLimitOrders.map { it.origin!! })
+                    executionContext.orderBooksHolder.removeOrdersFromMapsAndSetStatus(matchingResult.completedLimitOrders.map { it.origin!! })
 
                     if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
                         matchingResultHandlingHelper.processCancelledOppositeOrders(marketOrderExecutionContext)

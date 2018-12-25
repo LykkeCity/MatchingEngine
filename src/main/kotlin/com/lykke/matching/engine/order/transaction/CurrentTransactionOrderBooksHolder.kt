@@ -7,14 +7,15 @@ import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.matching.UpdatedOrderBookAndOrder
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.services.AbstractGenericLimitOrderService
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import java.util.Date
 import java.util.HashMap
 import java.util.concurrent.PriorityBlockingQueue
 
-class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: GenericLimitOrderService)
-    : AbstractTransactionOrderBooksHolder<AssetOrderBook, GenericLimitOrderService>(genericLimitOrderService) {
+class CurrentTransactionOrderBooksHolder(ordersService: AbstractGenericLimitOrderService<AssetOrderBook>)
+    : AbstractTransactionOrderBooksHolder<AssetOrderBook, AbstractGenericLimitOrderService<AssetOrderBook>>(ordersService) {
 
     private val orderCopyWrappersByOriginalOrder = HashMap<LimitOrder, CopyWrapper<LimitOrder>>()
 
@@ -31,11 +32,7 @@ class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: G
     override fun getPersistenceData(): OrderBooksPersistenceData {
         val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
         val ordersToSave = mutableListOf<LimitOrder>()
-        val ordersToRemove = ArrayList<LimitOrder>(completedOrders.size + cancelledOrders.size + replacedOrders.size)
-
-        ordersToRemove.addAll(completedOrders)
-        ordersToRemove.addAll(cancelledOrders)
-        ordersToRemove.addAll(replacedOrders)
+        val ordersToRemove = ArrayList(removeOrdersByStatus.values.flatMap { it })
 
         assetOrderBookCopiesByAssetPairId.forEach { assetPairId, orderBook ->
             if (changedBuySides.contains(assetPairId)) {
@@ -69,16 +66,26 @@ class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: G
     }
 
     override fun applySpecificPart(date: Date) {
-        orderCopyWrappersByOriginalOrder.forEach { it.value.applyToOrigin() }
+        if (ordersService is CurrentTransactionOrderBooksHolder) {
+            ordersService.orderCopyWrappersByOriginalOrder.putAll(orderCopyWrappersByOriginalOrder)
+        }
+
+        if (ordersService is GenericLimitOrderService) {
+            orderCopyWrappersByOriginalOrder.forEach { it.value.applyToOrigin() }
+        }
+
         assetOrderBookCopiesByAssetPairId.forEach { assetPairId, orderBook ->
-            genericLimitOrderService.setOrderBook(assetPairId, orderBook)
-            val orderBookCopy = orderBook.copy()
-            if (changedBuySides.contains(assetPairId)) {
-                processChangedOrderBookSide(orderBookCopy, true, date)
+            ordersService.setOrderBook(assetPairId, orderBook)
+            if(ordersService is GenericLimitOrderService) {
+                val orderBookCopy = orderBook.copy()
+                if (changedBuySides.contains(assetPairId)) {
+                    processChangedOrderBookSide(orderBookCopy, true, date)
+                }
+                if (changedSellSides.contains(assetPairId)) {
+                    processChangedOrderBookSide(orderBookCopy, false, date)
+                }
             }
-            if (changedSellSides.contains(assetPairId)) {
-                processChangedOrderBookSide(orderBookCopy, false, date)
-            }
+
         }
     }
 

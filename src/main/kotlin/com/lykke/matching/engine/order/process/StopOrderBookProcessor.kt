@@ -2,7 +2,6 @@ package com.lykke.matching.engine.order.process
 
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import org.springframework.stereotype.Component
@@ -34,7 +33,7 @@ class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcesso
     }
 
     private fun getStopOrderToExecuteByAssetPair(assetPairId: String, executionContext: ExecutionContext): LimitOrder? {
-        val orderBook = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPairId)
+        val orderBook = executionContext.orderBooksHolder.getOrderBook(assetPairId)
         val bestBidPrice = orderBook.getBidPrice()
         val bestAskPrice = orderBook.getAskPrice()
         val order = executionContext.stopOrderBooksHolder.pollStopOrderToExecute(assetPairId,

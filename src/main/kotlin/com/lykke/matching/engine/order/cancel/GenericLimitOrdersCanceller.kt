@@ -14,6 +14,7 @@ import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.order.ExecutionDataApplyService
+import com.lykke.matching.engine.order.OrderStatus
 import org.apache.log4j.Logger
 import java.util.Date
 
@@ -97,13 +98,13 @@ class GenericLimitOrdersCanceller(private val executionContextFactory: Execution
                 .plus(stopLimitOrdersResult.walletOperations))
 
         limitOrdersCancelResult.assetOrderBooks.forEach {
-            executionContext.orderBooksHolder.setOrderBook(it.value)
+            executionContext.orderBooksHolder.setOrderBook(it.value.assetPairId, it.value)
         }
         stopLimitOrdersResult.assetOrderBooks.forEach {
-            executionContext.stopOrderBooksHolder.setOrderBook(it.value)
+            executionContext.stopOrderBooksHolder.setOrderBook(it.value.assetPairId, it.value)
         }
-        executionContext.orderBooksHolder.addCancelledOrders(limitOrdersCanceller.getProcessedOrders())
-        executionContext.stopOrderBooksHolder.addCancelledOrders(stopLimitOrdersCanceller.getProcessedOrders())
+        executionContext.orderBooksHolder.removeOrdersFromMapsAndSetStatus(limitOrdersCanceller.getProcessedOrders(), OrderStatus.Cancelled)
+        executionContext.stopOrderBooksHolder.removeOrdersFromMapsAndSetStatus(stopLimitOrdersCanceller.getProcessedOrders(), OrderStatus.Cancelled)
 
         executionContext.addClientsLimitOrdersWithTrades(limitOrdersCancelResult.clientsOrdersWithTrades)
         executionContext.addClientsLimitOrdersWithTrades(stopLimitOrdersResult.clientsOrdersWithTrades)
