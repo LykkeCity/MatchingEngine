@@ -24,7 +24,7 @@ class ExpiredOrdersCanceller(private val expiryOrdersQueue: ExpiryOrdersQueue,
     fun cancelExpiredOrders() {
         try {
             val now = Date()
-            val ordersToCancelExternalIds = expiryOrdersQueue.getExpiredOrderExternalIds(now)
+            val ordersToCancelExternalIds = expiryOrdersQueue.getExpiredOrdersExternalIds(now)
             if (ordersToCancelExternalIds.isEmpty()) {
                 return
             }

@@ -4,15 +4,23 @@ import com.lykke.matching.engine.daos.setting.*
 import com.lykke.matching.engine.database.SettingsDatabaseAccessor
 import com.lykke.matching.engine.database.SettingsHistoryDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.services.events.ApplicationSettingDeletedEvent
+import com.lykke.matching.engine.services.events.ApplicationGroupDeletedEvent
+import com.lykke.matching.engine.services.events.ApplicationSettingCreatedOrUpdatedEvent
+import com.lykke.matching.engine.services.validators.settings.SettingValidator
 import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
 import com.lykke.matching.engine.web.dto.SettingDto
 import com.lykke.matching.engine.web.dto.SettingsGroupDto
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
+import org.springframework.util.CollectionUtils
 
 @Service
 class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: SettingsDatabaseAccessor,
                                      private val applicationSettingsCache: ApplicationSettingsCache,
-                                     private val applicationSettingsHistoryDatabaseAccessor: SettingsHistoryDatabaseAccessor) : ApplicationSettingsService {
+                                     private val applicationSettingsHistoryDatabaseAccessor: SettingsHistoryDatabaseAccessor,
+                                     private val applicationEventPublisher: ApplicationEventPublisher) : ApplicationSettingsService {
 
     private companion object {
         val COMMENT_FORMAT = "[%s] %s"
@@ -22,80 +30,106 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         CREATE, UPDATE, ENABLE, DISABLE, DELETE
     }
 
+    @Autowired
+    private lateinit var settingGroupToValidator: Map<AvailableSettingGroup, List<SettingValidator>>
+
     @Synchronized
     override fun getAllSettingGroups(enabled: Boolean?): Set<SettingsGroupDto> {
-        return settingsDatabaseAccessor.getAllSettingGroups(enabled).map { toSettingGroupDto(it) }.toSet()
+        return applicationSettingsCache.getAllSettingGroups(enabled).map { toSettingGroupDto(it) }.toSet()
     }
 
     @Synchronized
     override fun getSettingsGroup(settingsGroup: AvailableSettingGroup, enabled: Boolean?): SettingsGroupDto? {
-        return settingsDatabaseAccessor.getSettingsGroup(settingsGroup.settingGroupName, enabled)?.let {
+        return applicationSettingsCache.getSettingsGroup(settingsGroup, enabled)?.let {
             toSettingGroupDto(it)
         }
     }
 
     @Synchronized
-    override fun getSetting(settingsGroup: AvailableSettingGroup, settingName: String, enabled: Boolean?): SettingDto? {
-        return settingsDatabaseAccessor.getSetting(settingsGroup.settingGroupName, settingName, enabled)?.let {
+    override fun getSetting(settingsGroup: AvailableSettingGroup, settingName: String): SettingDto? {
+        return applicationSettingsCache.getSetting(settingsGroup, settingName)?.let {
             toSettingDto(it)
         }
     }
 
     @Synchronized
-    override fun getHistoryRecords(settingsGroup: AvailableSettingGroup, settingName: String): List<SettingDto> {
-        return applicationSettingsHistoryDatabaseAccessor
-                .get(settingsGroup.settingGroupName, settingName)
+    override fun getHistoryRecords(settingsGroupName: String, settingName: String): List<SettingDto> {
+        val result = applicationSettingsHistoryDatabaseAccessor
+                .get(settingsGroupName, settingName)
                 .map(::toSettingDto)
+
+        if (CollectionUtils.isEmpty(result)) {
+            throw SettingNotFoundException(settingName)
+        }
+
+        return result
     }
 
     @Synchronized
     override fun createOrUpdateSetting(settingsGroup: AvailableSettingGroup, settingDto: SettingDto) {
-        val commentWithOperationPrefix = getCommentWithOperationPrefix(settingsGroup, settingDto)
+        settingGroupToValidator[settingsGroup]?.forEach { it.validate(settingDto) }
+
+        val previousSetting = getSetting(settingsGroup, settingDto.name)
+        val commentWithOperationPrefix = getCommentWithOperationPrefix(getSettingOperation(previousSetting, settingDto), settingDto.comment!!)
 
         val setting = toSetting(settingDto)
-        settingsDatabaseAccessor.createOrUpdateSetting(settingsGroup.settingGroupName, setting)
+        settingsDatabaseAccessor.createOrUpdateSetting(settingsGroup, setting)
         addHistoryRecord(settingsGroup, commentWithOperationPrefix, settingDto.user!!, setting)
         updateSettingInCache(settingDto, settingsGroup)
+
+        applicationEventPublisher.publishEvent(ApplicationSettingCreatedOrUpdatedEvent(settingsGroup,
+                setting,
+                previousSetting?.let{toSetting(it)},
+                settingDto.comment!!,
+                settingDto.user))
     }
 
     @Synchronized
     override fun deleteSettingsGroup(settingsGroup: AvailableSettingGroup, deleteSettingRequestDto: DeleteSettingRequestDto) {
-        val settingsGroupToBeDeleted = settingsDatabaseAccessor.getSettingsGroup(settingsGroup.settingGroupName) ?: return
+        val settingsGroupToBeDeleted = applicationSettingsCache.getSettingsGroup(settingsGroup)
+                ?: return
 
-        settingsDatabaseAccessor.deleteSettingsGroup(settingsGroup.settingGroupName)
+        settingsDatabaseAccessor.deleteSettingsGroup(settingsGroup)
         val commentWithPrefix = getCommentWithOperationPrefix(SettingOperation.DELETE, deleteSettingRequestDto.comment)
         settingsGroupToBeDeleted.settings.forEach { addHistoryRecord(settingsGroup, commentWithPrefix, deleteSettingRequestDto.user, it) }
         applicationSettingsCache.deleteSettingGroup(settingsGroup)
+
+        applicationEventPublisher.publishEvent(ApplicationGroupDeletedEvent(settingsGroup,
+                settingsGroupToBeDeleted.settings,
+                deleteSettingRequestDto.comment,
+                deleteSettingRequestDto.user))
     }
 
     @Synchronized
     override fun deleteSetting(settingsGroup: AvailableSettingGroup, settingName: String, deleteSettingRequestDto: DeleteSettingRequestDto) {
-        val settingToBeDeleted = settingsDatabaseAccessor.getSetting(settingsGroup.settingGroupName, settingName) ?:
-        throw SettingNotFoundException("Setting with name '$settingName' not found" )
+        val settingToBeDeleted = applicationSettingsCache.getSetting(settingsGroup, settingName)
+                ?: throw SettingNotFoundException(settingName)
 
-        settingsDatabaseAccessor.deleteSetting(settingsGroup.settingGroupName, settingName)
+        settingsDatabaseAccessor.deleteSetting(settingsGroup, settingName)
         addHistoryRecord(settingsGroup,
                 getCommentWithOperationPrefix(SettingOperation.DELETE, deleteSettingRequestDto.comment),
                 deleteSettingRequestDto.user, settingToBeDeleted)
         applicationSettingsCache.deleteSetting(settingsGroup, settingName)
+
+
+        applicationEventPublisher.publishEvent(ApplicationSettingDeletedEvent(settingsGroup,
+                settingToBeDeleted,
+                deleteSettingRequestDto.comment,
+                deleteSettingRequestDto.user))
     }
 
     @Synchronized
     private fun updateSettingInCache(settingDto: SettingDto, settingsGroup: AvailableSettingGroup) {
-        if (!settingDto.enabled!!) {
-            applicationSettingsCache.deleteSetting(settingsGroup, settingDto.name)
-        } else {
-            applicationSettingsCache.createOrUpdateSettingValue(settingsGroup, settingDto.name, settingDto.value)
-        }
+        applicationSettingsCache.createOrUpdateSettingValue(settingsGroup, settingDto.name, settingDto.value, settingDto.enabled!!)
     }
 
-    private fun addHistoryRecord(settingGroupName: AvailableSettingGroup, comment: String, user: String, setting: Setting) {
-        applicationSettingsHistoryDatabaseAccessor.save(settingGroupName.settingGroupName, toSettingHistoryRecord(setting, comment, user))
+    private fun addHistoryRecord(settingGroup: AvailableSettingGroup, comment: String, user: String, setting: Setting) {
+        applicationSettingsHistoryDatabaseAccessor.save(toSettingHistoryRecord(settingGroup.settingGroupName, setting, comment, user))
     }
 
     private fun toSettingGroupDto(settingGroup: SettingsGroup): SettingsGroupDto {
         val settingsDtos = settingGroup.settings.map { toSettingDto(it) }.toSet()
-        return SettingsGroupDto(settingGroup.name, settingsDtos)
+        return SettingsGroupDto(settingGroup.settingGroup.settingGroupName, settingsDtos)
     }
 
     private fun toSettingDto(setting: Setting): SettingDto {
@@ -112,19 +146,17 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         return Setting(settingDto.name, settingDto.value, settingDto.enabled!!)
     }
 
-    private fun toSettingHistoryRecord(settingDto: Setting, comment: String, user: String): SettingHistoryRecord {
-        return settingDto.let {
-            SettingHistoryRecord(it.name, it.value, it.enabled, comment, user)
+    private fun toSettingHistoryRecord(settingsGroupName: String,
+                                       setting: Setting,
+                                       comment: String,
+                                       user: String): SettingHistoryRecord {
+        return setting.let {
+            SettingHistoryRecord(settingsGroupName, it.name, it.value, it.enabled, comment, user)
         }
     }
 
-    private fun getCommentWithOperationPrefix(prefix: SettingOperation, comment: String): String  {
+    private fun getCommentWithOperationPrefix(prefix: SettingOperation, comment: String): String {
         return COMMENT_FORMAT.format(prefix, comment)
-    }
-
-    private fun getCommentWithOperationPrefix(settingsGroup: AvailableSettingGroup, setting: SettingDto): String {
-        val previousSetting = getSetting(settingsGroup, setting.name)
-        return getCommentWithOperationPrefix(getSettingOperation(previousSetting, setting), setting.comment!!)
     }
 
     private fun getSettingOperation(previousSettingState: SettingDto?, nextSettingState: SettingDto): SettingOperation {

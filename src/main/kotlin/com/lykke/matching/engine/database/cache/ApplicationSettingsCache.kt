@@ -1,81 +1,89 @@
 package com.lykke.matching.engine.database.cache
 
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
+import com.lykke.matching.engine.daos.setting.Setting
 import com.lykke.matching.engine.daos.setting.SettingsGroup
 import com.lykke.matching.engine.database.SettingsDatabaseAccessor
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
-import java.math.BigDecimal
-import java.util.concurrent.ConcurrentHashMap
+import org.springframework.util.CollectionUtils
 import javax.annotation.PostConstruct
 
 @Component
-class ApplicationSettingsCache @Autowired constructor(private val settingsDatabaseAccessor: SettingsDatabaseAccessor) : DataCache() {
-    @Volatile
-    private var trustedClients: MutableMap<String, String> = ConcurrentHashMap()
-
-    @Volatile
-    private var disabledAssets: MutableMap<String, String> = ConcurrentHashMap()
-
-    @Volatile
-    private var moPriceDeviationThresholds: MutableMap<String, String> = ConcurrentHashMap()
-
-    @Volatile
-    private var loPriceDeviationThresholds: MutableMap<String, String> = ConcurrentHashMap()
+class ApplicationSettingsCache @Autowired constructor(private val settingsDatabaseAccessor: SettingsDatabaseAccessor,
+                                                      private val applicationEventPublisher: ApplicationEventPublisher) : DataCache() {
+    private val settingsByGroup = HashMap<AvailableSettingGroup, MutableSet<Setting>>()
 
     @PostConstruct
+    @Synchronized
     override fun update() {
-        val allSettingGroups = settingsDatabaseAccessor.getAllSettingGroups(true)
-        trustedClients = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroup.TRUSTED_CLIENTS)
-        disabledAssets = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroup.DISABLED_ASSETS)
+        val settingGroups = settingsDatabaseAccessor.getAllSettingGroups()
 
-        moPriceDeviationThresholds = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD)
-        loPriceDeviationThresholds = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD)
-    }
+        AvailableSettingGroup.values().forEach { settingGroup ->
+            val dbSettings = settingGroups.find { it.settingGroup == settingGroup }?.let {
+                HashSet(it.settings)
+            }
 
-    fun isTrustedClient(client: String): Boolean {
-        return trustedClients.values.contains(client)
-    }
-
-    fun isAssetDisabled(asset: String): Boolean {
-        return disabledAssets.values.contains(asset)
-    }
-
-    fun marketOrderPriceDeviationThreshold(assetPairId: String): BigDecimal? {
-        return moPriceDeviationThresholds[assetPairId]?.toBigDecimal()
-    }
-
-    fun limitOrderPriceDeviationThreshold(assetPairId: String): BigDecimal? {
-        return loPriceDeviationThresholds[assetPairId]?.toBigDecimal()
-    }
-
-    fun createOrUpdateSettingValue(settingGroup: AvailableSettingGroup, settingName: String, value: String) {
-        getSettingNameToValueByGroup(settingGroup)[settingName] = value
-    }
-
-    fun deleteSetting(settingGroup: AvailableSettingGroup, settingName: String) {
-        getSettingNameToValueByGroup(settingGroup).remove(settingName)
-    }
-
-    fun deleteSettingGroup(settingGroup: AvailableSettingGroup) {
-        getSettingNameToValueByGroup(settingGroup).clear()
-    }
-
-    private fun getSettingNameToValueByGroupName(settingGroups: Set<SettingsGroup>, availableSettingGroups: AvailableSettingGroup): MutableMap<String, String> {
-        val settings = settingGroups.find { it.name == availableSettingGroups.settingGroupName } ?: return ConcurrentHashMap()
-
-        val result = ConcurrentHashMap<String, String>()
-        settings.settings.forEach { result.put(it.name, it.value) }
-
-        return result
-    }
-
-    private fun getSettingNameToValueByGroup(settingGroup: AvailableSettingGroup): MutableMap<String, String> {
-        return when (settingGroup) {
-            AvailableSettingGroup.TRUSTED_CLIENTS -> trustedClients
-            AvailableSettingGroup.DISABLED_ASSETS -> disabledAssets
-            AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD -> moPriceDeviationThresholds
-            AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD -> loPriceDeviationThresholds
+            if (CollectionUtils.isEmpty(dbSettings)) {
+                settingsByGroup.remove(settingGroup)
+            } else {
+                settingsByGroup[settingGroup] = dbSettings!!
+            }
         }
+    }
+
+    @Synchronized
+    fun createOrUpdateSettingValue(settingGroup: AvailableSettingGroup, settingName: String, value: String, enabled: Boolean) {
+        deleteSetting(settingGroup, settingName)
+        val settings = settingsByGroup.getOrPut(settingGroup) { HashSet() }
+        val settingToAdd = Setting(settingName, value, enabled)
+        settings.add(settingToAdd)
+        applicationEventPublisher.publishEvent(ApplicationSettingCreateOrUpdateEvent(settingGroup, settingToAdd))
+    }
+
+    @Synchronized
+    fun deleteSetting(settingGroup: AvailableSettingGroup, settingName: String) {
+        val settings = getSettingsForSettingGroup(settingGroup)
+        val settingToRemove = settings?.find { it.name == settingName }
+        settingToRemove?.let {
+            settings.remove(settingToRemove)
+            applicationEventPublisher.publishEvent(ApplicationSettingDeleteEvent(settingGroup, settingToRemove))
+        }
+
+        if (CollectionUtils.isEmpty(settings)) {
+            settingsByGroup.remove(settingGroup)
+        }
+    }
+
+    @Synchronized
+    fun deleteSettingGroup(settingGroup: AvailableSettingGroup) {
+        settingsByGroup.remove(settingGroup)
+        applicationEventPublisher.publishEvent(ApplicationGroupDeleteEvent(settingGroup))
+    }
+
+    @Synchronized
+    fun getAllSettingGroups(enabled: Boolean?): Set<SettingsGroup> {
+        return settingsByGroup
+                .map { entry -> SettingsGroup(entry.key, entry.value.filter { enabled == null || it.enabled == enabled }.toSet()) }
+                .toSet()
+    }
+
+    @Synchronized
+    fun getSettingsGroup(settingGroup: AvailableSettingGroup, enabled: Boolean? = null): SettingsGroup? {
+        return settingsByGroup[settingGroup]?.filter { enabled == null || it.enabled == enabled }?.let {
+            SettingsGroup(settingGroup, it.toSet())
+        }
+    }
+
+    @Synchronized
+    fun getSetting(settingGroup: AvailableSettingGroup, settingName: String, enabled: Boolean? = null): Setting? {
+        return getSettingsGroup(settingGroup, enabled)?.let {
+            it.settings.find { it.name == settingName }
+        }
+    }
+
+    private fun getSettingsForSettingGroup(settingGroup: AvailableSettingGroup): MutableSet<Setting>? {
+        return settingsByGroup[settingGroup]
     }
 }

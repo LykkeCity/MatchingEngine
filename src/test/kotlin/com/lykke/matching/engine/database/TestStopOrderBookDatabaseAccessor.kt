@@ -5,31 +5,29 @@ import java.util.ArrayList
 import java.util.HashMap
 import java.util.LinkedList
 
-class TestStopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor {
+class TestStopOrderBookDatabaseAccessor(private val secondaryDbAccessor: TestFileStopOrderDatabaseAccessor): StopOrderBookDatabaseAccessor {
 
-    private val stopOrders = HashMap<String, MutableList<LimitOrder>>()
+    private val stopOrders = HashMap<String, LimitOrder>()
 
     override fun loadStopLimitOrders(): List<LimitOrder> {
-        val result = LinkedList<LimitOrder>()
-        stopOrders.values.forEach { result.addAll(it.map { copyOfNewLimitOrder(it) }) }
-        return result
+        return stopOrders.values.map { it.copy() }
     }
 
     override fun updateStopOrderBook(assetPairId: String, isBuy: Boolean, orderBook: Collection<LimitOrder>) {
-        stopOrders["$assetPairId-$isBuy"] = orderBook.map { copyOfNewLimitOrder(it) }.toMutableList()
+        // to do nothing
+    }
+
+    fun updateOrders(ordersToSave: Collection<LimitOrder>, ordersToRemove: Collection<LimitOrder>) {
+        ordersToRemove.forEach { stopOrders.remove(it.id) }
+        ordersToSave.forEach { stopOrders[it.id] = it.copy() }
+    }
+
+    fun getStopOrders(assetPairId: String, isBuySide: Boolean): List<LimitOrder> {
+        return stopOrders.values.filter { it.assetPairId == assetPairId && it.isBuySide() == isBuySide }
     }
 
     fun addStopLimitOrder(order: LimitOrder) {
-        stopOrders.getOrPut("${order.assetPairId}-${order.isBuySide()}") { ArrayList() }.add(copyOfNewLimitOrder(order))
+        stopOrders[order.id] = order
+        secondaryDbAccessor.addStopLimitOrder(order)
     }
-
-    fun getStopOrders(asset: String, isBuy: Boolean): List<LimitOrder> {
-        return (stopOrders["$asset-$isBuy"] ?: LinkedList()).map { copyOfNewLimitOrder(it) }
-    }
-
-    fun clear() {
-        stopOrders.clear()
-    }
-
-    fun copyOfNewLimitOrder(order: LimitOrder) = TestFileOrderDatabaseAccessor.copyOfNewLimitOrder(order)
 }

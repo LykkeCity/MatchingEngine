@@ -64,7 +64,7 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
         }
 
         val fees = try {
-            feeProcessor.processFee(feeInstructions, walletOperation, operations)
+            feeProcessor.processFee(feeInstructions, walletOperation, operations, balancesGetter = balancesHolder)
         } catch (e: FeeException) {
             writeErrorResponse(messageWrapper, cashInOutOperation.matchingEngineOperationId, INVALID_FEE, e.message)
             return

@@ -16,21 +16,21 @@ class ExpiryOrdersQueue {
         result
     }
 
-    fun addOrder(order: LimitOrder): Boolean {
+    fun addIfOrderHasExpiryTime(order: LimitOrder): Boolean {
         if (!order.hasExpiryTime()) {
             return false
         }
         return ordersQueue.add(order)
     }
 
-    fun removeOrder(order: LimitOrder): Boolean {
+    fun removeIfOrderHasExpiryTime(order: LimitOrder): Boolean {
         if (!order.hasExpiryTime()) {
             return false
         }
         return ordersQueue.remove(order)
     }
 
-    fun getExpiredOrderExternalIds(date: Date): List<String> {
+    fun getExpiredOrdersExternalIds(date: Date): List<String> {
         val ordersQueueCopy = PriorityQueue<LimitOrder>(ordersQueue)
         if (ordersQueueCopy.isEmpty()) {
             return emptyList()

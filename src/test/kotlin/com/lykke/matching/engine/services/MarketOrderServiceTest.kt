@@ -4,6 +4,9 @@ import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.daos.FeeSizeType
+import com.lykke.matching.engine.daos.FeeType
+import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
@@ -20,7 +23,6 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderType
-import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -28,7 +30,6 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.assertEquals
-import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -43,11 +44,12 @@ import java.math.BigDecimal
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (MarketOrderServiceTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class MarketOrderServiceTest: AbstractTest() {
+class MarketOrderServiceTest : AbstractTest() {
     @TestConfiguration
     open class Config {
         @Bean
@@ -305,7 +307,7 @@ class MarketOrderServiceTest: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "EUR", 0.1)
         testBalanceHolderWrapper.updateBalance("Client4", "JPY", 100.0)
         initServices()
-        
+
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURJPY", volume = 10.0, straight = false)))
 
         assertEquals(1, rabbitSwapListener.getCount())
@@ -346,7 +348,7 @@ class MarketOrderServiceTest: AbstractTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client3"))
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 1500.0)
         initServices()
-        
+
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
 
         assertEquals(1, rabbitSwapListener.getCount())
@@ -362,7 +364,7 @@ class MarketOrderServiceTest: AbstractTest() {
         assertEquals(0, eventMarketOrder.trades?.size)
 
         balancesHolder.updateBalance(
-                ProcessedMessage(MessageType.BALANCE_UPDATE.type, System.currentTimeMillis(), "test"), 0, "Client4", "EUR", BigDecimal.valueOf(1000.0))
+                ProcessedMessage(MessageType.CASH_IN_OUT_OPERATION.type, System.currentTimeMillis(), "test"), 0, "Client4", "EUR", BigDecimal.valueOf(1000.0))
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
 
         assertEquals(1, rabbitSwapListener.getCount())
@@ -389,11 +391,11 @@ class MarketOrderServiceTest: AbstractTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.5, volume = 100.0, clientId = "Client3"))
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.4, volume = 1000.0, clientId = "Client1"))
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 1560.0)
-        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD",  1400.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD", 1400.0)
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 150.0)
         testBalanceHolderWrapper.updateBalance("Client4", "EUR", 1000.0)
         initServices()
-        
+
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
 
         assertEquals(1, rabbitSwapListener.getCount())
@@ -434,7 +436,7 @@ class MarketOrderServiceTest: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client1", "LKK", 6569074.0)
         testBalanceHolderWrapper.updateBalance("Client4", "EUR", 7500.02)
         initServices()
-        
+
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "LKKEUR", volume = 50000.0)))
 
         assertEquals(1, rabbitSwapListener.getCount())
@@ -650,7 +652,7 @@ class MarketOrderServiceTest: AbstractTest() {
     @Test
     fun testMatchWithNotEnoughFundsOrder1() {
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
-        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD",  1.19)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD", 1.19)
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 1000.0)
 
@@ -698,7 +700,7 @@ class MarketOrderServiceTest: AbstractTest() {
     @Test
     fun testMatchWithNotEnoughFundsOrder2() {
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
-        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD",  1.19)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD", 1.19)
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 1000.0)
 
@@ -841,16 +843,15 @@ class MarketOrderServiceTest: AbstractTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", price = 1.1, volume = -1.0))
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", price = 1.2, volume = -1.0))
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting("0.0", "EURUSD"))
-        applicationSettingsCache.update()
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, "EURUSD", "0.0", true)
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = 2.0)))
         var eventOrder = (clientsEventsQueue.single() as ExecutionEvent).orders.single()
         assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
         assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting("0.04", "EURUSD"))
-        applicationSettingsCache.update()
+        // default threshold from app settings
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, "EURUSD", "0.04", true)
 
         clearMessageQueues()
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = 2.0)))
@@ -858,8 +859,22 @@ class MarketOrderServiceTest: AbstractTest() {
         assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
         assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting("0.05", "EURUSD"))
-        applicationSettingsCache.update()
+        // threshold from asset pairs dictionary
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, "EURUSD", "0.05", true)
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5,
+                marketOrderPriceDeviationThreshold = BigDecimal.valueOf(0.04)))
+        assetPairsCache.update()
+
+        clearMessageQueues()
+        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = 2.0)))
+        eventOrder = (clientsEventsQueue.single() as ExecutionEvent).orders.single()
+        assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
+        assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
+
+        // default threshold from app settings to match order
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5,
+                marketOrderPriceDeviationThreshold = null))
+        assetPairsCache.update()
 
         clearMessageQueues()
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = 2.0)))
@@ -874,16 +889,14 @@ class MarketOrderServiceTest: AbstractTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", price = 1.0, volume = 1.0))
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", price = 0.9, volume = 1.0))
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting("0.0", "EURUSD"))
-        applicationSettingsCache.update()
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, "EURUSD", "0.0", true)
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = -2.0)))
         var eventOrder = (clientsEventsQueue.single() as ExecutionEvent).orders.single()
         assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
         assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting( "0.04", "EURUSD"))
-        applicationSettingsCache.update()
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, "EURUSD", "0.04", true)
 
         clearMessageQueues()
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = -2.0)))
@@ -891,12 +904,52 @@ class MarketOrderServiceTest: AbstractTest() {
         assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
         assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting( "0.05", "EURUSD"))
-        applicationSettingsCache.update()
+        applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD, "EURUSD", "0.05", true)
 
         clearMessageQueues()
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = -2.0)))
         eventOrder = (clientsEventsQueue.single() as ExecutionEvent).orders.single { it.orderType == OrderType.MARKET }
         assertEquals(OutgoingOrderStatus.MATCHED, eventOrder.status)
+    }
+
+    @Test
+    fun testCancelLimitOrdersAfterRejectedMarketOrder() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.1)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC", 0.1)
+        testBalanceHolderWrapper.updateReservedBalance("Client3", "BTC", 0.1)
+
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client3", assetId = "BTCUSD", volume = -0.1, price = 5000.0,
+                // 'not enough funds' fee to cancel this order during matching
+                fees = listOf(NewLimitOrderFeeInstruction(FeeType.CLIENT_FEE, null, null, FeeSizeType.PERCENTAGE, BigDecimal.valueOf(0.1), null, "FeeTargetClient", listOf("EUR"), null))
+        ))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.1, price = 6000.0))
+
+        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "BTCUSD", volume = -1000.0, straight = false)))
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+
+        assertEquals(1, event.balanceUpdates?.size)
+        assertEquals("Client3", event.balanceUpdates!!.single().walletId)
+        assertEquals("BTC", event.balanceUpdates!!.single().assetId)
+        assertEquals("0.1", event.balanceUpdates!!.single().oldReserved)
+        assertEquals("0", event.balanceUpdates!!.single().newReserved)
+
+        assertEquals(2, event.orders.size)
+
+        val marketOrder = event.orders.single { it.walletId == "Client2" }
+        assertEquals(OutgoingOrderStatus.REJECTED, marketOrder.status)
+        assertEquals(OrderRejectReason.NO_LIQUIDITY, marketOrder.rejectReason)
+        assertEquals(0, marketOrder.trades?.size)
+
+        val cancelledLimitOrder = event.orders.single {it.walletId == "Client3"}
+        assertEquals(OutgoingOrderStatus.CANCELLED, cancelledLimitOrder.status)
+        assertEquals(0, cancelledLimitOrder.trades?.size)
+
+        assertOrderBookSize("BTCUSD", false, 1)
+        assertEquals(BigDecimal.valueOf(6000.0), genericLimitOrderService.getOrderBook("BTCUSD").getAskPrice())
+
+        assertBalance("Client3", "BTC", 0.1, 0.0)
     }
 }
