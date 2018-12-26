@@ -58,6 +58,10 @@ abstract class AbstractTransactionOrderBooksHolder<AssetOrderBook : AbstractAsse
         }
     }
 
+    fun isOrderBookChanged(): Boolean {
+        return !changedBuySides.isEmpty() || !changedSellSides.isEmpty()
+    }
+
     fun apply(date: Date) {
         removeOrdersByStatus.forEach { status, orders ->
             ordersService.removeOrdersFromMapsAndSetStatus(orders, status, date)

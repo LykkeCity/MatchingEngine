@@ -8,6 +8,7 @@ import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.OrderTimeInForce
+import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
@@ -33,10 +34,10 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.assertEquals
+import com.lykke.matching.engine.utils.getExecutionContext
 import com.lykke.matching.engine.utils.getSetting
 import com.nhaarman.mockito_kotlin.doAnswer
 import com.nhaarman.mockito_kotlin.mock
-import org.apache.log4j.Logger
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -1703,7 +1704,7 @@ class LimitOrderServiceTest : AbstractTest() {
 
         //then
         //check ref price is equal to order book mid price
-        assertEquals(BigDecimal.valueOf(9050), midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("BTCUSD"), getExecutionContext(Date())))
+        assertEquals(BigDecimal.valueOf(9050), midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
     }
 
     @Test
@@ -1724,7 +1725,7 @@ class LimitOrderServiceTest : AbstractTest() {
 
         //then
         //check ref price is equal to order book mid price
-        assertEquals(BigDecimal.valueOf(9025), midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("BTCUSD"), getExecutionContext(Date())))
+        assertEquals(BigDecimal.valueOf(9025), midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
     }
 
 
@@ -2215,14 +2216,37 @@ class LimitOrderServiceTest : AbstractTest() {
         assertOrderBookSize("BTCUSD", true, 2)
     }
 
-    private fun getExecutionContext(date: Date): ExecutionContext {
-        return executionContextFactory.create("test",
-                "test",
-                MessageType.LIMIT_ORDER,
-                null,
-                emptyMap(),
-                date,
-                Logger.getLogger(""),
-                Logger.getLogger(""))
+    @Test
+    fun newMidPriceIsNotRecordedIfOrderBookNotChanged() {
+        //given
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "BTC", 1.0)
+
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, midPriceDeviationThreshold = BigDecimal.valueOf(0.09)))
+        assetPairsCache.update()
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = 0.2)))
+        assertEquals(BigDecimal.valueOf(9500), midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
+
+        clientsEventsQueue.clear()
+
+        //when
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
+                clientId = "Client1",
+                assetId = "BTCUSD",
+                type = LimitOrderType.STOP_LIMIT,
+                volume = 0.1,
+                lowerLimitPrice = 101.0,
+                lowerPrice = 100.0)))
+
+        //then
+        assertEquals(BigDecimal.valueOf(9500), midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
+
+        //when
+        //input order is invalid case
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9500.0, volume = 0.00000000002)))
+        assertEquals(BigDecimal.valueOf(9500), midPriceHolder.getReferenceMidPrice(assetsPairsHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
     }
 }

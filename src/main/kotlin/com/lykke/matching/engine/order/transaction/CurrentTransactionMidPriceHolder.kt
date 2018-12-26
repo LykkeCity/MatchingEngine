@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.order.transaction
 
+import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.holders.MidPriceHolder
@@ -10,6 +11,7 @@ import java.util.*
 class CurrentTransactionMidPriceHolder(private val midPriceHolder: MidPriceHolder,
                                        private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder) {
     private val midPriceByAssetPair = HashMap<String, MutableList<BigDecimal>>()
+    private val midPricesSumByAssetPair = HashMap<String, BigDecimal>()
     private var removeAll = false
 
     fun addMidPrice(assetPairId: String, midPrice: BigDecimal, executionContext: ExecutionContext) {
@@ -19,14 +21,13 @@ class CurrentTransactionMidPriceHolder(private val midPriceHolder: MidPriceHolde
 
         val midPrices = midPriceByAssetPair.getOrPut(assetPairId) { ArrayList() }
         midPrices.add(midPrice)
+        val currentMidPriceSum = midPricesSumByAssetPair.getOrPut(assetPairId) { BigDecimal.ZERO }
+        midPricesSumByAssetPair[assetPairId] = currentMidPriceSum + midPrice
     }
 
     fun addMidPrices(midPricesByAssetPairId: Map<String, BigDecimal>, executionContext: ExecutionContext) {
-        midPricesByAssetPairId.forEach { assetPairId, midPrices ->
-            if (!isPersistOfMidPricesNeeded(assetPairId, executionContext)) {
-                return@forEach
-            }
-            (midPriceByAssetPair.getOrPut(assetPairId) { ArrayList() }).add(midPrices)
+        midPricesByAssetPairId.forEach { assetPairId, midPrice ->
+            addMidPrice(assetPairId, midPrice, executionContext)
         }
     }
 
@@ -42,6 +43,13 @@ class CurrentTransactionMidPriceHolder(private val midPriceHolder: MidPriceHolde
         return MidPricePersistenceData(midPricesList, removeAll)
     }
 
+    fun getRefMidPriceWithMidPricesFromCurrentTransaction(assetPair: AssetPair, executionContext: ExecutionContext): BigDecimal {
+        return midPriceHolder.getReferenceMidPrice(assetPair,
+                executionContext,
+                midPricesSumByAssetPair[assetPair.assetPairId] ?: BigDecimal.ZERO,
+                midPriceByAssetPair[assetPair.assetPairId]?.size ?: 0)
+    }
+
     fun setRemoveAllFlag() {
         midPriceByAssetPair.clear()
         removeAll = true
@@ -52,12 +60,10 @@ class CurrentTransactionMidPriceHolder(private val midPriceHolder: MidPriceHolde
             midPriceHolder.clear()
             return
         }
-        midPriceByAssetPair.forEach { assetPairId, midPrice ->
+        midPriceByAssetPair.forEach { assetPairId, midPrices ->
             val assetPair = executionContext.assetPairsById[assetPairId]
             assetPair!!
-            midPrice.forEach {
-                midPriceHolder.addMidPrice(assetPair, it, executionContext)
-            }
+            midPriceHolder.addMidPrice(assetPair, midPrices.last(), executionContext)
         }
     }
 
