@@ -25,7 +25,8 @@ open class ExecutionContext(val messageId: String,
                             val currentTransactionMidPriceHolder: CurrentTransactionMidPriceHolder,
                             open val date: Date,
                             val logger: Logger,
-                            val controlsLogger: Logger) {
+                            val controlsLogger: Logger,
+                            val previousExecutionContext: ExecutionContext? = null) {
 
     var tradeIndex: Long = 0
     var executionContextForCancelOperation = false
@@ -99,6 +100,20 @@ open class ExecutionContext(val messageId: String,
     }
 
     fun apply() {
+        previousExecutionContext?.let { prevExecutionContext ->
+            prevExecutionContext.tradeIndex = tradeIndex
+            clientLimitOrdersWithTradesByInternalId.values.forEach {
+                prevExecutionContext.addClientLimitOrderWithTrades(it)
+            }
+
+            trustedClientLimitOrdersWithTradesByInternalId.values.forEach {
+                prevExecutionContext.addTrustedClientLimitOrderWithTrades(it)
+            }
+
+            prevExecutionContext.lkkTrades.addAll(this.lkkTrades)
+            prevExecutionContext.executionContextForCancelOperation = this.executionContextForCancelOperation
+        }
+
         walletOperationsProcessor.apply()
         orderBooksHolder.apply(date)
         stopOrderBooksHolder.apply(date)

@@ -38,7 +38,8 @@ class ExecutionContextFactory(private val walletOperationsProcessorFactory: Wall
                 CurrentTransactionMidPriceHolder(executionContext.currentTransactionMidPriceHolder, priceDeviationThresholdHolder),
                 executionContext.date,
                 executionContext.logger,
-                executionContext.controlsLogger)
+                executionContext.controlsLogger,
+                executionContext)
     }
 
     fun create(messageId: String,
