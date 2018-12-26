@@ -231,7 +231,15 @@ class WalletOperationsProcessorTest : AbstractTest() {
 
         subTransactionWalletOperationsProcessor.preProcess(listOf(WalletOperation("Client1", "BTC", BigDecimal.valueOf(2.0), BigDecimal.valueOf(0.3))))
                 .apply()
+        //values in application cache stay the same as we applied only sub transaction
+        assertEquals(BigDecimal.valueOf(1.0), balancesHolder.getBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.valueOf(0.1), balancesHolder.getReservedBalance("Client1", "BTC"))
+
+        assertEquals(BigDecimal.valueOf(100.0), balancesHolder.getBalance("Client1", "USD"))
+        assertEquals(BigDecimal.valueOf(5.0), balancesHolder.getReservedBalance("Client1", "USD"))
+
         mainTransactionWalletProcessor.apply()
+
         mainTransactionWalletProcessor.sendNotification("test", MessageType.CASH_IN_OUT_OPERATION.name, "test")
 
         //then
@@ -249,9 +257,13 @@ class WalletOperationsProcessorTest : AbstractTest() {
 
         assertEquals(BigDecimal.valueOf(1.0), btcBalanceUpdate!!.oldBalance)
         assertEquals(BigDecimal.valueOf(100.0), usdBalanceUpdate!!.oldBalance)
+        assertEquals(BigDecimal.valueOf(4.0), btcBalanceUpdate.newBalance)
+        assertEquals(BigDecimal.valueOf(110.0), usdBalanceUpdate.newBalance)
 
         assertEquals(BigDecimal.valueOf(0.1), btcBalanceUpdate.oldReserved)
         assertEquals(BigDecimal.valueOf(5.0), usdBalanceUpdate.oldReserved)
+        assertEquals(BigDecimal.valueOf(0.5), btcBalanceUpdate.newReserved)
+        assertEquals(BigDecimal.valueOf(15.0), usdBalanceUpdate.newReserved)
     }
 
     private fun validate(clientId: String, assetId: String, oldBalance: Double, oldReserved: Double, newBalance: Double, newReserved: Double): Boolean {
