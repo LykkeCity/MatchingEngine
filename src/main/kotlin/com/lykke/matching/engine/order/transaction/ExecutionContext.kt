@@ -109,7 +109,9 @@ open class ExecutionContext(val messageId: String,
             trustedClientLimitOrdersWithTradesByInternalId.values.forEach {
                 prevExecutionContext.addTrustedClientLimitOrderWithTrades(it)
             }
+
             prevExecutionContext.lkkTrades.addAll(this.lkkTrades)
+            prevExecutionContext.executionContextForCancelOperation = this.executionContextForCancelOperation
         }
 
         walletOperationsProcessor.apply()
