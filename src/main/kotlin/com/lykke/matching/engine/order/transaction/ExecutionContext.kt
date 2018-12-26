@@ -23,7 +23,8 @@ class ExecutionContext(val messageId: String,
                        val orderBooksHolder: CurrentTransactionOrderBooksHolder,
                        val stopOrderBooksHolder: CurrentTransactionStopOrderBooksHolder,
                        val date: Date,
-                       val logger: Logger) {
+                       val logger: Logger,
+                       val previousExecutionContext: ExecutionContext?) {
 
     var tradeIndex: Long = 0
 
@@ -77,6 +78,17 @@ class ExecutionContext(val messageId: String,
     }
 
     fun apply() {
+        previousExecutionContext?.let { prevExecutionContext ->
+            prevExecutionContext.tradeIndex = tradeIndex
+            clientLimitOrdersWithTradesByInternalId.values.forEach {
+                prevExecutionContext.addClientLimitOrderWithTrades(it)
+            }
+
+            trustedClientLimitOrdersWithTradesByInternalId.values.forEach {
+                prevExecutionContext.addTrustedClientLimitOrderWithTrades(it)
+            }
+        }
+
         walletOperationsProcessor.apply()
         orderBooksHolder.apply(date)
         stopOrderBooksHolder.apply(date)
