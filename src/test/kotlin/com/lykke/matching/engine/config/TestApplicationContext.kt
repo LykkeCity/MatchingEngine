@@ -721,7 +721,7 @@ open class TestApplicationContext {
     open fun midPriceHolder(readOnlyMidPriceDatabaseAccessor: TestReadOnlyMidPriceDatabaseAccessor,
                             applicationSettingsCache: ApplicationSettingsCache,
                             orderBookMidPriceChecker: OrderBookMidPriceChecker): MidPriceHolder {
-        return MidPriceHolder(100, readOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
+        return MidPriceHolderImpl(100, readOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
     }
 
     @Bean

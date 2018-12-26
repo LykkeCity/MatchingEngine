@@ -153,7 +153,7 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
                                                     upperMidPriceBound: BigDecimal?,
                                                     midPrice: BigDecimal?) {
         midPrice?.let {
-            executionContext.currentTransactionMidPriceHolder.addMidPrice(assetPairId, midPrice, executionContext)
+            executionContext.currentTransactionMidPriceHolder.addMidPrice(executionContext.assetPairsById[assetPairId]!!, midPrice, executionContext)
         }
         if (!applicationSettingsHolder.isTrustedClient(limitOrder.clientId)) {
             executionContext.controlsInfo("Limit order externalId = ${limitOrder.externalId}, assetPair = ${assetPairId}, mid price control passed, " +

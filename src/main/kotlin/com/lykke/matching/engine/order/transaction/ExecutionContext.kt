@@ -4,9 +4,7 @@ import com.lykke.matching.engine.balance.WalletOperationsProcessor
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades

@@ -9,23 +9,23 @@ import java.math.BigDecimal
 import java.util.*
 
 class CurrentTransactionMidPriceHolder(private val midPriceHolder: MidPriceHolder,
-                                       private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder) {
+                                       private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder) : MidPriceHolder {
     private val midPriceByAssetPair = HashMap<String, MutableList<BigDecimal>>()
     private val midPricesSumByAssetPair = HashMap<String, BigDecimal>()
     private var removeAll = false
 
-    fun addMidPrice(assetPairId: String, midPrice: BigDecimal, executionContext: ExecutionContext) {
-        if (!isPersistOfMidPricesNeeded(assetPairId, executionContext)) {
+    override fun addMidPrice(assetPair: AssetPair, newMidPrice: BigDecimal, executionContext: ExecutionContext) {
+        if (!isPersistOfMidPricesNeeded(assetPair.assetPairId, executionContext)) {
             return
         }
 
-        val midPrices = midPriceByAssetPair.getOrPut(assetPairId) { ArrayList() }
-        midPrices.add(midPrice)
-        val currentMidPriceSum = midPricesSumByAssetPair.getOrPut(assetPairId) { BigDecimal.ZERO }
-        midPricesSumByAssetPair[assetPairId] = currentMidPriceSum + midPrice
+        val midPrices = midPriceByAssetPair.getOrPut(assetPair.assetPairId) { ArrayList() }
+        midPrices.add(newMidPrice)
+        val currentMidPriceSum = midPricesSumByAssetPair.getOrPut(assetPair.assetPairId) { BigDecimal.ZERO }
+        midPricesSumByAssetPair[assetPair.assetPairId] = currentMidPriceSum + newMidPrice
     }
 
-    fun addMidPrices(midPricesByAssetPairId: Map<String, BigDecimal>, executionContext: ExecutionContext) {
+    fun addMidPrices(midPricesByAssetPairId: Map<AssetPair, BigDecimal>, executionContext: ExecutionContext) {
         midPricesByAssetPairId.forEach { assetPairId, midPrice ->
             addMidPrice(assetPairId, midPrice, executionContext)
         }
@@ -43,14 +43,26 @@ class CurrentTransactionMidPriceHolder(private val midPriceHolder: MidPriceHolde
         return MidPricePersistenceData(midPricesList, removeAll)
     }
 
-    fun getRefMidPriceWithMidPricesFromCurrentTransaction(assetPair: AssetPair, executionContext: ExecutionContext): BigDecimal {
+    override fun getReferenceMidPrice(assetPair: AssetPair, executionContext: ExecutionContext,
+                                      notSavedMidPricesSum: BigDecimal?,
+                                      notSavedMidPricesLength: Int?): BigDecimal {
+        val currentTransactionMidPriceSum = midPricesSumByAssetPair[assetPair.assetPairId] ?: BigDecimal.ZERO
+        val currentTransactionMidPriceLength = midPriceByAssetPair[assetPair.assetPairId]?.size ?: 0
+        val midPricesSum = notSavedMidPricesSum?.let {
+            it.plus(currentTransactionMidPriceSum)
+        } ?: currentTransactionMidPriceSum
+
+        val midPriceLength = notSavedMidPricesLength?.let {
+            it.plus(currentTransactionMidPriceLength)
+        } ?: currentTransactionMidPriceLength
+
         return midPriceHolder.getReferenceMidPrice(assetPair,
                 executionContext,
-                midPricesSumByAssetPair[assetPair.assetPairId] ?: BigDecimal.ZERO,
-                midPriceByAssetPair[assetPair.assetPairId]?.size ?: 0)
+                midPricesSum,
+                midPriceLength)
     }
 
-    fun setRemoveAllFlag() {
+    override fun clear() {
         midPriceByAssetPair.clear()
         removeAll = true
     }

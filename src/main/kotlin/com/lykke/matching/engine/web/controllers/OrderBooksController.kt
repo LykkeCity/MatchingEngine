@@ -1,8 +1,6 @@
 package com.lykke.matching.engine.web.controllers
 
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService

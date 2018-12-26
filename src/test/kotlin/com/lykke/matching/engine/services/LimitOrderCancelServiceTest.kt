@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.TestReadOnlyMidPriceDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
+import com.lykke.matching.engine.holders.MidPriceHolderImpl
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
@@ -57,7 +58,7 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         open fun midPriceHolder(readOnlyMidPriceDatabaseAccessor: TestReadOnlyMidPriceDatabaseAccessor,
                                 applicationSettingsCache: ApplicationSettingsCache,
                                 orderBookMidPriceChecker: OrderBookMidPriceChecker): MidPriceHolder {
-            return MidPriceHolder(10000, readOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
+            return MidPriceHolderImpl(10000, readOnlyMidPriceDatabaseAccessor, orderBookMidPriceChecker)
         }
     }
 

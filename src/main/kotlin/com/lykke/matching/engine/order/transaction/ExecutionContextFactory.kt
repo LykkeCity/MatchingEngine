@@ -35,7 +35,7 @@ class ExecutionContextFactory(private val walletOperationsProcessorFactory: Wall
                 walletOperationsProcessorFactory.create(executionContext.logger, executionContext.walletOperationsProcessor),
                 CurrentTransactionOrderBooksHolder(executionContext.orderBooksHolder),
                 CurrentTransactionStopOrderBooksHolder(executionContext.stopOrderBooksHolder),
-                CurrentTransactionMidPriceHolder(midPriceHolder, priceDeviationThresholdHolder),
+                CurrentTransactionMidPriceHolder(executionContext.currentTransactionMidPriceHolder, priceDeviationThresholdHolder),
                 executionContext.date,
                 executionContext.logger,
                 executionContext.controlsLogger)

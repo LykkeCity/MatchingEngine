@@ -20,10 +20,10 @@ import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
+import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
@@ -186,7 +186,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                                                       upperMidPriceBound: BigDecimal?,
                                                       midPrice: BigDecimal?) {
         midPrice?.let {
-            executionContext.currentTransactionMidPriceHolder.addMidPrice(multiLimitOrder.assetPairId, midPrice, executionContext)
+            executionContext.currentTransactionMidPriceHolder.addMidPrice(executionContext.assetPairsById[multiLimitOrder.assetPairId]!!, midPrice, executionContext)
         }
         if (!applicationSettingsHolder.isTrustedClient(multiLimitOrder.clientId)) {
             executionContext.controlsInfo("Multilimit message uid = ${multiLimitOrder.messageUid}, assetPair = ${multiLimitOrder.assetPairId}, mid price control passed, " +

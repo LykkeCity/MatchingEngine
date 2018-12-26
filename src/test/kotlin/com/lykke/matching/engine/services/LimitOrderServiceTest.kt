@@ -16,7 +16,7 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
-import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.holders.MidPriceHolderImpl
 import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.transaction.ExecutionContext
