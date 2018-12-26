@@ -3,25 +3,81 @@ package com.lykke.matching.engine.order.process
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
+import com.lykke.matching.engine.holders.MidPriceHolder
+import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
 import com.lykke.matching.engine.order.process.common.OrderUtils
 import com.lykke.matching.engine.order.transaction.ExecutionContext
+import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
+import com.lykke.matching.engine.services.utils.MidPriceUtils
+import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
 class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcessor,
-                             private val applicationSettingsHolder: ApplicationSettingsHolder) {
+                             private val applicationSettingsHolder: ApplicationSettingsHolder,
+                             private val executionContextFactory: ExecutionContextFactory,
+                             private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
+                             private val midPriceHolder: MidPriceHolder) {
 
     fun checkAndExecuteStopLimitOrders(executionContext: ExecutionContext): List<ProcessedOrder> {
         val processedOrders = mutableListOf<ProcessedOrder>()
         var order = getStopOrderToExecute(executionContext)
+
+
         while (order != null) {
-            processedOrders.add(processStopOrder(order, executionContext))
+            val assetPair = executionContext.assetPairsById[order.assetPairId]!!
+            val stopOrderExecutionContext = executionContextFactory.create(executionContext)
+            val processedOrder = processStopOrder(order, stopOrderExecutionContext)
+
+            val midPriceAfterOrderProcessing = if (stopOrderExecutionContext.orderBooksHolder.isOrderBookChanged()) {
+                stopOrderExecutionContext.orderBooksHolder.getOrderBook(assetPair.assetPairId).getMidPrice()
+            } else {
+                null
+            }
+
+            val (lowerMidPriceBound, upperMidPriceBound) = MidPriceUtils.getMidPricesInterval(priceDeviationThresholdHolder.getMidPriceDeviationThreshold(assetPair.assetPairId, executionContext),
+                    midPriceHolder.getReferenceMidPrice(assetPair, executionContext))
+
+            val resultProcessedOrder = if (OrderValidationUtils.isMidPriceValid(midPriceAfterOrderProcessing, lowerMidPriceBound, upperMidPriceBound)) {
+                processedOrder
+            } else {
+                rejectStopOrderHighMidPriceDeviation(order, stopOrderExecutionContext, lowerMidPriceBound, upperMidPriceBound, midPriceAfterOrderProcessing)
+            }
+            processedOrders.add(resultProcessedOrder)
             order = getStopOrderToExecute(executionContext)
         }
         return processedOrders
     }
+
+    private fun rejectStopOrderHighMidPriceDeviation(order: LimitOrder,
+                                        executionContext: ExecutionContext,
+                                        lowerMidPriceBound: BigDecimal?,
+                                        upperMidPriceBound: BigDecimal?,
+                                        midPrice: BigDecimal?): ProcessedOrder {
+        val childLimitOrder = OrderUtils.createChildLimitOrder(order, executionContext.date)
+        val assetPair = executionContext.assetPairsById[order.assetPairId]!!
+
+        if (!applicationSettingsHolder.isTrustedClient(childLimitOrder.clientId)) {
+            executionContext.controlsInfo("Limit order externalId = ${order.externalId}, assetPair = ${assetPair.assetPairId}, mid price control failed, " +
+                    "l = ${NumberUtils.roundForPrint(lowerMidPriceBound)}, u = ${NumberUtils.roundForPrint(upperMidPriceBound)}, " +
+                    "m = $midPrice")
+        }
+
+        return rejectOrder(executionContext, order)
+    }
+
+    private fun rejectOrder(executionContext: ExecutionContext,
+                            limitOrder: LimitOrder): ProcessedOrder {
+
+        if (!applicationSettingsHolder.isTrustedClient(limitOrder.clientId)) {
+            executionContext.addClientLimitOrderWithTrades(LimitOrderWithTrades(limitOrder))
+        }
+        return ProcessedOrder(limitOrder, false)
+    }
+
 
     private fun processStopOrder(order: LimitOrder, executionContext: ExecutionContext): ProcessedOrder {
         reduceReservedBalance(order, executionContext)

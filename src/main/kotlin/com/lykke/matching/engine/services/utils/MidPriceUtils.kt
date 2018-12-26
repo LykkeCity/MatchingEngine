@@ -1,7 +1,5 @@
 package com.lykke.matching.engine.services.utils
 
-import com.lykke.matching.engine.order.transaction.ExecutionContext
-import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 
