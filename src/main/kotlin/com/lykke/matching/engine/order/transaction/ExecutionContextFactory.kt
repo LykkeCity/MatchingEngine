@@ -39,6 +39,7 @@ class ExecutionContextFactory(private val walletOperationsProcessorFactory: Wall
                 executionContext.date,
                 executionContext.logger,
                 executionContext.controlsLogger,
+                executionContext.tradeIndex,
                 executionContext)
     }
 

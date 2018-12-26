@@ -26,9 +26,9 @@ open class ExecutionContext(val messageId: String,
                             open val date: Date,
                             val logger: Logger,
                             val controlsLogger: Logger,
+                            var tradeIndex: Long = 0,
                             val previousExecutionContext: ExecutionContext? = null) {
 
-    var tradeIndex: Long = 0
     var executionContextForCancelOperation = false
 
     private val clientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
