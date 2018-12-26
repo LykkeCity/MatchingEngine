@@ -37,7 +37,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
 
     fun update() {
         limitOrdersMap.values.forEach {
-            expiryOrdersQueue.removeOrder(it)
+            expiryOrdersQueue.removeIfOrderHasExpiryTime(it)
         }
         limitOrdersQueues.clear()
         limitOrdersMap.clear()
@@ -58,7 +58,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     fun addOrder(order: LimitOrder) {
         limitOrdersMap[order.externalId] = order
         clientLimitOrdersMap.getOrPut(order.clientId) { ArrayList() }.add(order)
-        expiryOrdersQueue.addOrder(order)
+        expiryOrdersQueue.addIfOrderHasExpiryTime(order)
     }
 
     override fun addOrders(orders: Collection<LimitOrder>) {
@@ -93,7 +93,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
 
     fun cancelLimitOrder(date: Date, uid: String, removeFromClientMap: Boolean = false): LimitOrder? {
         val order = limitOrdersMap.remove(uid) ?: return null
-        expiryOrdersQueue.removeOrder(order)
+        expiryOrdersQueue.removeIfOrderHasExpiryTime(order)
 
         if (removeFromClientMap) {
             removeFromClientMap(uid)
@@ -113,7 +113,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     override fun cancelLimitOrders(orders: Collection<LimitOrder>, date: Date) {
         orders.forEach { order ->
             val ord = limitOrdersMap.remove(order.externalId)
-            expiryOrdersQueue.removeOrder(order)
+            expiryOrdersQueue.removeIfOrderHasExpiryTime(order)
             clientLimitOrdersMap[order.clientId]?.remove(order)
             if (ord != null) {
                 ord.updateStatus(Cancelled, date)
@@ -124,12 +124,10 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     override fun removeOrdersFromMapsAndSetStatus(orders: Collection<LimitOrder>, status: OrderStatus?, date: Date?) {
         orders.forEach { order ->
             val removedOrder = limitOrdersMap.remove(order.externalId)
-            if (removedOrder != null) {
-                clientLimitOrdersMap[order.clientId]?.remove(removedOrder)
-                expiryOrdersQueue.removeOrder(order)
-                if (status != null) {
-                    removedOrder.updateStatus(status, date!!)
-                }
+            clientLimitOrdersMap[order.clientId]?.remove(removedOrder)
+            expiryOrdersQueue.removeIfOrderHasExpiryTime(order)
+            if (removedOrder != null && status != null) {
+                removedOrder.updateStatus(status, date!!)
             }
         }
     }

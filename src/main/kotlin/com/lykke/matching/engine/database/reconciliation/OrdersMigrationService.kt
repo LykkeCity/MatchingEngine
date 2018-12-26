@@ -45,7 +45,7 @@ class OrdersMigrationService(private val config: Config,
             return
         }
         if (config.me.storage != Storage.Redis) {
-            teeLog("Do not perform migration to files")
+            LOGGER.info("Do not perform migration to files")
             return
         }
         fromFilesToRedis()
@@ -59,12 +59,12 @@ class OrdersMigrationService(private val config: Config,
             throw Exception("Stop orders already exist in redis ${config.me.redis.host}.${config.me.redis.port}/${config.me.redis.ordersDatabase}")
         }
         val startTime = Date().time
-        teeLog("Starting orders migration from files to redis; files dirs: ${config.me.orderBookPath}, ${config.me.stopOrderBookPath}" +
+        LOGGER.info("Starting orders migration from files to redis; files dirs: ${config.me.orderBookPath}, ${config.me.stopOrderBookPath}" +
                 ", redis: ${config.me.redis.host}.${config.me.redis.port}/${config.me.redis.ordersDatabase}")
         val orders = fileOrderBookDatabaseAccessor.loadLimitOrders()
         val stopOrders = fileStopOrderBookDatabaseAccessor.loadStopLimitOrders()
         val loadTime = Date().time
-        teeLog("Loaded ${orders.size} orders from files (ms: ${loadTime - startTime})")
+        LOGGER.info("Loaded ${orders.size} orders from files (ms: ${loadTime - startTime})")
         persistenceManager.persist(PersistenceData(null,
                 null,
                 OrderBooksPersistenceData(mapOrdersToOrderBookPersistenceDataList(orders, LOGGER),
@@ -79,11 +79,6 @@ class OrdersMigrationService(private val config: Config,
         genericLimitOrderService.update()
         genericStopLimitOrderService.update()
         val saveTime = Date().time
-        teeLog("Saved ${orders.size} orders and ${stopOrders.size} stop orders to redis (ms: ${saveTime - loadTime})")
-    }
-
-    private fun teeLog(message: String) {
-        println(message)
-        LOGGER.info(message)
+        LOGGER.info("Saved ${orders.size} orders and ${stopOrders.size} stop orders to redis (ms: ${saveTime - loadTime})")
     }
 }

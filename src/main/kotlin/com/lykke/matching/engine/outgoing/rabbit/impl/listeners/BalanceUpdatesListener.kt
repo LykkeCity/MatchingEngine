@@ -5,7 +5,7 @@ import com.lykke.matching.engine.logging.DatabaseLogger
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.outgoing.rabbit.events.RabbitFailureEvent
-import com.lykke.matching.engine.outgoing.rabbit.events.RabbitRecoverEvent
+import com.lykke.matching.engine.outgoing.rabbit.events.RabbitReadyEvent
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.monitoring.HealthMonitorEvent
 import com.lykke.matching.engine.utils.monitoring.MonitoredComponent
@@ -60,7 +60,7 @@ class BalanceUpdatesListener {
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == BalanceUpdatesListener::class.java.simpleName) {
             failed = true
-            logFail(rabbitFailureEvent.publisherName)
+            logRmqFail(rabbitFailureEvent.publisherName)
 
             rabbitFailureEvent.failedEvent?.let {
                 balanceUpdateQueue.putFirst(it as BalanceUpdate)
@@ -70,11 +70,11 @@ class BalanceUpdatesListener {
     }
 
     @EventListener
-    fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
-        if (rabbitRecoverEvent.publisherName == BalanceUpdatesListener::class.java.simpleName && failed) {
+    fun onReady(rabbitReadyEvent: RabbitReadyEvent) {
+        if (rabbitReadyEvent.publisherName == BalanceUpdatesListener::class.java.simpleName && failed) {
             failed = false
-            logRecover(rabbitRecoverEvent.publisherName)
-            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
+            logRmqRecover(rabbitReadyEvent.publisherName)
+            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitReadyEvent.publisherName))
         }
     }
 }

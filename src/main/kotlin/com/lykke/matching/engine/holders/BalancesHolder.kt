@@ -1,26 +1,14 @@
 package com.lykke.matching.engine.holders
 
 import com.lykke.matching.engine.balance.BalancesGetter
-import com.lykke.matching.engine.balance.WalletOperationsProcessor
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
-import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.common.entity.BalancesData
-import com.lykke.matching.engine.database.common.entity.PersistenceData
-import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
-import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolder
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
-import java.util.concurrent.BlockingQueue
 
 @Component
-class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAccessorsHolder,
-                     private val persistenceManager: PersistenceManager,
-                     private val assetsHolder: AssetsHolder,
-                     private val balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
-                     private val applicationSettingsHolder: ApplicationSettingsHolder): BalancesGetter {
+class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAccessorsHolder): BalancesGetter {
 
     companion object {
         private val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
@@ -84,64 +72,6 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         return BigDecimal.ZERO
     }
 
-    fun updateBalance(processedMessage: ProcessedMessage?,
-                      messageSequenceNumber: Long?,
-                      clientId: String,
-                      assetId: String,
-                      balance: BigDecimal): Boolean {
-        val currentTransactionBalancesHolder = createCurrentTransactionBalancesHolder()
-        currentTransactionBalancesHolder.updateBalance(clientId, assetId, balance)
-        val balancesData = currentTransactionBalancesHolder.persistenceData()
-        val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage, null, null, messageSequenceNumber, null))
-        if (!persisted) {
-            return false
-        }
-        currentTransactionBalancesHolder.apply()
-        return true
-    }
-    fun updateReservedBalance(processedMessage: ProcessedMessage?,
-                              messageSequenceNumber: Long?,
-                              clientId: String,
-                              assetId: String,
-                              balance: BigDecimal,
-                              skipForTrustedClient: Boolean = true): Boolean {
-        val currentTransactionBalancesHolder = createCurrentTransactionBalancesHolder()
-        currentTransactionBalancesHolder.updateReservedBalance(clientId, assetId, balance)
-        val balancesData = currentTransactionBalancesHolder.persistenceData()
-        val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage, null, null, messageSequenceNumber, null))
-        if (!persisted) {
-            return false
-        }
-        currentTransactionBalancesHolder.apply()
-        return true
-    }
-    fun insertOrUpdateWallets(wallets: Collection<Wallet>, messageSequenceNumber: Long?) {
-        persistenceManager.persist(PersistenceData(BalancesData(wallets, wallets.flatMap { it.balances.values }),
-                null,
-                null,
-                null,
-                midPricePersistenceData = null,
-                messageSequenceNumber = messageSequenceNumber))
-        update()
-    }
-    fun sendBalanceUpdate(balanceUpdate: BalanceUpdate) {
-        if (balanceUpdate.balances.isNotEmpty()) {
-            LOGGER.info(balanceUpdate.toString())
-            balanceUpdateQueue.put(balanceUpdate)
-        }
-    }
-
-    fun isTrustedClient(clientId: String) = applicationSettingsHolder.isTrustedClient(clientId)
-
-    fun createWalletProcessor(logger: Logger?): WalletOperationsProcessor {
-        return WalletOperationsProcessor(this,
-                createCurrentTransactionBalancesHolder(),
-                applicationSettingsHolder,
-                persistenceManager,
-                assetsHolder,
-                logger)
-    }
-    private fun createCurrentTransactionBalancesHolder() = CurrentTransactionBalancesHolder(this)
     fun setWallets(wallets: Collection<Wallet>) {
         wallets.forEach { wallet ->
             this.wallets[wallet.clientId] = wallet

@@ -13,18 +13,6 @@ class PersistenceData(val balancesData: BalancesData?,
     constructor(processedMessage: ProcessedMessage?, messageSequenceNumber: Long?) : this(null, processedMessage, null, null, messageSequenceNumber, null)
     constructor(processedMessage: ProcessedMessage?) : this(null, processedMessage, null, null, null, null)
 
-    fun details(): String {
-        val result = StringBuilder()
-        append(result, "m: ", processedMessage?.messageId)
-        append(result, "w: ", balancesData?.wallets?.size)
-        append(result, "b: ", balancesData?.balances?.size)
-        append(result, "o: ", orderBooksData?.orderBooks?.size)
-        append(result, "so: ", stopOrderBooksData?.orderBooks?.size)
-        append(result, "sn: ", messageSequenceNumber)
-        append(result, "md: ", midPricePersistenceData?.midPrices?.size)
-        return result.toString()
-    }
-
     fun isEmpty(): Boolean {
         return isEmptyWithoutOrders() &&
                 isOrdersEmpty()
@@ -47,8 +35,8 @@ class PersistenceData(val balancesData: BalancesData?,
         val result = StringBuilder()
 
         balancesData?.let {
-            result.append("wallets: ${it.wallets.size}, ")
-                    .append("balances: ${it.balances.size}, ")
+            result.append("w: ${it.wallets.size}, ")
+                    .append("b: ${it.balances.size}, ")
         }
 
         midPricePersistenceData?.let {
@@ -60,21 +48,25 @@ class PersistenceData(val balancesData: BalancesData?,
         }
 
         orderBooksData?.let {
-            result.append("order books: ${it.orderBooks.size}, ")
-                    .append("orders to save: ${it.ordersToSave.size}, ")
-                    .append("orders to remove: ${it.ordersToRemove.size}, ")
+            result.append("ob: ${it.orderBooks.size}, ")
+                    .append("os: ${it.ordersToSave.size}, ")
+                    .append("or: ${it.ordersToRemove.size}, ")
         }
 
         stopOrderBooksData?.let {
-            result.append("stop order books: ${it.orderBooks.size}, ")
-                    .append("stop orders to save: ${it.ordersToSave.size}, ")
-                    .append("stop orders to remove: ${it.ordersToRemove.size}, ")
+            result.append("sob: ${it.orderBooks.size}, ")
+                    .append("sos: ${it.ordersToSave.size}, ")
+                    .append("sor: ${it.ordersToRemove.size}, ")
         }
 
         messageSequenceNumber?.let {
-            result.append("message sequence number: $messageSequenceNumber")
+            result.append("sn: $messageSequenceNumber")
         }
 
+
+        midPricePersistenceData?.let {
+            result.append("md: ", midPricePersistenceData.midPrices?.size)
+        }
 
         return result.toString()
     }

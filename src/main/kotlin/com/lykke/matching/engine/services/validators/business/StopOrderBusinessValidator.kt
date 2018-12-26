@@ -7,5 +7,6 @@ import java.util.*
 interface StopOrderBusinessValidator {
     fun performValidation(availableBalance: BigDecimal,
                           limitVolume: BigDecimal,
-                          order: LimitOrder, orderProcessingTime: Date)
+                          order: LimitOrder,
+                          orderProcessingTime: Date)
 }

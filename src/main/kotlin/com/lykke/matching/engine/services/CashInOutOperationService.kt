@@ -1,9 +1,12 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
+import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
 import com.lykke.matching.engine.daos.context.CashInOutContext
 import com.lykke.matching.engine.daos.converters.CashInOutOperationConverter
 import com.lykke.matching.engine.daos.fee.v2.Fee
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -17,7 +20,6 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
-import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -29,13 +31,14 @@ import java.util.*
 import java.util.concurrent.BlockingQueue
 
 @Service
-class CashInOutOperationService(private val balancesHolder: BalancesHolder,
-                                private val rabbitCashInOutQueue: BlockingQueue<CashOperation>,
+class CashInOutOperationService(private val rabbitCashInOutQueue: BlockingQueue<CashOperation>,
+                                private val balancesHolder: BalancesHolder,
                                 private val feeProcessor: FeeProcessor,
+                                private val walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                                 private val cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator,
                                 private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                 private val messageSender: MessageSender,
-                                private val performanceStatsHolder: PerformanceStatsHolder) : AbstractService {
+                                private val persistenceManager: PersistenceManager) : AbstractService {
     override fun parseMessage(messageWrapper: MessageWrapper) {
         //do nothing
     }
@@ -73,7 +76,7 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
             return
         }
 
-        val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
+        val walletProcessor = walletOperationsProcessorFactory.create(LOGGER)
         try {
             walletProcessor.preProcess(operations)
         } catch (e: BalanceException) {
@@ -82,7 +85,12 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
         }
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
-        val updated = walletProcessor.persistBalances(cashInOutContext.processedMessage, null, null, sequenceNumber)
+        val updated = persistenceManager.persist(PersistenceData(walletProcessor.persistenceData(),
+                cashInOutContext.processedMessage,
+                null,
+                null,
+                sequenceNumber,
+                null))
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {
@@ -128,21 +136,15 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
         ))
     }
 
-    fun writeResponse(messageWrapper: MessageWrapper, setMatchingEngineId: String, status: MessageStatus) {
-        val start = System.nanoTime()
+    fun writeResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setMatchingEngineId(setMatchingEngineId)
+                .setMatchingEngineId(matchingEngineOperationId)
                 .setStatus(status.type))
-        val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.CASH_IN_OUT_OPERATION.type, end - start)
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(status.type))
-        val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.CASH_IN_OUT_OPERATION.type, end - start)
     }
 
     private fun writeErrorResponse(messageWrapper: MessageWrapper,
@@ -150,13 +152,10 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
                                    status: MessageStatus,
                                    errorMessage: String = StringUtils.EMPTY) {
         val context = messageWrapper.context as CashInOutContext
-        val start = System.nanoTime()
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setMatchingEngineId(matchingEngineOperationId)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
-        val end = System.nanoTime()
-        performanceStatsHolder.addWriteResponseTime(MessageType.CASH_IN_OUT_OPERATION.type, end - start)
         LOGGER.info("Cash in/out operation (${context.cashInOutOperation.externalId}), messageId: ${messageWrapper.messageId} for client ${context.cashInOutOperation.clientId}, " +
                 "asset ${context.cashInOutOperation.asset!!.assetId}, amount: ${NumberUtils.roundForPrint(context.cashInOutOperation.amount)}: $errorMessage")
     }

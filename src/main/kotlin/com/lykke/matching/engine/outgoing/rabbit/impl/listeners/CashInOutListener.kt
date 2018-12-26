@@ -5,7 +5,7 @@ import com.lykke.matching.engine.logging.DatabaseLogger
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.outgoing.rabbit.events.RabbitFailureEvent
-import com.lykke.matching.engine.outgoing.rabbit.events.RabbitRecoverEvent
+import com.lykke.matching.engine.outgoing.rabbit.events.RabbitReadyEvent
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.monitoring.HealthMonitorEvent
 import com.lykke.matching.engine.utils.monitoring.MonitoredComponent
@@ -60,7 +60,7 @@ class CashInOutListener {
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == CashInOutListener::class.java.simpleName) {
             failed = true
-            logFail(rabbitFailureEvent.publisherName)
+            logRmqFail(rabbitFailureEvent.publisherName)
             rabbitFailureEvent.failedEvent?.let {
                 rabbitCashInOutQueue.putFirst(it as CashOperation)
             }
@@ -69,11 +69,11 @@ class CashInOutListener {
     }
 
     @EventListener
-    fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
-        if (rabbitRecoverEvent.publisherName == CashInOutListener::class.java.simpleName && failed) {
+    fun onReady(rabbitReadyEvent: RabbitReadyEvent) {
+        if (rabbitReadyEvent.publisherName == CashInOutListener::class.java.simpleName && failed) {
             failed = false
-            logRecover(rabbitRecoverEvent.publisherName)
-            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
+            logRmqRecover(rabbitReadyEvent.publisherName)
+            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitReadyEvent.publisherName))
         }
     }
 }
