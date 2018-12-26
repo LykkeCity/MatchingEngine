@@ -42,6 +42,7 @@ class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcesso
                     midPriceHolder.getReferenceMidPrice(assetPair, executionContext))
 
             val resultProcessedOrder = if (OrderValidationUtils.isMidPriceValid(midPriceAfterOrderProcessing, lowerMidPriceBound, upperMidPriceBound)) {
+                stopOrderExecutionContext.apply()
                 processedOrder
             } else {
                 rejectStopOrderHighMidPriceDeviation(order, stopOrderExecutionContext, lowerMidPriceBound, upperMidPriceBound, midPriceAfterOrderProcessing)
