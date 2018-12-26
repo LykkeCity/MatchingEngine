@@ -34,6 +34,7 @@ class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                 CurrentTransactionStopOrderBooksHolder(executionContext.stopOrderBooksHolder),
                 executionContext.date,
                 executionContext.logger,
+                executionContext.tradeIndex,
                 executionContext)
     }
 

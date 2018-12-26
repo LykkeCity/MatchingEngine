@@ -24,9 +24,8 @@ class ExecutionContext(val messageId: String,
                        val stopOrderBooksHolder: CurrentTransactionStopOrderBooksHolder,
                        val date: Date,
                        val logger: Logger,
+                       var tradeIndex: Long = 0,
                        val previousExecutionContext: ExecutionContext? = null) {
-
-    var tradeIndex: Long = 0
 
     private val clientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
     private val trustedClientLimitOrdersWithTradesByInternalId = LinkedHashMap<String, LimitOrderWithTrades>()
