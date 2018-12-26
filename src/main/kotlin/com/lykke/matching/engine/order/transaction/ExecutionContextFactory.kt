@@ -32,12 +32,13 @@ class ExecutionContextFactory(private val walletOperationsProcessorFactory: Wall
                 executionContext.assetPairsById,
                 executionContext.assetsById,
                 executionContext.preProcessorValidationResultsByOrderId,
-                balancesHolder.createWalletProcessor(executionContext.walletOperationsProcessor.currentTransactionBalancesHolder.createCurrenTransactionBalancesHolder(),
-                        executionContext.logger, executionContext.walletOperationsProcessor.validate),
+                walletOperationsProcessorFactory.create(executionContext.logger, executionContext.walletOperationsProcessor),
                 CurrentTransactionOrderBooksHolder(executionContext.orderBooksHolder),
                 CurrentTransactionStopOrderBooksHolder(executionContext.stopOrderBooksHolder),
+                CurrentTransactionMidPriceHolder(midPriceHolder, priceDeviationThresholdHolder),
                 executionContext.date,
-                executionContext.logger)
+                executionContext.logger,
+                executionContext.controlsLogger)
     }
 
     fun create(messageId: String,

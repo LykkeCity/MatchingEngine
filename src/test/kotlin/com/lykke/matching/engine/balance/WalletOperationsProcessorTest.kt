@@ -8,11 +8,11 @@ import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.common.entity.PersistenceData
-import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolder
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
+import com.lykke.matching.engine.services.BalancesService
 import com.lykke.matching.engine.utils.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,7 +25,6 @@ import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import kotlin.test.assertEquals
-import com.lykke.matching.engine.utils.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -56,6 +55,9 @@ class WalletOperationsProcessorTest : AbstractTest() {
 
     @Autowired
     private lateinit var assetsHolder: AssetsHolder
+
+    @Autowired
+    private lateinit var balancesService: BalancesService
 
     @Test
     fun testPreProcessWalletOperations() {
@@ -218,14 +220,14 @@ class WalletOperationsProcessorTest : AbstractTest() {
         testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC", 0.1)
         testBalanceHolderWrapper.updateReservedBalance("Client1", "USD", 5.0)
 
-        val mainTransactionWalletProcessor = balancesHolder.createWalletProcessor(null, true)
+        val mainTransactionWalletProcessor = walletOperationsProcessorFactory.create(null)
 
         //when
         mainTransactionWalletProcessor.preProcess(listOf(WalletOperation("Client1", "BTC", BigDecimal.valueOf(1.0), BigDecimal.valueOf(0.1))))
         mainTransactionWalletProcessor.preProcess(listOf(WalletOperation("Client1", "USD", BigDecimal.valueOf(10.0), BigDecimal.valueOf(10))))
 
         val subTransactionBalancesHolder = CurrentTransactionBalancesHolder(mainTransactionWalletProcessor.currentTransactionBalancesHolder)
-        val subTransactionWalletOperationsProcessor = WalletOperationsProcessor(balancesHolder, subTransactionBalancesHolder, applicationSettingsHolder, persistenceManager, assetsHolder, true, null, mainTransactionWalletProcessor)
+        val subTransactionWalletOperationsProcessor = WalletOperationsProcessor(balancesService, subTransactionBalancesHolder, applicationSettingsHolder,assetsHolder, null, mainTransactionWalletProcessor)
 
         subTransactionWalletOperationsProcessor.preProcess(listOf(WalletOperation("Client1", "BTC", BigDecimal.valueOf(2.0), BigDecimal.valueOf(0.3))))
                 .apply()

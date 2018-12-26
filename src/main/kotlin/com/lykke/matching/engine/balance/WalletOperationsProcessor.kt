@@ -20,7 +20,7 @@ import java.util.Date
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate as OutgoingBalanceUpdate
 
 class WalletOperationsProcessor(private val balancesService: BalancesService,
-                                private val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
+                                val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
                                 private val applicationSettingsHolder: ApplicationSettingsHolder,
                                 private val assetsHolder: AssetsHolder,
                                 private val logger: Logger?,

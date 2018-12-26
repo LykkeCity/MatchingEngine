@@ -120,7 +120,7 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
 
         val processedOrder = genericLimitOrdersProcessor.processOrders(listOf(processingOrder), executionContext).single()
 
-        val midPriceAfterOrderProcessing = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPair.assetPairId).getMidPrice()
+        val midPriceAfterOrderProcessing = executionContext.orderBooksHolder.getOrderBook(assetPair.assetPairId).getMidPrice()
         val midPriceValid = OrderValidationUtils.isMidPriceValid(midPriceAfterOrderProcessing, lowerMidPriceBound, upperMidPriceBound)
 
         return if (!midPriceValid) {
@@ -193,7 +193,7 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
                                                               lowerMidPriceBound: BigDecimal?,
                                                               upperMidPriceBound: BigDecimal?,
                                                               assetPair: AssetPair) {
-        val midPrice = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPair.assetPairId).getMidPrice()
+        val midPrice = executionContext.orderBooksHolder.getOrderBook(assetPair.assetPairId).getMidPrice()
         val message = "Limit order externalId = ${limitOrder.externalId}, assetPairId = ${assetPair.assetPairId}, " +
                 "order book mid price: ${NumberUtils.roundForPrint(midPrice)} " +
                 "already aut of range lowerBound: ${NumberUtils.roundForPrint(lowerMidPriceBound)}), upperBound: ${NumberUtils.roundForPrint(upperMidPriceBound)}"
@@ -205,7 +205,7 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
                                                        lowerMidPriceBound: BigDecimal?,
                                                        upperMidPriceBound: BigDecimal?,
                                                        assetPair: AssetPair): Boolean {
-        val midPriceOrderBook = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPair.assetPairId).getMidPrice()
+        val midPriceOrderBook = executionContext.orderBooksHolder.getOrderBook(assetPair.assetPairId).getMidPrice()
         return OrderValidationUtils.isMidPriceValid(midPriceOrderBook, lowerMidPriceBound, upperMidPriceBound)
     }
 

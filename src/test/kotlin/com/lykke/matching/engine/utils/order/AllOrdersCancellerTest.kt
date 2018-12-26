@@ -81,7 +81,7 @@ class AllOrdersCancellerTest : AbstractTest() {
     private lateinit var assetsPairsHolder: AssetsPairsHolder
 
     private var currentTransactionOrderBooksHolder = mock<CurrentTransactionOrderBooksHolder>() {
-        on { getChangedCopyOrOriginalOrderBook(any()) } doAnswer {
+        on { getOrderBook(any()) } doAnswer {
             mock() {
                 on { getMidPrice() } doAnswer {
                     BigDecimal.ZERO

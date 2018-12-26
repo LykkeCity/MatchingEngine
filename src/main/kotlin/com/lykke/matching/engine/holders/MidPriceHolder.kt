@@ -77,7 +77,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") val refreshM
         val result = if (refMidPrice != null && !NumberUtils.equalsIgnoreScale(refMidPrice, BigDecimal.ZERO)) {
             refMidPrice
         } else prevReferencePriceByAssetPairId[assetPair.assetPairId]
-                ?: getOrderBookMidPrice(executionContext.orderBooksHolder?.getChangedCopyOrOriginalOrderBook(assetPair.assetPairId))
+                ?: getOrderBookMidPrice(executionContext.orderBooksHolder.getOrderBook(assetPair.assetPairId))
 
         if (midPriceFirstTimeReady) {
             orderBookMidPriceChecker.checkOrderBook(RefMidPriceDangerousChangeEvent(assetPair.assetPairId, NumberUtils.setScaleRoundUp(result, assetPair.accuracy), executionContext))

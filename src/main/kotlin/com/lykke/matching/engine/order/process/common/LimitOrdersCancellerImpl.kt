@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
+import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.transaction.AbstractTransactionOrderBooksHolder
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
@@ -41,8 +42,8 @@ class LimitOrdersCancellerImpl(private val applicationSettingsHolder: Applicatio
         plus(cancelledOrders, replacedOrders).forEach { order ->
             orderBooksHolder.getChangedOrderBookCopy(order.assetPairId).removeOrder(order)
         }
-        orderBooksHolder.addCancelledOrders(cancelledOrders)
-        orderBooksHolder.addReplacedOrders(replacedOrders)
+        orderBooksHolder.removeOrdersFromMapsAndSetStatus(cancelledOrders, OrderStatus.Cancelled)
+        orderBooksHolder.removeOrdersFromMapsAndSetStatus(replacedOrders, OrderStatus.Replaced)
     }
 
     private fun addLimitOrdersInfoToExecutionEventData(orders: Collection<LimitOrder>,

@@ -12,12 +12,12 @@ class WalletOperationsProcessorFactory(private val currentTransactionBalancesHol
                                        private val applicationSettingsHolder: ApplicationSettingsHolder,
                                        private val assetsHolder: AssetsHolder,
                                        private val balancesService: BalancesService) {
-    fun create(logger: Logger?): WalletOperationsProcessor {
-
+    fun create(logger: Logger?, prevWalletOperationsProcessor: WalletOperationsProcessor? = null): WalletOperationsProcessor {
         return WalletOperationsProcessor(balancesService,
-                currentTransactionBalancesHolderFactory.create(),
+                currentTransactionBalancesHolderFactory.create(prevWalletOperationsProcessor?.currentTransactionBalancesHolder),
                 applicationSettingsHolder,
                 assetsHolder,
-                logger)
+                logger,
+                prevWalletOperationsProcessor)
     }
 }

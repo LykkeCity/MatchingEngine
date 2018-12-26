@@ -153,7 +153,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
 
         val processedOrders = genericLimitOrdersProcessor.processOrders(processingMultiLimitOrder.orders, executionContext)
 
-        val midPriceAfterOrderMatching = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPair.assetPairId).getMidPrice()
+        val midPriceAfterOrderMatching = executionContext.orderBooksHolder.getOrderBook(assetPair.assetPairId).getMidPrice()
         val midPriceValid = OrderValidationUtils.isMidPriceValid(midPriceAfterOrderMatching, lowerMidPriceBound, upperMidPriceBound)
         return if (!midPriceValid) {
             return processMidPriceIsInvalidAfterMatching(
@@ -212,7 +212,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                                                        lowerMidPriceBound: BigDecimal?,
                                                        upperMidPriceBound: BigDecimal?,
                                                        assetPair: AssetPair): Boolean {
-        val orderBookMidPriceBeforeOrdersMatching = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPair.assetPairId).getMidPrice()
+        val orderBookMidPriceBeforeOrdersMatching = executionContext.orderBooksHolder.getOrderBook(assetPair.assetPairId).getMidPrice()
         return OrderValidationUtils.isMidPriceValid(orderBookMidPriceBeforeOrdersMatching, lowerMidPriceBound, upperMidPriceBound)
     }
 
@@ -221,7 +221,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                                                               assetPair: AssetPair,
                                                               upperMidPriceBound: BigDecimal?,
                                                               lowerMidPriceBound: BigDecimal?) {
-        val orderBookMidPriceBeforeOrdersMatching = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPair.assetPairId).getMidPrice()
+        val orderBookMidPriceBeforeOrdersMatching = executionContext.orderBooksHolder.getOrderBook(assetPair.assetPairId).getMidPrice()
 
 
         val message = "Multilimit message uid = ${multiLimitOrder.messageUid}, assetPairId = ${assetPair.assetPairId}, " +

@@ -3,12 +3,9 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.order.ExpiryOrdersQueue
-import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.transaction.CurrentTransactionStopOrderBooksHolder
 import org.springframework.stereotype.Component
-import java.math.BigDecimal
-import java.util.*
 import java.util.ArrayList
 import java.util.Date
 import java.util.HashMap
