@@ -137,8 +137,15 @@ open class TestExecutionContext {
 
     @Bean
     open fun stopOrderBookProcessor(limitOrderProcessor: LimitOrderProcessor,
-                                    applicationSettingsHolder: ApplicationSettingsHolder): StopOrderBookProcessor {
-        return StopOrderBookProcessor(limitOrderProcessor, applicationSettingsHolder)
+                                    applicationSettingsHolder: ApplicationSettingsHolder,
+                                    executionContextFactory: ExecutionContextFactory,
+                                    priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
+                                    midPriceHolder: MidPriceHolder): StopOrderBookProcessor {
+        return StopOrderBookProcessor(limitOrderProcessor,
+                applicationSettingsHolder,
+                executionContextFactory,
+                priceDeviationThresholdHolder,
+                midPriceHolder)
     }
 
     @Bean
