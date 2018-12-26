@@ -33,7 +33,8 @@ class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                 CurrentTransactionOrderBooksHolder(executionContext.orderBooksHolder),
                 CurrentTransactionStopOrderBooksHolder(executionContext.stopOrderBooksHolder),
                 executionContext.date,
-                executionContext.logger)
+                executionContext.logger,
+                executionContext)
     }
 
     fun create(messageId: String,
