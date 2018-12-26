@@ -24,6 +24,22 @@ class ExecutionContextFactory(private val walletOperationsProcessorFactory: Wall
                               private val assetsHolder: AssetsHolder,
                               private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder) {
 
+    fun create(executionContext: ExecutionContext): ExecutionContext {
+        return ExecutionContext(executionContext.messageId,
+                executionContext.requestId,
+                executionContext.messageType,
+                executionContext.processedMessage,
+                executionContext.assetPairsById,
+                executionContext.assetsById,
+                executionContext.preProcessorValidationResultsByOrderId,
+                balancesHolder.createWalletProcessor(executionContext.walletOperationsProcessor.currentTransactionBalancesHolder.createCurrenTransactionBalancesHolder(),
+                        executionContext.logger, executionContext.walletOperationsProcessor.validate),
+                CurrentTransactionOrderBooksHolder(executionContext.orderBooksHolder),
+                CurrentTransactionStopOrderBooksHolder(executionContext.stopOrderBooksHolder),
+                executionContext.date,
+                executionContext.logger)
+    }
+
     fun create(messageId: String,
                requestId: String,
                messageType: MessageType,

@@ -8,25 +8,33 @@ import com.lykke.matching.engine.services.utils.AbstractAssetOrderBook
 import java.util.Date
 
 abstract class AbstractTransactionOrderBooksHolder<AssetOrderBook : AbstractAssetOrderBook,
-        GenericService : AbstractGenericLimitOrderService<AssetOrderBook>>(private val genericLimitOrderService: GenericService) {
+        GenericService : AbstractGenericLimitOrderService<AssetOrderBook>>(protected val ordersService: GenericService): AbstractGenericLimitOrderService<AssetOrderBook> {
 
     protected val newOrdersByExternalId = LinkedHashMap<String, LimitOrder>()
-    protected val completedOrders = mutableListOf<LimitOrder>()
-    protected val cancelledOrders = mutableListOf<LimitOrder>()
-    protected val replacedOrders = mutableListOf<LimitOrder>()
+    protected val removeOrdersByStatus =  HashMap<OrderStatus?, MutableList<LimitOrder>>()
     protected val assetOrderBookCopiesByAssetPairId = HashMap<String, AssetOrderBook>()
+
     protected val changedBuySides = HashSet<String>()
     protected val changedSellSides = HashSet<String>()
 
-    open fun getChangedCopyOrOriginalOrderBook(assetPairId: String): AssetOrderBook {
-        return assetOrderBookCopiesByAssetPairId[assetPairId] ?: genericLimitOrderService.getOrderBook(assetPairId)
+    override fun getOrderBook(assetPairId: String): AssetOrderBook {
+        return assetOrderBookCopiesByAssetPairId[assetPairId] ?: ordersService.getOrderBook(assetPairId)
     }
 
     @Suppress("unchecked_cast")
     fun getChangedOrderBookCopy(assetPairId: String): AssetOrderBook {
         return assetOrderBookCopiesByAssetPairId.getOrPut(assetPairId) {
-            genericLimitOrderService.getOrderBook(assetPairId).copy() as AssetOrderBook
+            ordersService.getOrderBook(assetPairId).copy() as AssetOrderBook
         }
+    }
+
+
+    override fun setOrderBook(assetPairId: String, assetOrderBook: AssetOrderBook) {
+        assetOrderBookCopiesByAssetPairId[assetOrderBook.assetPairId] = assetOrderBook
+    }
+
+    override fun addOrders(orders: Collection<LimitOrder>) {
+        orders.forEach { addOrder(it) }
     }
 
     fun addOrder(order: LimitOrder) {
@@ -35,40 +43,33 @@ abstract class AbstractTransactionOrderBooksHolder<AssetOrderBook : AbstractAsse
         addChangedSide(order)
     }
 
-    fun addCompletedOrders(orders: Collection<LimitOrder>) {
-        addRemovedOrders(orders, completedOrders)
-    }
+    override fun removeOrdersFromMapsAndSetStatus(orders: Collection<LimitOrder>, status: OrderStatus?, date: Date?) {
+        val resultOrders = removeOrdersByStatus.getOrPut(status) {
+            ArrayList()
+        }
 
-    fun addCancelledOrders(orders: Collection<LimitOrder>) {
-        addRemovedOrders(orders, cancelledOrders)
-    }
-
-    fun addReplacedOrders(orders: Collection<LimitOrder>) {
-        addRemovedOrders(orders, replacedOrders)
+        orders.forEach { order ->
+            if (newOrdersByExternalId.containsKey(order.externalId)) {
+                newOrdersByExternalId.remove(order.externalId)
+            } else {
+                addChangedSide(order)
+                resultOrders.add(order)
+            }
+        }
     }
 
     fun apply(date: Date) {
-        genericLimitOrderService.removeOrdersFromMapsAndSetStatus(completedOrders)
-        genericLimitOrderService.removeOrdersFromMapsAndSetStatus(cancelledOrders, OrderStatus.Cancelled, date)
-        genericLimitOrderService.removeOrdersFromMapsAndSetStatus(replacedOrders, OrderStatus.Replaced, date)
-        genericLimitOrderService.addOrders(newOrdersByExternalId.values)
+        removeOrdersByStatus.forEach { status, orders ->
+            ordersService.removeOrdersFromMapsAndSetStatus(orders, status, date)
+        }
+
+        ordersService.addOrders(newOrdersByExternalId.values)
         applySpecificPart(date)
     }
 
     protected abstract fun applySpecificPart(date: Date)
 
     abstract fun getPersistenceData(): OrderBooksPersistenceData
-
-    protected fun addRemovedOrders(orders: Collection<LimitOrder>, removedOrders: MutableCollection<LimitOrder>) {
-        orders.forEach { order ->
-            if (newOrdersByExternalId.containsKey(order.externalId)) {
-                newOrdersByExternalId.remove(order.externalId)
-            } else {
-                addChangedSide(order)
-                removedOrders.add(order)
-            }
-        }
-    }
 
     protected fun addChangedSide(order: LimitOrder) {
         (if (order.isBuySide()) changedBuySides else changedSellSides).add(order.assetPairId)

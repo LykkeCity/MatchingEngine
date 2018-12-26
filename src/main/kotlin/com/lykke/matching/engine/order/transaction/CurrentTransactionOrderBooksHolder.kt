@@ -7,6 +7,7 @@ import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.matching.UpdatedOrderBookAndOrder
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.services.AbstractGenericLimitOrderService
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import java.math.BigDecimal
@@ -14,8 +15,8 @@ import java.util.Date
 import java.util.HashMap
 import java.util.concurrent.PriorityBlockingQueue
 
-open class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: GenericLimitOrderService)
-    : AbstractTransactionOrderBooksHolder<AssetOrderBook, GenericLimitOrderService>(genericLimitOrderService) {
+class CurrentTransactionOrderBooksHolder(ordersService: AbstractGenericLimitOrderService<AssetOrderBook>)
+    : AbstractTransactionOrderBooksHolder<AssetOrderBook, AbstractGenericLimitOrderService<AssetOrderBook>>(ordersService) {
 
     private val orderCopyWrappersByOriginalOrder = HashMap<LimitOrder, CopyWrapper<LimitOrder>>()
 
@@ -24,9 +25,21 @@ open class CurrentTransactionOrderBooksHolder(private val genericLimitOrderServi
 
     fun getOrPutOrderCopyWrapper(limitOrder: LimitOrder, defaultValue: () -> CopyWrapper<LimitOrder>): CopyWrapper<LimitOrder> {
         return orderCopyWrappersByOriginalOrder.getOrPut(limitOrder) {
+            val copyWrapper = (if (ordersService is CurrentTransactionOrderBooksHolder) {
+                ordersService.getOrderCopyWrapper(limitOrder)
+            } else {
+                null
+            })?.let {
+                CopyWrapper(it.origin, it.copy.copy())
+            }
+
             addChangedSide(limitOrder)
-            defaultValue()
+            copyWrapper ?: defaultValue()
         }
+    }
+
+    fun getOrderCopyWrapper(limitOrder: LimitOrder): CopyWrapper<LimitOrder>? {
+        return orderCopyWrappersByOriginalOrder[limitOrder]
     }
 
     fun getChangedOrderBooksMidPricesByAssetPairIdMap(): Map<String, BigDecimal> {
@@ -44,11 +57,7 @@ open class CurrentTransactionOrderBooksHolder(private val genericLimitOrderServi
     override fun getPersistenceData(): OrderBooksPersistenceData {
         val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
         val ordersToSave = mutableListOf<LimitOrder>()
-        val ordersToRemove = ArrayList<LimitOrder>(completedOrders.size + cancelledOrders.size + replacedOrders.size)
-
-        ordersToRemove.addAll(completedOrders)
-        ordersToRemove.addAll(cancelledOrders)
-        ordersToRemove.addAll(replacedOrders)
+        val ordersToRemove = ArrayList(removeOrdersByStatus.values.flatMap { it })
 
         assetOrderBookCopiesByAssetPairId.forEach { assetPairId, orderBook ->
             if (changedBuySides.contains(assetPairId)) {
@@ -82,16 +91,33 @@ open class CurrentTransactionOrderBooksHolder(private val genericLimitOrderServi
     }
 
     override fun applySpecificPart(date: Date) {
-        orderCopyWrappersByOriginalOrder.forEach { it.value.applyToOrigin() }
+        if (ordersService is CurrentTransactionOrderBooksHolder) {
+            ordersService.orderCopyWrappersByOriginalOrder.putAll(this.orderCopyWrappersByOriginalOrder)
+            this.orderCopyWrappersByOriginalOrder.keys.forEach {
+                if (it.isBuySide()) {
+                    changedBuySides.add(it.assetPairId)
+                } else {
+                    changedSellSides.add(it.assetPairId)
+                }
+            }
+        }
+
+        if (ordersService is GenericLimitOrderService) {
+            orderCopyWrappersByOriginalOrder.forEach { it.value.applyToOrigin() }
+        }
+
         assetOrderBookCopiesByAssetPairId.forEach { assetPairId, orderBook ->
-            genericLimitOrderService.setOrderBook(assetPairId, orderBook)
-            val orderBookCopy = orderBook.copy()
-            if (changedBuySides.contains(assetPairId)) {
-                processChangedOrderBookSide(orderBookCopy, true, date)
+            ordersService.setOrderBook(assetPairId, orderBook)
+            if (ordersService is GenericLimitOrderService) {
+                val orderBookCopy = orderBook.copy()
+                if (changedBuySides.contains(assetPairId)) {
+                    processChangedOrderBookSide(orderBookCopy, true, date)
+                }
+                if (changedSellSides.contains(assetPairId)) {
+                    processChangedOrderBookSide(orderBookCopy, false, date)
+                }
             }
-            if (changedSellSides.contains(assetPairId)) {
-                processChangedOrderBookSide(orderBookCopy, false, date)
-            }
+
         }
     }
 

@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.holders
 
 import com.lykke.matching.engine.balance.BalancesGetter
+import com.lykke.matching.engine.balance.WalletsManager
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import org.apache.log4j.Logger
@@ -8,7 +9,7 @@ import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
-class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAccessorsHolder): BalancesGetter {
+class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAccessorsHolder): BalancesGetter, WalletsManager {
 
     companion object {
         private val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
@@ -39,6 +40,10 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
 
     fun getBalance(clientId: String, assetId: String): BigDecimal {
         return getBalances(clientId)[assetId]?.balance ?: BigDecimal.ZERO
+    }
+
+    override fun getWallet(clientId: String): Wallet? {
+        return wallets[clientId]
     }
 
     override fun getReservedBalance(clientId: String, assetId: String): BigDecimal {
@@ -72,7 +77,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         return BigDecimal.ZERO
     }
 
-    fun setWallets(wallets: Collection<Wallet>) {
+    override fun setWallets(wallets: Collection<Wallet>) {
         wallets.forEach { wallet ->
             this.wallets[wallet.clientId] = wallet
         }

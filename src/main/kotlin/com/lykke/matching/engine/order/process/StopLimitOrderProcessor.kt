@@ -107,7 +107,7 @@ class StopLimitOrderProcessor(private val limitOrderInputValidator: LimitOrderIn
     private fun isOrderReadyToImmediateExecution(orderContext: StopLimitOrderContext): Boolean {
         val order = orderContext.order
         val executionContext = orderContext.executionContext
-        val orderBook = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId)
+        val orderBook = executionContext.orderBooksHolder.getOrderBook(order.assetPairId)
         val bestBidPrice = orderBook.getBidPrice()
         val bestAskPrice = orderBook.getAskPrice()
 

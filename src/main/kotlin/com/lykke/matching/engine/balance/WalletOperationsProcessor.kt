@@ -3,6 +3,7 @@ package com.lykke.matching.engine.balance
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
+import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -22,7 +23,8 @@ class WalletOperationsProcessor(private val balancesService: BalancesService,
                                 private val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
                                 private val applicationSettingsHolder: ApplicationSettingsHolder,
                                 private val assetsHolder: AssetsHolder,
-                                private val logger: Logger?): BalancesGetter {
+                                private val logger: Logger?,
+                                private val previousWalletOperationsProcessor: WalletOperationsProcessor? = null): BalancesGetter {
 
     companion object {
         private val LOGGER = Logger.getLogger(WalletOperationsProcessor::class.java.name)
@@ -105,6 +107,8 @@ class WalletOperationsProcessor(private val balancesService: BalancesService,
     }
 
     fun apply(): WalletOperationsProcessor {
+        applyChangesToPrevWalletProcessor()
+
         currentTransactionBalancesHolder.apply()
         return this
     }
@@ -141,6 +145,21 @@ class WalletOperationsProcessor(private val balancesService: BalancesService,
 
     override fun getReservedBalance(clientId: String, assetId: String): BigDecimal {
         return getChangedCopyOrOriginalAssetBalance(clientId, assetId).reserved
+    }
+
+    private fun applyChangesToPrevWalletProcessor() {
+        if (previousWalletOperationsProcessor == null) {
+            return
+        }
+
+        this.clientBalanceUpdatesByClientIdAndAssetId.forEach { key, balance ->
+            val balanceUpdate = previousWalletOperationsProcessor.clientBalanceUpdatesByClientIdAndAssetId.getOrPut(key) {
+                balance
+            }
+
+            balanceUpdate.newBalance = balance.newBalance
+            balanceUpdate.newReserved = balance.newBalance
+        }
     }
 
     private fun isTrustedClientReservedBalanceOperation(operation: WalletOperation): Boolean {

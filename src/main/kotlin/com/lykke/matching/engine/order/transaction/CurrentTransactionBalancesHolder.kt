@@ -1,12 +1,12 @@
 package com.lykke.matching.engine.order.transaction
 
+import com.lykke.matching.engine.balance.WalletsManager
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.common.entity.BalancesData
-import com.lykke.matching.engine.holders.BalancesHolder
 import java.math.BigDecimal
 
-class CurrentTransactionBalancesHolder(private val balancesHolder: BalancesHolder) {
+class CurrentTransactionBalancesHolder(private val walletsManager: WalletsManager): WalletsManager {
 
     private val changedBalancesByClientIdAndAssetId = mutableMapOf<String, MutableMap<String, AssetBalance>>()
     private val changedWalletsByClientId = mutableMapOf<String, Wallet>()
@@ -22,16 +22,24 @@ class CurrentTransactionBalancesHolder(private val balancesHolder: BalancesHolde
     }
 
     fun persistenceData(): BalancesData {
-        return BalancesData(changedWalletsByClientId.values, changedBalancesByClientIdAndAssetId.flatMap { it.value.values })
+        val prevBalanceData =  if (walletsManager is CurrentTransactionBalancesHolder) {
+            walletsManager.persistenceData()
+        } else null
+
+        return mergeBalancesData(BalancesData(changedWalletsByClientId.values, changedBalancesByClientIdAndAssetId.flatMap { it.value.values }), prevBalanceData)
     }
 
     fun apply() {
-        balancesHolder.setWallets(changedWalletsByClientId.values)
+        walletsManager.setWallets(changedWalletsByClientId.values)
+    }
+
+    fun createCurrenTransactionBalancesHolder(): CurrentTransactionBalancesHolder {
+        return CurrentTransactionBalancesHolder(this)
     }
 
     fun getWalletAssetBalance(clientId: String, assetId: String): WalletAssetBalance {
         val wallet = changedWalletsByClientId.getOrPut(clientId) {
-            copyWallet(balancesHolder.wallets[clientId]) ?: Wallet(clientId)
+            copyWallet(walletsManager.getWallet(clientId)) ?: Wallet(clientId)
         }
         val assetBalance = changedBalancesByClientIdAndAssetId
                 .getOrPut(clientId) {
@@ -44,8 +52,22 @@ class CurrentTransactionBalancesHolder(private val balancesHolder: BalancesHolde
     }
 
     fun getChangedCopyOrOriginalAssetBalance(clientId: String, assetId: String): AssetBalance {
-        return (changedWalletsByClientId[clientId] ?: balancesHolder.wallets[clientId] ?: Wallet(clientId)).balances[assetId]
+        return getChangedCopyOrOriginalWallet(clientId).balances[assetId]
                 ?: AssetBalance(clientId, assetId)
+    }
+
+    fun getChangedCopyOrOriginalWallet(clientId: String): Wallet {
+        return changedWalletsByClientId[clientId] ?: walletsManager.getWallet(clientId) ?: Wallet(clientId)
+    }
+
+    override fun getWallet(clientId: String): Wallet? {
+        return changedWalletsByClientId[clientId] ?: walletsManager.getWallet(clientId)
+    }
+
+    override fun setWallets(wallets: Collection<Wallet>) {
+        wallets.forEach {
+            changedWalletsByClientId[it.clientId] = it
+        }
     }
 
     private fun copyWallet(wallet: Wallet?): Wallet? {
@@ -60,6 +82,32 @@ class CurrentTransactionBalancesHolder(private val balancesHolder: BalancesHolde
                 assetBalance.asset,
                 assetBalance.balance,
                 assetBalance.reserved)
+    }
+
+    private fun mergeBalancesData(newBalancesData: BalancesData, oldBalancesData: BalancesData?): BalancesData {
+        if (oldBalancesData == null) {
+            return newBalancesData
+        }
+
+        val clientIdToAssetIdFromNewData = newBalancesData.balances.map { "${it.clientId} it.asset}" }.toSet()
+        val clientIdsFromNewWallets = newBalancesData.wallets.map { it.clientId }.toSet()
+
+        val resultWalletList = ArrayList<Wallet>(newBalancesData.wallets)
+        val resultAssetBalanceList = ArrayList<AssetBalance>(newBalancesData.balances)
+
+        oldBalancesData.wallets.forEach {
+            if (!clientIdsFromNewWallets.contains(it.clientId)) {
+                resultWalletList.add(it)
+            }
+        }
+
+        oldBalancesData.balances.forEach {
+            if (!clientIdToAssetIdFromNewData.contains("${it.clientId}_${it.asset}")) {
+                resultAssetBalanceList.add(it)
+            }
+        }
+
+        return BalancesData(resultWalletList, resultAssetBalanceList)
     }
 }
 
