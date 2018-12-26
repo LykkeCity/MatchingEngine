@@ -168,7 +168,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
             }
 
             balanceUpdate.newBalance = balance.newBalance
-            balanceUpdate.newReserved = balance.newBalance
+            balanceUpdate.newReserved = balance.newReserved
         }
     }
 
