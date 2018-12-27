@@ -141,6 +141,42 @@ class ExecutionContextTest : AbstractTest() {
         assertEquals(OrderStatus.Processing.name, appliedOrder.status)
     }
 
+    @Test
+    fun executionContextWithSubTransactionPartiallyMatchedOrderInSubTransaction() {
+        //given
+        testOrderBookWrapper.addLimitOrder(MessageBuilder.buildLimitOrder(uid = "5", volume = 1.0, price = 100.0, assetId = "BTCUSD"))
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD", 100.0)
+
+
+        val executionContext = executionContextFactory.create("testMessageId",
+                "requestId",
+                MessageType.MARKET_ORDER, null,
+                mapOf("BTCUSD" to assetsPairsHolder.getAssetPair("BTCUSD")),
+                Date(), Logger.getLogger("test"))
+
+        //when
+        val subExecutionContext = executionContextFactory.create(executionContext)
+
+        val workingOrderBook = PriorityBlockingQueue(subExecutionContext.orderBooksHolder.getOrderBook("BTCUSD").getOrderBook(true))
+        val order = workingOrderBook.poll()
+
+        val orderCopy = subExecutionContext.orderBooksHolder.getOrPutOrderCopyWrapper(order) { CopyWrapper(order) }
+        orderCopy.copy.updateStatus(OrderStatus.Processing, Date())
+        orderCopy.copy.updateRemainingVolume(BigDecimal.valueOf(0.9))
+        workingOrderBook.add(orderCopy.origin)
+
+        subExecutionContext.orderBooksHolder.getChangedOrderBookCopy("BTCUSD").setOrderBook(true, workingOrderBook)
+        subExecutionContext.apply()
+        executionContext.apply()
+
+        //then
+        val appliedOrder = genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).peek()
+        assertEquals(BigDecimal.valueOf(0.9), appliedOrder.remainingVolume)
+        assertEquals(OrderStatus.Processing.name, appliedOrder.status)
+        executionDataApplyService.persistAndSendEvents(null, executionContext)
+    }
+
     private fun createMainExecutionContextAndPerformChanges(): ExecutionContext {
         testOrderBookWrapper.addLimitOrder(MessageBuilder.buildLimitOrder(uid = "5", volume = 1.0, price = 100.0, assetId = "BTCUSD"))
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
