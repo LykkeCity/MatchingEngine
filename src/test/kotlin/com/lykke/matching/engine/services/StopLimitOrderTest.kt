@@ -962,4 +962,27 @@ class StopLimitOrderTest : AbstractTest() {
         assertBalance("Client1", "BTC", 1.0, 0.0)
     }
 
+    @Test
+    fun testStopOrderRejectedHighPriceDeviation() {
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 2.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC", 1.0)
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD",
+                type = LimitOrderType.STOP_LIMIT,
+                volume = -1.0,
+                lowerLimitPrice = 0.99,
+                lowerPrice = 0.98,
+                timeInForce = OrderTimeInForce.IOC)))
+
+        clearMessageQueues()
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD",
+                volume = 0.5, price = 1.0)))
+
+        assertOrderBookSize("BTCUSD", true, 1)
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client3", assetId = "BTCUSD",
+                volume = -0.7, price = 1.0)))
+
+        assertOrderBookSize("BTCUSD", false, 1)
+        assertOrderBookSize("BTCUSD", true, 0)
+    }
 }
