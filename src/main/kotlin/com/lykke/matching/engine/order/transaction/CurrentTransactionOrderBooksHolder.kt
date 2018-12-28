@@ -23,7 +23,7 @@ class CurrentTransactionOrderBooksHolder(ordersService: AbstractGenericLimitOrde
     val tradeInfoList = mutableListOf<TradeInfo>()
     val outgoingOrderBooks = mutableListOf<OrderBook>()
 
-    fun getOrPutOrderCopyWrapper(limitOrder: LimitOrder, defaultValue: () -> CopyWrapper<LimitOrder>): CopyWrapper<LimitOrder> {
+    fun getOrPutOrderCopyWrapper(limitOrder: LimitOrder): CopyWrapper<LimitOrder> {
         return orderCopyWrappersByOriginalOrder.getOrPut(limitOrder) {
             val copyWrapper = (if (ordersService is CurrentTransactionOrderBooksHolder) {
                 ordersService.getOrderCopyWrapper(limitOrder)
@@ -34,7 +34,7 @@ class CurrentTransactionOrderBooksHolder(ordersService: AbstractGenericLimitOrde
             }
 
             addChangedSide(limitOrder)
-            copyWrapper ?: defaultValue()
+            CopyWrapper(limitOrder)
         }
     }
 
@@ -56,24 +56,39 @@ class CurrentTransactionOrderBooksHolder(ordersService: AbstractGenericLimitOrde
 
     override fun getPersistenceData(): OrderBooksPersistenceData {
         val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
-        val ordersToSave = mutableListOf<LimitOrder>()
+        val ordersToSaveByExternalId = HashMap(newOrdersByExternalId)
         val ordersToRemove = ArrayList(removeOrdersByStatus.values.flatMap { it })
 
         assetOrderBookCopiesByAssetPairId.forEach { assetPairId, orderBook ->
             if (changedBuySides.contains(assetPairId)) {
-                val updatedOrders = createUpdatedOrderBookAndOrder(orderBook.getOrderBook(true))
-                orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPairId, true, updatedOrders.updatedOrderBook))
-                updatedOrders.updatedOrder?.let { ordersToSave.add(it) }
+                readOrderBookSidePersistenceData(orderBook,
+                        true,
+                        orderBookPersistenceDataList,
+                        ordersToSaveByExternalId)
             }
             if (changedSellSides.contains(assetPairId)) {
-                val updatedOrders = createUpdatedOrderBookAndOrder(orderBook.getOrderBook(false))
-                orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPairId, false, updatedOrders.updatedOrderBook))
-                updatedOrders.updatedOrder?.let { ordersToSave.add(it) }
+                readOrderBookSidePersistenceData(orderBook,
+                        false,
+                        orderBookPersistenceDataList,
+                        ordersToSaveByExternalId)
             }
         }
 
-        ordersToSave.addAll(newOrdersByExternalId.values)
-        return OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove)
+        return OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSaveByExternalId.values, ordersToRemove)
+    }
+
+    private fun readOrderBookSidePersistenceData(orderBook: AssetOrderBook,
+                                                 isBuySide: Boolean,
+                                                 orderBookPersistenceDataList: MutableList<OrderBookPersistenceData>,
+                                                 ordersToSaveByExternalId: MutableMap<String, LimitOrder>) {
+        val updatedOrders = createUpdatedOrderBookAndOrder(orderBook.getOrderBook(isBuySide))
+        orderBookPersistenceDataList.add(OrderBookPersistenceData(orderBook.assetPairId, isBuySide, updatedOrders.updatedOrderBook))
+        updatedOrders.updatedOrder?.let { updatedOrder ->
+            if (newOrdersByExternalId.containsKey(updatedOrder.externalId)) {
+                ordersToSaveByExternalId.remove(updatedOrder.externalId)
+            }
+            ordersToSaveByExternalId[updatedOrder.externalId] = updatedOrder
+        }
     }
 
     private fun createUpdatedOrderBookAndOrder(orderBook: PriorityBlockingQueue<LimitOrder>): UpdatedOrderBookAndOrder {
