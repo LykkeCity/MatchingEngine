@@ -801,6 +801,7 @@ class ClientMultiLimitOrderTest : AbstractTest() {
         assertStopOrderBookSize("BTCUSD", false, 0)
         assertOrderBookSize("BTCUSD", true, 3)
         assertOrderBookSize("BTCUSD", false, 0)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
 
         assertBalance("Client1", "BTC", 0.0, 0.0)
         assertBalance("Client1", "USD", 526.0, 100.0)
