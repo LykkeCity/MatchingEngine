@@ -963,6 +963,54 @@ class StopLimitOrderTest : AbstractTest() {
     }
 
     @Test
+    fun testFullMatchSeveralStopOrdersWithIncomingOrder() {
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD",
+                type = LimitOrderType.STOP_LIMIT,
+                volume = -0.55,
+                lowerLimitPrice = 5001.0,
+                lowerPrice = 5000.0,
+                uid = "StopOrder1")))
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD",
+                type = LimitOrderType.STOP_LIMIT,
+                volume = -0.45,
+                lowerLimitPrice = 5000.0,
+                lowerPrice = 5000.0,
+                uid = "StopOrder2")))
+
+        clearMessageQueues()
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD",
+                volume = 2.0, price = 5000.0,
+                uid = "IncomingLimitOrder")))
+
+        assertStopOrderBookSize("BTCUSD", true, 0)
+        assertStopOrderBookSize("BTCUSD", false, 0)
+        assertOrderBookSize("BTCUSD", true, 1)
+        assertOrderBookSize("BTCUSD", false, 0)
+
+        val cacheIncomingOrder = genericLimitOrderService.getOrder("IncomingLimitOrder")
+        assertNotNull(cacheIncomingOrder)
+        assertEquals(OrderStatus.Processing.name, cacheIncomingOrder!!.status)
+        assertEquals(BigDecimal.valueOf(1), cacheIncomingOrder.remainingVolume)
+
+        val dbIncomingOrder = ordersDatabaseAccessorsHolder.primaryAccessor.loadLimitOrders().singleOrNull { it.externalId == "IncomingLimitOrder" }
+        assertNotNull(dbIncomingOrder)
+        assertEquals(OrderStatus.Processing.name, dbIncomingOrder!!.status)
+        assertEquals(BigDecimal.valueOf(1), dbIncomingOrder.remainingVolume)
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.single() as ExecutionEvent
+        assertEquals(5, event.orders.size)
+
+        val eventIncomingOrder = event.orders.single { it.externalId == "IncomingLimitOrder" }
+        assertEquals(OutgoingOrderStatus.PARTIALLY_MATCHED, eventIncomingOrder.status)
+        assertEquals("1", eventIncomingOrder.remainingVolume)
+    }
+
+    @Test
     fun testStopOrderRejectedHighPriceDeviation() {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 2.0)
         testBalanceHolderWrapper.updateBalance("Client3", "BTC", 1.0)

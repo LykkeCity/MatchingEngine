@@ -105,7 +105,7 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
                     }
                 }
 
-                val limitOrderCopyWrapper = executionContext.orderBooksHolder.getOrPutOrderCopyWrapper(limitOrderOrigin) { CopyWrapper(limitOrderOrigin) }
+                val limitOrderCopyWrapper = executionContext.orderBooksHolder.getOrPutOrderCopyWrapper(limitOrderOrigin)
                 val limitOrder = limitOrderCopyWrapper.copy
 
                 var isFullyMatched = false
