@@ -37,8 +37,8 @@ class ExpiryOrdersQueueTest {
         assertEquals(listOf("1"), queue.getExpiredOrdersExternalIds(date("2018-03-20 10:10")))
         assertEquals(listOf("1"), queue.getExpiredOrdersExternalIds(date("2018-03-20 10:11")))
         assertEquals(listOf("1"), queue.getExpiredOrdersExternalIds(date("2018-03-20 20:09")))
-        assertEquals(listOf("1", "3", "2"), queue.getExpiredOrdersExternalIds(date("2018-03-20 20:11")))
-        assertEquals(listOf("1", "3", "2", "4"), queue.getExpiredOrdersExternalIds(date("2018-03-22 00:00")))
+        assertEquals(listOf("1", "2", "3"), queue.getExpiredOrdersExternalIds(date("2018-03-20 20:11")).sorted())
+        assertEquals(listOf("1", "2", "3", "4"), queue.getExpiredOrdersExternalIds(date("2018-03-22 00:00")).sorted())
     }
 
     @Test
