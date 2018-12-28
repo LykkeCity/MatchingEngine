@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
+import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.process.common.OrderUtils
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
@@ -45,7 +46,7 @@ class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcesso
                 stopOrderExecutionContext.apply()
                 processedOrder
             } else {
-                rejectStopOrderHighMidPriceDeviation(order, stopOrderExecutionContext, lowerMidPriceBound, upperMidPriceBound, midPriceAfterOrderProcessing)
+                rejectStopOrderHighMidPriceDeviation(order, executionContext, lowerMidPriceBound, upperMidPriceBound, midPriceAfterOrderProcessing)
             }
             processedOrders.add(resultProcessedOrder)
             order = getStopOrderToExecute(executionContext)
@@ -58,7 +59,9 @@ class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcesso
                                         lowerMidPriceBound: BigDecimal?,
                                         upperMidPriceBound: BigDecimal?,
                                         midPrice: BigDecimal?): ProcessedOrder {
+        addOrderToReport(order, executionContext)
         val childLimitOrder = OrderUtils.createChildLimitOrder(order, executionContext.date)
+        childLimitOrder.updateStatus(OrderStatus.TooHighMidPriceDeviation, executionContext.date)
         val assetPair = executionContext.assetPairsById[order.assetPairId]!!
 
         if (!applicationSettingsHolder.isTrustedClient(childLimitOrder.clientId)) {
@@ -67,7 +70,7 @@ class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcesso
                     "m = $midPrice")
         }
 
-        return rejectOrder(executionContext, order)
+        return rejectOrder(executionContext, childLimitOrder)
     }
 
     private fun rejectOrder(executionContext: ExecutionContext,
