@@ -110,9 +110,9 @@ class CurrentTransactionOrderBooksHolder(ordersService: AbstractGenericLimitOrde
             ordersService.orderCopyWrappersByOriginalOrder.putAll(this.orderCopyWrappersByOriginalOrder)
             this.orderCopyWrappersByOriginalOrder.keys.forEach {
                 if (it.isBuySide()) {
-                    changedBuySides.add(it.assetPairId)
+                    ordersService.changedBuySides.add(it.assetPairId)
                 } else {
-                    changedSellSides.add(it.assetPairId)
+                    ordersService.changedSellSides.add(it.assetPairId)
                 }
             }
         }
