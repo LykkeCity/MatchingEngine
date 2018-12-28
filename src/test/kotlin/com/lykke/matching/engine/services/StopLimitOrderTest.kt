@@ -13,6 +13,7 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderType
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -755,6 +756,53 @@ class StopLimitOrderTest : AbstractTest() {
         val eventStopOrder = executionEvent.orders.first { it.externalId == "order1" }
         assertEquals(OutgoingOrderStatus.MATCHED, eventStopOrder.status)
         assertEquals("10000", eventStopOrder.price)
+    }
+
+    @Test
+    fun testStopOrderRejectedHighPriceDeviation() {
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 6, midPriceDeviationThreshold = BigDecimal.valueOf(0.01)))
+        initServices()
+
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC", 3.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 3.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1",
+                uid = "stopOrder",
+                assetId = "BTCUSD",
+                type = LimitOrderType.STOP_LIMIT,
+                volume = -2.0,
+                lowerLimitPrice = 5400.0,
+                lowerPrice = 5000.0)))
+
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client3", assetId = "BTCUSD",
+                volume = -0.7, price = 5500.0)))
+        assertOrderBookSize("BTCUSD", false, 1)
+        clearMessageQueues()
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD",
+                volume = 1.5, price = 4900.0)))
+        assertOrderBookSize("BTCUSD", false, 1)
+        assertOrderBookSize("BTCUSD", true, 1)
+        assertStopOrderBookSize("BTCUSD", false, 0)
+
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = (clientsEventsQueue.poll()) as ExecutionEvent
+        assertEquals(3, event.orders.size)
+
+        assertEquals(OutgoingOrderStatus.EXECUTED, event.orders.single { it.orderType == OrderType.STOP_LIMIT }.status)
+        assertEquals(OutgoingOrderStatus.REJECTED, event.orders.single { it.parentExternalId == "stopOrder" }.status)
+
+        assertEquals(BigDecimal.valueOf(1000.0), balancesHolder.getBalance("Client1", "USD"))
+        assertEquals(BigDecimal.valueOf(0.0), balancesHolder.getReservedBalance("Client1", "USD"))
+
+        assertEquals(BigDecimal.valueOf(10000.0), balancesHolder.getBalance("Client2", "USD"))
+        assertEquals(BigDecimal.valueOf(7350.0), balancesHolder.getReservedBalance("Client2", "USD"))
+
+        assertEquals(BigDecimal.valueOf(3.0), balancesHolder.getBalance("Client3", "BTC"))
+        assertEquals(BigDecimal.valueOf(0.7), balancesHolder.getReservedBalance("Client3", "BTC"))
     }
 
 }
