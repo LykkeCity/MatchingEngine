@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPreprocessor
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.logging.MetricsLogger
@@ -23,8 +22,28 @@ open class LoggerConfig {
     }
 
     @Bean
-    open fun singleLimitOrderContextPreprocessorLogger(): ThrottlingLogger {
-        return ThrottlingLogger.getLogger(SingleLimitOrderPreprocessor::class.java.name)
+    open fun singleLimitOrderPreProcessingLogger(): ThrottlingLogger {
+        return ThrottlingLogger.getLogger("SingleLimitOrderPreProcessing")
+    }
+
+    @Bean
+    open fun cashInOutPreProcessingLogger(): ThrottlingLogger {
+        return ThrottlingLogger.getLogger("CashInOutPreProcessing")
+    }
+
+    @Bean
+    open fun cashTransferPreProcessingLogger(): ThrottlingLogger {
+        return ThrottlingLogger.getLogger("CashTransferPreProcessing")
+    }
+
+    @Bean
+    open fun limitOrderCancelPreProcessingLogger(): ThrottlingLogger {
+        return ThrottlingLogger.getLogger("LimitOrderCancelPreProcessing")
+    }
+
+    @Bean
+    open fun limitOrderMassCancelPreProcessingLogger(): ThrottlingLogger {
+        return ThrottlingLogger.getLogger("LimitOrderMassCancelPreProcessing")
     }
 
     @PostConstruct
