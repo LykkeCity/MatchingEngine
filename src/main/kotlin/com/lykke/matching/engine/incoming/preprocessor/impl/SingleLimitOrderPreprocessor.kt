@@ -1,65 +1,58 @@
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
-import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
-import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.AbstractMessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
-import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
-import javax.annotation.PostConstruct
 
 @Component
-class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<MessageWrapper>,
-                                   private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+class SingleLimitOrderPreprocessor(singleLimitOrderContextParser: SingleLimitOrderContextParser,
+                                   preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
                                    private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                                   @Qualifier("singleLimitOrderContextPreprocessorLogger")
-                                   private val LOGGER: ThrottlingLogger) : MessagePreprocessor, Thread(SingleLimitOrderPreprocessor::class.java.name) {
-    companion object {
-        private val METRICS_LOGGER = MetricsLogger.getLogger()
-    }
-
-    @Autowired
-    private lateinit var singleLimitOrderContextParser: SingleLimitOrderContextParser
+                                   @Qualifier("singleLimitOrderPreProcessingLogger")
+                                   private val logger: ThrottlingLogger) :
+        AbstractMessagePreprocessor<SingleLimitOrderParsedData>(singleLimitOrderContextParser,
+                messageProcessingStatusHolder,
+                preProcessedMessageQueue,
+                logger) {
 
     @Autowired
     private lateinit var limitOrderInputValidator: LimitOrderInputValidator
 
-    override fun preProcess(messageWrapper: MessageWrapper) {
-        val singleLimitOrderParsedData = singleLimitOrderContextParser.parse(messageWrapper)
-        val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
+    override fun preProcessParsedData(parsedData: SingleLimitOrderParsedData): Boolean {
+        val singleLimitContext = parsedData.messageWrapper.context as SingleLimitOrderContext
 
         if (messageProcessingStatusHolder.isTradeDisabled(singleLimitContext.assetPair)) {
-            writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
-            return
+            writeResponse(parsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+            return false
         }
 
-        val validationResult = getValidationResult(singleLimitOrderParsedData)
+        val validationResult = getValidationResult(parsedData)
 
         //currently if order is not valid at all - can not be passed to the business thread - ignore it
         if (validationResult.isFatalInvalid) {
-            LOGGER.error("Fatal validation error occurred, ${validationResult.message} " +
+            logger.error("Fatal validation error occurred, ${validationResult.message} " +
                     "Error details: $singleLimitContext")
-            writeResponse(messageWrapper, MessageStatusUtils.toMessageStatus(validationResult.status!!), validationResult.message)
-            return
+            writeResponse(parsedData.messageWrapper, MessageStatusUtils.toMessageStatus(validationResult.status!!), validationResult.message)
+            return false
         }
 
         singleLimitContext.validationResult = validationResult
-        preProcessedMessageQueue.put(singleLimitOrderParsedData.messageWrapper)
+        return true
     }
 
     private fun getValidationResult(singleLimitOrderParsedData: SingleLimitOrderParsedData): OrderValidationResult {
@@ -79,44 +72,5 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
 
     private fun isFatalInvalid(validationException: OrderValidationException): Boolean {
         return validationException.orderStatus == OrderStatus.UnknownAsset
-    }
-
-    override fun run() {
-        while (true) {
-            val messageWrapper = limitOrderInputQueue.take()
-            try {
-                messageWrapper.messagePreProcessorStartTimestamp = System.nanoTime()
-                preProcess(messageWrapper)
-                messageWrapper.messagePreProcessorEndTimestamp = System.nanoTime()
-            } catch (exception: Exception) {
-                handlePreprocessingException(exception, messageWrapper)
-            }
-        }
-    }
-
-    @PostConstruct
-    fun init() {
-        this.start()
-    }
-
-    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setStatus(status.type))
-    }
-
-    private fun handlePreprocessingException(exception: Exception, message: MessageWrapper) {
-        try {
-            val context = message.context
-            LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
-                    if (context != null) "Error details: $context" else "", exception)
-
-            METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
-            writeResponse(message, MessageStatus.RUNTIME)
-        } catch (e: Exception) {
-            val errorMessage = "Got error during message preprocessing failure handling"
-            e.addSuppressed(exception)
-            LOGGER.error(errorMessage, e)
-            METRICS_LOGGER.logError(errorMessage, e)
-        }
     }
 }
