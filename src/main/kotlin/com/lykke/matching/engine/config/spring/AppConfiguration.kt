@@ -55,6 +55,14 @@ open class AppConfiguration: SchedulingConfigurer {
     }
 
     @Bean
+    open fun rabbitPublishersThreadPool(): ThreadPoolTaskExecutor {
+        val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
+        threadPoolTaskExecutor.threadNamePrefix = "rabbit-publisher-"
+        threadPoolTaskExecutor.setQueueCapacity(0)
+        return threadPoolTaskExecutor
+    }
+
+    @Bean
     open fun orderBookSubscribersThreadPool(@Value("\${concurrent.orderbook.subscribers.pool.core.pool.size}") corePoolSize: Int,
                                             @Value("#{Config.me.serverOrderBookMaxConnections}") maxPoolSize: Int?): ThreadPoolTaskExecutor? {
         if (config.me.serverOrderBookPort == null) {

@@ -26,7 +26,7 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
                                             private val applicationEventPublisher: ApplicationEventPublisher,
 
                                             /** null if do not need to log */
-                                            private val messageDatabaseLogger: DatabaseLogger<T>? = null) : Thread() {
+                                            private val messageDatabaseLogger: DatabaseLogger<T>? = null): Runnable {
 
     companion object {
         private const val LOG_COUNT = 1000
@@ -115,6 +115,7 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
     }
 
     override fun run() {
+        Thread.currentThread().name = "RabbitPublisher_$exchangeName"
         tryConnectUntilSuccess()
         while (true) {
             val item = queue.take()

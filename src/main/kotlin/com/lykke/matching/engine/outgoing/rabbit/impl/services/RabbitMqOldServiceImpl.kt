@@ -6,8 +6,10 @@ import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.outgoing.rabbit.impl.publishers.RabbitMqOldFormatPublisher
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.rabbitmq.client.BuiltinExchangeType
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Profile
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Service
 import java.util.concurrent.BlockingQueue
 
@@ -15,7 +17,9 @@ import java.util.concurrent.BlockingQueue
 @Profile("default")
 @Deprecated("consider to use new message format")
 class RabbitMqOldServiceImpl(private val gson: Gson,
-                             private val applicationEventPublisher: ApplicationEventPublisher) : RabbitMqService<Any> {
+                             private val applicationEventPublisher: ApplicationEventPublisher,
+                             @Qualifier("rabbitPublishersThreadPool")
+                             private val rabbitPublishersThreadPool: ThreadPoolTaskExecutor) : RabbitMqService<Any> {
     override fun startPublisher(config: RabbitConfig,
                                 publisherName: String,
                                 queue: BlockingQueue<out Any>,
@@ -23,7 +27,7 @@ class RabbitMqOldServiceImpl(private val gson: Gson,
                                 appVersion: String,
                                 exchangeType: BuiltinExchangeType,
                                 messageDatabaseLogger: DatabaseLogger<Any>?) {
-        RabbitMqOldFormatPublisher(config.uri, config.exchange, publisherName, queue, appName, appVersion, exchangeType,
-                gson, applicationEventPublisher, messageDatabaseLogger).start()
+        rabbitPublishersThreadPool.submit(RabbitMqOldFormatPublisher(config.uri, config.exchange, publisherName, queue, appName, appVersion, exchangeType,
+                gson, applicationEventPublisher, messageDatabaseLogger))
     }
 }
