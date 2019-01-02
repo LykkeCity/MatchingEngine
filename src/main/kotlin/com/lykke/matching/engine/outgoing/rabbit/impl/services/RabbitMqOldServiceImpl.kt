@@ -9,7 +9,7 @@ import com.rabbitmq.client.BuiltinExchangeType
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Profile
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import org.springframework.core.task.TaskExecutor
 import org.springframework.stereotype.Service
 import java.util.concurrent.BlockingQueue
 
@@ -19,7 +19,7 @@ import java.util.concurrent.BlockingQueue
 class RabbitMqOldServiceImpl(private val gson: Gson,
                              private val applicationEventPublisher: ApplicationEventPublisher,
                              @Qualifier("rabbitPublishersThreadPool")
-                             private val rabbitPublishersThreadPool: ThreadPoolTaskExecutor) : RabbitMqService<Any> {
+                             private val rabbitPublishersThreadPool: TaskExecutor) : RabbitMqService<Any> {
     override fun startPublisher(config: RabbitConfig,
                                 publisherName: String,
                                 queue: BlockingQueue<out Any>,
@@ -27,7 +27,7 @@ class RabbitMqOldServiceImpl(private val gson: Gson,
                                 appVersion: String,
                                 exchangeType: BuiltinExchangeType,
                                 messageDatabaseLogger: DatabaseLogger<Any>?) {
-        rabbitPublishersThreadPool.submit(RabbitMqOldFormatPublisher(config.uri, config.exchange, publisherName, queue, appName, appVersion, exchangeType,
+        rabbitPublishersThreadPool.execute(RabbitMqOldFormatPublisher(config.uri, config.exchange, publisherName, queue, appName, appVersion, exchangeType,
                 gson, applicationEventPublisher, messageDatabaseLogger))
     }
 }

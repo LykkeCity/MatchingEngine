@@ -115,7 +115,7 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
     }
 
     override fun run() {
-        Thread.currentThread().name = "RabbitPublisher_$exchangeName"
+        Thread.currentThread().name = "RabbitPublisher_$queueName"
         tryConnectUntilSuccess()
         while (true) {
             val item = queue.take()

@@ -6,77 +6,15 @@ import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
 import com.lykke.matching.engine.utils.monitoring.QueueSizeHealthChecker
 import com.lykke.utils.alivestatus.processor.AliveStatusProcessorFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.core.env.Environment
-import org.springframework.core.env.get
-import org.springframework.scheduling.TaskScheduler
-import org.springframework.scheduling.annotation.EnableAsync
-import org.springframework.scheduling.annotation.EnableScheduling
-import org.springframework.scheduling.annotation.SchedulingConfigurer
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
-import org.springframework.scheduling.config.ScheduledTaskRegistrar
 import java.util.concurrent.BlockingQueue
 
 @Configuration
-@EnableScheduling
-@EnableAsync
-open class AppConfiguration: SchedulingConfigurer {
+open class AppConfiguration {
+
     @Autowired
     private lateinit var config: Config
-
-    @Autowired
-    private lateinit var environment: Environment
-
-    override fun configureTasks(taskRegistrar: ScheduledTaskRegistrar) {
-        taskRegistrar.setTaskScheduler(taskScheduler())
-    }
-
-    @Bean
-    open fun taskScheduler(): TaskScheduler {
-        val threadPoolTaskScheduler = ThreadPoolTaskScheduler()
-        threadPoolTaskScheduler.threadNamePrefix = "scheduled-task-"
-        threadPoolTaskScheduler.poolSize = environment["concurrent.scheduler.pool.size"].toInt()
-        return threadPoolTaskScheduler
-    }
-
-    @Bean
-    open fun clientRequestThreadPool(@Value("\${concurrent.client.request.pool.core.pool.size}") corePoolSize: Int,
-                                     @Value("#{Config.me.socket.maxConnections}") maxPoolSize: Int): ThreadPoolTaskExecutor {
-        val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
-        threadPoolTaskExecutor.threadNamePrefix = "client-connection-"
-        threadPoolTaskExecutor.setQueueCapacity(0)
-        threadPoolTaskExecutor.corePoolSize = corePoolSize
-        threadPoolTaskExecutor.maxPoolSize = maxPoolSize
-
-        return threadPoolTaskExecutor
-    }
-
-    @Bean
-    open fun rabbitPublishersThreadPool(): ThreadPoolTaskExecutor {
-        val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
-        threadPoolTaskExecutor.threadNamePrefix = "rabbit-publisher-"
-        threadPoolTaskExecutor.setQueueCapacity(0)
-        return threadPoolTaskExecutor
-    }
-
-    @Bean
-    open fun orderBookSubscribersThreadPool(@Value("\${concurrent.orderbook.subscribers.pool.core.pool.size}") corePoolSize: Int,
-                                            @Value("#{Config.me.serverOrderBookMaxConnections}") maxPoolSize: Int?): ThreadPoolTaskExecutor? {
-        if (config.me.serverOrderBookPort == null) {
-            return null
-        }
-
-        val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
-        threadPoolTaskExecutor.threadNamePrefix = "orderbook-subscriber-connection-"
-        threadPoolTaskExecutor.setQueueCapacity(0)
-        threadPoolTaskExecutor.corePoolSize = corePoolSize
-        threadPoolTaskExecutor.maxPoolSize = maxPoolSize!!
-
-        return threadPoolTaskExecutor
-    }
 
     @Bean
     open fun azureStatusProcessor(): Runnable {
@@ -96,7 +34,7 @@ open class AppConfiguration: SchedulingConfigurer {
     }
 
     @Bean
-    open fun rabbitQueueSizeChecker(@RabbitQueue namesToInputQueues: Map<String, BlockingQueue<*>>):  QueueSizeHealthChecker{
+    open fun rabbitQueueSizeChecker(@RabbitQueue namesToInputQueues: Map<String, BlockingQueue<*>>): QueueSizeHealthChecker {
         return QueueSizeHealthChecker(
                 MonitoredComponent.RABBIT_QUEUE,
                 namesToInputQueues,
