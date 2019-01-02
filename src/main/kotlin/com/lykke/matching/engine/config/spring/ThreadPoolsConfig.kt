@@ -70,7 +70,7 @@ class ThreadPoolsConfig : SchedulingConfigurer {
 
     @Bean
     open fun rabbitPublishersThreadPool(): TaskExecutor {
-        val logExceptionThreadPoolExecutor = LogExceptionThreadPoolExecutor(0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS,
+        val logExceptionThreadPoolExecutor = ThreadPoolExecutorWithLogExceptionSupport(0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS,
                 SynchronousQueue<Runnable>(), "rabbit-publisher-%d")
         return ConcurrentTaskExecutor(logExceptionThreadPoolExecutor)
     }
@@ -90,12 +90,12 @@ class ThreadPoolsConfig : SchedulingConfigurer {
         return threadPoolTaskExecutor
     }
 
-    private class LogExceptionThreadPoolExecutor(corePoolSize: Int,
-                                                 maxPoolSize: Int,
-                                                 keepAliveTime: Long,
-                                                 unit: TimeUnit,
-                                                 workQueue: BlockingQueue<Runnable>,
-                                                 defaultThreadNameFormat: String) : ThreadPoolExecutor(corePoolSize, maxPoolSize,
+    private class ThreadPoolExecutorWithLogExceptionSupport(corePoolSize: Int,
+                                                            maxPoolSize: Int,
+                                                            keepAliveTime: Long,
+                                                            unit: TimeUnit,
+                                                            workQueue: BlockingQueue<Runnable>,
+                                                            defaultThreadNameFormat: String) : ThreadPoolExecutor(corePoolSize, maxPoolSize,
             keepAliveTime,
             unit,
             workQueue,
