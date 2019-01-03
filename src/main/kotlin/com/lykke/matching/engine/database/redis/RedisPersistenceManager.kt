@@ -6,6 +6,8 @@ import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
+import com.lykke.matching.engine.database.common.strategy.OrdersPersistInSecondaryDbStrategy
+import com.lykke.matching.engine.database.common.strategy.PersistOrdersStrategy
 import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.MidPricesPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
@@ -22,22 +24,21 @@ import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.util.CollectionUtils
 import redis.clients.jedis.Transaction
+import redis.clients.jedis.exceptions.JedisException
 
 class RedisPersistenceManager(
         private val primaryBalancesAccessor: RedisWalletDatabaseAccessor,
         private val redisProcessedMessagesDatabaseAccessor: RedisProcessedMessagesDatabaseAccessor,
         private val redisProcessedCashOperationIdDatabaseAccessor: RedisCashOperationIdDatabaseAccessor,
-        private val primaryOrdersAccessor: RedisOrderBookDatabaseAccessor,
-        private val primaryStopOrdersAccessor: RedisStopOrderBookDatabaseAccessor,
+        private val persistOrdersStrategy: PersistOrdersStrategy,
+        private val ordersPersistInSecondaryDbStrategy: OrdersPersistInSecondaryDbStrategy,
         private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
-        private val persistedOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<OrderBookPersistEvent>,
-        private val persistedStopApplicationEventPublisher: SimpleApplicationEventPublisher<StopOrderBookPersistEvent>,
         private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<AccountPersistEvent>,
         private val persistMidPricesApplicationEventPublisher: SimpleApplicationEventPublisher<MidPricesPersistEvent>,
         private val redisConnection: RedisConnection,
         private val config: Config,
         private val currentTransactionDataHolder: CurrentTransactionDataHolder,
-        private val performanceStatsHolder: PerformanceStatsHolder): PersistenceManager {
+        private val performanceStatsHolder: PerformanceStatsHolder) : PersistenceManager {
 
     companion object {
         private val LOGGER = Logger.getLogger(RedisPersistenceManager::class.java.name)
@@ -72,8 +73,9 @@ class RedisPersistenceManager(
                 persistProcessedCashMessage(transaction, data.processedMessage)
             }
 
-            data.orderBooksData?.let { persistOrders(transaction, it) }
-            data.stopOrderBooksData?.let { persistStopOrders(transaction, it) }
+            val startPersistOrders = System.nanoTime()
+            persistOrders(transaction, data)
+            val endPersistOrders = System.nanoTime()
 
             persistMessageSequenceNumber(transaction, data.messageSequenceNumber)
             persistMidPrices(data.midPricePersistenceData)
@@ -82,39 +84,46 @@ class RedisPersistenceManager(
 
             transaction.exec()
             val commitTime = System.nanoTime()
-
+            val nonRedisOrdersPersistTime = if (persistOrdersStrategy.isRedisTransactionUsed()) 0 else endPersistOrders - startPersistOrders
             val messageId = data.processedMessage?.messageId
-            REDIS_PERFORMANCE_LOGGER.debug("Total: ${PrintUtils.convertToString2((commitTime - startTime).toDouble())}" +
-                    ", persist: ${PrintUtils.convertToString2((persistTime - startTime).toDouble())}" +
+            REDIS_PERFORMANCE_LOGGER.debug("Total: ${PrintUtils.convertToString2((commitTime - startTime - nonRedisOrdersPersistTime).toDouble())}" +
+                    ", persist: ${PrintUtils.convertToString2((persistTime - startTime - nonRedisOrdersPersistTime).toDouble())}" +
+                    (if(nonRedisOrdersPersistTime != 0L) ", non redis orders persist time: ${PrintUtils.convertToString2(nonRedisOrdersPersistTime.toDouble())}" else "") +
                     ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}" +
                     ", persisted data summary: ${data.getSummary()}" +
                     (if (messageId != null) ", messageId: ($messageId)" else ""))
 
             currentTransactionDataHolder.getMessageType()?.let {
-                performanceStatsHolder.addPersistTime(it.type,commitTime - startTime)
+                performanceStatsHolder.addPersistTime(it.type, commitTime - startTime)
             }
 
             if (!CollectionUtils.isEmpty(data.balancesData?.wallets)) {
                 persistedWalletsApplicationEventPublisher.publishEvent(AccountPersistEvent(data.balancesData!!.wallets))
             }
 
-            if (!CollectionUtils.isEmpty(data.orderBooksData?.orderBooks)) {
-                persistedOrdersApplicationEventPublisher.publishEvent(OrderBookPersistEvent(data.orderBooksData!!.orderBooks))
-            }
-
-            if (!CollectionUtils.isEmpty(data.stopOrderBooksData?.orderBooks)) {
-                persistedStopApplicationEventPublisher.publishEvent(StopOrderBookPersistEvent(data.stopOrderBooksData!!.orderBooks))
-            }
-
+        ordersPersistInSecondaryDbStrategy.persistOrders(data.orderBooksData, data.stopOrderBooksData)
     }
+}
 
-    private fun persistMidPrices(midPricePersistenceData: MidPricePersistenceData?) {
-        if (midPricePersistenceData == null) {
-            LOGGER.trace("Mid price is empty - skipping")
-            return
-        }
+private fun persistOrders(transaction: Transaction, data: PersistenceData) {
+    try {
+        persistOrdersStrategy.persist(transaction, data.orderBooksData, data.stopOrderBooksData)
+    } catch (e: JedisException) {
+        throw e
+    } catch (e: Exception) {
+        transaction.discard()
+        throw e
+    }
         persistMidPricesApplicationEventPublisher.publishEvent(MidPricesPersistEvent(midPricePersistenceData))
+}
+
+private fun persistMidPrices(midPricePersistenceData: MidPricePersistenceData?) {
+    if (midPricePersistenceData == null) {
+        RedisPersistenceManager.LOGGER.trace("Mid price is empty - skipping")
+        return
     }
+    persistMidPricesApplicationEventPublisher.publishEvent(MidPricesPersistEvent(midPricePersistenceData))
+}
 
     private fun persistProcessedMessages(transaction: Transaction, processedMessage: ProcessedMessage?) {
         LOGGER.trace("Start to persist processed messages in redis")
@@ -140,22 +149,6 @@ class RedisPersistenceManager(
         LOGGER.trace("Start to persist balances in redis")
         transaction.select(config.me.redis.balanceDatabase)
         primaryBalancesAccessor.insertOrUpdateBalances(transaction, assetBalances!!)
-    }
-
-    private fun persistOrders(transaction: Transaction, data: OrderBooksPersistenceData) {
-        if (data.ordersToSave.isEmpty() && data.ordersToRemove.isEmpty()) {
-            return
-        }
-        transaction.select(config.me.redis.ordersDatabase)
-        primaryOrdersAccessor.updateOrders(transaction, data.ordersToSave, data.ordersToRemove)
-    }
-
-    private fun persistStopOrders(transaction: Transaction, data: OrderBooksPersistenceData) {
-        if (data.ordersToSave.isEmpty() && data.ordersToRemove.isEmpty()) {
-            return
-        }
-        transaction.select(config.me.redis.ordersDatabase)
-        primaryStopOrdersAccessor.updateOrders(transaction, data.ordersToSave, data.ordersToRemove)
     }
 
     private fun persistMessageSequenceNumber(transaction: Transaction, sequenceNumber: Long?) {
