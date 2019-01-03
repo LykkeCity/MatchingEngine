@@ -80,7 +80,7 @@ class RedisPersistenceManager(
             val messageId = data.processedMessage?.messageId
             REDIS_PERFORMANCE_LOGGER.debug("Total: ${PrintUtils.convertToString2((commitTime - startTime - nonRedisOrdersPersistTime).toDouble())}" +
                     ", persist: ${PrintUtils.convertToString2((persistTime - startTime - nonRedisOrdersPersistTime).toDouble())}" +
-                    if(nonRedisOrdersPersistTime != 0L) ", non redis orders persist time: ${PrintUtils.convertToString2(nonRedisOrdersPersistTime.toDouble())}" else "" +
+                    (if(nonRedisOrdersPersistTime != 0L) ", non redis orders persist time: ${PrintUtils.convertToString2(nonRedisOrdersPersistTime.toDouble())}" else "") +
                     ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}" +
                     (if (messageId != null) " ($messageId)" else ""))
 
