@@ -13,7 +13,8 @@ class PerformanceStatsHolder {
                            messagePreProcessorStartTimestamp: Long?,
                            messagePreProcessorEndTimestamp: Long?,
                            startMessageProcessingTime: Long,
-                           endMessageProcessingTime: Long) {
+                           endMessageProcessingTime: Long,
+                           writeResponseTime: Long?) {
         val totalTime = endMessageProcessingTime - startTimestamp
         val processingTime = endMessageProcessingTime - startMessageProcessingTime
 
@@ -29,7 +30,13 @@ class PerformanceStatsHolder {
                 ?: startTimestamp
         val preProcessedMessageQueueTime = startMessageProcessingTime - preProcessedMessageQueueStartTime
 
-        addMessage(type, inputQueueTime, preProcessedMessageQueueTime, preProcessingTime, processingTime, totalTime)
+        addMessage(type,
+                inputQueueTime,
+                preProcessedMessageQueueTime,
+                preProcessingTime,
+                processingTime,
+                writeResponseTime,
+                totalTime)
     }
 
     fun addMessage(type: Byte,

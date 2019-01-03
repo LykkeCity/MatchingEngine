@@ -151,7 +151,7 @@ class MessageProcessor : Thread(MessageProcessor::class.java.name) {
             val endTime = System.nanoTime()
 
             if (message.writeResponseTime == null) {
-                val errorMessage = "There was no write response to socket time recorded, response to socket is not written, messageId: ${messageWrapper.messageId}"
+                val errorMessage = "There was no write response to socket time recorded, response to socket is not written, messageId: ${message.messageId}"
                 LOGGER.error(errorMessage)
                 METRICS_LOGGER.logError(errorMessage)
             }
@@ -161,7 +161,8 @@ class MessageProcessor : Thread(MessageProcessor::class.java.name) {
                     messagePreProcessorStartTimestamp = message.messagePreProcessorStartTimestamp,
                     messagePreProcessorEndTimestamp = message.messagePreProcessorEndTimestamp,
                     startMessageProcessingTime = startTime,
-                    endMessageProcessingTime = endTime)
+                    endMessageProcessingTime = endTime,
+                    writeResponseTime = message.writeResponseTime)
         } catch (exception: Exception) {
             LOGGER.error("[${message.sourceIp}]: Got error during message processing: ${exception.message}", exception)
             METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message processing", exception)
