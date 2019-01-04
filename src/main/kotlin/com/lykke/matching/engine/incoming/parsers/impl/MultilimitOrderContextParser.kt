@@ -19,15 +19,18 @@ import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.ThrottlingLogger
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.*
 
 @Component
-class MultilimitOrderContextParser(val logger: ThrottlingLogger,
-                                   val applicationSettingsHolder: ApplicationSettingsHolder,
-                                   val assertPairsHolder: AssetsPairsHolder,
-                                   val assetsHolder: AssetsHolder) : ContextParser<MultilimitOrderParsedData> {
+class MultilimitOrderContextParser(
+        @Qualifier("multiLimitOrderPreProcessingLogger")
+        val logger: ThrottlingLogger,
+        val applicationSettingsHolder: ApplicationSettingsHolder,
+        val assertPairsHolder: AssetsPairsHolder,
+        val assetsHolder: AssetsHolder) : ContextParser<MultilimitOrderParsedData> {
     override fun parse(messageWrapper: MessageWrapper): MultilimitOrderParsedData {
         val message = parseMultiLimitOrder(messageWrapper.byteArray)
         val trustedClient = applicationSettingsHolder.isTrustedClient(message.clientId)

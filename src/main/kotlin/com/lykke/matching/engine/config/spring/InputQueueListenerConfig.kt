@@ -5,6 +5,7 @@ import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocesso
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.LimitOrderCancelOperationPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.LimitOrderMassCancelOperationPreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.impl.MultilimitOrderPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPreprocessor
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.utils.logging.ThrottlingLogger
@@ -36,6 +37,17 @@ open class InputQueueListenerConfig {
                 cashInOutPreprocessor,
                 logger,
                 "CashInOutInputQueueListener")
+    }
+
+    @Bean
+    open fun multilimitOrderListener(multilimitOrderInputQueue: BlockingQueue<MessageWrapper>,
+                                     multilimitOrderPreprocessor: MultilimitOrderPreprocessor,
+                                     @Qualifier("multiLimitOrderPreProcessingLogger")
+                                     logger: ThrottlingLogger): InputQueueListener {
+        return InputQueueListener(multilimitOrderInputQueue,
+                multilimitOrderPreprocessor,
+                logger,
+                "MultilimitOrderListener")
     }
 
     @Bean

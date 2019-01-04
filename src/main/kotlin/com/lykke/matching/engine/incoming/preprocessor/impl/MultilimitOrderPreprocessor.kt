@@ -22,7 +22,7 @@ import java.util.concurrent.BlockingQueue
 class MultilimitOrderPreprocessor(private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
                                   private val limitOrderInputValidator: LimitOrderInputValidator,
                                   multilimitOrderContextParser: ContextParser<MultilimitOrderParsedData>,
-                                  private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                                  preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
                                   @Qualifier("multiLimitOrderPreProcessingLogger")
                                   private val logger: ThrottlingLogger) : AbstractMessagePreprocessor<MultilimitOrderParsedData>(multilimitOrderContextParser,
         messageProcessingStatusHolder, preProcessedMessageQueue, logger) {
