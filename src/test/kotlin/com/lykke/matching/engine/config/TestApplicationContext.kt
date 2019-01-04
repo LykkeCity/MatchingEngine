@@ -20,6 +20,7 @@ import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.*
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.impl.MultilimitOrderPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPreprocessor
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -342,18 +343,13 @@ open class TestApplicationContext {
                                     assetsHolder: AssetsHolder,
                                     assetsPairsHolder: AssetsPairsHolder,
                                     balancesHolder: BalancesHolder,
-                                    applicationSettingsHolder: ApplicationSettingsHolder,
-                                    messageProcessingStatusHolder: MessageProcessingStatusHolder): MultiLimitOrderService {
+                                    applicationSettingsHolder: ApplicationSettingsHolder): MultiLimitOrderService {
         return MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
                 executionDataApplyService,
                 previousLimitOrdersProcessor,
-                assetsHolder,
-                assetsPairsHolder,
-                balancesHolder,
-                applicationSettingsHolder,
-                messageProcessingStatusHolder)
+                balancesHolder)
     }
 
     @Bean
@@ -547,11 +543,12 @@ open class TestApplicationContext {
     @Bean
     open fun messageBuilder(cashTransferContextParser: CashTransferContextParser,
                             cashInOutContextParser: CashInOutContextParser,
-                            singleLimitOrderContextParser: SingleLimitOrderContextParser,
+                            singleLimitOrderPreprocessor: SingleLimitOrderPreprocessor,
                             limitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOperationParsedData>,
-                            limitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCancelOperationParsedData>): MessageBuilder {
-        return MessageBuilder(singleLimitOrderContextParser, cashInOutContextParser, cashTransferContextParser,
-                limitOrderCancelOperationContextParser, limitOrderMassCancelOperationContextParser)
+                            limitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCancelOperationParsedData>,
+                            multilimitOrderPreprocessor: MultilimitOrderPreprocessor): MessageBuilder {
+        return MessageBuilder(singleLimitOrderPreprocessor, cashInOutContextParser, cashTransferContextParser,
+                limitOrderCancelOperationContextParser, limitOrderMassCancelOperationContextParser, multilimitOrderPreprocessor)
     }
 
     @Bean
@@ -585,6 +582,13 @@ open class TestApplicationContext {
                 assetsHolder,
                 applicationSettingsHolder,
                 ThrottlingLogger.getLogger("limitOrder"))
+    }
+
+    @Bean
+    open fun multilimitOrderContextParser(applicationSettingsHolder: ApplicationSettingsHolder,
+                                          assetsPairsHolder: AssetsPairsHolder,
+                                          assetsHolder: AssetsHolder): MultilimitOrderContextParser {
+        return MultilimitOrderContextParser(ThrottlingLogger.getLogger("multilimitOrder"), applicationSettingsHolder, assetsPairsHolder, assetsHolder)
     }
 
     @Bean
@@ -667,5 +671,18 @@ open class TestApplicationContext {
                 preProcessedMessageQueue,
                 messageProcessingStatusHolder,
                 ThrottlingLogger.getLogger("limitOrder"))
+    }
+
+    @Bean
+    open fun multiltilimitOrderPreprocessor(messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                            limitOrderInputValidator: LimitOrderInputValidator,
+                                            multilimitOrderContextParser: MultilimitOrderContextParser,
+                                            preProcessedMessageQueue:  BlockingQueue<MessageWrapper>
+                                            ): MultilimitOrderPreprocessor {
+        return MultilimitOrderPreprocessor(messageProcessingStatusHolder,
+                limitOrderInputValidator,
+                multilimitOrderContextParser,
+                preProcessedMessageQueue,
+                ThrottlingLogger.getLogger("multilimitOrder"))
     }
 }

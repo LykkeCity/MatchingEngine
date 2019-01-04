@@ -22,7 +22,11 @@ import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.MultilimitOrderContextParser
+import com.lykke.matching.engine.incoming.preprocessor.impl.MultilimitOrderPreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPreprocessor
 import com.lykke.matching.engine.matching.MatchingEngine
+import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExecutionEventSender
@@ -169,11 +173,14 @@ abstract class AbstractPerformanceTest {
         cashInOutContextParser = CashInOutContextParser(assetsHolder)
         cashTransferContextParser = CashTransferContextParser(assetsHolder)
 
-        messageBuilder = MessageBuilder(singleLimitOrderContextParser,
+        messageBuilder = MessageBuilder(SingleLimitOrderPreprocessor(singleLimitOrderContextParser, LinkedBlockingQueue<MessageWrapper>(), messageProcessingStatusHolder, ThrottlingLogger.getLogger("test")),
                 cashInOutContextParser,
                 cashTransferContextParser,
                 LimitOrderCancelOperationContextParser(),
-                LimitOrderMassCancelOperationContextParser())
+                LimitOrderMassCancelOperationContextParser(),
+                MultilimitOrderPreprocessor(messageProcessingStatusHolder, limitOrderInputValidator, MultilimitOrderContextParser(ThrottlingLogger.getLogger("test"),
+                        applicationSettingsHolder, assetsPairsHolder, assetsHolder),
+                        LinkedBlockingQueue<MessageWrapper>(), ThrottlingLogger.getLogger("test")))
 
         genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder)
 
@@ -200,13 +207,13 @@ abstract class AbstractPerformanceTest {
 
         val matchingEngine = MatchingEngine(genericLimitOrderService, feeProcessor)
 
-        val limitOrderProcessor = LimitOrderProcessor(limitOrderInputValidator,
+        val limitOrderProcessor = LimitOrderProcessor(
                 LimitOrderBusinessValidatorImpl(),
                 applicationSettingsHolder,
                 matchingEngine,
                 matchingResultHandlingHelper)
 
-        val stopOrderProcessor = StopLimitOrderProcessor(limitOrderInputValidator,
+        val stopOrderProcessor = StopLimitOrderProcessor(
                 StopOrderBusinessValidatorImpl(),
                 applicationSettingsHolder,
                 limitOrderProcessor)
@@ -238,11 +245,7 @@ abstract class AbstractPerformanceTest {
                 stopOrderBookProcessor,
                 executionDataApplyService,
                 previousLimitOrdersProcessor,
-                assetsHolder,
-                assetsPairsHolder,
-                balancesHolder,
-                applicationSettingsHolder,
-                messageProcessingStatusHolder)
+                balancesHolder)
 
         val marketOrderValidator = MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder)
         marketOrderService = MarketOrderService(matchingEngine,

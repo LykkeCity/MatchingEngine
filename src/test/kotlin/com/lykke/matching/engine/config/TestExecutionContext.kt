@@ -100,7 +100,7 @@ open class TestExecutionContext {
                                  applicationSettingsHolder: ApplicationSettingsHolder,
                                  matchingEngine: MatchingEngine,
                                  matchingResultHandlingHelper: MatchingResultHandlingHelper): LimitOrderProcessor {
-        return LimitOrderProcessor(limitOrderInputValidator,
+        return LimitOrderProcessor(
                 limitOrderBusinessValidator,
                 applicationSettingsHolder,
                 matchingEngine,
@@ -108,11 +108,10 @@ open class TestExecutionContext {
     }
 
     @Bean
-    open fun stopLimitOrdersProcessor(limitOrderInputValidator: LimitOrderInputValidator,
-                                      stopOrderBusinessValidator: StopOrderBusinessValidator,
+    open fun stopLimitOrdersProcessor(stopOrderBusinessValidator: StopOrderBusinessValidator,
                                       applicationSettingsHolder: ApplicationSettingsHolder,
                                       limitOrderProcessor: LimitOrderProcessor): StopLimitOrderProcessor {
-        return StopLimitOrderProcessor(limitOrderInputValidator,
+        return StopLimitOrderProcessor(
                 stopOrderBusinessValidator,
                 applicationSettingsHolder,
                 limitOrderProcessor)
@@ -130,7 +129,8 @@ open class TestExecutionContext {
         return StopOrderBookProcessor(limitOrderProcessor, applicationSettingsHolder)
     }
 
-    @Bean fun matchingResultHandlingHelper(applicationSettingsHolder: ApplicationSettingsHolder): MatchingResultHandlingHelper {
+    @Bean
+    fun matchingResultHandlingHelper(applicationSettingsHolder: ApplicationSettingsHolder): MatchingResultHandlingHelper {
         return MatchingResultHandlingHelper(applicationSettingsHolder)
     }
 

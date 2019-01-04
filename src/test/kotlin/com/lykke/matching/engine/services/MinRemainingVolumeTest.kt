@@ -16,7 +16,6 @@ import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
 import org.junit.Test
@@ -165,7 +164,7 @@ class MinRemainingVolumeTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance("TrustedClient", "USD", 1800.0)
         initServices()
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "TrustedClient", listOf(
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("BTCUSD", "TrustedClient", listOf(
                 IncomingLimitOrder(0.11, 9000.0),
                 IncomingLimitOrder(0.0891, 8900.0))))
 
@@ -193,7 +192,7 @@ class MinRemainingVolumeTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = 0.1, price = 6900.0)))
 
         clearMessageQueues()
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "TrustedClient", listOf(
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("BTCUSD", "TrustedClient", listOf(
                 IncomingLimitOrder(-0.11, 6800.0, "order1"),
                 IncomingLimitOrder(-0.0909, 6900.0, "order2"))))
 

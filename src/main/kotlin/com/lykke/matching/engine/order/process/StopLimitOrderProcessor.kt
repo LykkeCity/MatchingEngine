@@ -11,14 +11,12 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.services.validators.business.StopOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
-import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
-class StopLimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputValidator,
-                              private val stopOrderBusinessValidator: StopOrderBusinessValidator,
+class StopLimitOrderProcessor(private val stopOrderBusinessValidator: StopOrderBusinessValidator,
                               private val applicationSettingsHolder: ApplicationSettingsHolder,
                               private val limitOrderProcessor: LimitOrderProcessor) : OrderProcessor<LimitOrder> {
 
@@ -38,18 +36,7 @@ class StopLimitOrderProcessor(private val limitOrderInputValidator: LimitOrderIn
         if (preProcessorValidationResult != null && !preProcessorValidationResult.isValid) {
             return preProcessorValidationResult
         }
-        // fixme: input validator will be moved from the business thread after multilimit order context release
-        val inputValidationResult = performInputValidation(orderContext)
-        return if (!inputValidationResult.isValid) inputValidationResult else performBusinessValidation(orderContext)
-    }
-
-    private fun performInputValidation(orderContext: StopLimitOrderContext): OrderValidationResult {
-        try {
-            limitOrderInputValidator.validateStopOrder(orderContext)
-        } catch (e: OrderValidationException) {
-            return OrderValidationResult(false, false, e.message, e.orderStatus)
-        }
-        return OrderValidationResult(true)
+        return performBusinessValidation(orderContext)
     }
 
     private fun performBusinessValidation(orderContext: StopLimitOrderContext): OrderValidationResult {

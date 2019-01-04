@@ -19,7 +19,6 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderCancelWrapper
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
@@ -430,7 +429,7 @@ class StopLimitOrderTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = -0.2, price = 10000.0)))
 
         clearMessageQueues()
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD",
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("BTCUSD",
                 "Client3",
                 listOf(IncomingLimitOrder(-0.1, 11000.0),
                         IncomingLimitOrder(-0.05, 8500.0))))
@@ -511,7 +510,7 @@ class StopLimitOrderTest : AbstractTest() {
                 type = LimitOrderType.STOP_LIMIT, upperLimitPrice = 10000.0, upperPrice = 10500.0
         )))
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD",
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("BTCUSD",
                 "Client2",
                 listOf(IncomingLimitOrder(-0.1, 9000.0),
                         IncomingLimitOrder(-0.2, 10000.0))))
@@ -586,11 +585,11 @@ class StopLimitOrderTest : AbstractTest() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 2))
         initServices()
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client2", listOf(
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("BTCUSD", "Client2", listOf(
                 IncomingLimitOrder(-0.00009, 10000.0),
                 IncomingLimitOrder(-0.09, 11000.0))))
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("EURUSD", "Client2", listOf(
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("EURUSD", "Client2", listOf(
                 IncomingLimitOrder(1.0, 1.1),
                 IncomingLimitOrder(6.0, 1.0))))
 
@@ -710,7 +709,7 @@ class StopLimitOrderTest : AbstractTest() {
         assertEquals(BigDecimal.valueOf( 0.1), balancesHolder.getReservedBalance("Client1", "BTC"))
         assertEquals(BigDecimal.valueOf(1050.0), balancesHolder.getReservedBalance("Client3", "USD"))
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD",
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("BTCUSD",
                 "Client2",
                 listOf(IncomingLimitOrder(-0.1, 10000.0),
                         IncomingLimitOrder(0.1, 9000.0))))
