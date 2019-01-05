@@ -22,7 +22,6 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.getExecutionContext
 import com.lykke.matching.engine.utils.getSetting
@@ -116,12 +115,12 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
                 lowerLimitPrice = 101.0,
                 lowerPrice = 100.0)))
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("EURUSD", "TrustedClient", listOf(
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("EURUSD", "TrustedClient", listOf(
                 IncomingLimitOrder(-5.0, 1.3, "m1"),
                 IncomingLimitOrder(5.0, 1.1, "m2")
         )))
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "TrustedClient", listOf(
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("BTCUSD", "TrustedClient", listOf(
                 IncomingLimitOrder(-1.0, 8500.0)
         )))
 

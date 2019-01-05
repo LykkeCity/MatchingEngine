@@ -22,15 +22,14 @@ import kotlin.test.assertTrue
 class SingleLimitOrderPreprocessorTest: AbstractTest() {
 
     @Autowired
-    private lateinit var singleLimitOrderPreprocessor: SingleLimitOrderPreprocessor
-
-    @Autowired
     private lateinit var messageBuilder: MessageBuilder
+    @Autowired
+    private lateinit var singleLimitOrderPreprocessor: SingleLimitOrderPreprocessor
 
     @Test
     fun testOrderWithUnknownAssetPair() {
+        //preprocessing is performed during message building
         val messageWrapper = messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "UnknownAssetPair"))
-        singleLimitOrderPreprocessor.preProcess(messageWrapper)
 
         val clientHandler = messageWrapper.clientHandler!! as TestClientHandler
         assertEquals(1, clientHandler.responses.size)
@@ -47,7 +46,6 @@ class SingleLimitOrderPreprocessorTest: AbstractTest() {
     fun testStopOrderWithUnknownAssetPair() {
         val messageWrapper = messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "UnknownAssetPair",
                 type = LimitOrderType.STOP_LIMIT, lowerPrice = 1.0, lowerLimitPrice = 1.0))
-        singleLimitOrderPreprocessor.preProcess(messageWrapper)
 
         val clientHandler = messageWrapper.clientHandler!! as TestClientHandler
         assertEquals(1, clientHandler.responses.size)

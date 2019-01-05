@@ -92,6 +92,12 @@ open class QueueConfig {
 
     @Bean
     @InputQueue
+    open fun multilimitOrderInputQueue(): BlockingQueue<MessageWrapper> {
+        return LinkedBlockingQueue<MessageWrapper>()
+    }
+
+    @Bean
+    @InputQueue
     open fun cashInOutInputQueue(): BlockingQueue<MessageWrapper> {
         return LinkedBlockingQueue<MessageWrapper>()
     }

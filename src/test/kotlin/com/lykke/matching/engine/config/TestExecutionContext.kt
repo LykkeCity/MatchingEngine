@@ -111,7 +111,7 @@ open class TestExecutionContext {
                                  matchingEngine: MatchingEngine,
                                  priveDeviationThresholdHolder: PriceDeviationThresholdHolder,
                                  matchingResultHandlingHelper: MatchingResultHandlingHelper): LimitOrderProcessor {
-        return LimitOrderProcessor(limitOrderInputValidator,
+        return LimitOrderProcessor(
                 limitOrderBusinessValidator,
                 applicationSettingsHolder,
                 matchingEngine,
@@ -119,11 +119,10 @@ open class TestExecutionContext {
     }
 
     @Bean
-    open fun stopLimitOrdersProcessor(limitOrderInputValidator: LimitOrderInputValidator,
-                                      stopOrderBusinessValidator: StopOrderBusinessValidator,
+    open fun stopLimitOrdersProcessor(stopOrderBusinessValidator: StopOrderBusinessValidator,
                                       applicationSettingsHolder: ApplicationSettingsHolder,
                                       limitOrderProcessor: LimitOrderProcessor): StopLimitOrderProcessor {
-        return StopLimitOrderProcessor(limitOrderInputValidator,
+        return StopLimitOrderProcessor(
                 stopOrderBusinessValidator,
                 applicationSettingsHolder,
                 limitOrderProcessor)

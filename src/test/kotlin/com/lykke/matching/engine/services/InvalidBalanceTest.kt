@@ -19,7 +19,6 @@ import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -219,7 +218,7 @@ class InvalidBalanceTest : AbstractTest() {
 
         applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "Client1", "Client1", true)
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("ETHUSD", "Client1", listOf(
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("ETHUSD", "Client1", listOf(
                 IncomingLimitOrder(-0.1, 1000.0, "1"),
                 IncomingLimitOrder(-0.05, 1010.0, "2"),
                 IncomingLimitOrder(-0.1, 1100.0, "3")
@@ -266,7 +265,7 @@ class InvalidBalanceTest : AbstractTest() {
         initServices()
         applicationSettingsCache.createOrUpdateSettingValue(AvailableSettingGroup.TRUSTED_CLIENTS, "Client1", "Client1", true)
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("ETHUSD", "Client1",
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("ETHUSD", "Client1",
                 listOf(IncomingLimitOrder(-0.05, 1010.0, "1"))))
         testBalanceHolderWrapper.updateBalance("Client1", "ETH", 0.04)
         testSettingDatabaseAccessor.clear()
