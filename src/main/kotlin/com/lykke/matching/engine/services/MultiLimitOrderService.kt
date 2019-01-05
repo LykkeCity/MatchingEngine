@@ -239,7 +239,9 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                              multiLimitOrder: MultiLimitOrder,
                              now: Date): List<ProcessedOrder> {
         multiLimitOrder.orders.forEach {
-            if (it.status == OrderStatus.InOrderBook.name) {
+            if (it.status == OrderStatus.InOrderBook.name
+                    || it.status == OrderStatus.Processing.name
+                    || it.status == OrderStatus.Matched.name) {
                 it.updateStatus(status, now)
             }
         }
