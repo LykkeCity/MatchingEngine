@@ -373,9 +373,7 @@ open class TestApplicationContext {
                 executionDataApplyService,
                 previousLimitOrdersProcessor,
                 balancesHolder,
-                messageProcessingStatusHolder,
                 midPriceHolder,
-                testUUIDHolder,
                 priceDeviationThreshold)
     }
 
@@ -613,8 +611,9 @@ open class TestApplicationContext {
     @Bean
     open fun multilimitOrderContextParser(applicationSettingsHolder: ApplicationSettingsHolder,
                                           assetsPairsHolder: AssetsPairsHolder,
-                                          assetsHolder: AssetsHolder): MultilimitOrderContextParser {
-        return MultilimitOrderContextParser(ThrottlingLogger.getLogger("multilimitOrder"), applicationSettingsHolder, assetsPairsHolder, assetsHolder)
+                                          assetsHolder: AssetsHolder,
+                                          UUIDHolder: UUIDHolder): MultilimitOrderContextParser {
+        return MultilimitOrderContextParser(ThrottlingLogger.getLogger("multilimitOrder"), applicationSettingsHolder, assetsPairsHolder, assetsHolder, UUIDHolder)
     }
 
     @Bean
@@ -708,12 +707,14 @@ open class TestApplicationContext {
                            cashTransferInputQueue: BlockingQueue<MessageWrapper>,
                            limitOrderCancelInputQueue: BlockingQueue<MessageWrapper>,
                            limitOrderMassCancelInputQueue: BlockingQueue<MessageWrapper>,
-                           preProcessedMessageQueue: BlockingQueue<MessageWrapper>): MessageRouter {
+                           preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                           multilimitOrderInputQueue: BlockingQueue<MessageWrapper>): MessageRouter {
         return MessageRouter(limitOrderInputQueue,
                 cashInOutInputQueue,
                 cashTransferInputQueue,
                 limitOrderCancelInputQueue,
                 limitOrderMassCancelInputQueue,
+                multilimitOrderInputQueue,
                 preProcessedMessageQueue)
     }
 

@@ -30,7 +30,6 @@ import com.lykke.matching.engine.incoming.preprocessor.impl.MultilimitOrderPrepr
 import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPreprocessor
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExecutionEventSender
 import com.lykke.matching.engine.order.ExecutionPersistenceService
@@ -188,7 +187,7 @@ abstract class AbstractPerformanceTest {
                 LimitOrderCancelOperationContextParser(),
                 LimitOrderMassCancelOperationContextParser(),
                 MultilimitOrderPreprocessor(messageProcessingStatusHolder, limitOrderInputValidator, MultilimitOrderContextParser(ThrottlingLogger.getLogger("test"),
-                        applicationSettingsHolder, assetsPairsHolder, assetsHolder),
+                        applicationSettingsHolder, assetsPairsHolder, assetsHolder, TestUUIDHolder()),
                         LinkedBlockingQueue<MessageWrapper>(), ThrottlingLogger.getLogger("test")))
 
         genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder,
@@ -256,7 +255,6 @@ abstract class AbstractPerformanceTest {
                 previousLimitOrdersProcessor,
                 balancesHolder,
                 midPriceHolder,
-                TestUUIDHolder(),
                 priceDeviationThresholdHolder)
 
         val marketOrderValidator = MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder)

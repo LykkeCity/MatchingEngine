@@ -11,7 +11,6 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
-import com.lykke.matching.engine.holders.MidPriceHolderImpl
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
@@ -1384,7 +1383,7 @@ class MultiLimitOrderServiceTest : AbstractTest() {
                 volume = -10.0,
                 price = 10.0))
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(clientId = "Client1",
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper(clientId = "Client1",
                 pair = "EURUSD",
                 orders = listOf(IncomingLimitOrder(6.0, 11.0, uid = "Matched", timeInForce = OrderTimeInForce.IOC),
                         IncomingLimitOrder(6.0, 10.0, uid = "PartiallyMatched", timeInForce = OrderTimeInForce.IOC),
@@ -1418,7 +1417,7 @@ class MultiLimitOrderServiceTest : AbstractTest() {
                 volume = -10.0,
                 price = 10.0))
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(clientId = "Client1",
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper(clientId = "Client1",
                 pair = "EURUSD",
                 orders = listOf(IncomingLimitOrder(6.0, 11.0, uid = "Matched", timeInForce = OrderTimeInForce.FOK),
                         IncomingLimitOrder(6.0, 10.0, uid = "PartiallyMatched", timeInForce = OrderTimeInForce.FOK),
@@ -1462,7 +1461,7 @@ class MultiLimitOrderServiceTest : AbstractTest() {
 
         //when
         clearMessageQueues()
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client3", listOf(IncomingLimitOrder(-1.0, 5500.0))))
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("BTCUSD", "Client3", listOf(IncomingLimitOrder(-1.0, 5500.0))))
 
         //then
         assertEquals(BigDecimal.valueOf(5500.0), midPriceHolder.getReferenceMidPrice(assetsPairHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
@@ -1492,7 +1491,7 @@ class MultiLimitOrderServiceTest : AbstractTest() {
 
         //when
         clearMessageQueues()
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client3", listOf(IncomingLimitOrder(-1.0, 5990.0),
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("BTCUSD", "Client3", listOf(IncomingLimitOrder(-1.0, 5990.0),
                 IncomingLimitOrder(-1.0, 5990.0))))
 
         //then
@@ -1519,7 +1518,7 @@ class MultiLimitOrderServiceTest : AbstractTest() {
 
         //when
         clearMessageQueues()
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client3", listOf(IncomingLimitOrder(1.0, 5500.0))))
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("BTCUSD", "Client3", listOf(IncomingLimitOrder(1.0, 5500.0))))
 
         //then
         assertEquals(BigDecimal.valueOf(5500.0), midPriceHolder.getReferenceMidPrice(assetsPairHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
@@ -1547,7 +1546,7 @@ class MultiLimitOrderServiceTest : AbstractTest() {
         assertEquals(BigDecimal.valueOf(5500.0), midPriceHolder.getReferenceMidPrice(assetsPairHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
 
         //when
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(IncomingLimitOrder(-10000.1, 5000.0))))
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(IncomingLimitOrder(-10000.1, 5000.0))))
 
         //then
         assertEquals(BigDecimal.valueOf(5500.0), midPriceHolder.getReferenceMidPrice(assetsPairHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
@@ -1569,7 +1568,7 @@ class MultiLimitOrderServiceTest : AbstractTest() {
         assertEquals(BigDecimal.valueOf(5750.0), midPriceHolder.getReferenceMidPrice(assetsPairHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
 
         //when
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(IncomingLimitOrder(-10000.1, 5000.0)), true, OrderCancelMode.BOTH_SIDES))
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(IncomingLimitOrder(-10000.1, 5000.0)), true, OrderCancelMode.BOTH_SIDES))
 
         //then
         assertEquals(BigDecimal.valueOf(5733.33333334), midPriceHolder.getReferenceMidPrice(assetsPairHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))

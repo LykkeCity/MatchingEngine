@@ -3,11 +3,6 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.MultiLimitOrder
-import com.lykke.matching.engine.daos.order.OrderTimeInForce
-import com.lykke.matching.engine.daos.order.LimitOrderType
-import com.lykke.matching.engine.fee.listOfLimitOrderFee
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.daos.context.MultilimitOrderContext
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
@@ -15,17 +10,13 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
-import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
-import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
-import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
-import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
-import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.ExecutionDataApplyService
+import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.ProcessedOrder
 import com.lykke.matching.engine.order.transaction.ExecutionContext
@@ -33,8 +24,10 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.services.utils.MidPriceUtils
 import com.lykke.matching.engine.services.utils.MultiOrderFilter
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Service
+import java.math.BigDecimal
 import java.util.Date
 
 @Service
@@ -45,7 +38,6 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                              private val previousLimitOrdersProcessor: PreviousLimitOrdersProcessor,
                              private val balancesHolder: BalancesHolder,
                              private val midPriceHolder: MidPriceHolder,
-                             private val uuidHolder: UUIDHolder,
                              private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder) : AbstractService {
 
     companion object {
@@ -67,12 +59,10 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
         val context = messageWrapper.context as MultilimitOrderContext
 
         val now = Date()
-        val ordersToProcess = getOrdersToProcess(context, context.assetPair!!, now)
 
         val multiLimitOrder = context.multiLimitOrder
 
-
-        val ordersProcessingResult = processOrders(multiLimitOrder, messageWrapper, assetPair, now)
+        val ordersProcessingResult = processOrders(context, messageWrapper, now)
         val executionContext = ordersProcessingResult.executionContext
         val processedOrders = ordersProcessingResult.processedOrders
 
@@ -110,23 +100,30 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
 
     }
 
-    fun createExecutionContext(messageWrapper: MessageWrapper, context: MultilimitOrderContext, now: Date): ExecutionContext {
+    fun createExecutionContext(messageWrapper: MessageWrapper,
+                               context: MultilimitOrderContext,
+                               now: Date): ExecutionContext {
         return executionContextFactory.create(messageWrapper.messageId!!,
                 messageWrapper.id!!,
                 MessageType.MULTI_LIMIT_ORDER,
                 messageWrapper.processedMessage,
-                mapOf(Pair(context.assetPair.assetPairId, context.assetPair)),
+                mapOf(context.assetPair!!.assetPairId to context.assetPair),
                 now,
                 LOGGER,
+                CONTROLS_LOGGER,
                 mapOf(Pair(context.baseAsset!!.assetId, context.baseAsset),
                         Pair(context.quotingAsset!!.assetId, context.quotingAsset)),
                 context.inputValidationResultByOrderId ?: emptyMap())
 
     }
 
-    private fun processOrders(inputMultiLimitOrder: MultiLimitOrder, messageWrapper: MessageWrapper, assetPair: AssetPair, now: Date): OrdersProcessingResult {
+    private fun processOrders(context: MultilimitOrderContext, messageWrapper: MessageWrapper, now: Date): OrdersProcessingResult {
+        val inputMultiLimitOrder = context.multiLimitOrder
+        val assetPair = context.assetPair
+        assetPair!!
         val processingMultiLimitOrder = inputMultiLimitOrder.copy()
-        val executionContext = getExecutionContextWithProcessedPrevOrders(messageWrapper, processingMultiLimitOrder, assetPair, now)
+
+        val executionContext = getExecutionContextWithProcessedPrevOrders(messageWrapper, processingMultiLimitOrder, context, now)
 
         val (lowerMidPriceBound, upperMidPriceBound) = MidPriceUtils.getMidPricesInterval(priceDeviationThresholdHolder.getMidPriceDeviationThreshold(assetPair.assetPairId, executionContext),
                 midPriceHolder.getReferenceMidPrice(assetPair, executionContext))
@@ -135,7 +132,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
             processOrderBookMidPriceInvalidBeforeProcessing(executionContext, processingMultiLimitOrder, assetPair, upperMidPriceBound, lowerMidPriceBound)
         }
 
-        val processedOrders = genericLimitOrdersProcessor.processOrders(processingMultiLimitOrder.orders, executionContext)
+        val processedOrders = genericLimitOrdersProcessor.processOrders(getOrdersToProcess(context, processingMultiLimitOrder, context.assetPair, now), executionContext)
 
         val midPriceAfterOrderProcessing =
                 if (executionContext.orderBooksHolder.isOrderBookChanged()) {
@@ -148,8 +145,8 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
         return if (!midPriceValid) {
             return processMidPriceIsInvalidAfterProcessing(
                     messageWrapper,
+                    context,
                     inputMultiLimitOrder,
-                    assetPair,
                     lowerMidPriceBound,
                     upperMidPriceBound,
                     midPriceAfterOrderProcessing,
@@ -157,6 +154,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
         } else {
             processMidPriceIsValidAfterProcessing(executionContext,
                     inputMultiLimitOrder,
+                    context.isTrustedClient,
                     lowerMidPriceBound,
                     upperMidPriceBound,
                     midPriceAfterOrderProcessing)
@@ -166,13 +164,14 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
 
     private fun processMidPriceIsValidAfterProcessing(executionContext: ExecutionContext,
                                                       multiLimitOrder: MultiLimitOrder,
+                                                      isTrustedClient: Boolean,
                                                       lowerMidPriceBound: BigDecimal?,
                                                       upperMidPriceBound: BigDecimal?,
                                                       midPrice: BigDecimal?) {
         midPrice?.let {
             executionContext.currentTransactionMidPriceHolder.addMidPrice(executionContext.assetPairsById[multiLimitOrder.assetPairId]!!, midPrice, executionContext)
         }
-        if (!applicationSettingsHolder.isTrustedClient(multiLimitOrder.clientId)) {
+        if (!isTrustedClient) {
             executionContext.controlsInfo("Multilimit message uid = ${multiLimitOrder.messageUid}, assetPair = ${multiLimitOrder.assetPairId}, mid price control passed, " +
                     "l = ${NumberUtils.roundForPrint(lowerMidPriceBound)}, u = ${NumberUtils.roundForPrint(upperMidPriceBound)}, " +
                     "m = ${NumberUtils.roundForPrint(midPrice)}")
@@ -180,22 +179,26 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
     }
 
     private fun processMidPriceIsInvalidAfterProcessing(messageWrapper: MessageWrapper,
+                                                        context: MultilimitOrderContext,
                                                         multiLimitOrder: MultiLimitOrder,
-                                                        assetPair: AssetPair,
                                                         lowerMidPriceBound: BigDecimal?,
                                                         upperMidPriceBound: BigDecimal?,
                                                         midPriceAfterMatching: BigDecimal?,
                                                         now: Date): OrdersProcessingResult {
-        val freshExecutionContext = getExecutionContextWithProcessedPrevOrders(messageWrapper, multiLimitOrder, assetPair, now)
+        val freshExecutionContext = getExecutionContextWithProcessedPrevOrders(messageWrapper,
+                multiLimitOrder,
+                context,
+                now)
 
-        if (!applicationSettingsHolder.isTrustedClient(multiLimitOrder.clientId)) {
-            freshExecutionContext.controlsInfo("Multilimit message uid = ${multiLimitOrder.messageUid}, assetPair = ${assetPair.assetPairId}, mid price control failed, " +
+        if (!context.isTrustedClient) {
+            freshExecutionContext.controlsInfo("Multilimit message uid = ${multiLimitOrder.messageUid}, assetPair = ${context.assetPair!!.assetPairId}, mid price control failed, " +
                     "l = ${NumberUtils.roundForPrint(lowerMidPriceBound)}, u = ${NumberUtils.roundForPrint(upperMidPriceBound)}, " +
                     "m = $midPriceAfterMatching")
         }
 
         //discard old execution context as it contains invalid matching data that should be rejected dues to invalid mid price
-        return OrdersProcessingResult(freshExecutionContext, rejectOrders(OrderStatus.TooHighMidPriceDeviation, freshExecutionContext, multiLimitOrder, now))
+        return OrdersProcessingResult(freshExecutionContext,
+                rejectOrders(OrderStatus.TooHighMidPriceDeviation, context.isTrustedClient, freshExecutionContext, multiLimitOrder, now))
     }
 
     private fun isOrderBookMidPriceValidBeforeProcessing(executionContext: ExecutionContext,
@@ -213,7 +216,6 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                                                                 lowerMidPriceBound: BigDecimal?) {
         val orderBookMidPriceBeforeOrdersMatching = executionContext.orderBooksHolder.getOrderBook(assetPair.assetPairId).getMidPrice()
 
-
         val message = "Multilimit message uid = ${multiLimitOrder.messageUid}, assetPairId = ${assetPair.assetPairId}, " +
                 "order book mid price: ${NumberUtils.roundForPrint(orderBookMidPriceBeforeOrdersMatching)} " +
                 "already aut of range lowerBound: ${NumberUtils.roundForPrint(lowerMidPriceBound)}), upperBound: ${NumberUtils.roundForPrint(upperMidPriceBound)}"
@@ -222,6 +224,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
     }
 
     private fun rejectOrders(status: OrderStatus,
+                             isTrusted: Boolean,
                              executionContext: ExecutionContext,
                              multiLimitOrder: MultiLimitOrder,
                              now: Date): List<ProcessedOrder> {
@@ -231,16 +234,18 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
             }
         }
 
-        multiLimitOrder.orders.forEach { addOrderToReportIfNotTrusted(it, executionContext) }
+        multiLimitOrder.orders.forEach { addOrderToReportIfNotTrusted(it, isTrusted, executionContext) }
 
         return multiLimitOrder.orders.map { ProcessedOrder(it, false) }
     }
 
     private fun getExecutionContextWithProcessedPrevOrders(messageWrapper: MessageWrapper,
                                                            multiLimitOrder: MultiLimitOrder,
-                                                           assetPair: AssetPair,
+                                                           context: MultilimitOrderContext,
                                                            now: Date): ExecutionContext {
-        val freshContext = createExecutionContext(messageWrapper, assetPair, now)
+        val freshContext = createExecutionContext(messageWrapper,
+                context,
+                now)
 
         previousLimitOrdersProcessor.cancelAndReplaceOrders(multiLimitOrder.clientId,
                 multiLimitOrder.assetPairId,
@@ -255,13 +260,16 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
         return freshContext
     }
 
-    private fun addOrderToReportIfNotTrusted(order: LimitOrder, executionContext: ExecutionContext) {
-        if (!applicationSettingsHolder.isTrustedClient(order.clientId)) {
+    private fun addOrderToReportIfNotTrusted(order: LimitOrder, isTrusted: Boolean, executionContext: ExecutionContext) {
+        if (!isTrusted) {
             executionContext.addClientLimitOrderWithTrades(LimitOrderWithTrades(order))
         }
     }
 
-    fun getOrdersToProcess(context: MultilimitOrderContext, assetPair: AssetPair, now: Date): List<LimitOrder> {
+    fun getOrdersToProcess(context: MultilimitOrderContext,
+                           multiLimitOrder: MultiLimitOrder,
+                           assetPair: AssetPair,
+                           now: Date): List<LimitOrder> {
         val baseAssetAvailableBalance = balancesHolder.getAvailableBalance(context.clientId, context.assetPair!!.baseAssetId)
         val quotingAssetAvailableBalance = balancesHolder.getAvailableBalance(context.clientId, assetPair.quotingAssetId)
 
@@ -273,7 +281,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                 context.multiLimitOrder.orders.size,
                 LOGGER)
 
-        for (order in context.multiLimitOrder.orders) {
+        for (order in multiLimitOrder.orders) {
             filter.checkAndAdd(order)
         }
 
