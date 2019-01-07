@@ -34,6 +34,8 @@ class MultilimitOrderPreprocessor(private val messageProcessingStatusHolder: Mes
         }
 
         val validationResult = getValidationResult(context)
+        context.inputValidationResultByOrderId = validationResult
+
         val fatallyInvalidValidationResult = validationResult.values.find { it.isFatalInvalid }
         if (fatallyInvalidValidationResult != null) {
             logger.error("Fatal validation error occurred, ${fatallyInvalidValidationResult.message} " +
@@ -42,7 +44,6 @@ class MultilimitOrderPreprocessor(private val messageProcessingStatusHolder: Mes
             return false
         }
 
-        context.inputValidationResultByOrderId = validationResult
         return true
     }
 
@@ -60,10 +61,7 @@ class MultilimitOrderPreprocessor(private val messageProcessingStatusHolder: Mes
                 }
             } catch (e: OrderValidationException) {
                 val fatalInvalid = isFatalInvalid(e)
-                orderValidationResultByOrderId.put(order.id, OrderValidationResult(false, fatalInvalid, e.message, e.orderStatus))
-                if (fatalInvalid) {
-                    return orderValidationResultByOrderId
-                }
+                orderValidationResultByOrderId[order.id] = OrderValidationResult(false, fatalInvalid, e.message, e.orderStatus)
             }
         }
 
