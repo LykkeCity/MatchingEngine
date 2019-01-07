@@ -123,7 +123,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
         assetPair!!
         val processingMultiLimitOrder = inputMultiLimitOrder.copy()
 
-        val ordersToProcess = getOrdersToProcess(context, processingMultiLimitOrder, context.assetPair, now)
+        val ordersToProcess = filterAndUpdateOrdersToProcess(context, processingMultiLimitOrder, context.assetPair, now)
         val executionContext = getExecutionContextWithProcessedPrevOrders(messageWrapper, processingMultiLimitOrder, context, now)
 
         val (lowerMidPriceBound, upperMidPriceBound) = MidPriceUtils.getMidPricesInterval(priceDeviationThresholdHolder.getMidPriceDeviationThreshold(assetPair.assetPairId, executionContext),
@@ -267,10 +267,10 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
         }
     }
 
-    fun getOrdersToProcess(context: MultilimitOrderContext,
-                           multiLimitOrder: MultiLimitOrder,
-                           assetPair: AssetPair,
-                           now: Date): List<LimitOrder> {
+    fun filterAndUpdateOrdersToProcess(context: MultilimitOrderContext,
+                                       multiLimitOrder: MultiLimitOrder,
+                                       assetPair: AssetPair,
+                                       now: Date): List<LimitOrder> {
         val baseAssetAvailableBalance = balancesHolder.getAvailableBalance(context.clientId, context.assetPair!!.baseAssetId)
         val quotingAssetAvailableBalance = balancesHolder.getAvailableBalance(context.clientId, assetPair.quotingAssetId)
 
