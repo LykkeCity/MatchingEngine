@@ -3,7 +3,7 @@ package com.lykke.matching.engine.config.spring
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
-import org.apache.log4j.Logger
+import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -35,7 +35,7 @@ class ThreadPoolsConfig : SchedulingConfigurer {
 
     private companion object {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
-        private val LOGGER = Logger.getLogger("ThreadsHandler")
+        private val LOGGER = ThrottlingLogger.getLogger("ThreadsHandler")
     }
 
     @Autowired
