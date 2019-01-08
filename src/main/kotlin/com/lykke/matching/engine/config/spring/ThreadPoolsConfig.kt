@@ -34,8 +34,8 @@ import java.util.concurrent.SynchronousQueue
 class ThreadPoolsConfig : SchedulingConfigurer {
 
     private companion object {
-        val METRICS_LOGGER = MetricsLogger.getLogger()
-        val LOGGER = Logger.getLogger("ThreadsHandler")
+        private val METRICS_LOGGER = MetricsLogger.getLogger()
+        private val LOGGER = Logger.getLogger("ThreadsHandler")
     }
 
     @Autowired
@@ -106,7 +106,7 @@ class ThreadPoolsConfig : SchedulingConfigurer {
             var exception = t
             if (t == null && r is Future<*>) {
                 try {
-                    val result = (r as Future<*>).get()
+                    (r as Future<*>).get()
                 } catch (ce: CancellationException) {
                     exception = ce
                 } catch (ee: ExecutionException) {
