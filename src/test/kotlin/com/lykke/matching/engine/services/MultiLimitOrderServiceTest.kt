@@ -1537,7 +1537,7 @@ class MultiLimitOrderServiceTest : AbstractTest() {
 
         val order = genericLimitOrderService.getOrder("1")
         assertEquals(BigDecimal.valueOf(-1.0), order!!.remainingVolume)
-        assertEquals(OrderStatus.Processing.name, order.status)
+        assertEquals(OrderStatus.InOrderBook.name, order.status)
         assertOrderBookSize("BTCUSD", false, 2)
         assertOrderBookSize("BTCUSD", true, 1)
     }

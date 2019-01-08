@@ -146,6 +146,7 @@ abstract class MatchingEngineTest {
             orderBookSize: Int = 0
     ) {
         matchingResult.apply()
+        matchingResult.orderCopyWrapper.applyToOrigin()
         executionContext.apply()
         assertTrue { matchingResult.orderCopy is MarketOrder }
         assertEquals(marketPrice, matchingResult.orderCopy.takePrice())
@@ -169,6 +170,7 @@ abstract class MatchingEngineTest {
             matchedWithZeroLatestTrade: Boolean = false
     ) {
         matchingResult.apply()
+        matchingResult.orderCopyWrapper.applyToOrigin()
         executionContext.apply()
         assertTrue { matchingResult.orderCopy is LimitOrder }
         val matchedOrder = matchingResult.orderCopy as LimitOrder

@@ -13,7 +13,7 @@ import java.util.LinkedList
 import java.util.concurrent.PriorityBlockingQueue
 
 class MatchingResult(
-        private val orderCopyWrapper: CopyWrapper<Order>,
+        val orderCopyWrapper: CopyWrapper<Order>,
         val cancelledLimitOrders: Set<CopyWrapper<LimitOrder>> = HashSet(),
         private val matchedOrders: List<CopyWrapper<LimitOrder>> = LinkedList(),
         val skipLimitOrders: Set<LimitOrder> = HashSet(),
@@ -36,12 +36,12 @@ class MatchingResult(
     val uncompletedLimitOrder: LimitOrder? = uncompletedLimitOrderWrapper?.origin
 
     fun apply() {
-        orderCopyWrapper.applyToOrigin()
         matchedOrders.forEach { it.applyToOrigin() }
     }
 
     init {
         if (this.autoApply) {
+            orderCopyWrapper.applyToOrigin()
             apply()
         }
     }

@@ -30,7 +30,6 @@ import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
-import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
@@ -248,6 +247,7 @@ class MarketOrderService @Autowired constructor(
                 executionContext.currentTransactionMidPriceHolder.addMidPrice(order.assetPairId, newMidPrice, executionContext)
             }
             matchingResult.apply()
+            marketOrderExecutionContext.executionContext.orderBooksHolder.addInputOrderCopyWrapper(matchingResult.orderCopyWrapper)
             marketOrderExecutionContext.executionContext.orderBooksHolder
                     .getChangedOrderBookCopy(order.assetPairId)
                     .setOrderBook(!order.isBuySide(), matchingResult.orderBook)
