@@ -196,12 +196,11 @@ class LimitOrderProcessor(private val limitOrderBusinessValidator: LimitOrderBus
         matchingResult.apply()
         processOppositeOrders(orderContext)
         addMatchedResultToEventData(orderContext)
-
+        executionContext.orderBooksHolder.addInputOrderCopyWrapper(matchingResult.orderCopyWrapper)
         if (isNotCompletedOrder(orderCopy)) {
-            executionContext.orderBooksHolder.addOrder(order)
+            executionContext.orderBooksHolder.addOrder(orderCopy)
         }
-
-        return ProcessedOrder(order, true)
+        return ProcessedOrder(orderCopy, true)
     }
 
     private fun isNotCompletedOrder(order: LimitOrder): Boolean {

@@ -11,11 +11,11 @@ import java.math.BigDecimal
 import java.util.concurrent.PriorityBlockingQueue
 
 class MatchingResult(
-        private val orderCopyWrapper: CopyWrapper<Order>,
-        val cancelledLimitOrders: Set<CopyWrapper<LimitOrder>> = emptySet(),
-        private val matchedOrders: List<CopyWrapper<LimitOrder>> = emptyList(),
-        val skipLimitOrders: Set<LimitOrder> = emptySet(),
-        val completedLimitOrders: List<CopyWrapper<LimitOrder>> = emptyList(),
+        val orderCopyWrapper: CopyWrapper<Order>,
+        val cancelledLimitOrders: Set<CopyWrapper<LimitOrder>> = HashSet(),
+        private val matchedOrders: List<CopyWrapper<LimitOrder>> = LinkedList(),
+        val skipLimitOrders: Set<LimitOrder> = HashSet(),
+        val completedLimitOrders: List<CopyWrapper<LimitOrder>> = LinkedList(),
         matchedUncompletedLimitOrderWrapper: CopyWrapper<LimitOrder>? = null,
         uncompletedLimitOrderWrapper: CopyWrapper<LimitOrder>? = null,
         val lkkTrades: List<LkkTrade> = emptyList(),
@@ -34,12 +34,12 @@ class MatchingResult(
     val uncompletedLimitOrder: LimitOrder? = uncompletedLimitOrderWrapper?.origin
 
     fun apply() {
-        orderCopyWrapper.applyToOrigin()
         matchedOrders.forEach { it.applyToOrigin() }
     }
 
     init {
         if (this.autoApply) {
+            orderCopyWrapper.applyToOrigin()
             apply()
         }
     }

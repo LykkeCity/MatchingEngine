@@ -265,7 +265,7 @@ class MarketOrderService @Autowired constructor(
             }
 
             matchingResult.apply()
-
+            marketOrderExecutionContext.executionContext.orderBooksHolder.addInputOrderCopyWrapper(matchingResult.orderCopyWrapper)
             marketOrderExecutionContext.executionContext.orderBooksHolder
                     .getChangedOrderBookCopy(order.assetPairId)
                     .setOrderBook(!order.isBuySide(), matchingResult.orderBook)

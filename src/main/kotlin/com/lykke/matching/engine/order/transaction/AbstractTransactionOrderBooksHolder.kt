@@ -1,6 +1,8 @@
 package com.lykke.matching.engine.order.transaction
 
+import com.lykke.matching.engine.daos.CopyWrapper
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.Order
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.AbstractGenericLimitOrderService
@@ -10,6 +12,7 @@ import java.util.Date
 abstract class AbstractTransactionOrderBooksHolder<AssetOrderBook : AbstractAssetOrderBook,
         GenericService : AbstractGenericLimitOrderService<AssetOrderBook>>(protected val ordersService: GenericService): AbstractGenericLimitOrderService<AssetOrderBook> {
 
+    protected val inputOrderCopyWrappers = mutableListOf<CopyWrapper<Order>>()
     protected val newOrdersByExternalId = LinkedHashMap<String, LimitOrder>()
     protected val removeOrdersByStatus =  HashMap<OrderStatus?, MutableList<LimitOrder>>()
     protected val assetOrderBookCopiesByAssetPairId = HashMap<String, AssetOrderBook>()
@@ -35,6 +38,10 @@ abstract class AbstractTransactionOrderBooksHolder<AssetOrderBook : AbstractAsse
 
     override fun addOrders(orders: Collection<LimitOrder>) {
         orders.forEach { addOrder(it) }
+    }
+
+    fun addInputOrderCopyWrapper(orderCopyWrapper: CopyWrapper<Order>) {
+        inputOrderCopyWrappers.add(orderCopyWrapper)
     }
 
     fun addOrder(order: LimitOrder) {
@@ -63,6 +70,8 @@ abstract class AbstractTransactionOrderBooksHolder<AssetOrderBook : AbstractAsse
     }
 
     fun apply(date: Date) {
+        inputOrderCopyWrappers.forEach { orderCopyWrapper -> orderCopyWrapper.applyToOrigin()}
+
         removeOrdersByStatus.forEach { status, orders ->
             ordersService.removeOrdersFromMapsAndSetStatus(orders, status, date)
         }
