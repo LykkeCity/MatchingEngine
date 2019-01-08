@@ -16,14 +16,12 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
-import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
-class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputValidator,
-                          private val limitOrderBusinessValidator: LimitOrderBusinessValidator,
+class LimitOrderProcessor(private val limitOrderBusinessValidator: LimitOrderBusinessValidator,
                           private val applicationSettingsHolder: ApplicationSettingsHolder,
                           private val matchingEngine: MatchingEngine,
                           private val matchingResultHandlingHelper: MatchingResultHandlingHelper) : OrderProcessor<LimitOrder> {
@@ -44,25 +42,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         if (preProcessorValidationResult != null && !preProcessorValidationResult.isValid) {
             return preProcessorValidationResult
         }
-        // fixme: input validator will be moved from the business thread after multilimit order context release
-        val inputValidationResult = performInputValidation(orderContext)
-        return if (!inputValidationResult.isValid) inputValidationResult else performBusinessValidation(orderContext)
-    }
-
-    private fun performInputValidation(orderContext: LimitOrderExecutionContext): OrderValidationResult {
-        val order = orderContext.order
-        val assetPair = orderContext.executionContext.assetPairsById[order.assetPairId]
-        val baseAsset = assetPair?.let { orderContext.executionContext.assetsById[assetPair.baseAssetId] }
-        try {
-            limitOrderInputValidator.validateLimitOrder(applicationSettingsHolder.isTrustedClient(order.clientId),
-                    order,
-                    assetPair,
-                    order.assetPairId,
-                    baseAsset)
-        } catch (e: OrderValidationException) {
-            return OrderValidationResult(false, false, e.message, e.orderStatus)
-        }
-        return OrderValidationResult(true)
+        return performBusinessValidation(orderContext)
     }
 
     private fun performBusinessValidation(orderContext: LimitOrderExecutionContext): OrderValidationResult {

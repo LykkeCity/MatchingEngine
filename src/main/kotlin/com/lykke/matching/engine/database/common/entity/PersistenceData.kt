@@ -32,51 +32,40 @@ class PersistenceData(val balancesData: BalancesData?,
     }
 
     fun getSummary(): String {
-        val result = StringBuilder()
+        val result = ArrayList<String>()
 
         balancesData?.let {
-            result.append("w: ${it.wallets.size}, ")
-                    .append("b: ${it.balances.size}, ")
-        }
-
-        midPricePersistenceData?.let {
-            if (it.midPrices != null) {
-                result.append("mid prices: ${it.midPrices.size}, ")
-            } else {
-                result.append("mid prices: remove all, ")
-            }
+            result.add("w: ${it.wallets.size}")
+            result.add("b: ${it.balances.size}")
         }
 
         orderBooksData?.let {
-            result.append("ob: ${it.orderBooks.size}, ")
-                    .append("os: ${it.ordersToSave.size}, ")
-                    .append("or: ${it.ordersToRemove.size}, ")
+            result.add("ob: ${it.orderBooks.size}")
+            result.add("os: ${it.ordersToSave.size}")
+            result.add("or: ${it.ordersToRemove.size}")
         }
 
         stopOrderBooksData?.let {
-            result.append("sob: ${it.orderBooks.size}, ")
-                    .append("sos: ${it.ordersToSave.size}, ")
-                    .append("sor: ${it.ordersToRemove.size}, ")
+            result.add("sob: ${it.orderBooks.size}")
+            result.add("sos: ${it.ordersToSave.size}")
+            result.add("sor: ${it.ordersToRemove.size}")
+        }
+
+        midPricePersistenceData?.let {
+            if(it.removeAll) {
+                result.add("md: remove all")
+
+            }  else {
+                it.midPrices?.let{
+                    result.add("md: ${it.size}")
+                }
+            }
         }
 
         messageSequenceNumber?.let {
-            result.append("sn: $messageSequenceNumber")
+            result.add("sn: $messageSequenceNumber")
         }
 
-
-        midPricePersistenceData?.let {
-            result.append("md: ", midPricePersistenceData.midPrices?.size)
-        }
-
-        return result.toString()
-    }
-
-    private fun append(builder: StringBuilder, prefix: String, obj: Any?) {
-        obj?.let {
-            if (builder.isNotEmpty()) {
-                builder.append(", ")
-            }
-            builder.append(prefix).append(obj)
-        }
+        return result.joinToString()
     }
 }

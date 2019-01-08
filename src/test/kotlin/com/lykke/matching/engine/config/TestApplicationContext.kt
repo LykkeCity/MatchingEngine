@@ -22,6 +22,7 @@ import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.*
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.impl.MultilimitOrderPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPreprocessor
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -64,7 +65,7 @@ import com.lykke.matching.engine.services.validators.input.LimitOrderCancelOpera
 import com.lykke.matching.engine.services.validators.input.impl.CashInOutOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.CashTransferOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
-import com.lykke.matching.engine.services.validators.input.input.LimitOrderCancelOperationInputValidatorImpl
+import com.lykke.matching.engine.services.validators.input.impl.LimitOrderCancelOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.settings.SettingValidator
 import com.lykke.matching.engine.services.validators.settings.impl.DisabledFunctionalitySettingValidator
 import com.lykke.matching.engine.services.validators.settings.impl.MessageProcessingSwitchSettingValidator
@@ -363,7 +364,6 @@ open class TestApplicationContext {
                                     assetsPairsHolder: AssetsPairsHolder,
                                     balancesHolder: BalancesHolder,
                                     applicationSettingsHolder: ApplicationSettingsHolder,
-                                    messageProcessingStatusHolder: MessageProcessingStatusHolder,
                                     testUUIDHolder: TestUUIDHolder,
                                     midPriceHolder: MidPriceHolder,
                                     priceDeviationThreshold: PriceDeviationThresholdHolder): MultiLimitOrderService {
@@ -372,13 +372,8 @@ open class TestApplicationContext {
                 stopOrderBookProcessor,
                 executionDataApplyService,
                 previousLimitOrdersProcessor,
-                assetsHolder,
-                assetsPairsHolder,
                 balancesHolder,
-                applicationSettingsHolder,
-                messageProcessingStatusHolder,
                 midPriceHolder,
-                testUUIDHolder(),
                 priceDeviationThreshold)
     }
 
@@ -571,11 +566,12 @@ open class TestApplicationContext {
     @Bean
     open fun messageBuilder(cashTransferContextParser: CashTransferContextParser,
                             cashInOutContextParser: CashInOutContextParser,
-                            singleLimitOrderContextParser: SingleLimitOrderContextParser,
+                            singleLimitOrderPreprocessor: SingleLimitOrderPreprocessor,
                             limitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOperationParsedData>,
-                            limitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCancelOperationParsedData>): MessageBuilder {
-        return MessageBuilder(singleLimitOrderContextParser, cashInOutContextParser, cashTransferContextParser,
-                limitOrderCancelOperationContextParser, limitOrderMassCancelOperationContextParser)
+                            limitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCancelOperationParsedData>,
+                            multilimitOrderPreprocessor: MultilimitOrderPreprocessor): MessageBuilder {
+        return MessageBuilder(singleLimitOrderPreprocessor, cashInOutContextParser, cashTransferContextParser,
+                limitOrderCancelOperationContextParser, limitOrderMassCancelOperationContextParser, multilimitOrderPreprocessor)
     }
 
     @Bean
@@ -610,6 +606,14 @@ open class TestApplicationContext {
                 assetsHolder,
                 applicationSettingsHolder,
                 ThrottlingLogger.getLogger("limitOrder"))
+    }
+
+    @Bean
+    open fun multilimitOrderContextParser(applicationSettingsHolder: ApplicationSettingsHolder,
+                                          assetsPairsHolder: AssetsPairsHolder,
+                                          assetsHolder: AssetsHolder,
+                                          UUIDHolder: UUIDHolder): MultilimitOrderContextParser {
+        return MultilimitOrderContextParser(ThrottlingLogger.getLogger("multilimitOrder"), applicationSettingsHolder, assetsPairsHolder, assetsHolder, UUIDHolder)
     }
 
     @Bean
@@ -703,12 +707,14 @@ open class TestApplicationContext {
                            cashTransferInputQueue: BlockingQueue<MessageWrapper>,
                            limitOrderCancelInputQueue: BlockingQueue<MessageWrapper>,
                            limitOrderMassCancelInputQueue: BlockingQueue<MessageWrapper>,
-                           preProcessedMessageQueue: BlockingQueue<MessageWrapper>): MessageRouter {
+                           preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                           multilimitOrderInputQueue: BlockingQueue<MessageWrapper>): MessageRouter {
         return MessageRouter(limitOrderInputQueue,
                 cashInOutInputQueue,
                 cashTransferInputQueue,
                 limitOrderCancelInputQueue,
                 limitOrderMassCancelInputQueue,
+                multilimitOrderInputQueue,
                 preProcessedMessageQueue)
     }
 
@@ -747,5 +753,18 @@ open class TestApplicationContext {
                              persistenceManager: PersistenceManager,
                              balanceUpdateQueue: BlockingQueue<BalanceUpdate>): BalancesService {
         return BalancesServiceImpl(balancesHolder, persistenceManager, balanceUpdateQueue)
+    }
+
+    @Bean
+    open fun multiltilimitOrderPreprocessor(messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                            limitOrderInputValidator: LimitOrderInputValidator,
+                                            multilimitOrderContextParser: MultilimitOrderContextParser,
+                                            preProcessedMessageQueue:  BlockingQueue<MessageWrapper>
+                                            ): MultilimitOrderPreprocessor {
+        return MultilimitOrderPreprocessor(messageProcessingStatusHolder,
+                limitOrderInputValidator,
+                multilimitOrderContextParser,
+                preProcessedMessageQueue,
+                ThrottlingLogger.getLogger("multilimitOrder"))
     }
 }

@@ -14,7 +14,6 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderCancelWrapper
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.getSetting
 import org.junit.After
 import org.junit.Before
@@ -79,7 +78,7 @@ class PersistenceErrorTest : AbstractTest() {
                 clientId = "Client1", assetId = "EURUSD", volume = 1.0, price = 2.0, uid = "order1"
         )))
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("EURUSD", "TrustedClient",
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("EURUSD", "TrustedClient",
                 listOf(IncomingLimitOrder(-1.0, 3.0, "order2"),
                         IncomingLimitOrder(-2.0, 3.1, "order3"),
                         IncomingLimitOrder(-3.0, 3.2, "order4"),
@@ -272,7 +271,7 @@ class PersistenceErrorTest : AbstractTest() {
 
     @Test
     fun testTrustedClientMultiLimitOrder() {
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper(
                 "EURUSD", "TrustedClient",
                 listOf(IncomingLimitOrder(-1.0, 3.1),
                         IncomingLimitOrder(-2.0, 3.19),
@@ -285,7 +284,7 @@ class PersistenceErrorTest : AbstractTest() {
 
     @Test
     fun testClientMultiLimitOrder() {
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper(
                 "EURUSD", "Client3",
                 listOf(IncomingLimitOrder(-1.0, 3.1),
                         IncomingLimitOrder(-2.0, 3.19),
@@ -293,7 +292,7 @@ class PersistenceErrorTest : AbstractTest() {
 
         assertMultiLimitOrderResult()
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper(
                 "EURUSD", "Client3",
                 listOf(IncomingLimitOrder(-0.04, 5.1),
                         IncomingLimitOrder(-2.0, 5.2),

@@ -56,16 +56,7 @@ class LimitOrderInputValidatorImpl(val applicationSettingsHolder: ApplicationSet
                 singleLimitContext.baseAsset)
     }
 
-    override fun validateStopOrder(stopLimitOrderContext: StopLimitOrderContext) {
-        val assetPair = stopLimitOrderContext.executionContext.assetPairsById[stopLimitOrderContext.order.assetPairId]
-        val baseAsset = assetPair?.let { stopLimitOrderContext.executionContext.assetsById[assetPair.baseAssetId] }
-        validateStopOrder(stopLimitOrderContext.order,
-                assetPair,
-                stopLimitOrderContext.order.assetPairId,
-                baseAsset)
-    }
-
-    private fun validateStopOrder(limitOrder: LimitOrder,
+    override fun validateStopOrder(limitOrder: LimitOrder,
                                   assetPair: AssetPair?,
                                   assetPairId: String,
                                   baseAsset: Asset?) {
