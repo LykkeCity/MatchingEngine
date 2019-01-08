@@ -6,7 +6,7 @@ import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import redis.clients.jedis.Transaction
 
 class AzurePersistOrdersStrategy(private val ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder,
-                                 private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder) : PersistOrdersStrategy {
+                                 private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder) : PersistOrdersDuringRedisTransactionStrategy {
     override fun isRedisTransactionUsed(): Boolean {
         return false
     }

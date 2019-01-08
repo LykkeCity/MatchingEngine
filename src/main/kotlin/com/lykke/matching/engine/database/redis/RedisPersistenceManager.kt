@@ -5,7 +5,7 @@ import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.common.strategy.OrdersPersistInSecondaryDbStrategy
-import com.lykke.matching.engine.database.common.strategy.PersistOrdersStrategy
+import com.lykke.matching.engine.database.common.strategy.PersistOrdersDuringRedisTransactionStrategy
 import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
 import com.lykke.matching.engine.database.redis.accessor.impl.*
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
@@ -25,7 +25,7 @@ class RedisPersistenceManager(
         private val primaryBalancesAccessor: RedisWalletDatabaseAccessor,
         private val redisProcessedMessagesDatabaseAccessor: RedisProcessedMessagesDatabaseAccessor,
         private val redisProcessedCashOperationIdDatabaseAccessor: RedisCashOperationIdDatabaseAccessor,
-        private val persistOrdersStrategy: PersistOrdersStrategy,
+        private val persistOrdersStrategy: PersistOrdersDuringRedisTransactionStrategy,
         private val ordersPersistInSecondaryDbStrategy: OrdersPersistInSecondaryDbStrategy,
         private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
         private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<AccountPersistEvent>,
