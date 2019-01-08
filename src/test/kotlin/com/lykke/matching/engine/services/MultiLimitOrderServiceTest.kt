@@ -1592,7 +1592,7 @@ class MultiLimitOrderServiceTest : AbstractTest() {
 
         //when
         clearMessageQueues()
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client3", listOf(IncomingLimitOrder(1.5, 6100.0))))
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("BTCUSD", "Client3", listOf(IncomingLimitOrder(1.5, 6100.0))))
 
         //then
         assertEquals(BigDecimal.valueOf(5500.0), midPriceHolder.getReferenceMidPrice(assetsPairHolder.getAssetPair("BTCUSD"), getExecutionContext(Date(), executionContextFactory)))
