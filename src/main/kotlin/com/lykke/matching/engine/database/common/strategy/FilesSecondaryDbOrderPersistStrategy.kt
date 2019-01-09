@@ -5,7 +5,7 @@ import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceDat
 import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 
-class AzureSecondaryDbOrderPersistStrategy(private val persistedOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<OrderBookPersistEvent>,
+class FilesSecondaryDbOrderPersistStrategy(private val persistedOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<OrderBookPersistEvent>,
                                            private val persistedStopApplicationEventPublisher: SimpleApplicationEventPublisher<StopOrderBookPersistEvent>): OrdersPersistInSecondaryDbStrategy {
     override fun persistOrders(orderBooksData: OrderBooksPersistenceData?,
                       stopOrderBooksData: OrderBooksPersistenceData?) {

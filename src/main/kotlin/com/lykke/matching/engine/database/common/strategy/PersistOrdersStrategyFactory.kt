@@ -18,7 +18,7 @@ class PersistOrdersStrategyFactory(private val config: Config,
     override fun getObject(): PersistOrdersDuringRedisTransactionStrategy? {
         return when (config.me.storage) {
             Storage.Redis -> RedisPersistOrdersStrategy(ordersDatabaseAccessorsHolder, stopOrdersDatabaseAccessorsHolder, config)
-            Storage.RedisWithoutOrders -> AzurePersistOrdersStrategy(ordersDatabaseAccessorsHolder, stopOrdersDatabaseAccessorsHolder)
+            Storage.RedisWithoutOrders -> FilesPersistOrdersStrategy(ordersDatabaseAccessorsHolder, stopOrdersDatabaseAccessorsHolder)
             else -> null
         }
     }

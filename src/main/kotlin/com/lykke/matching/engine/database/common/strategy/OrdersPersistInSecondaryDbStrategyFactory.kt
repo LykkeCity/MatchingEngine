@@ -22,8 +22,8 @@ class OrdersPersistInSecondaryDbStrategyFactory() : FactoryBean<OrdersPersistInS
     private lateinit var config: Config
 
     override fun getObject(): OrdersPersistInSecondaryDbStrategy? {
-        if (config.me.storage == Storage.Redis || config.me.storage == Storage.RedisWithoutOrders) {
-            return AzureSecondaryDbOrderPersistStrategy(persistedOrdersApplicationEventPublisher, persistedStopApplicationEventPublisher)
+        if (config.me.storage == Storage.Redis) {
+            return FilesSecondaryDbOrderPersistStrategy(persistedOrdersApplicationEventPublisher, persistedStopApplicationEventPublisher)
         }
 
         return null
