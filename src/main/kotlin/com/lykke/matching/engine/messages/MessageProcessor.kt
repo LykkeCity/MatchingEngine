@@ -1,14 +1,8 @@
 package com.lykke.matching.engine.messages
 
-import com.lykke.matching.engine.AppInitialData
 import com.lykke.matching.engine.database.*
-import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
-import com.lykke.matching.engine.holders.ApplicationSettingsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
@@ -18,12 +12,13 @@ import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
-import org.springframework.context.ApplicationContext
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
 import java.util.*
-import java.util.concurrent.BlockingQueue
+import javax.annotation.PostConstruct
 
-class MessageProcessor(messageRouter: MessageRouter, applicationContext: ApplicationContext)
-    : Thread(MessageProcessor::class.java.name) {
+@Component
+class MessageProcessor : Thread(MessageProcessor::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(MessageProcessor::class.java.name)
@@ -31,87 +26,69 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val messagesQueue: BlockingQueue<MessageWrapper> = messageRouter.preProcessedMessageQueue
+    @Autowired
+    private lateinit var messageRouter: MessageRouter
 
-    private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor
-    private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor
-    private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor
-    private val persistenceManager: PersistenceManager
+    @Autowired
+    private lateinit var persistenceManager: PersistenceManager
 
-    private val cashInOutOperationService: CashInOutOperationService
-    private val cashTransferOperationService: CashTransferOperationService
-    private val singleLimitOrderService: SingleLimitOrderService
-    private val multiLimitOrderService: MultiLimitOrderService
-    private val marketOrderService: MarketOrderService
-    private val limitOrderCancelService: LimitOrderCancelService
-    private val limitOrderMassCancelService: LimitOrderMassCancelService
-    private val multiLimitOrderCancelService: MultiLimitOrderCancelService
-    private val transferOperationSaveService: TransferOperationSaveService
+    @Autowired
+    private lateinit var cashInOutOperationService: CashInOutOperationService
 
-    private val applicationSettingsHolder: ApplicationSettingsHolder
+    @Autowired
+    private lateinit var cashTransferOperationService: CashTransferOperationService
 
-    private val servicesMap: Map<MessageType, AbstractService>
-    private val processedMessagesCache: ProcessedMessagesCache
+    @Autowired
+    private lateinit var singleLimitOrderService: SingleLimitOrderService
 
-    private val performanceStatsHolder: PerformanceStatsHolder
+    @Autowired
+    private lateinit var multiLimitOrderService: MultiLimitOrderService
 
-    val appInitialData: AppInitialData
+    @Autowired
+    private lateinit var marketOrderService: MarketOrderService
 
-    private val reservedCashInOutOperationService: ReservedCashInOutOperationService
-    private val messageProcessingStatusHolder: MessageProcessingStatusHolder
-    private val messageSequenceNumberHolder: MessageSequenceNumberHolder
+    @Autowired
+    private lateinit var limitOrderCancelService: LimitOrderCancelService
 
-    private var currentTransactionDataHolder: CurrentTransactionDataHolder
+    @Autowired
+    private lateinit var limitOrderMassCancelService: LimitOrderMassCancelService
 
-    init {
-        messageProcessingStatusHolder = applicationContext.getBean(MessageProcessingStatusHolder::class.java)
-        performanceStatsHolder = applicationContext.getBean(PerformanceStatsHolder::class.java)
+    @Autowired
+    private lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
 
-        messageSequenceNumberHolder = applicationContext.getBean(MessageSequenceNumberHolder::class.java)
+    @Autowired
+    private lateinit var transferOperationSaveService: TransferOperationSaveService
 
-        persistenceManager = applicationContext.getBean("persistenceManager") as PersistenceManager
+    @Autowired
+    private lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
 
-        cashOperationsDatabaseAccessor = applicationContext.getBean(AzureCashOperationsDatabaseAccessor::class.java)
+    @Autowired
+    private lateinit var messageProcessingStatusHolder: MessageProcessingStatusHolder
 
-        this.marketOrderDatabaseAccessor = applicationContext.getBean(AzureMarketOrderDatabaseAccessor::class.java)
-        this.backOfficeDatabaseAccessor = applicationContext.getBean(AzureBackOfficeDatabaseAccessor::class.java)
+    @Autowired
+    private lateinit var currentTransactionDataHolder: CurrentTransactionDataHolder
 
-        val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
-        this.applicationSettingsHolder = applicationContext.getBean(ApplicationSettingsHolder::class.java)
+    @Autowired
+    private lateinit var processedMessagesCache: ProcessedMessagesCache
 
-        val genericLimitOrderService = applicationContext.getBean(GenericLimitOrderService::class.java)
-        val genericStopLimitOrderService = applicationContext.getBean(GenericStopLimitOrderService::class.java)
+    @Autowired
+    private lateinit var performanceStatsHolder: PerformanceStatsHolder
 
-        this.multiLimitOrderService = applicationContext.getBean(MultiLimitOrderService::class.java)
-        this.singleLimitOrderService = applicationContext.getBean(SingleLimitOrderService::class.java)
+    @Autowired
+    private lateinit var messageSequenceNumberHolder: MessageSequenceNumberHolder
 
-        this.cashInOutOperationService = applicationContext.getBean(CashInOutOperationService::class.java)
-        this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
-        this.cashTransferOperationService = applicationContext.getBean(CashTransferOperationService::class.java)
+    private lateinit var servicesMap: Map<MessageType, AbstractService>
 
-        this.marketOrderService = applicationContext.getBean(MarketOrderService::class.java)
-
-        this.limitOrderCancelService = applicationContext.getBean(LimitOrderCancelService::class.java)
-
-        this.limitOrderMassCancelService = applicationContext.getBean(LimitOrderMassCancelService::class.java)
-
-        this.multiLimitOrderCancelService = applicationContext.getBean(MultiLimitOrderCancelService::class.java)
-
-        this.transferOperationSaveService = applicationContext.getBean(TransferOperationSaveService::class.java)
-
-        this.currentTransactionDataHolder = applicationContext.getBean(CurrentTransactionDataHolder::class.java)
-
-        processedMessagesCache = applicationContext.getBean(ProcessedMessagesCache::class.java)
+    @PostConstruct
+    private fun init() {
         servicesMap = initServicesMap()
-
-        appInitialData = AppInitialData(genericLimitOrderService.initialOrdersCount, genericStopLimitOrderService.initialStopOrdersCount, balanceHolder.initialBalancesCount, balanceHolder.initialClientsCount)
     }
 
     override fun run() {
         transferOperationSaveService.start()
 
         while (true) {
-            processMessage(messagesQueue.take())
+            processMessage(messageRouter.preProcessedMessageQueue.take())
         }
     }
 
@@ -138,7 +115,6 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
             if (message.parsedMessage == null) {
                 service.parseMessage(message)
             }
-
 
             if (!messageProcessingStatusHolder.isMessageProcessingEnabled()) {
                 service.writeResponse(message, MessageStatus.MESSAGE_PROCESSING_DISABLED)
@@ -174,43 +150,23 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
 
             val endTime = System.nanoTime()
 
-            recordPerformanceStats(message, startTime, endTime)
+            if (message.writeResponseTime == null) {
+                val errorMessage = "There was no write response to socket time recorded, response to socket is not written, messageId: ${message.messageId}"
+                LOGGER.error(errorMessage)
+                METRICS_LOGGER.logError(errorMessage)
+            }
+
+            performanceStatsHolder.addMessage(type = message.type,
+                    writeResponseTime = message.writeResponseTime,
+                    startTimestamp = message.startTimestamp,
+                    messagePreProcessorStartTimestamp = message.messagePreProcessorStartTimestamp,
+                    messagePreProcessorEndTimestamp = message.messagePreProcessorEndTimestamp,
+                    startMessageProcessingTime = startTime,
+                    endMessageProcessingTime = endTime)
         } catch (exception: Exception) {
             LOGGER.error("[${message.sourceIp}]: Got error during message processing: ${exception.message}", exception)
             METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message processing", exception)
         }
-    }
-
-    private fun recordPerformanceStats(messageWrapper: MessageWrapper, startMessageProcessingTime: Long, endMessageProcessingTime: Long) {
-        val totalTime = endMessageProcessingTime - messageWrapper.startTimestamp
-        val processingTime = endMessageProcessingTime - startMessageProcessingTime
-
-        val inputQueueTime = messageWrapper.messagePreProcessorStartTimestamp?.let {
-            it - messageWrapper.startTimestamp
-        }
-
-        val preProcessingTime = messageWrapper.messagePreProcessorStartTimestamp?.let {
-            messageWrapper.messagePreProcessorEndTimestamp!! - it
-        }
-
-        val preProcessedMessageQueueStartTime = messageWrapper.messagePreProcessorEndTimestamp
-                ?: messageWrapper.startTimestamp
-
-        val preProcessedMessageQueueTime = startMessageProcessingTime - preProcessedMessageQueueStartTime
-
-        if (messageWrapper.writeResponseTime == null) {
-            val message = "There was no write response to socket time recorded, response to socket is not written, messageId: ${messageWrapper.messageId}"
-            LOGGER.error(message)
-            METRICS_LOGGER.logError(message)
-        }
-
-        performanceStatsHolder.addMessage(type = messageWrapper.type,
-                inputQueueTime = inputQueueTime,
-                preProcessedQueueTime =  preProcessedMessageQueueTime,
-                preProcessingTime =  preProcessingTime,
-                processingTime =  processingTime,
-                writeResponseTime = messageWrapper.writeResponseTime,
-                totalTime = totalTime)
     }
 
     private fun initServicesMap(): Map<MessageType, AbstractService> {
