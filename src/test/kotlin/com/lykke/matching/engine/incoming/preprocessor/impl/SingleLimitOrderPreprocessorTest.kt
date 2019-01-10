@@ -22,9 +22,10 @@ import kotlin.test.assertTrue
 class SingleLimitOrderPreprocessorTest: AbstractTest() {
 
     @Autowired
-    private lateinit var messageBuilder: MessageBuilder
-    @Autowired
     private lateinit var singleLimitOrderPreprocessor: SingleLimitOrderPreprocessor
+
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
 
     @Test
     fun testOrderWithUnknownAssetPair() {

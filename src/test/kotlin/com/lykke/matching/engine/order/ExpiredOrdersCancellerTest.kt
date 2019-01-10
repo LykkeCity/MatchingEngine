@@ -3,10 +3,9 @@ package com.lykke.matching.engine.order
 import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.context.LimitOrderCancelOperationContext
 import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.incoming.MessageRouter
-import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import org.junit.Before
 import org.junit.Test
@@ -16,7 +15,6 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.util.Date
-import java.util.concurrent.BlockingQueue
 import kotlin.test.assertEquals
 
 @RunWith(SpringRunner::class)
@@ -26,9 +24,6 @@ class ExpiredOrdersCancellerTest : AbstractTest() {
 
     @Autowired
     private lateinit var messagesRouter: MessageRouter
-
-    @Autowired
-    private lateinit var limitOrderCancelInputQueue: BlockingQueue<MessageWrapper>
 
     @Autowired
     private lateinit var expiryOrdersQueue: ExpiryOrdersQueue
@@ -45,27 +40,28 @@ class ExpiredOrdersCancellerTest : AbstractTest() {
 
     @Test
     fun testCancelExpiredOrders() {
+        val queue = messagesRouter.preProcessedMessageQueue
         val service = ExpiredOrdersCanceller(expiryOrdersQueue, messagesRouter)
 
         service.cancelExpiredOrders()
-        assertEquals(0, limitOrderCancelInputQueue.size)
+        assertEquals(0, queue.size)
 
         Thread.sleep(800)
         service.cancelExpiredOrders()
-        assertEquals(1, limitOrderCancelInputQueue.size)
-        var message = ProtocolMessages.LimitOrderCancel.parseFrom(limitOrderCancelInputQueue.poll().byteArray)
-        assertEquals(1, message.limitOrderIdCount)
-        assertEquals("1", message.limitOrderIdList.single())
+        assertEquals(1, queue.size)
+        var messageContext = queue.poll().context as LimitOrderCancelOperationContext
+        assertEquals(1, messageContext.limitOrderIds.size)
+        assertEquals("1", messageContext.limitOrderIds.single())
 
-        limitOrderCancelInputQueue.clear()
+        queue.clear()
         expiryOrdersQueue.removeIfOrderHasExpiryTime(orders[0])
 
         Thread.sleep(800)
         service.cancelExpiredOrders()
-        assertEquals(1, limitOrderCancelInputQueue.size)
-        message = ProtocolMessages.LimitOrderCancel.parseFrom(limitOrderCancelInputQueue.poll().byteArray)
-        assertEquals(1, message.limitOrderIdCount)
-        assertEquals("2", message.limitOrderIdList.single())
+        assertEquals(1, queue.size)
+        messageContext = queue.poll().context as LimitOrderCancelOperationContext
+        assertEquals(1, messageContext.limitOrderIds.size)
+        assertEquals("2", messageContext.limitOrderIds.single())
     }
 
     private fun date(date: Date, delta: Long) = Date(date.time + delta)

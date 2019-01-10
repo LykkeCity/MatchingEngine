@@ -28,8 +28,9 @@ import java.util.*
 class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                                     val assetsHolder: AssetsHolder,
                                     val applicationSettingsHolder: ApplicationSettingsHolder,
-                                    @Qualifier("singleLimitOrderContextPreprocessorLogger")
+                                    @Qualifier("singleLimitOrderPreProcessingLogger")
                                     val logger: ThrottlingLogger) : ContextParser<SingleLimitOrderParsedData> {
+
     override fun parse(messageWrapper: MessageWrapper): SingleLimitOrderParsedData {
 
         val context = parseMessage(messageWrapper)

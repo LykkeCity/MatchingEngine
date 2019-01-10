@@ -13,6 +13,7 @@ class PerformanceStatsHolder {
                    preProcessedQueueTime: Long,
                    preProcessingTime: Long?,
                    processingTime: Long,
+                   writeResponseTime: Long?,
                    totalTime: Long) {
         val stats = statsMap.getOrPut(type) { PerformanceStats(type) }
         inputQueueTime?.let {
@@ -27,6 +28,10 @@ class PerformanceStatsHolder {
 
         stats.preProcessedMessageQueueTime += preProcessedQueueTime
         stats.processingTime += processingTime
+
+        writeResponseTime?.let {
+            stats.writeResponseTime += writeResponseTime
+        }
         stats.totalTime += totalTime
         stats.count++
     }
@@ -34,7 +39,7 @@ class PerformanceStatsHolder {
     fun addPersistTime(type: Byte, persistTime: Long) {
         val stats = statsMap.getOrPut(type) { PerformanceStats(type) }
         stats.persistTime += persistTime
-        stats.persistTimeCount++
+        stats.persistsCount++
     }
 
     fun getStatsAndReset(): Map<Byte, PerformanceStats> {

@@ -13,9 +13,6 @@ import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
-import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
-import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
@@ -33,9 +30,6 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
         val MONITORING_LOGGER = ThrottlingLogger.getLogger("${MessageProcessor::class.java.name}.monitoring")
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
-
-    private val cashInOutPreprocessor: CashInOutPreprocessor
-    private val cashTransferPreprocessor: CashTransferPreprocessor
 
     private val messagesQueue: BlockingQueue<MessageWrapper> = messageRouter.preProcessedMessageQueue
 
@@ -91,8 +85,6 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
         this.multiLimitOrderService = applicationContext.getBean(MultiLimitOrderService::class.java)
         this.singleLimitOrderService = applicationContext.getBean(SingleLimitOrderService::class.java)
 
-        val genericLimitOrdersCancellerFactory = applicationContext.getBean(GenericLimitOrdersCancellerFactory::class.java)
-
         this.cashInOutOperationService = applicationContext.getBean(CashInOutOperationService::class.java)
         this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
         this.cashTransferOperationService = applicationContext.getBean(CashTransferOperationService::class.java)
@@ -106,11 +98,6 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
         this.multiLimitOrderCancelService = applicationContext.getBean(MultiLimitOrderCancelService::class.java)
 
         this.transferOperationSaveService = applicationContext.getBean(TransferOperationSaveService::class.java)
-
-        this.cashInOutPreprocessor = applicationContext.getBean(CashInOutPreprocessor::class.java)
-        cashInOutPreprocessor.start()
-        this.cashTransferPreprocessor = applicationContext.getBean(CashTransferPreprocessor::class.java)
-        cashTransferPreprocessor.start()
 
         this.currentTransactionDataHolder = applicationContext.getBean(CurrentTransactionDataHolder::class.java)
 
@@ -208,9 +195,22 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
 
         val preProcessedMessageQueueStartTime = messageWrapper.messagePreProcessorEndTimestamp
                 ?: messageWrapper.startTimestamp
+
         val preProcessedMessageQueueTime = startMessageProcessingTime - preProcessedMessageQueueStartTime
 
-        performanceStatsHolder.addMessage(messageWrapper.type, inputQueueTime, preProcessedMessageQueueTime, preProcessingTime, processingTime, totalTime)
+        if (messageWrapper.writeResponseTime == null) {
+            val message = "There was no write response to socket time recorded, response to socket is not written, messageId: ${messageWrapper.messageId}"
+            LOGGER.error(message)
+            METRICS_LOGGER.logError(message)
+        }
+
+        performanceStatsHolder.addMessage(type = messageWrapper.type,
+                inputQueueTime = inputQueueTime,
+                preProcessedQueueTime =  preProcessedMessageQueueTime,
+                preProcessingTime =  preProcessingTime,
+                processingTime =  processingTime,
+                writeResponseTime = messageWrapper.writeResponseTime,
+                totalTime = totalTime)
     }
 
     private fun initServicesMap(): Map<MessageType, AbstractService> {

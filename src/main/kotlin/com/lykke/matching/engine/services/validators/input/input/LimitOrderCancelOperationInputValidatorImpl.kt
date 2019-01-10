@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.services.validators.input.input
 
 import com.lykke.matching.engine.daos.context.LimitOrderCancelOperationContext
-import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
+import com.lykke.matching.engine.incoming.parsers.data.LimitOrderCancelOperationParsedData
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.services.validators.input.LimitOrderCancelOperationInputValidator
 import org.springframework.stereotype.Component

@@ -124,7 +124,8 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
             processedOrder.reason?.let { statusBuilder.statusReason = processedOrder.reason }
             responseBuilder.addStatuses(statusBuilder)
         }
-        messageWrapper.writeMultiLimitOrderResponse(responseBuilder)
+        writeResponse(messageWrapper, responseBuilder)
+
     }
 
     private fun readMultiLimitOrder(messageId: String,
@@ -271,6 +272,10 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
             null
         else
             ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)
+    }
+
+    fun writeResponse(messageWrapper: MessageWrapper, responseBuilder: ProtocolMessages.MultiLimitOrderResponse.Builder) {
+        messageWrapper.writeMultiLimitOrderResponse(responseBuilder)
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
