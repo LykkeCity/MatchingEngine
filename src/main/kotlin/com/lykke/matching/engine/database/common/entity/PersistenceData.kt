@@ -12,17 +12,6 @@ class PersistenceData(val balancesData: BalancesData?,
     constructor(processedMessage: ProcessedMessage?, messageSequenceNumber: Long?) : this(null, processedMessage, null, null, messageSequenceNumber)
     constructor(processedMessage: ProcessedMessage?) : this(null, processedMessage, null, null, null)
 
-    fun details(): String {
-        val result = StringBuilder()
-        append(result, "m: ", processedMessage?.messageId)
-        append(result, "w: ", balancesData?.wallets?.size)
-        append(result, "b: ", balancesData?.balances?.size)
-        append(result, "o: ", orderBooksData?.orderBooks?.size)
-        append(result, "so: ", stopOrderBooksData?.orderBooks?.size)
-        append(result, "sn: ", messageSequenceNumber)
-        return result.toString()
-    }
-
     fun isEmpty(): Boolean {
         return isEmptyWithoutOrders() &&
                 isOrdersEmpty()
@@ -40,12 +29,30 @@ class PersistenceData(val balancesData: BalancesData?,
                 messageSequenceNumber == null
     }
 
-    private fun append(builder: StringBuilder, prefix: String, obj: Any?) {
-        obj?.let {
-            if (builder.isNotEmpty()) {
-                builder.append(", ")
-            }
-            builder.append(prefix).append(obj)
+    fun getSummary(): String {
+        val result = ArrayList<String>()
+
+        balancesData?.let {
+            result.add("w: ${it.wallets.size}")
+            result.add("b: ${it.balances.size}")
         }
+
+        orderBooksData?.let {
+            result.add("ob: ${it.orderBooks.size}")
+            result.add("os: ${it.ordersToSave.size}")
+            result.add("or: ${it.ordersToRemove.size}")
+        }
+
+        stopOrderBooksData?.let {
+            result.add("sob: ${it.orderBooks.size}")
+            result.add("sos: ${it.ordersToSave.size}")
+            result.add("sor: ${it.ordersToRemove.size}")
+        }
+
+        messageSequenceNumber?.let {
+            result.add("sn: $messageSequenceNumber")
+        }
+
+        return result.joinToString()
     }
 }
