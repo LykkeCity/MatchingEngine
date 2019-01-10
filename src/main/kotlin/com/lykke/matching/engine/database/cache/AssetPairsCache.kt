@@ -2,17 +2,22 @@ package com.lykke.matching.engine.database.cache
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
+import com.lykke.matching.engine.services.events.NewAssetPairEvent
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.util.stream.Collectors
 import kotlin.concurrent.fixedRateTimer
 
 @Component
-class AssetPairsCache @Autowired constructor (
+class AssetPairsCache @Autowired constructor(
         private val databaseAccessor: DictionariesDatabaseAccessor,
+        private val applicationEventPublisher: ApplicationEventPublisher,
         @Value("\${application.assets.pair.cache.update.interval}") updateInterval: Long? = null) : DataCache() {
+
+    private val knownAssetPairs = HashSet<String>()
 
     companion object {
         private val LOGGER = Logger.getLogger(AssetPairsCache::class.java)
@@ -24,6 +29,7 @@ class AssetPairsCache @Autowired constructor (
     init {
         this.assetPairsById = databaseAccessor.loadAssetPairs()
         this.assetPairsByPair = generateAssetPairsMapByPair(assetPairsById)
+        assetPairsById.values.forEach { knownAssetPairs.add(pairKey(it.baseAssetId, it.quotingAssetId)) }
         LOGGER.info("Loaded ${assetPairsById.size} assets pairs")
         updateInterval?.let {
             fixedRateTimer(name = "Asset Pairs Cache Updater", initialDelay = it, period = it) {
@@ -44,7 +50,7 @@ class AssetPairsCache @Autowired constructor (
         return assetPairsById
                 .values
                 .stream()
-                .filter { it.quotingAssetId == assetId || it.baseAssetId == assetId}
+                .filter { it.quotingAssetId == assetId || it.baseAssetId == assetId }
                 .collect(Collectors.toSet())
     }
 
@@ -54,6 +60,11 @@ class AssetPairsCache @Autowired constructor (
             val newMapByPair = generateAssetPairsMapByPair(newMap)
             assetPairsById = newMap
             assetPairsByPair = newMapByPair
+        }
+        this.assetPairsById.values.forEach {
+            if (knownAssetPairs.add(pairKey(it.baseAssetId, it.quotingAssetId))) {
+                applicationEventPublisher.publishEvent(NewAssetPairEvent(it))
+            }
         }
     }
 

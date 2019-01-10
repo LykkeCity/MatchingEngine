@@ -11,10 +11,10 @@ import com.lykke.matching.engine.database.cache.ApplicationGroupDeleteEvent
 import com.lykke.matching.engine.database.cache.ApplicationSettingCreateOrUpdateEvent
 import com.lykke.matching.engine.database.cache.ApplicationSettingDeleteEvent
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.services.events.NewAssetPairEvent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
-import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.PostConstruct
 
 @Component
@@ -133,6 +133,11 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
 
     @EventListener
     private fun onSettingGroupRemove(applicationGroupDeleteEvent: ApplicationGroupDeleteEvent) {
+        init()
+    }
+
+    @EventListener
+    private fun onNewAssetPair(newAssetPairEvent: NewAssetPairEvent) {
         init()
     }
 
