@@ -59,7 +59,7 @@ import com.lykke.matching.engine.services.validators.input.LimitOrderCancelOpera
 import com.lykke.matching.engine.services.validators.input.impl.CashInOutOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.CashTransferOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
-import com.lykke.matching.engine.services.validators.input.input.LimitOrderCancelOperationInputValidatorImpl
+import com.lykke.matching.engine.services.validators.input.impl.LimitOrderCancelOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.settings.SettingValidator
 import com.lykke.matching.engine.services.validators.settings.impl.DisabledFunctionalitySettingValidator
 import com.lykke.matching.engine.services.validators.settings.impl.MessageProcessingSwitchSettingValidator
