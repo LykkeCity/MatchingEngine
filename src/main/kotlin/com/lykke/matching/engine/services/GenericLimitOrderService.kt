@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.BestPrice
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
 import com.lykke.matching.engine.order.transaction.CurrentTransactionOrderBooksHolder
@@ -21,7 +22,8 @@ import java.util.concurrent.PriorityBlockingQueue
 
 @Component
 class GenericLimitOrderService @Autowired constructor(private val orderBookDatabaseAccessorHolder: OrdersDatabaseAccessorsHolder,
-                                                      private val tradeInfoQueue: Optional<BlockingQueue<TradeInfo>>) : AbstractGenericLimitOrderService<AssetOrderBook> {
+                                                      private val tradeInfoQueue: Optional<BlockingQueue<TradeInfo>>,
+                                                      private val expiryOrdersQueue: ExpiryOrdersQueue) : AbstractGenericLimitOrderService<AssetOrderBook> {
 
     //asset -> orderBook
     private val limitOrdersQueues = ConcurrentHashMap<String, AssetOrderBook>()
@@ -34,6 +36,9 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     }
 
     fun update() {
+        limitOrdersMap.values.forEach {
+            expiryOrdersQueue.removeIfOrderHasExpiryTime(it)
+        }
         limitOrdersQueues.clear()
         limitOrdersMap.clear()
         clientLimitOrdersMap.clear()
@@ -53,6 +58,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     fun addOrder(order: LimitOrder) {
         limitOrdersMap[order.externalId] = order
         clientLimitOrdersMap.getOrPut(order.clientId) { ArrayList() }.add(order)
+        expiryOrdersQueue.addIfOrderHasExpiryTime(order)
     }
 
     override fun addOrders(orders: Collection<LimitOrder>) {
@@ -87,6 +93,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
 
     fun cancelLimitOrder(date: Date, uid: String, removeFromClientMap: Boolean = false): LimitOrder? {
         val order = limitOrdersMap.remove(uid) ?: return null
+        expiryOrdersQueue.removeIfOrderHasExpiryTime(order)
 
         if (removeFromClientMap) {
             removeFromClientMap(uid)
@@ -105,6 +112,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     override fun cancelLimitOrders(orders: Collection<LimitOrder>, date: Date) {
         orders.forEach { order ->
             val ord = limitOrdersMap.remove(order.externalId)
+            expiryOrdersQueue.removeIfOrderHasExpiryTime(order)
             clientLimitOrdersMap[order.clientId]?.remove(order)
             if (ord != null) {
                 ord.updateStatus(Cancelled, date)
@@ -116,6 +124,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
         orders.forEach { order ->
             val removedOrder = limitOrdersMap.remove(order.externalId)
             clientLimitOrdersMap[order.clientId]?.remove(removedOrder)
+            expiryOrdersQueue.removeIfOrderHasExpiryTime(order)
             if (removedOrder != null && status != null) {
                 removedOrder.updateStatus(status, date!!)
             }

@@ -72,7 +72,8 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
                     order,
                     orderContext.availableLimitAssetBalance!!,
                     orderContext.limitVolume!!,
-                    orderContext.executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId))
+                    orderContext.executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId),
+                    orderContext.executionContext.date)
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, false, e.message, e.orderStatus)
         }
