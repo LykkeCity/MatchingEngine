@@ -29,7 +29,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         val context = messageWrapper.context as LimitOrderCancelOperationContext
 
 
-        LOGGER.debug("Got limit order cancel request (id: ${context.uid}, orders: ${context.limitOrderIds})")
+        LOGGER.debug("Got limit order cancel request (messageId: ${context.messageId}, id: ${context.uid}, orders: ${context.limitOrderIds})")
         val ordersByType = getLimitOrderTypeToLimitOrders(context.limitOrderIds)
 
         try {

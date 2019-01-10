@@ -2,7 +2,6 @@ package com.lykke.matching.engine.order.process
 
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import org.springframework.stereotype.Component

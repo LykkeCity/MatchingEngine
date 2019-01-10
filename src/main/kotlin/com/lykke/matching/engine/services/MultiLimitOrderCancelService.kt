@@ -8,10 +8,10 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.process.common.CancelRequest
 import org.apache.log4j.Logger
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
 import java.util.Date
 
-@Component
+@Service
 class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOrderService,
                                    private val limitOrdersCancelServiceHelper: LimitOrdersCancelServiceHelper,
                                    private val applicationSettingsHolder: ApplicationSettingsHolder) : AbstractService {

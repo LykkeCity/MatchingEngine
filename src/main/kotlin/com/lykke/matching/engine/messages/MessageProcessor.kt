@@ -195,9 +195,22 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
 
         val preProcessedMessageQueueStartTime = messageWrapper.messagePreProcessorEndTimestamp
                 ?: messageWrapper.startTimestamp
+
         val preProcessedMessageQueueTime = startMessageProcessingTime - preProcessedMessageQueueStartTime
 
-        performanceStatsHolder.addMessage(messageWrapper.type, inputQueueTime, preProcessedMessageQueueTime, preProcessingTime, processingTime, totalTime)
+        if (messageWrapper.writeResponseTime == null) {
+            val message = "There was no write response to socket time recorded, response to socket is not written, messageId: ${messageWrapper.messageId}"
+            LOGGER.error(message)
+            METRICS_LOGGER.logError(message)
+        }
+
+        performanceStatsHolder.addMessage(type = messageWrapper.type,
+                inputQueueTime = inputQueueTime,
+                preProcessedQueueTime =  preProcessedMessageQueueTime,
+                preProcessingTime =  preProcessingTime,
+                processingTime =  processingTime,
+                writeResponseTime = messageWrapper.writeResponseTime,
+                totalTime = totalTime)
     }
 
     private fun initServicesMap(): Map<MessageType, AbstractService> {

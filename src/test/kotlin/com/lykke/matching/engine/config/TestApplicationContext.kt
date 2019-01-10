@@ -14,6 +14,7 @@ import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.holders.*
+import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.parsers.data.LimitOrderCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.data.LimitOrderMassCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.ContextParser
@@ -25,6 +26,7 @@ import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.ExecutionDataApplyService
+import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
@@ -315,9 +317,11 @@ open class TestApplicationContext {
 
     @Bean
     open fun genericLimitOrderService(testOrderDatabaseAccessor: OrdersDatabaseAccessorsHolder,
-                                      tradeInfoQueue: Optional<BlockingQueue<TradeInfo>>): GenericLimitOrderService {
+                                      tradeInfoQueue: Optional<BlockingQueue<TradeInfo>>,
+                                      expiryOrdersQueue: ExpiryOrdersQueue): GenericLimitOrderService {
         return GenericLimitOrderService(testOrderDatabaseAccessor,
-                tradeInfoQueue)
+                tradeInfoQueue,
+                expiryOrdersQueue)
     }
 
     @Bean
@@ -396,8 +400,9 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun genericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder): GenericStopLimitOrderService {
-        return GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder)
+    open fun genericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
+                                          expiryOrdersQueue: ExpiryOrdersQueue): GenericStopLimitOrderService {
+        return GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, expiryOrdersQueue)
     }
 
     @Bean
@@ -472,7 +477,6 @@ open class TestApplicationContext {
     open fun feeProcessor(assetsHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder, genericLimitOrderService: GenericLimitOrderService): FeeProcessor {
         return FeeProcessor(assetsHolder, assetsPairsHolder, genericLimitOrderService)
     }
-
 
     @Bean
     open fun cashInOutContextParser(assetsHolder: AssetsHolder): CashInOutContextParser {
@@ -652,5 +656,23 @@ open class TestApplicationContext {
                 preProcessedMessageQueue,
                 messageProcessingStatusHolder,
                 ThrottlingLogger.getLogger("limitOrder"))
+    }
+
+    @Bean
+    open fun expiryOrdersQueue() = ExpiryOrdersQueue()
+
+    @Bean
+    open fun messageRouter(limitOrderInputQueue: BlockingQueue<MessageWrapper>,
+                           cashInOutInputQueue: BlockingQueue<MessageWrapper>,
+                           cashTransferInputQueue: BlockingQueue<MessageWrapper>,
+                           limitOrderCancelInputQueue: BlockingQueue<MessageWrapper>,
+                           limitOrderMassCancelInputQueue: BlockingQueue<MessageWrapper>,
+                           preProcessedMessageQueue: BlockingQueue<MessageWrapper>): MessageRouter {
+        return MessageRouter(limitOrderInputQueue,
+                cashInOutInputQueue,
+                cashTransferInputQueue,
+                limitOrderCancelInputQueue,
+                limitOrderMassCancelInputQueue,
+                preProcessedMessageQueue)
     }
 }
