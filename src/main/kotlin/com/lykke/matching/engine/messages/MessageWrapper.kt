@@ -8,6 +8,7 @@ import com.lykke.matching.engine.utils.ByteHelper.Companion.toByteArray
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import java.io.IOException
+import java.lang.IllegalStateException
 
 class MessageWrapper(
         val sourceIp: String,
@@ -15,7 +16,6 @@ class MessageWrapper(
         val byteArray: ByteArray,
         val clientHandler: ClientHandler?,
         val startTimestamp: Long = System.nanoTime(),
-
         var timestamp: Long? = null,
         var messageId: String? = null,
         var parsedMessage: MessageOrBuilder? = null,
@@ -25,12 +25,13 @@ class MessageWrapper(
         var context: Any? = null) {
 
     companion object {
-        val LOGGER = ThrottlingLogger.getLogger(MessageWrapper::class.java.name)
-        val METRICS_LOGGER = MetricsLogger.getLogger()
+        private val LOGGER = ThrottlingLogger.getLogger(MessageWrapper::class.java.name)
+        private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     var messagePreProcessorStartTimestamp: Long?  = null
     var messagePreProcessorEndTimestamp: Long? = null
+    var writeResponseTime: Long? = null
 
     var processedMessage: ProcessedMessage? = null
 
@@ -86,7 +87,15 @@ class MessageWrapper(
     private fun writeClientResponse(message: Message, messageType: MessageType) {
         if (clientHandler != null) {
             try {
+                if (writeResponseTime != null) {
+                    val errorMessage = "[$sourceIp]: Can not write response - response was already written to socket, message id $messageId"
+                    LOGGER.error(errorMessage)
+                    METRICS_LOGGER.logError(errorMessage)
+                    throw IllegalStateException(errorMessage)
+                }
+                val start = System.nanoTime()
                 clientHandler.writeOutput(toByteArray(messageType.type, message.serializedSize, message.toByteArray()))
+                writeResponseTime = System.nanoTime() - start
             } catch (exception: IOException){
                 LOGGER.error("[$sourceIp]: Unable to write for message with id $messageId response: ${exception.message}", exception)
                 METRICS_LOGGER.logError( "[$sourceIp]: Unable to write response", exception)

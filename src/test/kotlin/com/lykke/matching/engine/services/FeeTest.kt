@@ -9,6 +9,8 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -455,8 +457,7 @@ class FeeTest: AbstractTest() {
             Thread.sleep(10)
         }
 
-        balanceUpdateHandlerTest.clear()
-        testClientLimitOrderListener.clear()
+        clearMessageQueues()
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order4", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.01,
                 fees = listOf(buildLimitOrderFeeInstruction(
@@ -466,14 +467,17 @@ class FeeTest: AbstractTest() {
                         targetClientId = "Client3",
                         assetIds = listOf("USD"))!!))))
 
-        var result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
-        assertEquals(OrderStatus.NotEnoughFunds.name, result.orders.first { it.order.externalId == "order4" }.order.status)
-        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
-        assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", true).size)
-        assertEquals(3, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
+        var event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(2, event.orders.size)
+        assertEquals(1, event.balanceUpdates?.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single {it.externalId == "order1"}.status)
+        assertEquals(OutgoingOrderStatus.REJECTED, event.orders.single {it.externalId == "order4"}.status)
+        assertEquals(OrderRejectReason.NOT_ENOUGH_FUNDS, event.orders.single {it.externalId == "order4"}.rejectReason)
+        assertOrderBookSize("BTCUSD", true, 0)
+        assertOrderBookSize("BTCUSD", false, 2)
+        assertBalance("Client2", "BTC", 0.01521, 0.01)
 
-        balanceUpdateHandlerTest.clear()
-        testClientLimitOrderListener.clear()
+        clearMessageQueues()
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order5", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.01,
                 fees = listOf(buildLimitOrderFeeInstruction(
@@ -483,13 +487,14 @@ class FeeTest: AbstractTest() {
                         targetClientId = "Client3",
                         assetIds = listOf("USD"))!!))))
 
-        result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
-        assertEquals(OrderStatus.Matched.name, result.orders.first { it.order.externalId == "order0" }.order.status)
-        assertEquals(OrderStatus.Cancelled.name, result.orders.first { it.order.externalId == "order1" }.order.status)
-        assertEquals(OrderStatus.Matched.name, result.orders.first { it.order.externalId == "order2" }.order.status)
-        assertEquals(OrderStatus.Matched.name, result.orders.first { it.order.externalId == "order5" }.order.status)
-        assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", true).size)
-        assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
+        event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(3, event.orders.size)
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.externalId == "order0" }.status)
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.externalId == "order2" }.status)
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.externalId == "order5" }.status)
+
+        assertOrderBookSize("BTCUSD", true, 0)
+        assertOrderBookSize("BTCUSD", false, 0)
     }
 
     @Test
@@ -523,8 +528,7 @@ class FeeTest: AbstractTest() {
             Thread.sleep(10)
         }
 
-        balanceUpdateHandlerTest.clear()
-        testClientLimitOrderListener.clear()
+        clearMessageQueues()
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order4", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.01,
                 fees = listOf(buildLimitOrderFeeInstruction(
@@ -534,14 +538,17 @@ class FeeTest: AbstractTest() {
                         targetClientId = "Client3",
                         assetIds = listOf("EUR"))!!))))
 
-        var result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
-        assertEquals(OrderStatus.NotEnoughFunds.name, result.orders.first { it.order.externalId == "order4" }.order.status)
-        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
-        assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", true).size)
-        assertEquals(3, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
+        var event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(2, event.orders.size)
+        assertEquals(1, event.balanceUpdates?.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "order1" }.status)
+        assertEquals(OutgoingOrderStatus.REJECTED, event.orders.single { it.externalId == "order4" }.status)
+        assertEquals(OrderRejectReason.NOT_ENOUGH_FUNDS, event.orders.single { it.externalId == "order4" }.rejectReason)
+        assertBalance("Client2", "BTC", 0.015, 0.01)
+        assertOrderBookSize("BTCUSD", true, 0)
+        assertOrderBookSize("BTCUSD", false, 2)
 
-        balanceUpdateHandlerTest.clear()
-        testClientLimitOrderListener.clear()
+        clearMessageQueues()
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order5", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.01,
                 fees = listOf(buildLimitOrderFeeInstruction(
@@ -551,13 +558,13 @@ class FeeTest: AbstractTest() {
                         targetClientId = "Client3",
                         assetIds = listOf("EUR"))!!))))
 
-        result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
-        assertEquals(OrderStatus.Matched.name, result.orders.first { it.order.externalId == "order0" }.order.status)
-        assertEquals(OrderStatus.Cancelled.name, result.orders.first { it.order.externalId == "order1" }.order.status)
-        assertEquals(OrderStatus.Matched.name, result.orders.first { it.order.externalId == "order2" }.order.status)
-        assertEquals(OrderStatus.Matched.name, result.orders.first { it.order.externalId == "order5" }.order.status)
-        assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", true).size)
-        assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
+        event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.externalId == "order0" }.status)
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.externalId == "order2" }.status)
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.externalId == "order5" }.status)
+
+        assertOrderBookSize("BTCUSD", true, 0)
+        assertOrderBookSize("BTCUSD", false, 0)
     }
 
     @Test

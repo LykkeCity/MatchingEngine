@@ -6,8 +6,8 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
@@ -15,7 +15,6 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
-import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
@@ -29,8 +28,9 @@ import java.util.*
 class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                                     val assetsHolder: AssetsHolder,
                                     val applicationSettingsHolder: ApplicationSettingsHolder,
-                                    @Qualifier("singleLimitOrderContextPreprocessorLogger")
+                                    @Qualifier("singleLimitOrderPreProcessingLogger")
                                     val logger: ThrottlingLogger) : ContextParser<SingleLimitOrderParsedData> {
+
     override fun parse(messageWrapper: MessageWrapper): SingleLimitOrderParsedData {
 
         val context = parseMessage(messageWrapper)
@@ -42,10 +42,6 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
         messageWrapper.processedMessage = context.processedMessage
 
         return SingleLimitOrderParsedData(messageWrapper, context.limitOrder.assetPairId)
-    }
-
-    fun getStopOrderContext(messageId: String, order: LimitOrder): SingleLimitOrderContext {
-        return getContext(messageId, order, false, null)
     }
 
     private fun getContext(messageId: String,
@@ -105,10 +101,6 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
         return ProtocolMessages.LimitOrder.parseFrom(array)
     }
 
-    private fun parseOldLimitOrder(array: ByteArray): ProtocolMessages.OldLimitOrder {
-        return ProtocolMessages.OldLimitOrder.parseFrom(array)
-    }
-
     private fun createOrder(message: ProtocolMessages.LimitOrder): LimitOrder {
         val type = if (message.hasType()) LimitOrderType.getByExternalId(message.type) else LimitOrderType.LIMIT
         val status = when (type) {
@@ -136,6 +128,8 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                 lowerPrice = if (message.hasLowerPrice()) BigDecimal.valueOf(message.lowerPrice) else null,
                 upperLimitPrice = if (message.hasUpperLimitPrice()) BigDecimal.valueOf(message.upperLimitPrice) else null,
                 upperPrice = if (message.hasUpperPrice()) BigDecimal.valueOf(message.upperPrice) else null,
-                previousExternalId = null)
+                previousExternalId = null,
+                timeInForce = if (message.hasTimeInForce()) OrderTimeInForce.getByExternalId(message.timeInForce) else null,
+                expiryTime = if (message.hasExpiryTime()) Date(message.expiryTime) else null)
     }
 }

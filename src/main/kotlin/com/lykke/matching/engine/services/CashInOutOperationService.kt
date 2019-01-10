@@ -11,6 +11,7 @@ import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.INVALID_FEE
 import com.lykke.matching.engine.messages.MessageStatus.OK
+import com.lykke.matching.engine.messages.MessageStatus.RUNTIME
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -64,7 +65,7 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
         }
 
         val fees = try {
-            feeProcessor.processFee(feeInstructions, walletOperation, operations)
+            feeProcessor.processFee(feeInstructions, walletOperation, operations, balancesGetter = balancesHolder)
         } catch (e: FeeException) {
             writeErrorResponse(messageWrapper, cashInOutOperation.matchingEngineOperationId, INVALID_FEE, e.message)
             return
@@ -83,10 +84,7 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setMatchingEngineId(cashInOutOperation.matchingEngineOperationId)
-                    .setStatus(MessageStatus.RUNTIME.type))
-            LOGGER.info("Cash in/out operation (${cashInOutOperation.externalId}) for client ${cashInOutContext.cashInOutOperation.clientId} asset ${cashInOutOperation.asset.assetId}, volume: ${NumberUtils.roundForPrint(walletOperation.amount)}: unable to save balance")
+            writeErrorResponse(messageWrapper, cashInOutOperation.matchingEngineOperationId, RUNTIME, "unable to save balance")
             return
         }
         walletProcessor.apply().sendNotification(cashInOutOperation.externalId!!, MessageType.CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
@@ -105,9 +103,8 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
 
         messageSender.sendMessage(outgoingMessage)
 
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setMatchingEngineId(cashInOutOperation.matchingEngineOperationId)
-                .setStatus(OK.type))
+        writeResponse(messageWrapper, cashInOutOperation.matchingEngineOperationId, OK)
+
 
         LOGGER.info("Cash in/out walletOperation (${cashInOutOperation.externalId}) for client ${cashInOutContext.cashInOutOperation.clientId}, " +
                 "asset ${cashInOutOperation.asset.assetId}, " +
@@ -127,6 +124,12 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
                 cashInOutContext.messageId,
                 fees
         ))
+    }
+
+    fun writeResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus) {
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setMatchingEngineId(matchingEngineOperationId)
+                .setStatus(status.type))
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

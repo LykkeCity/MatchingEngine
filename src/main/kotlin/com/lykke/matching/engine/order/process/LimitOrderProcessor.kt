@@ -72,7 +72,8 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
                     order,
                     orderContext.availableLimitAssetBalance!!,
                     orderContext.limitVolume!!,
-                    orderContext.executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId))
+                    orderContext.executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId),
+                    orderContext.executionContext.date)
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, false, e.message, e.orderStatus)
         }
@@ -136,8 +137,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
             OrderStatus.NotEnoughFunds,
             OrderStatus.InvalidFee,
             OrderStatus.TooHighPriceDeviation -> {
-                addOrderToReportIfNotTrusted(orderContext.order, orderContext.executionContext)
-                return ProcessedOrder(order, false)
+                return processRejectedMatchingResult(orderContext)
             }
             OrderStatus.InOrderBook,
             OrderStatus.Matched,
@@ -153,6 +153,22 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
                 return ProcessedOrder(order, false)
             }
         }
+    }
+
+    private fun processRejectedMatchingResult(orderContext: LimitOrderExecutionContext): ProcessedOrder {
+        val matchingResult = orderContext.matchingResult!!
+        if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
+            matchingResultHandlingHelper.preProcessCancelledOppositeOrders(orderContext)
+            matchingResultHandlingHelper.preProcessCancelledOrdersWalletOperations(orderContext)
+            matchingResultHandlingHelper.processCancelledOppositeOrders(orderContext)
+            val orderBook = orderContext.executionContext.orderBooksHolder
+                    .getChangedOrderBookCopy(orderContext.order.assetPairId)
+            orderContext.matchingResult!!.cancelledLimitOrders.forEach {
+                orderBook.removeOrder(it.origin!!)
+            }
+        }
+        addOrderToReportIfNotTrusted(orderContext.order, orderContext.executionContext)
+        return ProcessedOrder(orderContext.order, false)
     }
 
     private fun processMatchingResult(orderContext: LimitOrderExecutionContext): ProcessedOrder {

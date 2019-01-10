@@ -2,7 +2,6 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.balance.BalanceException
-import com.lykke.matching.engine.daos.OperationType
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
@@ -83,9 +82,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setMatchingEngineId(matchingEngineOperationId)
-                    .setStatus(MessageStatus.RUNTIME.type))
+            writeErrorResponse(messageWrapper, matchingEngineOperationId, MessageStatus.RUNTIME)
             LOGGER.info("Reserved cash in/out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.reservedVolume)}: unable to save balance")
             return
         }
@@ -105,19 +102,10 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                 walletProcessor.getClientBalanceUpdates(),
                 operation)
 
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setMatchingEngineId(matchingEngineOperationId)
-                .setStatus(MessageStatus.OK.type))
+        writeResponse(messageWrapper, matchingEngineOperationId, MessageStatus.OK)
 
         LOGGER.info("Reserved cash in/out operation (${message.id}) for client ${message.clientId}, " +
                 "asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.reservedVolume)} processed")
-    }
-
-    fun writeErrorResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus, errorMessage: String = StringUtils.EMPTY) {
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse
-                .newBuilder()
-                .setMatchingEngineId(matchingEngineOperationId)
-                .setStatus(status.type).setStatusReason(errorMessage))
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.ReservedCashInOutOperation {
@@ -126,16 +114,32 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        messageWrapper.messageId = if(message.hasMessageId()) message.messageId else  message.id
+        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.id
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
         messageWrapper.id = message.id
     }
 
-    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+    fun writeResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus) {
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setMatchingEngineId(matchingEngineOperationId)
+                .setStatus(status.type)
+        )
+    }
+
+
+    override fun writeResponse(messageWrapper: MessageWrapper,  status: MessageStatus) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(status.type)
         )
+    }
+
+    fun writeErrorResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus, errorMessage: String = StringUtils.EMPTY) {
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse
+                .newBuilder()
+                .setMatchingEngineId(matchingEngineOperationId)
+                .setStatus(status.type)
+                .setStatusReason(errorMessage))
     }
 
     private fun isCashIn(amount: Double): Boolean {

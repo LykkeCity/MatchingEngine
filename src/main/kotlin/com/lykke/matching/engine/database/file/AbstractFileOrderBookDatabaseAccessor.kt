@@ -154,7 +154,9 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
                 order.lowerPrice?.toBigDecimal(),
                 order.upperLimitPrice?.toBigDecimal(),
                 order.upperPrice?.toBigDecimal(),
-                order.previousExternalId
+                order.previousExternalId,
+                null,
+                null
         )
     }
 
@@ -197,6 +199,8 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
             val prevOrderBookFile = getPrevOrderBookFilePath(fileName)
             val orderBookFile = getOrderBookFilePath(fileName)
             Files.move(orderBookFile, prevOrderBookFile, StandardCopyOption.REPLACE_EXISTING)
+        } catch(e: NoSuchFileException) {
+            // it is new order book - ignore
         } catch(e: Exception) {
             val message = "Unable to archive and delete, name: $fileName"
             LOGGER.error(message, e)

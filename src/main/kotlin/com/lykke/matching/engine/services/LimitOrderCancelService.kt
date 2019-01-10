@@ -28,7 +28,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         val context = messageWrapper.context as LimitOrderCancelOperationContext
 
 
-        LOGGER.debug("Got limit order cancel request (id: ${context.uid}, orders: ${context.limitOrderIds})")
+        LOGGER.debug("Got limit order cancel request (messageId: ${context.messageId}, id: ${context.uid}, orders: ${context.limitOrderIds})")
         val ordersByType = getLimitOrderTypeToLimitOrders(context.limitOrderIds)
 
         try {
@@ -63,7 +63,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                 .map(::getOrder)
                 .filter { limitOrder -> limitOrder != null }
                 .map { t -> t!! }
-                .collect(Collectors.groupingBy { limitOrder: LimitOrder -> limitOrder.type!! })
+                .collect(Collectors.groupingBy { limitOrder: LimitOrder -> limitOrder.type ?: LimitOrderType.LIMIT })
     }
 
     private fun getOrder(orderId: String): LimitOrder? {
