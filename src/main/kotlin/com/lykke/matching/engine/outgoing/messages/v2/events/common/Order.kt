@@ -6,6 +6,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderSide
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderType
 import com.lykke.matching.engine.outgoing.messages.v2.createProtobufTimestampBuilder
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderTimeInForce
 import java.util.Date
 
 class Order(val orderType: OrderType,
@@ -30,6 +31,8 @@ class Order(val orderType: OrderType,
             val straight: Boolean?,
             val fees: List<FeeInstruction>?,
             val trades: List<Trade>?,
+            val timeInForce: OrderTimeInForce?,
+            val expiryTime: Date?,
             val parentExternalId: String?,
             val childExternalId: String?) : EventPart<OutgoingMessages.ExecutionEvent.Order.Builder> {
 
@@ -78,6 +81,12 @@ class Order(val orderType: OrderType,
         }
         trades?.forEach { trade ->
             builder.addTrades(trade.createGeneratedMessageBuilder())
+        }
+        timeInForce?.let { timeInForce ->
+            builder.timeInForce = timeInForce.id
+        }
+        expiryTime?.let { expiryTime ->
+            builder.setExpiryTime(expiryTime.createProtobufTimestampBuilder())
         }
         parentExternalId?.let {
             builder.parentExternalId = it

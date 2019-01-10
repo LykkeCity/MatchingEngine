@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
@@ -27,8 +28,9 @@ import java.util.*
 class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                                     val assetsHolder: AssetsHolder,
                                     val applicationSettingsHolder: ApplicationSettingsHolder,
-                                    @Qualifier("singleLimitOrderContextPreprocessorLogger")
+                                    @Qualifier("singleLimitOrderPreProcessingLogger")
                                     val logger: ThrottlingLogger) : ContextParser<SingleLimitOrderParsedData> {
+
     override fun parse(messageWrapper: MessageWrapper): SingleLimitOrderParsedData {
 
         val context = parseMessage(messageWrapper)
@@ -127,8 +129,8 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                 upperLimitPrice = if (message.hasUpperLimitPrice()) BigDecimal.valueOf(message.upperLimitPrice) else null,
                 upperPrice = if (message.hasUpperPrice()) BigDecimal.valueOf(message.upperPrice) else null,
                 previousExternalId = null,
-                timeInForce = null,
-                expiryTime = null,
+                timeInForce = if (message.hasTimeInForce()) OrderTimeInForce.getByExternalId(message.timeInForce) else null,
+                expiryTime = if (message.hasExpiryTime()) Date(message.expiryTime) else null,
                 parentOrderExternalId = null,
                 childOrderExternalId = null)
     }

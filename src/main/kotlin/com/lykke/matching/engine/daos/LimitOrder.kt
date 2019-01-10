@@ -96,4 +96,12 @@ class LimitOrder(id: String,
         origin.price = price
         origin.childOrderExternalId = childOrderExternalId
     }
+
+    fun hasExpiryTime(): Boolean {
+        return timeInForce == OrderTimeInForce.GTD && expiryTime != null
+    }
+
+    fun isExpired(date: Date): Boolean {
+        return hasExpiryTime() && !expiryTime!!.after(date)
+    }
 }

@@ -18,6 +18,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.common.Order
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderSide
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderTimeInForce
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderType
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.Trade
 import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
@@ -81,6 +82,8 @@ private fun convertLimitOrder(limitOrderWithTrades: LimitOrderWithTrades): Order
             null,
             feeInstructions?.mapIndexed { index, feeInstruction -> convertFeeInstruction(index, feeInstruction) },
             limitOrderWithTrades.trades.map { convertTrade(it) },
+            orderTimeInForce(limitOrder.timeInForce),
+            limitOrder.expiryTime,
             limitOrder.parentOrderExternalId,
             limitOrder.childOrderExternalId)
 }
@@ -111,6 +114,8 @@ private fun convertMarketOrder(marketOrderWithTrades: MarketOrderWithTrades): Or
             marketOrder.isStraight(),
             feeInstructions?.mapIndexed { index, feeInstruction -> convertFeeInstruction(index, feeInstruction) },
             marketOrderWithTrades.trades.map { convertTrade(it) },
+            null,
+            null,
             null,
             null)
 }
@@ -237,4 +242,12 @@ private fun convertFeeTransfer(index: Int, internalFeeTransfer: com.lykke.matchi
             internalFeeTransfer.asset,
             bigDecimalToString(internalFeeTransfer.feeCoef),
             index)
+}
+
+private fun orderTimeInForce(internalTimeInForce: com.lykke.matching.engine.daos.order.OrderTimeInForce?): OrderTimeInForce? {
+    return when (internalTimeInForce) {
+        com.lykke.matching.engine.daos.order.OrderTimeInForce.GTC -> OrderTimeInForce.GTC
+        com.lykke.matching.engine.daos.order.OrderTimeInForce.GTD -> OrderTimeInForce.GTD
+        null -> null
+    }
 }

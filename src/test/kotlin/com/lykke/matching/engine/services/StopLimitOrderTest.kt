@@ -5,11 +5,13 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.IncomingLimitOrder
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
@@ -34,6 +36,7 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
+import java.util.Date
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -66,6 +69,9 @@ class StopLimitOrderTest : AbstractTest() {
 
     @Autowired
     private lateinit var messageBuilder: MessageBuilder
+
+    @Autowired
+    private lateinit var expiryOrdersQueue: ExpiryOrdersQueue
 
     @Before
     fun setUp() {
@@ -870,6 +876,64 @@ class StopLimitOrderTest : AbstractTest() {
         val eventIncomingOrder = event.orders.single { it.externalId == "IncomingLimitOrder" }
         assertEquals(OutgoingOrderStatus.PARTIALLY_MATCHED, eventIncomingOrder.status)
         assertEquals("1", eventIncomingOrder.remainingVolume)
+    }
+
+    @Test
+    fun testExpiredStopLimitOrder() {
+        val order = buildLimitOrder(clientId = "Client1", assetId = "BTCUSD",
+                type = LimitOrderType.STOP_LIMIT,
+                volume = -1.0,
+                lowerLimitPrice = 1.0,
+                lowerPrice = 1.0,
+                timeInForce = OrderTimeInForce.GTD,
+                expiryTime = Date())
+
+        Thread.sleep(10)
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(order))
+
+        assertEquals(0, expiryOrdersQueue.getExpiredOrdersExternalIds(Date()).size)
+        assertStopOrderBookSize("BTCUSD", false, 0)
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, event.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single().status)
+    }
+
+    @Test
+    fun testProcessExpiredStopLimitOrder() {
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1.0)
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD",
+                type = LimitOrderType.STOP_LIMIT,
+                volume = -1.0,
+                lowerLimitPrice = 1.0,
+                lowerPrice = 1.0,
+                timeInForce = OrderTimeInForce.GTD,
+                expiryTime = Date(Date().time + 300))))
+
+        Thread.sleep(500)
+
+        assertEquals(1, expiryOrdersQueue.getExpiredOrdersExternalIds(Date()).size)
+
+        clearMessageQueues()
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD",
+                volume = 1.0, price = 1.0)))
+
+        assertEquals(0, expiryOrdersQueue.getExpiredOrdersExternalIds(Date()).size)
+        assertStopOrderBookSize("BTCUSD", false, 0)
+        assertOrderBookSize("BTCUSD", false, 0)
+        assertOrderBookSize("BTCUSD", true, 1)
+
+        assertEquals(1, clientsEventsQueue.size)
+        val stopOrderEvent = clientsEventsQueue.single() as ExecutionEvent
+        assertEquals(3, stopOrderEvent.orders.size)
+        assertEquals(2, stopOrderEvent.balanceUpdates?.size)
+
+        val eventStopOrder = stopOrderEvent.orders.single { it.orderType == OrderType.STOP_LIMIT }
+        val childLimitOrder = stopOrderEvent.orders.single { it.parentExternalId == eventStopOrder.externalId }
+        assertEquals(OutgoingOrderStatus.EXECUTED, eventStopOrder.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, childLimitOrder.status)
+
+        assertBalance("Client1", "BTC", 1.0, 0.0)
     }
 
 }
