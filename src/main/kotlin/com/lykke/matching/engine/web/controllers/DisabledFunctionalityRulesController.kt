@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -48,7 +49,7 @@ class DisabledFunctionalityRulesController {
         disabledFunctionalityRulesService.create(disabledFunctionalityRuleDto)
     }
 
-    @PostMapping("/{id}", consumes = [MediaType.APPLICATION_JSON_VALUE])
+    @PutMapping("/{id}", consumes = [MediaType.APPLICATION_JSON_VALUE])
     @ApiOperation("Update disable functionality rule")
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),

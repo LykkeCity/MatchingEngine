@@ -4,66 +4,40 @@ import com.lykke.matching.engine.daos.context.LimitOrderCancelOperationContext
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
-import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
+import com.lykke.matching.engine.incoming.parsers.data.LimitOrderCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.ContextParser
-import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
-import com.lykke.matching.engine.messages.MessageStatus
+import com.lykke.matching.engine.incoming.preprocessor.AbstractMessagePreprocessor
 import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.services.validators.input.LimitOrderCancelOperationInputValidator
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
-import javax.annotation.PostConstruct
 
 @Component
-class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOperationParsedData>,
+class LimitOrderCancelOperationPreprocessor(limitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOperationParsedData>,
                                             val limitOrderCancelOperationValidator: LimitOrderCancelOperationInputValidator,
-                                            val limitOrderCancelInputQueue: BlockingQueue<MessageWrapper>,
-                                            val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                                            messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                            preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
                                             val limitOrderCancelOperationPreprocessorPersistenceManager: PersistenceManager,
-                                            val processedMessagesCache: ProcessedMessagesCache) : MessagePreprocessor, Thread(LimitOrderCancelOperationPreprocessor::class.java.name) {
+                                            val processedMessagesCache: ProcessedMessagesCache,
+                                            @Qualifier("limitOrderCancelPreProcessingLogger")
+                                            private val logger: ThrottlingLogger) :
+        AbstractMessagePreprocessor<LimitOrderCancelOperationParsedData>(limitOrderCancelOperationContextParser,
+                messageProcessingStatusHolder,
+                preProcessedMessageQueue,
+                logger) {
 
     companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(LimitOrderCancelOperationPreprocessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    override fun preProcess(messageWrapper: MessageWrapper) {
-        val parsedData = limitOrderCancelOperationContextParser.parse(messageWrapper)
-        val parsedMessageWrapper = parsedData.messageWrapper
-
-        if (!validateData(parsedData)) {
-            return
-        }
-
-        preProcessedMessageQueue.put(parsedMessageWrapper)
-    }
-
-    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
-        val builder = ProtocolMessages.NewResponse.newBuilder().setStatus(status.type)
-
-        message?.let {
-            builder.statusReason = message
-        }
-
-        messageWrapper.writeNewResponse(builder)
-    }
-
-    override fun run() {
-        while (true) {
-            val messageWrapper = limitOrderCancelInputQueue.take()
-            try {
-                messageWrapper.messagePreProcessorStartTimestamp = System.nanoTime()
-                preProcess(messageWrapper)
-                messageWrapper.messagePreProcessorEndTimestamp = System.nanoTime()
-            } catch (e: Exception) {
-                handlePreprocessingException(e, messageWrapper)
-            }
-        }
+    override fun preProcessParsedData(parsedData: LimitOrderCancelOperationParsedData): Boolean {
+        return validateData(parsedData)
     }
 
     private fun processInvalidData(data: LimitOrderCancelOperationParsedData,
@@ -71,7 +45,7 @@ class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContext
                                    message: String) {
         val messageWrapper = data.messageWrapper
         val context = messageWrapper.context as LimitOrderCancelOperationContext
-        LOGGER.info("Input validation failed messageId: ${context.messageId}, details: $message")
+        logger.info("Input validation failed messageId: ${context.messageId}, details: $message")
 
         val persistenceSuccess = limitOrderCancelOperationPreprocessorPersistenceManager.persist(PersistenceData(context.processedMessage))
 
@@ -83,7 +57,7 @@ class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContext
             processedMessagesCache.addMessage(context.processedMessage)
             writeResponse(messageWrapper, MessageStatusUtils.toMessageStatus(validationType), message)
         } catch (e: Exception) {
-            LOGGER.error("Error occurred during processing of invalid limit order cancel data, context $context", e)
+            logger.error("Error occurred during processing of invalid limit order cancel data, context $context", e)
             METRICS_LOGGER.logError("Error occurred during invalid data processing, ${messageWrapper.type} ${context.messageId}")
         }
     }
@@ -96,26 +70,5 @@ class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContext
             return false
         }
         return true
-    }
-
-    @PostConstruct
-    private fun init() {
-        this.start()
-    }
-
-    private fun handlePreprocessingException(exception: Exception, message: MessageWrapper) {
-        try {
-            val context = message.context
-            CashTransferPreprocessor.LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
-                    if (context != null) "Error details: $context" else "", exception)
-
-            CashTransferPreprocessor.METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
-            writeResponse(message, MessageStatus.RUNTIME)
-        } catch (e: Exception) {
-            val errorMessage = "Got error during message preprocessing failure handling"
-            e.addSuppressed(exception)
-            CashTransferPreprocessor.LOGGER.error(errorMessage, e)
-            CashTransferPreprocessor.METRICS_LOGGER.logError(errorMessage, e)
-        }
     }
 }

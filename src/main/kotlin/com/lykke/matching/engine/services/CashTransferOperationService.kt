@@ -113,7 +113,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         val receiptOperation = WalletOperation(operation.toClientId, assetId, operation.volume)
         operations.add(receiptOperation)
 
-        val fees = feeProcessor.processFee(operation.fees, receiptOperation, operations)
+        val fees = feeProcessor.processFee(operation.fees, receiptOperation, operations, balancesGetter = balancesHolder)
 
         val walletProcessor = balancesHolder.createWalletProcessor(LOGGER, false)
         walletProcessor.preProcess(operations)

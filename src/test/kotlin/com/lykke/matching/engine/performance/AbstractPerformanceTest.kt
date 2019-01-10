@@ -58,7 +58,7 @@ abstract class AbstractPerformanceTest {
 
     companion object {
         val REPEAT_TIMES = 100
-        private val singleLimitOrderPreprocessorLogger = ThrottlingLogger.getLogger(SingleLimitOrderContextParser::class.java.name)
+        private val LOGGER = ThrottlingLogger.getLogger(AbstractPerformanceTest::class.java.name)
     }
 
     protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
@@ -158,16 +158,14 @@ abstract class AbstractPerformanceTest {
         assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
         assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
 
-        genericLimitOrderService = GenericLimitOrderService(ordersDatabaseAccessorsHolder,
-                assetsHolder,
-                assetsPairsHolder,
-                balancesHolder,
-                Optional.of(tradeInfoQueue))
+        genericLimitOrderService = GenericLimitOrderService(ordersDatabaseAccessorsHolder, Optional.of(tradeInfoQueue))
+
+        feeProcessor = FeeProcessor(assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
         val limitOrderInputValidator = LimitOrderInputValidatorImpl(applicationSettingsHolder)
-        singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsHolder, singleLimitOrderPreprocessorLogger)
+        singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsHolder, LOGGER)
         cashInOutContextParser = CashInOutContextParser(assetsHolder)
         cashTransferContextParser = CashTransferContextParser(assetsHolder)
 

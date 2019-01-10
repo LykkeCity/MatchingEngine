@@ -63,7 +63,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                 .map(::getOrder)
                 .filter { limitOrder -> limitOrder != null }
                 .map { t -> t!! }
-                .collect(Collectors.groupingBy { limitOrder: LimitOrder -> limitOrder.type!! })
+                .collect(Collectors.groupingBy { limitOrder: LimitOrder -> limitOrder.type ?: LimitOrderType.LIMIT })
     }
 
     private fun getOrder(orderId: String): LimitOrder? {

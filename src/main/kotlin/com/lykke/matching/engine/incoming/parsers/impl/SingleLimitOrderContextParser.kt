@@ -15,7 +15,6 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
-import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
@@ -29,8 +28,9 @@ import java.util.*
 class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                                     val assetsHolder: AssetsHolder,
                                     val applicationSettingsHolder: ApplicationSettingsHolder,
-                                    @Qualifier("singleLimitOrderContextPreprocessorLogger")
+                                    @Qualifier("singleLimitOrderPreProcessingLogger")
                                     val logger: ThrottlingLogger) : ContextParser<SingleLimitOrderParsedData> {
+
     override fun parse(messageWrapper: MessageWrapper): SingleLimitOrderParsedData {
 
         val context = parseMessage(messageWrapper)
@@ -42,10 +42,6 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
         messageWrapper.processedMessage = context.processedMessage
 
         return SingleLimitOrderParsedData(messageWrapper, context.limitOrder.assetPairId)
-    }
-
-    fun getStopOrderContext(messageId: String, order: LimitOrder): SingleLimitOrderContext {
-        return getContext(messageId, order, false, null)
     }
 
     private fun getContext(messageId: String,
@@ -103,10 +99,6 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
 
     private fun parseLimitOrder(array: ByteArray): ProtocolMessages.LimitOrder {
         return ProtocolMessages.LimitOrder.parseFrom(array)
-    }
-
-    private fun parseOldLimitOrder(array: ByteArray): ProtocolMessages.OldLimitOrder {
-        return ProtocolMessages.OldLimitOrder.parseFrom(array)
     }
 
     private fun createOrder(message: ProtocolMessages.LimitOrder): LimitOrder {
