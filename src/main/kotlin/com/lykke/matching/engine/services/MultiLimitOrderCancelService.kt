@@ -8,10 +8,10 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import org.apache.log4j.Logger
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
 import java.util.Date
 
-@Component
+@Service
 class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOrderService,
                                    private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                    private val applicationSettingsHolder: ApplicationSettingsHolder) : AbstractService {
@@ -39,15 +39,11 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
             messageWrapper.persisted = updated
             if (!updated) {
                 LOGGER.debug("Unable to save result for multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy}")
-                messageWrapper.writeNewResponse(
-                        ProtocolMessages.NewResponse.newBuilder()
-                                .setStatus(MessageStatus.RUNTIME.type)
-                                .setStatusReason("Unable to save result"))
+                writeErrorResponse(messageWrapper, MessageStatus.RUNTIME, "Unable to save result")
                 return
             }
         }
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setStatus(MessageStatus.OK.type))
+        writeResponse(messageWrapper, MessageStatus.OK)
         LOGGER.debug("Multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy} processed")
     }
 
@@ -68,6 +64,13 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
             null
         else
             ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)
+    }
+
+    private fun writeErrorResponse(messageWrapper: MessageWrapper, status: MessageStatus, errorMessage: String) {
+        messageWrapper.writeNewResponse(
+                ProtocolMessages.NewResponse.newBuilder()
+                        .setStatus(status.type)
+                        .setStatusReason(errorMessage))
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

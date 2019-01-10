@@ -29,7 +29,7 @@ class DefaultPersistenceManager(private val walletDatabaseAccessor: WalletDataba
             persistData(data)
             true
         } catch (e: Exception) {
-            val retryMessage = "Unable to save data (${data.details()}), retrying"
+            val retryMessage = "Unable to save data (${data.getSummary()}), retrying"
             LOGGER.error(retryMessage, e)
             METRICS_LOGGER.logError(retryMessage, e)
 
@@ -37,7 +37,7 @@ class DefaultPersistenceManager(private val walletDatabaseAccessor: WalletDataba
                 persistData(data)
                 true
             } catch (e: Exception) {
-                val message = "Unable to save data (${data.details()})"
+                val message = "Unable to save data (${data.getSummary()})"
                 LOGGER.error(message, e)
                 METRICS_LOGGER.logError(message, e)
                 false

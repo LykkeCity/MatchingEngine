@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.TypePerformanceStats;
 import com.microsoft.azure.storage.table.TableServiceEntity;
 
 public class AzurePerformanceStats extends TableServiceEntity {
+    private String appVersion;
     private String type;
     private String inputQueueTime;
     private String preProcessingTime;
@@ -11,6 +12,7 @@ public class AzurePerformanceStats extends TableServiceEntity {
     private String totalTime;
     private String processingTime;
     private String persistTime;
+    private String writeResponseTime;
     private Long persistCount;
     private Long count;
 
@@ -27,7 +29,9 @@ public class AzurePerformanceStats extends TableServiceEntity {
         this.processingTime = stats.getProcessingTime();
         this.count = stats.getCount();
         this.persistTime = stats.getPersistTime();
+        this.writeResponseTime = stats.getWriteResponseTime();
         this.persistCount = stats.getPersistCount();
+        this.appVersion = stats.getAppVersion();
     }
 
     public String getType() {
@@ -66,6 +70,14 @@ public class AzurePerformanceStats extends TableServiceEntity {
         return persistTime;
     }
 
+    public String getWriteResponseTime() {
+        return writeResponseTime;
+    }
+
+    public String getPreProcessedMessageQueueTime() {
+        return preProcessedMessageQueueTime;
+    }
+
     public Long getPersistCount() {
         return persistCount;
     }
@@ -90,6 +102,14 @@ public class AzurePerformanceStats extends TableServiceEntity {
         return preProcessedMessageQueueTime;
     }
 
+    public void setWriteResponseTime(String writeResponseTime) {
+        this.writeResponseTime = writeResponseTime;
+    }
+
+    public void setPreProcessedMessageQueueTime(String preProcessedMessageQueueTime) {
+        this.preProcessedMessageQueueTime = preProcessedMessageQueueTime;
+    }
+
     public void setInputQueueTime(String inputQueueTime) {
         this.inputQueueTime = inputQueueTime;
     }
@@ -100,5 +120,13 @@ public class AzurePerformanceStats extends TableServiceEntity {
 
     public void setPreProcessedMessageQueue(String preProcessedMessageQueue) {
         this.preProcessedMessageQueueTime = preProcessedMessageQueue;
+    }
+
+    public void setAppVersion(String appVersion) {
+        this.appVersion = appVersion;
+    }
+
+    public String getAppVersion() {
+        return appVersion;
     }
 }
