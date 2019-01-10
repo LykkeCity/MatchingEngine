@@ -243,6 +243,10 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
                 orderContext.executionContext.info("${getOrderInfo(orderCopy)}: cancelled after matching due to IOC, remainingVolume: ${orderCopy.remainingVolume}")
                 orderCopy.updateStatus(OrderStatus.Cancelled, orderContext.executionContext.date)
             }
+            orderCopy.timeInForce == OrderTimeInForce.IOC -> {
+                orderContext.executionContext.info("${getOrderInfo(orderCopy)}: cancelled after matching due to IOC, remainingVolume: ${orderCopy.remainingVolume}")
+                orderCopy.updateStatus(OrderStatus.Cancelled, orderContext.executionContext.date)
+            }
             orderCopy.timeInForce == OrderTimeInForce.FOK -> {
                 orderContext.executionContext.info("${getOrderInfo(orderCopy)}: cancelled after matching due to FOK, remainingVolume: ${orderCopy.remainingVolume}")
                 orderContext.order.updateStatus(OrderStatus.Cancelled, orderContext.executionContext.date)
