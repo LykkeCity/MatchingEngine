@@ -48,7 +48,7 @@ class RedisPersistenceManager(
             persistData(redisConnection, data)
             true
         } catch (e: Exception) {
-            val message = "Unable to save data (${data.details()})"
+            val message = "Unable to save data (${data.getSummary()})"
             LOGGER.error(message, e)
             METRICS_LOGGER.logError(message, e)
             false
@@ -82,7 +82,8 @@ class RedisPersistenceManager(
                     ", persist: ${PrintUtils.convertToString2((persistTime - startTime - nonRedisOrdersPersistTime).toDouble())}" +
                     (if(nonRedisOrdersPersistTime != 0L) ", non redis orders persist time: ${PrintUtils.convertToString2(nonRedisOrdersPersistTime.toDouble())}" else "") +
                     ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}" +
-                    (if (messageId != null) " ($messageId)" else ""))
+                    ", persisted data summary: ${data.getSummary()}" +
+                    (if (messageId != null) ", messageId: ($messageId)" else ""))
 
             currentTransactionDataHolder.getMessageType()?.let {
                 performanceStatsHolder.addPersistTime(it.type, commitTime - startTime)

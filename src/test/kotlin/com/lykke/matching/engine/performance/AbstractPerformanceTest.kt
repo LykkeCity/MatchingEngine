@@ -27,6 +27,7 @@ import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExecutionEventSender
 import com.lykke.matching.engine.order.ExecutionPersistenceService
+import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.LimitOrderProcessor
@@ -104,6 +105,7 @@ abstract class AbstractPerformanceTest {
     protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
     private lateinit var feeProcessor: FeeProcessor
+    private lateinit var expiryOrdersQueue: ExpiryOrdersQueue
 
     protected lateinit var messageBuilder: MessageBuilder
 
@@ -158,7 +160,10 @@ abstract class AbstractPerformanceTest {
         assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
         assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
 
-        genericLimitOrderService = GenericLimitOrderService(ordersDatabaseAccessorsHolder, Optional.of(tradeInfoQueue))
+        expiryOrdersQueue = ExpiryOrdersQueue()
+        genericLimitOrderService = GenericLimitOrderService(ordersDatabaseAccessorsHolder,
+                Optional.of(tradeInfoQueue),
+                expiryOrdersQueue)
 
         feeProcessor = FeeProcessor(assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
@@ -175,7 +180,7 @@ abstract class AbstractPerformanceTest {
                 LimitOrderCancelOperationContextParser(),
                 LimitOrderMassCancelOperationContextParser())
 
-        genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder)
+        genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, expiryOrdersQueue)
 
         val executionEventsSequenceNumbersGenerator = ExecutionEventsSequenceNumbersGenerator(messageSequenceNumberHolder)
         val executionPersistenceService = ExecutionPersistenceService(persistenceManager)

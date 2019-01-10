@@ -8,7 +8,6 @@ import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.notification.*
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
@@ -88,9 +87,6 @@ abstract class AbstractTest {
     protected lateinit var minVolumeOrderCanceller: MinVolumeOrderCanceller
 
     @Autowired
-    protected lateinit var genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory
-
-    @Autowired
     protected lateinit var testTrustedClientsLimitOrderListener: TestTrustedClientsLimitOrderListener
 
     @Autowired
@@ -141,9 +137,6 @@ abstract class AbstractTest {
 
     @Autowired
     protected lateinit var cashInOutOperationService: CashInOutOperationService
-
-    @Autowired
-    protected lateinit var messageProcessingStatusHolder: MessageProcessingStatusHolder
 
     @Autowired
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService

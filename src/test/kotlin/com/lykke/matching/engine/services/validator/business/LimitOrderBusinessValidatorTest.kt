@@ -17,7 +17,7 @@ import java.util.*
 class LimitOrderBusinessValidatorTest {
 
     private companion object {
-        val ASSET_PAIR_ID = "BTCUSD"
+        private const val ASSET_PAIR_ID = "BTCUSD"
     }
 
 
@@ -35,7 +35,8 @@ class LimitOrderBusinessValidatorTest {
                     getLimitOrder(fee = getValidFee()),
                     BigDecimal.valueOf(10.0),
                     BigDecimal.valueOf(9.0),
-                    orderBook)
+                    orderBook,
+                    Date())
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.LeadToNegativeSpread, e.orderStatus)
             throw e
@@ -53,7 +54,8 @@ class LimitOrderBusinessValidatorTest {
                     getLimitOrder(status = OrderStatus.NotFoundPrevious.name, fee = getValidFee()),
                     BigDecimal.valueOf(12.0),
                     BigDecimal.valueOf(11.0),
-                    getValidOrderBook())
+                    getValidOrderBook(),
+                    Date())
         } catch (e: OrderValidationException) {
             //then
             assertEquals(OrderStatus.NotFoundPrevious, e.orderStatus)
@@ -72,7 +74,8 @@ class LimitOrderBusinessValidatorTest {
                     getLimitOrder(status = OrderStatus.NotEnoughFunds.name, fee = getValidFee()),
                     BigDecimal.valueOf(12.0),
                     BigDecimal.valueOf(11.0),
-                    getValidOrderBook())
+                    getValidOrderBook(),
+                    Date())
         } catch (e: OrderValidationException) {
             //then
             assertEquals(OrderStatus.NotEnoughFunds, e.orderStatus)
@@ -90,7 +93,8 @@ class LimitOrderBusinessValidatorTest {
                 getLimitOrder(fee = getValidFee()),
                 BigDecimal.valueOf(12.0),
                 BigDecimal.valueOf(11.0),
-                getValidOrderBook())
+                getValidOrderBook(),
+                Date())
     }
 
     private fun getLimitOrder(fee: LimitOrderFeeInstruction?,
@@ -101,6 +105,7 @@ class LimitOrderBusinessValidatorTest {
                               status: String = OrderStatus.InOrderBook.name): LimitOrder {
         return LimitOrder("test", "test", assetPair, "test", volume,
                 price, status, Date(), Date(), Date(), BigDecimal.valueOf(1.0), null,
+                expiryTime = null, timeInForce = null,
                 type = LimitOrderType.LIMIT, fee = fee, fees = fees, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
     }
 
