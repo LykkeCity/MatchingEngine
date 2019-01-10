@@ -13,7 +13,6 @@ import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
@@ -85,8 +84,6 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
 
         this.multiLimitOrderService = applicationContext.getBean(MultiLimitOrderService::class.java)
         this.singleLimitOrderService = applicationContext.getBean(SingleLimitOrderService::class.java)
-
-        val genericLimitOrdersCancellerFactory = applicationContext.getBean(GenericLimitOrdersCancellerFactory::class.java)
 
         this.cashInOutOperationService = applicationContext.getBean(CashInOutOperationService::class.java)
         this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
@@ -198,9 +195,22 @@ class MessageProcessor(messageRouter: MessageRouter, applicationContext: Applica
 
         val preProcessedMessageQueueStartTime = messageWrapper.messagePreProcessorEndTimestamp
                 ?: messageWrapper.startTimestamp
+
         val preProcessedMessageQueueTime = startMessageProcessingTime - preProcessedMessageQueueStartTime
 
-        performanceStatsHolder.addMessage(messageWrapper.type, inputQueueTime, preProcessedMessageQueueTime, preProcessingTime, processingTime, totalTime)
+        if (messageWrapper.writeResponseTime == null) {
+            val message = "There was no write response to socket time recorded, response to socket is not written, messageId: ${messageWrapper.messageId}"
+            LOGGER.error(message)
+            METRICS_LOGGER.logError(message)
+        }
+
+        performanceStatsHolder.addMessage(type = messageWrapper.type,
+                inputQueueTime = inputQueueTime,
+                preProcessedQueueTime =  preProcessedMessageQueueTime,
+                preProcessingTime =  preProcessingTime,
+                processingTime =  processingTime,
+                writeResponseTime = messageWrapper.writeResponseTime,
+                totalTime = totalTime)
     }
 
     private fun initServicesMap(): Map<MessageType, AbstractService> {
