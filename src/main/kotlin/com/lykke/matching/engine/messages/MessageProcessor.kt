@@ -150,7 +150,14 @@ class MessageProcessor : Thread(MessageProcessor::class.java.name) {
 
             val endTime = System.nanoTime()
 
+            if (message.writeResponseTime == null) {
+                val errorMessage = "There was no write response to socket time recorded, response to socket is not written, messageId: ${message.messageId}"
+                LOGGER.error(errorMessage)
+                METRICS_LOGGER.logError(errorMessage)
+            }
+
             performanceStatsHolder.addMessage(type = message.type,
+                    writeResponseTime = message.writeResponseTime,
                     startTimestamp = message.startTimestamp,
                     messagePreProcessorStartTimestamp = message.messagePreProcessorStartTimestamp,
                     messagePreProcessorEndTimestamp = message.messagePreProcessorEndTimestamp,
