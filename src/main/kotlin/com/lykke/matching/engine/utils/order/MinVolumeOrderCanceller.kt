@@ -47,7 +47,6 @@ class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHold
 
             limitOrdersCancelExecutor.cancelOrdersAndApply(CancelRequest(ordersToCancel,
                     emptyList(),
-                    null,
                     operationId,
                     operationId,
                     MessageType.LIMIT_ORDER,

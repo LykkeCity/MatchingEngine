@@ -34,7 +34,6 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
         }
         val updateSuccessful = limitOrdersCancelServiceHelper.cancelOrdersAndWriteResponse(CancelRequest(ordersToCancel,
                 emptyList(),
-                message.assetPairId,
                 messageWrapper.messageId!!,
                 message.uid,
                 MessageType.MULTI_LIMIT_ORDER_CANCEL,

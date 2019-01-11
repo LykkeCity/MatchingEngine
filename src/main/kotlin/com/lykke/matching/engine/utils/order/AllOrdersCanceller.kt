@@ -46,7 +46,6 @@ class AllOrdersCanceller @Autowired constructor(private val genericLimitOrderSer
 
         limitOrdersCancelExecutor.cancelOrdersAndApply(CancelRequest(limitOrdersToCancel,
                 stopLimitOrdersToCancel,
-                null,
                 operationId,
                 operationId,
                 MessageType.LIMIT_ORDER,
