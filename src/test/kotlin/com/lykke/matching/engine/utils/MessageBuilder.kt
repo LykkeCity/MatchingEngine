@@ -212,6 +212,8 @@ companion object {
                 order.feeInstructions.forEach { orderBuilder.addFees(buildNewLimitOrderFee(it)) }
                 orderBuilder.uid = order.uid
                 order.oldUid?.let { orderBuilder.oldUid = order.oldUid }
+                order.timeInForce?.let { orderBuilder.timeInForce = it.externalId }
+                order.expiryTime?.let { orderBuilder.expiryTime = it.time }
                 order.type?.let { orderBuilder.type = it.externalId }
                 order.lowerLimitPrice?.let { orderBuilder.lowerLimitPrice = it }
                 order.lowerPrice?.let { orderBuilder.lowerPrice = it }
