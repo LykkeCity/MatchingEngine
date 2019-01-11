@@ -22,6 +22,7 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
     private var usedBaseAssetVolume = BigDecimal.ZERO
     private var usedQuotingAssetVolume = BigDecimal.ZERO
     private val orders = ArrayList<LimitOrder>(initialCapacity)
+    private val rejectedOrders = mutableListOf<RejectedOrder>()
     private var done = false
 
     fun checkAndAdd(order: LimitOrder) {
@@ -66,6 +67,7 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
             usedQuotingAssetVolume += quotingAssetVolume
             return
         }
+        rejectedOrders.add(RejectedOrder(order, OrderStatus.valueOf(order.status)))
         order.updateStatus(OrderStatus.NotEnoughFunds, date)
         LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} (${order.externalId}) due to low balance (available: $quotingAssetAvailableBalance, used: $usedQuotingAssetVolume)")
     }
@@ -89,6 +91,7 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
             usedBaseAssetVolume += volume
             return
         }
+        rejectedOrders.add(RejectedOrder(order, OrderStatus.valueOf(order.status)))
         order.updateStatus(OrderStatus.NotEnoughFunds, date)
         LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} (${order.externalId}) due to low balance (available: $baseAssetAvailableBalance, used: $usedBaseAssetVolume)")
     }
@@ -97,6 +100,7 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
         if (!isTrustedClient || !notSortedSellSide && !notSortedBuySide) {
             return
         }
+        rollbackRejectionResult()
         val buyOrders = ArrayList<LimitOrder>()
         val sellOrders = ArrayList<LimitOrder>()
         orders.forEach { order ->
@@ -117,4 +121,13 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
             checkBaseAssetVolume(order)
         }
     }
+
+    private fun rollbackRejectionResult() {
+        rejectedOrders.forEach { it.order.updateStatus(it.previousStatus, date) }
+        rejectedOrders.clear()
+        LOGGER.info("Rolled back rejection result")
+    }
 }
+
+private class RejectedOrder(val order: LimitOrder,
+                            val previousStatus: OrderStatus)
