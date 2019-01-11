@@ -50,7 +50,7 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                         redisProcessedMessagesDatabaseAccessor.get(),
                         cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
                         persistOrdersStrategy.get(),
-                        ordersPersistInSecondaryDbStrategy,
+                        ordersPersistInSecondaryDbStrategy.get(),
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
                         persistedWalletsApplicationEventPublisher,
                         persistMidPricesApplicationeventPublisher,

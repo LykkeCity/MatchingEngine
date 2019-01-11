@@ -149,14 +149,6 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                 .setStatusReason(errorMessage))
     }
 
-    fun writeErrorResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus, errorMessage: String = StringUtils.EMPTY) {
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse
-                .newBuilder()
-                .setMatchingEngineId(matchingEngineOperationId)
-                .setStatus(status.type)
-                .setStatusReason(errorMessage))
-    }
-
     private fun sendEvent(sequenceNumber: Long,
                           messageId: String,
                           requestId: String,

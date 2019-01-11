@@ -6,8 +6,6 @@ import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.common.strategy.OrdersPersistInSecondaryDbStrategy
-import com.lykke.matching.engine.database.common.strategy.PersistOrdersStrategy
-import com.lykke.matching.engine.database.common.strategy.OrdersPersistInSecondaryDbStrategy
 import com.lykke.matching.engine.database.common.strategy.PersistOrdersDuringRedisTransactionStrategy
 import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.MidPricesPersistEvent
