@@ -33,9 +33,13 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExecutionEventSender
 import com.lykke.matching.engine.order.ExecutionPersistenceService
-import com.lykke.matching.engine.order.ExpiryOrdersQueue
-import com.lykke.matching.engine.order.process.*
 import com.lykke.matching.engine.order.process.common.LimitOrdersCancellerImpl
+import com.lykke.matching.engine.order.ExpiryOrdersQueue
+import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
+import com.lykke.matching.engine.order.process.LimitOrderProcessor
+import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
+import com.lykke.matching.engine.order.process.StopLimitOrderProcessor
+import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolderFactory
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory

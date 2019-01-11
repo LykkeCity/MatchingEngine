@@ -10,7 +10,7 @@ import redis.clients.jedis.Transaction
 
 class RedisPersistOrdersStrategy(private val ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder,
                                  private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
-                                 private val config: Config) : PersistOrdersStrategy {
+                                 private val config: Config) : PersistOrdersDuringRedisTransactionStrategy {
     override fun isRedisTransactionUsed(): Boolean {
         return true
     }

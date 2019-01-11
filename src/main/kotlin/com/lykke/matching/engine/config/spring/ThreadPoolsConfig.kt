@@ -106,7 +106,7 @@ class ThreadPoolsConfig : SchedulingConfigurer {
             var exception = t
             if (t == null && r is Future<*>) {
                 try {
-                    val result = (r as Future<*>).get()
+                    (r as Future<*>).get()
                 } catch (ce: CancellationException) {
                     exception = ce
                 } catch (ee: ExecutionException) {

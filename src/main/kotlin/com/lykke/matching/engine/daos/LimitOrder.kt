@@ -104,4 +104,12 @@ class LimitOrder(id: String,
     fun isExpired(date: Date): Boolean {
         return hasExpiryTime() && !expiryTime!!.after(date)
     }
+
+    fun hasExpiryTime(): Boolean {
+        return timeInForce == OrderTimeInForce.GTD && expiryTime != null
+    }
+
+    fun isExpired(date: Date): Boolean {
+        return hasExpiryTime() && !expiryTime!!.after(date)
+    }
 }

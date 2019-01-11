@@ -10,15 +10,15 @@ import org.springframework.stereotype.Component
 @Component
 class PersistOrdersStrategyFactory(private val config: Config,
                                    private val ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder,
-                                   private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder) : FactoryBean<PersistOrdersStrategy> {
+                                   private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder) : FactoryBean<PersistOrdersDuringRedisTransactionStrategy> {
     override fun getObjectType(): Class<*>? {
-        return PersistOrdersStrategy::class.java
+        return PersistOrdersDuringRedisTransactionStrategy::class.java
     }
 
-    override fun getObject(): PersistOrdersStrategy? {
+    override fun getObject(): PersistOrdersDuringRedisTransactionStrategy? {
         return when (config.me.storage) {
             Storage.Redis -> RedisPersistOrdersStrategy(ordersDatabaseAccessorsHolder, stopOrdersDatabaseAccessorsHolder, config)
-            Storage.RedisWithoutOrders -> AzurePersistOrdersStrategy(ordersDatabaseAccessorsHolder, stopOrdersDatabaseAccessorsHolder)
+            Storage.RedisWithoutOrders -> FilesPersistOrdersStrategy(ordersDatabaseAccessorsHolder, stopOrdersDatabaseAccessorsHolder)
             else -> null
         }
     }

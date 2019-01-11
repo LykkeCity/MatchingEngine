@@ -5,8 +5,8 @@ import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.ReadOnlyMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.Storage
+import com.lykke.matching.engine.database.common.strategy.PersistOrdersDuringRedisTransactionStrategy
 import com.lykke.matching.engine.database.common.strategy.OrdersPersistInSecondaryDbStrategy
-import com.lykke.matching.engine.database.common.strategy.PersistOrdersStrategy
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.MidPricesPersistEvent
@@ -35,8 +35,8 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                                     private val config: Config,
                                     private val currentTransactionDataHolder: CurrentTransactionDataHolder,
                                     private val performanceStatsHolder: PerformanceStatsHolder,
-                                    private val persistOrdersStrategy: Optional<PersistOrdersStrategy>,
-                                    private val ordersPersistInSecondaryDbStrategy: OrdersPersistInSecondaryDbStrategy) : PersistenceManagerFactory {
+                                    private val persistOrdersStrategy: Optional<PersistOrdersDuringRedisTransactionStrategy>,
+                                    private val ordersPersistInSecondaryDbStrategy: Optional<OrdersPersistInSecondaryDbStrategy>) : PersistenceManagerFactory {
 
     override fun get(redisConnection: Optional<RedisConnection>): PersistenceManager {
         return when (config.me.storage) {
@@ -44,27 +44,22 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                     ordersDatabaseAccessorsHolder.primaryAccessor,
                     stopOrdersDatabaseAccessorsHolder.primaryAccessor,
                     fileProcessedMessagesDatabaseAccessor)
-            Storage.Redis -> {
-                getRedisPersistenceManager(redisConnection)
+            Storage.Redis, Storage.RedisWithoutOrders -> {
+                RedisPersistenceManager(
+                        balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
+                        redisProcessedMessagesDatabaseAccessor.get(),
+                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
+                        persistOrdersStrategy.get(),
+                        ordersPersistInSecondaryDbStrategy,
+                        messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
+                        persistedWalletsApplicationEventPublisher,
+                        persistMidPricesApplicationeventPublisher,
+                        redisConnection.get(),
+                        config,
+                        currentTransactionDataHolder,
+                        performanceStatsHolder
+                )
             }
-            Storage.RedisWithoutOrders -> getRedisPersistenceManager(redisConnection)
         }
-    }
-
-    fun getRedisPersistenceManager(redisConnection: Optional<RedisConnection>): RedisPersistenceManager {
-        return RedisPersistenceManager(
-                balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                redisProcessedMessagesDatabaseAccessor.get(),
-                cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
-                persistOrdersStrategy.get(),
-                ordersPersistInSecondaryDbStrategy,
-                messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
-                persistedWalletsApplicationEventPublisher,
-                persistMidPricesApplicationeventPublisher,
-                redisConnection.get(),
-                config,
-                currentTransactionDataHolder,
-                performanceStatsHolder
-        )
     }
 }

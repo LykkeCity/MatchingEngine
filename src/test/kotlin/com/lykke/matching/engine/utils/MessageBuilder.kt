@@ -1,7 +1,6 @@
 package com.lykke.matching.engine.utils
 
 import com.lykke.matching.engine.daos.*
-import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.OrderTimeInForce
