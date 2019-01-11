@@ -2,7 +2,7 @@ package com.lykke.matching.engine.database.cache
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
-import com.lykke.matching.engine.services.events.NewAssetPairEvent
+import com.lykke.matching.engine.services.events.NewAssetPairsEvent
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -61,10 +61,12 @@ class AssetPairsCache @Autowired constructor(
             assetPairsById = newMap
             assetPairsByPair = newMapByPair
         }
-        this.assetPairsById.values.forEach {
-            if (knownAssetPairs.add(pairKey(it.baseAssetId, it.quotingAssetId))) {
-                applicationEventPublisher.publishEvent(NewAssetPairEvent(it))
-            }
+
+        val newAssetPairs = this.assetPairsById.values.filter { assetPair ->
+            knownAssetPairs.add(pairKey(assetPair.baseAssetId, assetPair.quotingAssetId))
+        }
+        if (newAssetPairs.isNotEmpty()) {
+            applicationEventPublisher.publishEvent(NewAssetPairsEvent(newAssetPairs))
         }
     }
 
