@@ -93,12 +93,23 @@ class DisabledFunctionalityRulesController {
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
     fun history(@PathVariable("id") id: String): ResponseEntity<List<DisabledFunctionalityRuleDto>> {
-        val historyRecords = disabledFunctionalityRulesService.history(id)
+        val historyRecords = disabledFunctionalityRulesService.getHistoryRecords(id)
         if (CollectionUtils.isEmpty(historyRecords)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null)
         }
 
         return ResponseEntity.status(HttpStatus.OK).body(historyRecords)
+    }
+
+    @GetMapping("/history/all/last")
+    @ApiOperation("Get all last history records for all entries(including removed) " +
+            "(for detailed history for particular entry use specialized endpoint)")
+    @ApiResponses(
+            ApiResponse(code = 200, message = "Success"),
+            ApiResponse(code = 500, message = "Internal server error occurred")
+    )
+    fun getAllLastHistoricalRecords(): List<DisabledFunctionalityRuleDto> {
+        return disabledFunctionalityRulesService.getAllLastHistoryRecords()
     }
 
     @GetMapping("/operation/type/supported", produces = [MediaType.APPLICATION_JSON_VALUE])
