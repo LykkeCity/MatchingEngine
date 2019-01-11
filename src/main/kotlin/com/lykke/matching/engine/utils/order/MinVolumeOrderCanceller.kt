@@ -5,8 +5,8 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.order.OrderOperation
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
+import com.lykke.matching.engine.order.process.common.CancelRequest
+import com.lykke.matching.engine.order.process.common.LimitOrdersCancelExecutor
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
@@ -23,9 +23,9 @@ import java.util.stream.Stream
 @Order(5)
 class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHolder: AssetsPairsHolder,
                                                      private val genericLimitOrderService: GenericLimitOrderService,
-                                                     private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
+                                                     private val limitOrdersCancelExecutor: LimitOrdersCancelExecutor,
                                                      @Value("#{Config.me.cancelMinVolumeOrders}")
-                                                     private val cancelMinVolumeOrders: Boolean): ApplicationRunner {
+                                                     private val cancelMinVolumeOrders: Boolean) : ApplicationRunner {
 
     companion object {
         private val LOGGER = Logger.getLogger(MinVolumeOrderCanceller::class.java.name)
@@ -38,17 +38,22 @@ class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHold
     }
 
     fun cancel() {
-        val operationId = getOperationId()
+        val operationId = generateOperationId()
         LOGGER.info("Starting order books analyze to cancel min volume orders ($operationId)")
-
-        val operationToOrder = getOperationToOrder()
-
-        LOGGER.info("Starting orders cancellation (orders count: ${operationToOrder.values.size})")
         try {
-            genericLimitOrdersCancellerFactory.create(LOGGER, Date())
-                    .preProcessLimitOrders(operationToOrder[OrderOperation.CANCEL] ?: emptyList(),
-                            operationToOrder[OrderOperation.REMOVE] ?: emptyList())
-                    .applyFull(null, operationId, operationId, null, MessageType.LIMIT_ORDER, true)
+
+            val ordersToCancel = getOrdersToCancel()
+            LOGGER.info("Starting orders cancellation (orders count: ${ordersToCancel.size})")
+
+            limitOrdersCancelExecutor.cancelOrdersAndApply(CancelRequest(ordersToCancel,
+                    emptyList(),
+                    operationId,
+                    operationId,
+                    MessageType.LIMIT_ORDER,
+                    Date(),
+                    null,
+                    null,
+                    LOGGER))
         } catch (e: BalanceException) {
             LOGGER.error("Unable to process wallet operations due to invalid balance: ${e.message}", e)
             return
@@ -57,36 +62,39 @@ class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHold
         LOGGER.info("Min volume orders cancellation is finished")
     }
 
-    private fun getOperationToOrder(): Map<OrderOperation, List<LimitOrder>> {
+    private fun getOrdersToCancel(): List<LimitOrder> {
         return genericLimitOrderService.getAllOrderBooks()
                 .values
                 .stream()
                 .map { it.copy() }
-                .flatMap {Stream.concat(it.getSellOrderBook().stream(), it.getBuyOrderBook().stream())}
-                .filter{getOrderOperation(it).isPresent}
-                .collect(Collectors.groupingBy { getOrderOperation(it).get() })
+                .flatMap { Stream.concat(it.getSellOrderBook().stream(), it.getBuyOrderBook().stream()) }
+                .filter { isOrderToCancel(it) }
+                .collect(Collectors.toList())
     }
 
-    private fun getOrderOperation(order: LimitOrder): Optional<OrderOperation> {
-        try {
+    private fun isOrderToCancel(order: LimitOrder): Boolean {
+        return try {
             val assetPair = assetsPairsHolder.getAssetPairAllowNulls(order.assetPairId)
-
-            if (assetPair == null) {
-                // assetPair == null means asset pair is not found in dictionary => remove this order (without reserved funds recalculation)
-                LOGGER.info("Order (id: ${order.externalId}, clientId: ${order.clientId}) is added to cancel: asset pair ${order.assetPairId} is not found")
-                return Optional.of(OrderOperation.REMOVE)
-            } else if (isOrderVolumeTooSmall(assetPair, order)) {
-                LOGGER.info("Order (id: ${order.externalId}, clientId: ${order.clientId}) is added to cancel: asset pair ${order.assetPairId} min volume is ${assetPair.minVolume}, remaining volume is ${order.getAbsRemainingVolume()}")
-                return Optional.of(OrderOperation.CANCEL)
+            when {
+                assetPair == null -> {
+                    // assetPair == null means asset pair is not found in dictionary => remove this order (without reserved funds recalculation)
+                    LOGGER.info("Order (id: ${order.externalId}, clientId: ${order.clientId}) is added to cancel: asset pair ${order.assetPairId} is not found")
+                    true
+                }
+                isOrderVolumeTooSmall(assetPair, order) -> {
+                    LOGGER.info("Order (id: ${order.externalId}, clientId: ${order.clientId}) is added to cancel: asset pair ${order.assetPairId} min volume is ${assetPair.minVolume}, remaining volume is ${order.getAbsRemainingVolume()}")
+                    true
+                }
+                else -> false
             }
         } catch (e: Exception) {
             LOGGER.error("Unable to check order (${order.externalId}): ${e.message}. Skipped.", e)
+            false
         }
-        return Optional.empty()
     }
 
     private fun isOrderVolumeTooSmall(assetPair: AssetPair, order: LimitOrder) =
             assetPair.minVolume != null && order.getAbsRemainingVolume() < assetPair.minVolume
 
-    private fun getOperationId() = UUID.randomUUID().toString()
+    private fun generateOperationId() = UUID.randomUUID().toString()
 }

@@ -2,7 +2,7 @@ package com.lykke.matching.engine.order.process
 
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
+import com.lykke.matching.engine.order.process.common.LimitOrdersCanceller
 import com.lykke.matching.engine.order.process.context.PreviousLimitOrdersContext
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component
 @Component
 class PreviousLimitOrdersProcessor(private val genericLimitOrderService: GenericLimitOrderService,
                                    private val genericStopLimitOrderService: GenericStopLimitOrderService,
-                                   private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory) {
+                                   private val limitOrdersCanceller: LimitOrdersCanceller) {
     companion object {
         class Result(val ordersWithNotFoundPrevious: Collection<LimitOrder>,
                      val ordersToReplace: Collection<LimitOrder>,
@@ -63,28 +63,15 @@ class PreviousLimitOrdersProcessor(private val genericLimitOrderService: Generic
         val stopOrdersToCancel = replacementsResult.stopOrdersToCancelWithoutReplacements
         val stopOrdersToReplace = replacementsResult.stopOrdersToReplace
 
-        val canceller = genericLimitOrdersCancellerFactory.create(executionContext.logger, executionContext.date)
-                .preProcessLimitOrders(ordersToCancel.plus(ordersToReplace))
-                .preProcessStopLimitOrders(stopOrdersToCancel.plus(stopOrdersToReplace))
-
-        val cancelResult = canceller.processLimitOrders()
-        val stopOrdersCancelResult = canceller.processStopLimitOrders()
-
         replacementsResult.ordersWithNotFoundPrevious.forEach {
             it.updateStatus(OrderStatus.NotFoundPrevious, executionContext.date)
         }
 
-        executionContext.walletOperationsProcessor.preProcess(cancelResult.walletOperations.plus(stopOrdersCancelResult.walletOperations), true)
-        cancelResult.assetOrderBooks[context.assetPairId]?.let { executionContext.orderBooksHolder.setOrderBook(it) }
-        stopOrdersCancelResult.assetOrderBooks[context.assetPairId]?.let { executionContext.stopOrderBooksHolder.setOrderBook(it) }
-        executionContext.orderBooksHolder.addCancelledOrders(ordersToCancel)
-        executionContext.orderBooksHolder.addReplacedOrders(ordersToReplace)
-        executionContext.stopOrderBooksHolder.addCancelledOrders(stopOrdersToCancel)
-        executionContext.stopOrderBooksHolder.addReplacedOrders(stopOrdersToReplace)
-        executionContext.addClientsLimitOrdersWithTrades(cancelResult.clientsOrdersWithTrades
-                .plus(stopOrdersCancelResult.clientsOrdersWithTrades))
-        executionContext.addTrustedClientsLimitOrdersWithTrades(cancelResult.trustedClientsOrdersWithTrades
-                .plus(stopOrdersCancelResult.trustedClientsOrdersWithTrades))
+        limitOrdersCanceller.cancelOrders(ordersToCancel,
+                ordersToReplace,
+                stopOrdersToCancel,
+                stopOrdersToReplace,
+                executionContext)
     }
 
     private fun splitOrdersIntoCancelledAndReplaced(context: PreviousLimitOrdersContext): Result {
