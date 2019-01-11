@@ -17,6 +17,6 @@ class ClientConnectionsCountLogger(private val clientRequestThreadPool: ThreadPo
     @Scheduled(fixedRateString = "\${client.connections.count.logger.interval}")
     fun cancelExpiredOrders() {
         LOGGER.info("Active socket client connections count: ${clientsRequestsSocketServer.getConnectionsCount()}, " +
-                "thread pool size: ${clientRequestThreadPool.activeCount}")
+                "active threads size: ${clientRequestThreadPool.activeCount}")
     }
 }
