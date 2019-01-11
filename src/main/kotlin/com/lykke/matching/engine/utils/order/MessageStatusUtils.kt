@@ -28,6 +28,7 @@ class MessageStatusUtils {
                 OrderStatus.InOrderBook,
                 OrderStatus.Processing,
                 OrderStatus.Pending,
+                OrderStatus.Executed,
                 OrderStatus.Matched,
                 OrderStatus.Cancelled -> MessageStatus.OK
                 OrderStatus.InvalidPriceAccuracy -> MessageStatus.INVALID_PRICE_ACCURACY
