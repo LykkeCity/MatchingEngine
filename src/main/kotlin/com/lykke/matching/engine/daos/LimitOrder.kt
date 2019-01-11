@@ -34,7 +34,11 @@ class LimitOrder(id: String,
                  @Version(1)
                  val timeInForce: OrderTimeInForce?,
                  @Version(1)
-                 val expiryTime: Date?)
+                 val expiryTime: Date?,
+                 @Version(2)
+                 val parentOrderExternalId: String?,
+                 @Version(2)
+                 var childOrderExternalId: String?)
     : Order(id, externalId, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume, fee, fees, statusDate), Serializable {
 
     fun getAbsRemainingVolume(): BigDecimal {
@@ -77,7 +81,11 @@ class LimitOrder(id: String,
         return LimitOrder(id, externalId, assetPairId, clientId, volume, price, status, statusDate, createdAt,
                 registered, remainingVolume, lastMatchTime, reservedLimitVolume, fee as? LimitOrderFeeInstruction,
                 fees?.map { it as NewLimitOrderFeeInstruction }, type, lowerLimitPrice, lowerPrice, upperLimitPrice,
-                upperPrice, previousExternalId, timeInForce, expiryTime)
+                upperPrice, previousExternalId,
+                timeInForce,
+                expiryTime,
+                parentOrderExternalId,
+                childOrderExternalId)
     }
 
     override fun applyToOrigin(origin: Copyable) {
@@ -86,6 +94,7 @@ class LimitOrder(id: String,
         origin.remainingVolume = remainingVolume
         origin.lastMatchTime = lastMatchTime
         origin.price = price
+        origin.childOrderExternalId = childOrderExternalId
     }
 
     fun hasExpiryTime(): Boolean {

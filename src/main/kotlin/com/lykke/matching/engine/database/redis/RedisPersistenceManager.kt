@@ -26,7 +26,7 @@ class RedisPersistenceManager(
         private val redisProcessedMessagesDatabaseAccessor: RedisProcessedMessagesDatabaseAccessor,
         private val redisProcessedCashOperationIdDatabaseAccessor: RedisCashOperationIdDatabaseAccessor,
         private val persistOrdersStrategy: PersistOrdersDuringRedisTransactionStrategy,
-        private val ordersPersistInSecondaryDbStrategy: OrdersPersistInSecondaryDbStrategy,
+        private val ordersPersistInSecondaryDbStrategy: OrdersPersistInSecondaryDbStrategy?,
         private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
         private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<AccountPersistEvent>,
         private val redisConnection: RedisConnection,
@@ -93,7 +93,7 @@ class RedisPersistenceManager(
                 persistedWalletsApplicationEventPublisher.publishEvent(AccountPersistEvent(data.balancesData!!.wallets))
             }
 
-            ordersPersistInSecondaryDbStrategy.persistOrders(data.orderBooksData, data.stopOrderBooksData)
+            ordersPersistInSecondaryDbStrategy?.persistOrders(data.orderBooksData, data.stopOrderBooksData)
         }
     }
 

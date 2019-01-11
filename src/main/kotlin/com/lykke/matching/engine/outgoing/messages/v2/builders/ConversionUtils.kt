@@ -83,7 +83,9 @@ private fun convertLimitOrder(limitOrderWithTrades: LimitOrderWithTrades): Order
             feeInstructions?.mapIndexed { index, feeInstruction -> convertFeeInstruction(index, feeInstruction) },
             limitOrderWithTrades.trades.map { convertTrade(it) },
             orderTimeInForce(limitOrder.timeInForce),
-            limitOrder.expiryTime)
+            limitOrder.expiryTime,
+            limitOrder.parentOrderExternalId,
+            limitOrder.childOrderExternalId)
 }
 
 private fun convertMarketOrder(marketOrderWithTrades: MarketOrderWithTrades): Order {
@@ -113,6 +115,8 @@ private fun convertMarketOrder(marketOrderWithTrades: MarketOrderWithTrades): Or
             feeInstructions?.mapIndexed { index, feeInstruction -> convertFeeInstruction(index, feeInstruction) },
             marketOrderWithTrades.trades.map { convertTrade(it) },
             null,
+            null,
+            null,
             null)
 }
 
@@ -136,6 +140,7 @@ private fun orderStatusInfo(order: com.lykke.matching.engine.daos.Order): OrderS
         com.lykke.matching.engine.order.OrderStatus.InOrderBook.name -> OrderStatusInfo(OrderStatus.PLACED)
         com.lykke.matching.engine.order.OrderStatus.Processing.name -> OrderStatusInfo(OrderStatus.PARTIALLY_MATCHED)
         com.lykke.matching.engine.order.OrderStatus.Pending.name -> OrderStatusInfo(OrderStatus.PENDING)
+        com.lykke.matching.engine.order.OrderStatus.Executed.name -> OrderStatusInfo(OrderStatus.EXECUTED)
         com.lykke.matching.engine.order.OrderStatus.Cancelled.name -> OrderStatusInfo(OrderStatus.CANCELLED)
         com.lykke.matching.engine.order.OrderStatus.Replaced.name -> OrderStatusInfo(OrderStatus.REPLACED)
         com.lykke.matching.engine.order.OrderStatus.Matched.name -> OrderStatusInfo(OrderStatus.MATCHED)
