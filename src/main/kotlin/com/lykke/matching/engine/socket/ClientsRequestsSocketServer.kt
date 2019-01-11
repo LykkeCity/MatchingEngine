@@ -9,6 +9,7 @@ import com.lykke.utils.AppVersion
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import java.net.ServerSocket
@@ -29,8 +30,9 @@ class ClientsRequestsSocketServer(private val messageProcessor: MessageProcessor
     private lateinit var messageRouter: MessageRouter
 
     companion object {
-        val LOGGER = ThrottlingLogger.getLogger(ClientsRequestsSocketServer::class.java.name)
-        val METRICS_LOGGER = MetricsLogger.getLogger()
+        private val LOGGER = ThrottlingLogger.getLogger(ClientsRequestsSocketServer::class.java.name)
+        private val METRICS_LOGGER = MetricsLogger.getLogger()
+        private const val DEFAULT_LIFE_TIME_MINUTES = 10L
     }
 
     private val connections = CopyOnWriteArraySet<ClientHandler>()
@@ -60,7 +62,10 @@ class ClientsRequestsSocketServer(private val messageProcessor: MessageProcessor
 
     fun submitClientConnection(clientConnection: Socket) {
         if (isConnectionAllowed(getWhiteList(), clientConnection.inetAddress.hostAddress)) {
-            val handler = ClientHandlerImpl(messageRouter, clientConnection, this)
+            val handler = ClientHandlerImpl(messageRouter,
+                    clientConnection,
+                    this,
+                    config.me.socket.lifeTimeMinutes ?: DEFAULT_LIFE_TIME_MINUTES)
             try {
                 clientRequestThreadPool.submit(handler)
             } catch (e: RejectedExecutionException) {
@@ -76,7 +81,7 @@ class ClientsRequestsSocketServer(private val messageProcessor: MessageProcessor
     }
 
 
-    fun logPoolRejection(rejectedClientHandler: ClientHandler) {
+    private fun logPoolRejection(rejectedClientHandler: ClientHandler) {
         val message = "Task rejected from client handler thread pool, client can not be connected to ME, " +
                 "rejected tasks: [$rejectedClientHandler] " +
                 "active threads size ${clientRequestThreadPool.activeCount}, " +
@@ -117,4 +122,19 @@ class ClientsRequestsSocketServer(private val messageProcessor: MessageProcessor
     fun disconnect(handler: ClientHandler) {
         connections.remove(handler)
     }
+
+    @Scheduled(
+            fixedRateString = "\${client.connections.inactive.disconnect.interval}",
+            initialDelayString = "\${client.connections.inactive.disconnect.interval}"
+    )
+    private fun disconnectInactiveConnections() {
+        connections.forEach {
+            if (!it.isConnected()) {
+                LOGGER.info("${it.clientHostName} is inactive")
+                it.disconnect()
+            }
+        }
+    }
+
+    fun getConnectionsCount() = connections.size
 }
