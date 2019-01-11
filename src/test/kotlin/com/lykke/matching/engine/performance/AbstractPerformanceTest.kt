@@ -168,7 +168,7 @@ abstract class AbstractPerformanceTest {
         balancesService = BalancesServiceImpl(balancesHolder, persistenceManager, balanceUpdateQueue)
 
         testBalanceHolderWrapper = TestBalanceHolderWrapper(balancesService, balancesHolder)
-        assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
+        assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor, ApplicationEventPublisher {})
         assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
 
         expiryOrdersQueue = ExpiryOrdersQueue()

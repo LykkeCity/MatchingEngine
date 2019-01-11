@@ -66,6 +66,16 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
     }
 
     @Synchronized
+    override fun getAllLastHistoryRecords(settingsGroupName: String): List<SettingDto> {
+        return applicationSettingsHistoryDatabaseAccessor
+                .getAll(settingsGroupName)
+                .groupBy { it.name }
+                .mapValues { entry -> entry.value.sortedBy { it.timestamp } }
+                .mapValues { entry -> toSettingDto(entry.value.last()) }
+                .map { entry -> entry.value }
+    }
+
+    @Synchronized
     override fun createOrUpdateSetting(settingsGroup: AvailableSettingGroup, settingDto: SettingDto) {
         settingGroupToValidator[settingsGroup]?.forEach { it.validate(settingDto) }
 
@@ -79,8 +89,8 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
         applicationEventPublisher.publishEvent(ApplicationSettingCreatedOrUpdatedEvent(settingsGroup,
                 setting,
-                previousSetting?.let{toSetting(it)},
-                settingDto.comment!!,
+                previousSetting?.let { toSetting(it) },
+                settingDto.comment,
                 settingDto.user))
     }
 
