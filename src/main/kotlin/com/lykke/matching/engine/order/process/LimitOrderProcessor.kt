@@ -115,9 +115,9 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
             return matchOrder(orderContext)
         }
 
-        if (order.timeInForce == OrderTimeInForce.IOC) {
+        if (order.timeInForce == OrderTimeInForce.IOC || order.timeInForce == OrderTimeInForce.FOK) {
             order.updateStatus(OrderStatus.Cancelled, orderContext.executionContext.date)
-            orderContext.executionContext.info("${getOrderInfo(order)} cancelled due to IOC")
+            orderContext.executionContext.info("${getOrderInfo(order)} cancelled due to ${order.timeInForce}")
             addOrderToReport(order, orderContext.executionContext)
             return ProcessedOrder(order, true)
         }
@@ -242,6 +242,12 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
             orderCopy.timeInForce == OrderTimeInForce.IOC -> {
                 orderContext.executionContext.info("${getOrderInfo(orderCopy)}: cancelled after matching due to IOC, remainingVolume: ${orderCopy.remainingVolume}")
                 orderCopy.updateStatus(OrderStatus.Cancelled, orderContext.executionContext.date)
+            }
+            orderCopy.timeInForce == OrderTimeInForce.FOK -> {
+                orderContext.executionContext.info("${getOrderInfo(orderCopy)}: cancelled after matching due to FOK, remainingVolume: ${orderCopy.remainingVolume}")
+                orderContext.order.updateStatus(OrderStatus.Cancelled, orderContext.executionContext.date)
+                addOrderToReport(orderContext.order, orderContext.executionContext)
+                return ProcessedOrder(orderContext.order, true)
             }
             else -> {
                 val limitAsset = orderContext.limitAsset!!
