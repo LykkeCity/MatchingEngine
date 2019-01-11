@@ -958,12 +958,16 @@ class StopLimitOrderTest : AbstractTest() {
         assertEquals(1, clientsEventsQueue.size)
 
         val event = clientsEventsQueue.single() as ExecutionEvent
-        assertEquals(2, event.orders.size)
+        assertEquals(3, event.orders.size)
         assertEquals(4, event.balanceUpdates?.size)
 
         val eventStopOrder = event.orders.single { it.orderType == OrderType.STOP_LIMIT }
-        assertEquals(OutgoingOrderStatus.CANCELLED, eventStopOrder.status)
-        assertEquals(1, eventStopOrder.trades?.size)
+        val childLimitOrder = event.orders.single { it.parentExternalId == eventStopOrder.externalId }
+        assertEquals(OutgoingOrderStatus.EXECUTED, eventStopOrder.status)
+        assertEquals(0, eventStopOrder.trades?.size)
+
+        assertEquals(OutgoingOrderStatus.CANCELLED, childLimitOrder.status)
+        assertEquals(1, childLimitOrder.trades?.size)
 
         assertBalance("Client1", "BTC", 0.5, 0.0)
     }
@@ -990,13 +994,17 @@ class StopLimitOrderTest : AbstractTest() {
         assertEquals(1, clientsEventsQueue.size)
 
         val event = clientsEventsQueue.single() as ExecutionEvent
-        assertEquals(2, event.orders.size)
+        assertEquals(3, event.orders.size)
         assertEquals(2, event.balanceUpdates?.size)
 
         val eventStopOrder = event.orders.single { it.orderType == OrderType.STOP_LIMIT }
-        assertEquals(OrderType.STOP_LIMIT, eventStopOrder.orderType)
-        assertEquals(OutgoingOrderStatus.CANCELLED, eventStopOrder.status)
+        val childLimitOrder = event.orders.single { it.parentExternalId == eventStopOrder.externalId }
+        assertEquals(OutgoingOrderStatus.EXECUTED, eventStopOrder.status)
         assertEquals(0, eventStopOrder.trades?.size)
+
+        assertEquals(OrderType.LIMIT, childLimitOrder.orderType)
+        assertEquals(OutgoingOrderStatus.CANCELLED, childLimitOrder.status)
+        assertEquals(0, childLimitOrder.trades?.size)
 
         assertBalance("Client1", "BTC", 1.0, 0.0)
     }
