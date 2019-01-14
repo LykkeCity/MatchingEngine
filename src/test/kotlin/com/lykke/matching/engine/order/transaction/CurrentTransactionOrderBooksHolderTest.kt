@@ -1,7 +1,6 @@
 package com.lykke.matching.engine.order.transaction
 
 import com.lykke.matching.engine.config.TestApplicationContext
-import com.lykke.matching.engine.daos.CopyWrapper
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.services.AssetOrderBook
@@ -72,7 +71,7 @@ class CurrentTransactionOrderBooksHolderTest {
         mainOrderBookHolder.removeOrdersFromMapsAndSetStatus(listOf(workingOrderBook.poll()))
 
         val uncompletedOriginalOrderBookFromMainOrderHolder = workingOrderBook.poll()
-        val uncompletedFirstOrderCopy = mainOrderBookHolder.getOrPutOrderCopyWrapper(uncompletedOriginalOrderBookFromMainOrderHolder) { CopyWrapper(uncompletedOriginalOrderBookFromMainOrderHolder) }
+        val uncompletedFirstOrderCopy = mainOrderBookHolder.getOrPutOrderCopyWrapper(uncompletedOriginalOrderBookFromMainOrderHolder)
         uncompletedFirstOrderCopy.copy.remainingVolume = BigDecimal.valueOf(-90.0)
         uncompletedFirstOrderCopy.copy.updateStatus(OrderStatus.Processing, Date())
         workingOrderBook.put(uncompletedOriginalOrderBookFromMainOrderHolder)
@@ -89,12 +88,12 @@ class CurrentTransactionOrderBooksHolderTest {
 
         //in order books should be only original orders
         assertTrue(uncompletedOriginalOrderBookFromMainOrderHolder === uncompletedOriginalOrderFromSecondOrderBook)
-        val uncompletedOrderSecondCopy = secondOrderBookHolder.getOrPutOrderCopyWrapper(uncompletedOriginalOrderFromSecondOrderBook) { CopyWrapper(uncompletedOriginalOrderFromSecondOrderBook) }
+        val uncompletedOrderSecondCopy = secondOrderBookHolder.getOrPutOrderCopyWrapper(uncompletedOriginalOrderFromSecondOrderBook)
         uncompletedOrderSecondCopy.copy.remainingVolume = BigDecimal.valueOf(-80.0)
         uncompletedOrderSecondCopy.copy.updateStatus(OrderStatus.Processing, Date())
 
         //changes from second order book is not applied yet, so uncompleted order should contain changes only from main transaction
-        assertEquals(BigDecimal.valueOf(-90.0), mainOrderBookHolder.getOrPutOrderCopyWrapper(uncompletedOriginalOrderBookFromMainOrderHolder)  { CopyWrapper(uncompletedOriginalOrderBookFromMainOrderHolder) }.copy.remainingVolume)
+        assertEquals(BigDecimal.valueOf(-90.0), mainOrderBookHolder.getOrPutOrderCopyWrapper(uncompletedOriginalOrderBookFromMainOrderHolder).copy.remainingVolume)
 
         secondOrderBookHolder.apply(Date())
         assertEquals(3, genericLimitOrderService.getOrderBook("EURUSD").getSellOrderBook().size)

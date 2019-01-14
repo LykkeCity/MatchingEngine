@@ -33,7 +33,7 @@ class CurrentTransactionOrderBooksHolder(ordersService: AbstractGenericLimitOrde
             }
 
             addChangedSide(limitOrder)
-            CopyWrapper(limitOrder)
+            return copyWrapper ?: CopyWrapper(limitOrder)
         }
     }
 

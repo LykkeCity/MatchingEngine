@@ -26,7 +26,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
                                 private val applicationSettingsHolder: ApplicationSettingsHolder,
                                 private val persistenceManager: PersistenceManager,
                                 private val assetsHolder: AssetsHolder,
-                                val validate: Boolean,
                                 private val logger: Logger?,
                                 private val previousWalletOperationsProcessor: WalletOperationsProcessor? = null) : BalancesGetter {
 

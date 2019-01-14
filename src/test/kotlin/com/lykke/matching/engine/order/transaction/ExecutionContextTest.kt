@@ -4,7 +4,6 @@ import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.CopyWrapper
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
@@ -96,7 +95,7 @@ class ExecutionContextTest : AbstractTest() {
         //change order in sub context
         val workingOrderBook = PriorityBlockingQueue(subExecutionContext.orderBooksHolder.getOrderBook("BTCUSD").getOrderBook(true))
         val originalOrder = workingOrderBook.poll()
-        val orderCopy = subExecutionContext.orderBooksHolder.getOrPutOrderCopyWrapper(originalOrder) { CopyWrapper(originalOrder) }
+        val orderCopy = subExecutionContext.orderBooksHolder.getOrPutOrderCopyWrapper(originalOrder)
         orderCopy.copy.updateRemainingVolume(BigDecimal.valueOf(0.8))
 
         //change balance in sub context
@@ -107,7 +106,7 @@ class ExecutionContextTest : AbstractTest() {
 
         //sub transaction is not yet commit so in main execution context are changes only from main transaction
         val limitOrder = executionContext.orderBooksHolder.getOrderBook("BTCUSD").getOrderBook(true).peek()
-        val orderFromMainTransaction = executionContext.orderBooksHolder.getOrPutOrderCopyWrapper(limitOrder) { CopyWrapper(limitOrder) }
+        val orderFromMainTransaction = executionContext.orderBooksHolder.getOrPutOrderCopyWrapper(limitOrder)
         assertEquals(BigDecimal.valueOf(0.9), orderFromMainTransaction.copy.remainingVolume)
         assertEquals(0, executionContext.tradeIndex)
         assertEquals(BigDecimal.valueOf(90.0), executionContext.walletOperationsProcessor.getReservedBalance("Client1", "USD"))
@@ -124,7 +123,7 @@ class ExecutionContextTest : AbstractTest() {
 
         //check changes from sub execution context applied to main execution context
         val updatedLimitOrder = executionContext.orderBooksHolder.getOrderBook("BTCUSD").getOrderBook(true).peek()
-        val orderFromMainTransactionAfterApply = executionContext.orderBooksHolder.getOrPutOrderCopyWrapper(updatedLimitOrder) { CopyWrapper(updatedLimitOrder) }
+        val orderFromMainTransactionAfterApply = executionContext.orderBooksHolder.getOrPutOrderCopyWrapper(updatedLimitOrder)
         assertEquals(BigDecimal.valueOf(0.8), orderFromMainTransactionAfterApply.copy.remainingVolume)
         assertEquals(1, executionContext.tradeIndex)
         assertEquals(BigDecimal.valueOf(80.0), executionContext.walletOperationsProcessor.getReservedBalance("Client1", "USD"))
@@ -161,7 +160,7 @@ class ExecutionContextTest : AbstractTest() {
         val workingOrderBook = PriorityBlockingQueue(subExecutionContext.orderBooksHolder.getOrderBook("BTCUSD").getOrderBook(true))
         val order = workingOrderBook.poll()
 
-        val orderCopy = subExecutionContext.orderBooksHolder.getOrPutOrderCopyWrapper(order) { CopyWrapper(order) }
+        val orderCopy = subExecutionContext.orderBooksHolder.getOrPutOrderCopyWrapper(order)
         orderCopy.copy.updateStatus(OrderStatus.Processing, Date())
         orderCopy.copy.updateRemainingVolume(BigDecimal.valueOf(0.9))
         workingOrderBook.add(orderCopy.origin)
@@ -191,7 +190,7 @@ class ExecutionContextTest : AbstractTest() {
         val workingOrderBook = PriorityBlockingQueue(executionContext.orderBooksHolder.getOrderBook("BTCUSD").getOrderBook(true))
         val order = workingOrderBook.poll()
 
-        val orderCopy = executionContext.orderBooksHolder.getOrPutOrderCopyWrapper(order) { CopyWrapper(order) }
+        val orderCopy = executionContext.orderBooksHolder.getOrPutOrderCopyWrapper(order)
         orderCopy.copy.updateStatus(OrderStatus.Processing, Date())
         orderCopy.copy.updateRemainingVolume(BigDecimal.valueOf(0.9))
         workingOrderBook.add(orderCopy.origin)

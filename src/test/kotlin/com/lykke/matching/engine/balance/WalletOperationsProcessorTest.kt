@@ -7,7 +7,6 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolder
@@ -211,7 +210,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
         mainTransactionWalletProcessor.preProcess(listOf(WalletOperation("Client1", "USD", BigDecimal.valueOf(10.0), BigDecimal.valueOf(10))))
 
         val subTransactionBalancesHolder = CurrentTransactionBalancesHolder(mainTransactionWalletProcessor.currentTransactionBalancesHolder)
-        val subTransactionWalletOperationsProcessor = WalletOperationsProcessor(balancesHolder, subTransactionBalancesHolder, applicationSettingsHolder, persistenceManager, assetsHolder, true, null, mainTransactionWalletProcessor)
+        val subTransactionWalletOperationsProcessor = WalletOperationsProcessor(balancesHolder, subTransactionBalancesHolder, applicationSettingsHolder, persistenceManager, assetsHolder,  null, mainTransactionWalletProcessor)
 
         subTransactionWalletOperationsProcessor.preProcess(listOf(WalletOperation("Client1", "BTC", BigDecimal.valueOf(2.0), BigDecimal.valueOf(0.3))))
                 .apply()
