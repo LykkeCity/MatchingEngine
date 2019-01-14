@@ -140,17 +140,16 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
     }
 
     private fun processOrders(inputMultiLimitOrder: MultiLimitOrder, messageWrapper: MessageWrapper, assetPair: AssetPair, now: Date): OrdersProcessingResult {
-        val processingMultiLimitOrder = inputMultiLimitOrder.copy()
-        val executionContext = getExecutionContextWithProcessedPrevOrders(messageWrapper, processingMultiLimitOrder, assetPair, now)
+        val executionContext = getExecutionContextWithProcessedPrevOrders(messageWrapper, inputMultiLimitOrder, assetPair, now)
 
         val (lowerMidPriceBound, upperMidPriceBound) = MidPriceUtils.getMidPricesInterval(priceDeviationThresholdHolder.getMidPriceDeviationThreshold(assetPair.assetPairId, executionContext),
                 midPriceHolder.getReferenceMidPrice(assetPair, executionContext))
 
         if (!isOrderBookMidPriceValidBeforeProcessing(executionContext, lowerMidPriceBound, upperMidPriceBound, assetPair)) {
-            processOrderBookMidPriceInvalidBeforeProcessing(executionContext, processingMultiLimitOrder, assetPair, upperMidPriceBound, lowerMidPriceBound)
+            processOrderBookMidPriceInvalidBeforeProcessing(executionContext, inputMultiLimitOrder, assetPair, upperMidPriceBound, lowerMidPriceBound)
         }
 
-        val processedOrders = genericLimitOrdersProcessor.processOrders(processingMultiLimitOrder.orders, executionContext)
+        val processedOrders = genericLimitOrdersProcessor.processOrders(inputMultiLimitOrder.orders, executionContext)
 
         val midPriceAfterOrderProcessing =
                 if (executionContext.orderBooksHolder.isOrderBookChanged()) {

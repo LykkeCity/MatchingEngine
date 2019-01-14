@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
+import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.utils.plus
 import org.springframework.stereotype.Component
@@ -25,7 +26,8 @@ class LimitOrdersCancelExecutorImpl(private val assetsPairsHolder: AssetsPairsHo
                     processedMessage,
                     createAssetPairsByIdMapForOrders(plus(limitOrders, stopLimitOrders)),
                     Date(),
-                    logger)
+                    logger,
+                    controlsLogger)
 
             limitOrdersCanceller.cancelOrders(limitOrders,
                     emptyList(),
@@ -33,9 +35,25 @@ class LimitOrdersCancelExecutorImpl(private val assetsPairsHolder: AssetsPairsHo
                     emptyList(),
                     executionContext)
 
+            if (cancelAll != true) {
+                recordNewMidPrices(executionContext, executionContext.assetPairsById.values.toSet())
+            } else {
+                executionContext.currentTransactionMidPriceHolder.setRemoveAllFlag()
+            }
+
             stopOrderBookProcessor.checkAndExecuteStopLimitOrders(executionContext)
 
             return executionDataApplyService.persistAndSendEvents(messageWrapper, executionContext)
+        }
+    }
+
+    private fun recordNewMidPrices(executionContext: ExecutionContext, assetPairs: Set<AssetPair>) {
+        assetPairs.forEach { assetPair ->
+            if (executionContext.orderBooksHolder.isOrderBookChanged(assetPair.assetPairId)) {
+                executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPair.assetPairId).getMidPrice()?.let { newMidPrice ->
+                    executionContext.currentTransactionMidPriceHolder.addMidPrice(assetPair.assetPairId, newMidPrice, executionContext)
+                }
+            }
         }
     }
 

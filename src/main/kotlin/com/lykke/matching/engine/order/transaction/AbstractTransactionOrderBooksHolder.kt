@@ -62,6 +62,10 @@ abstract class AbstractTransactionOrderBooksHolder<AssetOrderBook : AbstractAsse
         return !changedBuySides.isEmpty() || !changedSellSides.isEmpty()
     }
 
+    fun isOrderBookChanged(assetPairId: String): Boolean {
+        return changedBuySides.contains(assetPairId) || changedSellSides.contains(assetPairId)
+    }
+
     fun apply(date: Date) {
         inputOrderCopyWrappers.forEach { orderCopyWrapper -> orderCopyWrapper.applyToOrigin()}
         genericLimitOrderService.removeOrdersFromMapsAndSetStatus(completedOrders)

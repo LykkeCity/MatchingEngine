@@ -91,6 +91,9 @@ class LimitOrderServiceTest : AbstractTest() {
     private lateinit var midPriceHolder: MidPriceHolder
 
     @Autowired
+    private lateinit var messageBuilder: MessageBuilder
+
+    @Autowired
     private lateinit var assetsPairsHolder: AssetsPairsHolder
 
     private var executionContextMock = mock<ExecutionContext> {
