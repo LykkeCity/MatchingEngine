@@ -23,7 +23,7 @@ class CurrentTransactionOrderBooksHolder(ordersService: AbstractGenericLimitOrde
     val outgoingOrderBooks = mutableListOf<OrderBook>()
 
     fun getOrPutOrderCopyWrapper(limitOrder: LimitOrder): CopyWrapper<LimitOrder> {
-        return orderCopyWrappersByOriginalOrder.getOrPut(limitOrder) {
+       return orderCopyWrappersByOriginalOrder.getOrPut(limitOrder) {
             val copyWrapper = (if (ordersService is CurrentTransactionOrderBooksHolder) {
                 ordersService.getOrderCopyWrapper(limitOrder)
             } else {
@@ -33,9 +33,9 @@ class CurrentTransactionOrderBooksHolder(ordersService: AbstractGenericLimitOrde
             }
 
             addChangedSide(limitOrder)
-            return copyWrapper ?: CopyWrapper(limitOrder)
+            copyWrapper ?: CopyWrapper(limitOrder)
         }
-    }
+     }
 
     fun getOrderCopyWrapper(limitOrder: LimitOrder): CopyWrapper<LimitOrder>? {
         return orderCopyWrappersByOriginalOrder[limitOrder]
