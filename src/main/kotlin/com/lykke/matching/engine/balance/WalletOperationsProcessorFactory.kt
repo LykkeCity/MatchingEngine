@@ -18,7 +18,6 @@ class WalletOperationsProcessorFactory(private val currentTransactionBalancesHol
                 currentTransactionBalancesHolderFactory.create(),
                 applicationSettingsHolder,
                 assetsHolder,
-                validate,
                 logger)
     }
 }

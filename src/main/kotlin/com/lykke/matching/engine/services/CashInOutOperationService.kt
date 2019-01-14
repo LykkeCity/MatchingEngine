@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
+import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.INVALID_FEE
@@ -30,7 +31,8 @@ import java.util.*
 import java.util.concurrent.BlockingQueue
 
 @Service
-class CashInOutOperationService(private val rabbitCashInOutQueue: BlockingQueue<CashOperation>,
+class CashInOutOperationService(private val balancesHolder: BalancesHolder,
+                                private val rabbitCashInOutQueue: BlockingQueue<CashOperation>,
                                 private val feeProcessor: FeeProcessor,
                                 private val walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                                 private val cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator,

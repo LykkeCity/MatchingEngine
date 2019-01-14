@@ -50,9 +50,6 @@ class WalletOperationsProcessorTest : AbstractTest() {
     @Autowired
     private lateinit var walletOperationsProcessorFactory: WalletOperationsProcessorFactory
 
-    @Autowired
-    private lateinit var settingsDatabaseAccessor: TestSettingsDatabaseAccessor
-
     @Test
     fun testPreProcessWalletOperations() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
@@ -157,7 +154,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
 
         testBalanceHolderWrapper.updateBalance("TrustedClient1", "BTC", 1.0)
         testBalanceHolderWrapper.updateBalance("TrustedClient2", "EUR", 1.0)
-        val walletOperationsProcessor = balancesHolder.createWalletProcessor(null)
+        val walletOperationsProcessor = walletOperationsProcessorFactory.create(null)
 
         walletOperationsProcessor.preProcess(listOf(
                 WalletOperation("TrustedClient1", "BTC", BigDecimal.ZERO, BigDecimal.valueOf(0.1)),
@@ -173,7 +170,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
 
     @Test
     fun testNotChangedBalance() {
-        val walletOperationsProcessor = balancesHolder.createWalletProcessor(null)
+        val walletOperationsProcessor = walletOperationsProcessorFactory.create(null)
 
         walletOperationsProcessor.preProcess(listOf(
                 WalletOperation("Client1", "BTC", BigDecimal.valueOf(0.1), BigDecimal.valueOf(0.1)),

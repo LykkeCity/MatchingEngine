@@ -253,14 +253,15 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashInOutOperationService(walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
+    open fun cashInOutOperationService(balancesHolder: BalancesHolder,
+                                       walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                                        rabbitCashInOutQueue: BlockingQueue<CashOperation>,
                                        feeProcessor: FeeProcessor,
                                        cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator,
                                        messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                        messageSender: MessageSender,
                                        persistenceManager: PersistenceManager): CashInOutOperationService {
-        return CashInOutOperationService(rabbitCashInOutQueue, feeProcessor, walletOperationsProcessorFactory,
+        return CashInOutOperationService(balancesHolder, rabbitCashInOutQueue, feeProcessor, walletOperationsProcessorFactory,
                 cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender, persistenceManager)
     }
 
@@ -548,11 +549,11 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashTransferOperationService(walletOperationsProcessorFactory: WalletOperationsProcessorFactory, notification: BlockingQueue<CashTransferOperation>,
+    open fun cashTransferOperationService(balancesHolder: BalancesHolder, walletOperationsProcessorFactory: WalletOperationsProcessorFactory, notification: BlockingQueue<CashTransferOperation>,
                                           dbTransferOperationQueue: BlockingQueue<TransferOperation>, feeProcessor: FeeProcessor,
                                           cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator, messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                           messageSender: MessageSender, persistenceManager: PersistenceManager): CashTransferOperationService {
-        return CashTransferOperationService(walletOperationsProcessorFactory, notification, dbTransferOperationQueue, feeProcessor,
+        return CashTransferOperationService(balancesHolder, walletOperationsProcessorFactory, notification, dbTransferOperationQueue, feeProcessor,
                 cashTransferOperationBusinessValidator, messageSequenceNumberHolder, messageSender, persistenceManager)
     }
 

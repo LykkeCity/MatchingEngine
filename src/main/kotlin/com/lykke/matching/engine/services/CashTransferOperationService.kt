@@ -12,6 +12,7 @@ import com.lykke.matching.engine.exception.PersistenceException
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.singleFeeTransfer
+import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.INVALID_FEE
@@ -36,7 +37,8 @@ import java.util.LinkedList
 import java.util.concurrent.BlockingQueue
 
 @Service
-class CashTransferOperationService(private val walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
+class CashTransferOperationService(private val balancesHolder: BalancesHolder,
+                                   private val walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                                    private val notificationQueue: BlockingQueue<CashTransferOperation>,
                                    private val dbTransferOperationQueue: BlockingQueue<TransferOperation>,
                                    private val feeProcessor: FeeProcessor,
@@ -84,7 +86,7 @@ class CashTransferOperationService(private val walletOperationsProcessorFactory:
             return
         }
         dbTransferOperationQueue.put(transferOperation)
-        val fee = if(transferOperation.fees == null || transferOperation.fees.isEmpty()) null else transferOperation.fees.first()
+        val fee = if (transferOperation.fees == null || transferOperation.fees.isEmpty()) null else transferOperation.fees.first()
 
         notificationQueue.put(CashTransferOperation(transferOperation.externalId,
                 transferOperation.fromClientId,
