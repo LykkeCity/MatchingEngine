@@ -43,7 +43,7 @@ class LimitOrdersCancellerImpl(private val applicationSettingsHolder: Applicatio
             orderBooksHolder.getChangedOrderBookCopy(order.assetPairId).removeOrder(order)
         }
         orderBooksHolder.removeOrdersFromMapsAndSetStatus(cancelledOrders, OrderStatus.Cancelled)
-        orderBooksHolder.removeOrdersFromMapsAndSetStatus(replacedOrders, OrderStatus.Cancelled)
+        orderBooksHolder.removeOrdersFromMapsAndSetStatus(replacedOrders, OrderStatus.Replaced)
     }
 
     private fun addLimitOrdersInfoToExecutionEventData(orders: Collection<LimitOrder>,
