@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.order.transaction
 
-import com.lykke.matching.engine.balance.WalletOperationsProcessor
 import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
@@ -19,29 +18,10 @@ import java.util.*
 @Component
 class ExecutionContextFactory(private val walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                               private val genericLimitOrderService: GenericLimitOrderService,
-                              private val genericStopLimitOrderService: GenericStopLimitOrderService,
                               private val midPriceHolder: MidPriceHolder,
+                              private val genericStopLimitOrderService: GenericStopLimitOrderService,
                               private val assetsHolder: AssetsHolder,
                               private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder) {
-
-    fun create(executionContext: ExecutionContext): ExecutionContext {
-        return ExecutionContext(executionContext.messageId,
-                executionContext.requestId,
-                executionContext.messageType,
-                executionContext.processedMessage,
-                executionContext.assetPairsById,
-                executionContext.assetsById,
-                executionContext.preProcessorValidationResultsByOrderId,
-                walletOperationsProcessorFactory.create(executionContext.logger, executionContext.walletOperationsProcessor),
-                CurrentTransactionOrderBooksHolder(executionContext.orderBooksHolder),
-                CurrentTransactionStopOrderBooksHolder(executionContext.stopOrderBooksHolder),
-                CurrentTransactionMidPriceHolder(executionContext.currentTransactionMidPriceHolder, priceDeviationThresholdHolder),
-                executionContext.date,
-                executionContext.logger,
-                executionContext.controlsLogger,
-                executionContext.tradeIndex,
-                executionContext)
-    }
 
     fun create(messageId: String,
                requestId: String,
@@ -52,11 +32,7 @@ class ExecutionContextFactory(private val walletOperationsProcessorFactory: Wall
                logger: Logger,
                controlsLogger: Logger,
                assetsById: Map<String, Asset> = getAssetsByIdMap(assetPairsById),
-               preProcessorValidationResultsByOrderId: Map<String, OrderValidationResult> = emptyMap(),
-               walletOperationsProcessor: WalletOperationsProcessor = walletOperationsProcessorFactory.create(logger),
-               orderBooksHolder: CurrentTransactionOrderBooksHolder = genericLimitOrderService.createCurrentTransactionOrderBooksHolder(),
-               stopOrderBooksHolder: CurrentTransactionStopOrderBooksHolder = genericStopLimitOrderService.createCurrentTransactionOrderBooksHolder(),
-               currentTransactionMidPriceHolder: CurrentTransactionMidPriceHolder = CurrentTransactionMidPriceHolder(midPriceHolder, priceDeviationThresholdHolder)): ExecutionContext {
+               preProcessorValidationResultsByOrderId: Map<String, OrderValidationResult> = emptyMap()): ExecutionContext {
         return ExecutionContext(messageId,
                 requestId,
                 messageType,
@@ -67,7 +43,7 @@ class ExecutionContextFactory(private val walletOperationsProcessorFactory: Wall
                 walletOperationsProcessorFactory.create(logger),
                 genericLimitOrderService.createCurrentTransactionOrderBooksHolder(),
                 genericStopLimitOrderService.createCurrentTransactionOrderBooksHolder(),
-                currentTransactionMidPriceHolder,
+                CurrentTransactionMidPriceHolder(midPriceHolder, priceDeviationThresholdHolder),
                 date,
                 logger,
                 controlsLogger)

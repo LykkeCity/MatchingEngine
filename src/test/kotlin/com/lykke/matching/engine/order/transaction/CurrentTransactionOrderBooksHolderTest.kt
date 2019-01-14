@@ -8,6 +8,7 @@ import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.MessageBuilder
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito
@@ -29,6 +30,15 @@ class CurrentTransactionOrderBooksHolderTest {
 
     @Autowired
     private lateinit var testOrderBookWrapper: TestOrderBookWrapper
+
+
+    @Before
+    fun setUp() {
+        val genericLimitOrderService = Mockito.mock(GenericLimitOrderService::class.java)
+
+        Mockito.`when`(genericLimitOrderService.getOrderBook("EURUSD"))
+                .thenReturn(AssetOrderBook("EURUSD"))
+    }
 
     @Test
     fun oneSubTransactionTest() {

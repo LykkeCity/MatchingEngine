@@ -9,10 +9,10 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.process.common.OrderUtils
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
-import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.services.utils.MidPriceUtils
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.utils.NumberUtils
+import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
@@ -55,10 +55,10 @@ class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcesso
     }
 
     private fun rejectStopOrderHighMidPriceDeviation(order: LimitOrder,
-                                        executionContext: ExecutionContext,
-                                        lowerMidPriceBound: BigDecimal?,
-                                        upperMidPriceBound: BigDecimal?,
-                                        midPrice: BigDecimal?): ProcessedOrder {
+                                                     executionContext: ExecutionContext,
+                                                     lowerMidPriceBound: BigDecimal?,
+                                                     upperMidPriceBound: BigDecimal?,
+                                                     midPrice: BigDecimal?): ProcessedOrder {
         addOrderToReport(order, executionContext)
         val childLimitOrder = OrderUtils.createChildLimitOrder(order, executionContext.date)
         childLimitOrder.updateStatus(OrderStatus.TooHighMidPriceDeviation, executionContext.date)

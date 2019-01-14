@@ -68,13 +68,6 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
             ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)
     }
 
-    private fun writeErrorResponse(messageWrapper: MessageWrapper, status: MessageStatus, errorMessage: String) {
-        messageWrapper.writeNewResponse(
-                ProtocolMessages.NewResponse.newBuilder()
-                        .setStatus(status.type)
-                        .setStatusReason(errorMessage))
-    }
-
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(status.type))

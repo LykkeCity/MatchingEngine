@@ -9,7 +9,6 @@ import java.util.Date
 
 class CancelRequest(val limitOrders: Collection<LimitOrder>,
                     val stopLimitOrders: Collection<LimitOrder>,
-                    val assetPairId: String?,
                     val messageId: String,
                     val requestId: String,
                     val messageType: MessageType,

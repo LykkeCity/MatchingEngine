@@ -40,6 +40,7 @@ import com.lykke.matching.engine.order.process.LimitOrderProcessor
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopLimitOrderProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
+import com.lykke.matching.engine.order.process.common.LimitOrdersCancellerImpl
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolderFactory
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory

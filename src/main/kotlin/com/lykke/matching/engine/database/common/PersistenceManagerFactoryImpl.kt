@@ -44,22 +44,28 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                     ordersDatabaseAccessorsHolder.primaryAccessor,
                     stopOrdersDatabaseAccessorsHolder.primaryAccessor,
                     fileProcessedMessagesDatabaseAccessor)
-            Storage.Redis, Storage.RedisWithoutOrders -> {
-                RedisPersistenceManager(
-                        balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                        redisProcessedMessagesDatabaseAccessor.get(),
-                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
-                        persistOrdersStrategy.get(),
-                        ordersPersistInSecondaryDbStrategy.get(),
-                        messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
-                        persistedWalletsApplicationEventPublisher,
-                        persistMidPricesApplicationeventPublisher,
-                        redisConnection.get(),
-                        config,
-                        currentTransactionDataHolder,
-                        performanceStatsHolder
-                )
-            }
+            Storage.Redis ->
+                createRedisPersistenceManager(redisConnection.get(), ordersPersistInSecondaryDbStrategy.get())
+            Storage.RedisWithoutOrders ->
+                createRedisPersistenceManager(redisConnection.get(), null)
         }
+    }
+
+    private fun createRedisPersistenceManager(redisConnection: RedisConnection,
+                                              ordersPersistInSecondaryDbStrategy: OrdersPersistInSecondaryDbStrategy?): RedisPersistenceManager {
+        return RedisPersistenceManager(
+                balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
+                redisProcessedMessagesDatabaseAccessor.get(),
+                cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
+                persistOrdersStrategy.get(),
+                ordersPersistInSecondaryDbStrategy,
+                messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
+                persistedWalletsApplicationEventPublisher,
+                persistMidPricesApplicationeventPublisher,
+                redisConnection.get(),
+                config,
+                currentTransactionDataHolder,
+                performanceStatsHolder
+        )
     }
 }

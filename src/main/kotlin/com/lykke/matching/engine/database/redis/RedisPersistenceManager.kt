@@ -28,7 +28,7 @@ class RedisPersistenceManager(
         private val redisProcessedMessagesDatabaseAccessor: RedisProcessedMessagesDatabaseAccessor,
         private val redisProcessedCashOperationIdDatabaseAccessor: RedisCashOperationIdDatabaseAccessor,
         private val persistOrdersStrategy: PersistOrdersDuringRedisTransactionStrategy,
-        private val ordersPersistInSecondaryDbStrategy: OrdersPersistInSecondaryDbStrategy,
+        private val ordersPersistInSecondaryDbStrategy: OrdersPersistInSecondaryDbStrategy?,
         private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
         private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<AccountPersistEvent>,
         private val persistMidPricesApplicationEventPublisher: SimpleApplicationEventPublisher<MidPricesPersistEvent>,
@@ -70,29 +70,29 @@ class RedisPersistenceManager(
             persistProcessedCashMessage(transaction, data.processedMessage)
         }
 
-            val startPersistOrders = System.nanoTime()
-            persistOrders(transaction, data)
-            val endPersistOrders = System.nanoTime()
+        val startPersistOrders = System.nanoTime()
+        persistOrders(transaction, data)
+        val endPersistOrders = System.nanoTime()
 
         persistMessageSequenceNumber(transaction, data.messageSequenceNumber)
         persistMidPrices(data.midPricePersistenceData)
 
         val persistTime = System.nanoTime()
 
-            transaction.exec()
-            val commitTime = System.nanoTime()
-            val nonRedisOrdersPersistTime = if (persistOrdersStrategy.isRedisTransactionUsed()) 0 else endPersistOrders - startPersistOrders
-            val messageId = data.processedMessage?.messageId
-            REDIS_PERFORMANCE_LOGGER.debug("Total: ${PrintUtils.convertToString2((commitTime - startTime - nonRedisOrdersPersistTime).toDouble())}" +
-                    ", persist: ${PrintUtils.convertToString2((persistTime - startTime - nonRedisOrdersPersistTime).toDouble())}" +
-                    (if(nonRedisOrdersPersistTime != 0L) ", non redis orders persist time: ${PrintUtils.convertToString2(nonRedisOrdersPersistTime.toDouble())}" else "") +
-                    ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}" +
-                    ", persisted data summary: ${data.getSummary()}" +
-                    (if (messageId != null) ", messageId: ($messageId)" else ""))
+        transaction.exec()
+        val commitTime = System.nanoTime()
+        val nonRedisOrdersPersistTime = if (persistOrdersStrategy.isRedisTransactionUsed()) 0 else endPersistOrders - startPersistOrders
+        val messageId = data.processedMessage?.messageId
+        REDIS_PERFORMANCE_LOGGER.debug("Total: ${PrintUtils.convertToString2((commitTime - startTime - nonRedisOrdersPersistTime).toDouble())}" +
+                ", persist: ${PrintUtils.convertToString2((persistTime - startTime - nonRedisOrdersPersistTime).toDouble())}" +
+                (if (nonRedisOrdersPersistTime != 0L) ", non redis orders persist time: ${PrintUtils.convertToString2(nonRedisOrdersPersistTime.toDouble())}" else "") +
+                ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}" +
+                ", persisted data summary: ${data.getSummary()}" +
+                (if (messageId != null) ", messageId: ($messageId)" else ""))
 
-            currentTransactionDataHolder.getMessageType()?.let {
-                performanceStatsHolder.addPersistTime(it.type, commitTime - startTime)
-            }
+        currentTransactionDataHolder.getMessageType()?.let {
+            performanceStatsHolder.addPersistTime(it.type, commitTime - startTime)
+        }
 
         if (!CollectionUtils.isEmpty(data.balancesData?.wallets)) {
             persistedWalletsApplicationEventPublisher.publishEvent(AccountPersistEvent(data.balancesData!!.wallets))
@@ -102,7 +102,8 @@ class RedisPersistenceManager(
             persistMidPricesApplicationEventPublisher.publishEvent(MidPricesPersistEvent(data.midPricePersistenceData))
         }
 
-        ordersPersistInSecondaryDbStrategy.persistOrders(data.orderBooksData, data.stopOrderBooksData)
+
+        ordersPersistInSecondaryDbStrategy?.persistOrders(data.orderBooksData, data.stopOrderBooksData)
     }
 
 

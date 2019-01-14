@@ -31,11 +31,6 @@ abstract class AbstractTransactionOrderBooksHolder<AssetOrderBook : AbstractAsse
         }
     }
 
-
-    override fun setOrderBook(assetPairId: String, assetOrderBook: AssetOrderBook) {
-        assetOrderBookCopiesByAssetPairId[assetOrderBook.assetPairId] = assetOrderBook
-    }
-
     override fun addOrders(orders: Collection<LimitOrder>) {
         orders.forEach { addOrder(it) }
     }
