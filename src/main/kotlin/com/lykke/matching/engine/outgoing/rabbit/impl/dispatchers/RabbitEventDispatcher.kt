@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.outgoing.rabbit.impl.dispatchers
 
 import com.lykke.matching.engine.outgoing.rabbit.events.RabbitFailureEvent
-import com.lykke.matching.engine.outgoing.rabbit.events.RabbitRecoverEvent
+import com.lykke.matching.engine.outgoing.rabbit.events.RabbitReadyEvent
 import com.lykke.matching.engine.utils.monitoring.HealthMonitorEvent
 import com.lykke.matching.engine.utils.monitoring.MonitoredComponent
 import com.lykke.utils.logging.MetricsLogger
@@ -109,15 +109,15 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
     }
 
     @EventListener
-    private fun onRabbitRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
-        if (!queueNameToQueue.keys.contains(rabbitRecoverEvent.publisherName)) {
+    private fun onRabbitReady(rabbitReadyEvent: RabbitReadyEvent) {
+        if (!queueNameToQueue.keys.contains(rabbitReadyEvent.publisherName)) {
             return
         }
 
         try {
             maintenanceModeLock.lock()
-            if (failedEventConsumers.remove(rabbitRecoverEvent.publisherName)) {
-                log("Rabbit MQ publisher recovered: ${rabbitRecoverEvent.publisherName}, count of functional publishers is ${queueNameToQueue.size - failedEventConsumers.size}")
+            if (failedEventConsumers.remove(rabbitReadyEvent.publisherName)) {
+                log("Rabbit MQ publisher recovered: ${rabbitReadyEvent.publisherName}, count of functional publishers is ${queueNameToQueue.size - failedEventConsumers.size}")
             }
             maintenanceModeCondition.signal()
 

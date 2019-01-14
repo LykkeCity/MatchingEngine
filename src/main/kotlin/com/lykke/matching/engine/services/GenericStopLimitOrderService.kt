@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.transaction.CurrentTransactionStopOrderBooksHolder
 import org.springframework.stereotype.Component
@@ -11,7 +12,8 @@ import java.util.HashMap
 import java.util.concurrent.ConcurrentHashMap
 
 @Component
-class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder) : AbstractGenericLimitOrderService<AssetStopOrderBook> {
+class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
+                                   private val expiryOrdersQueue: ExpiryOrdersQueue) : AbstractGenericLimitOrderService<AssetStopOrderBook> {
 
     var initialStopOrdersCount = 0
     private val stopLimitOrdersQueues = ConcurrentHashMap<String, AssetStopOrderBook>()
@@ -23,6 +25,9 @@ class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder
     }
 
     fun update() {
+        stopLimitOrdersMap.values.forEach {
+            expiryOrdersQueue.removeIfOrderHasExpiryTime(it)
+        }
         stopLimitOrdersQueues.clear()
         stopLimitOrdersMap.clear()
         clientStopLimitOrdersMap.clear()
@@ -39,6 +44,7 @@ class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder
 
     fun addOrder(order: LimitOrder) {
         stopLimitOrdersMap[order.externalId] = order
+        expiryOrdersQueue.addIfOrderHasExpiryTime(order)
         clientStopLimitOrdersMap.getOrPut(order.clientId) { ArrayList() }.add(order)
     }
 
@@ -61,6 +67,7 @@ class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder
     override fun cancelLimitOrders(orders: Collection<LimitOrder>, date: Date) {
         orders.forEach { order ->
             val ord = stopLimitOrdersMap.remove(order.externalId)
+            expiryOrdersQueue.removeIfOrderHasExpiryTime(order)
             clientStopLimitOrdersMap[order.clientId]?.remove(order)
             if (ord != null) {
                 ord.updateStatus(OrderStatus.Cancelled, date)
@@ -72,6 +79,7 @@ class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder
         orders.forEach { order ->
             val removedOrder = stopLimitOrdersMap.remove(order.externalId)
             clientStopLimitOrdersMap[order.clientId]?.remove(removedOrder)
+            expiryOrdersQueue.removeIfOrderHasExpiryTime(order)
             if (removedOrder != null && status != null) {
                 removedOrder.updateStatus(status, date!!)
             }

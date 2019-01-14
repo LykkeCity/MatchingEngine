@@ -1,12 +1,14 @@
 package com.lykke.matching.engine.services.validators.common
 
 import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.Order
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 import kotlin.math.sign
+import java.util.Date
 
 class OrderValidationUtils {
     companion object {
@@ -53,6 +55,12 @@ class OrderValidationUtils {
                 NumberUtils.divideWithMaxScale(price - expectedPrice, expectedPrice) <= threshold
             } else {
                 NumberUtils.divideWithMaxScale(expectedPrice - price, expectedPrice) <= threshold
+            }
+        }
+
+        fun validateExpiration(order: LimitOrder, orderProcessingTime: Date) {
+            if (order.isExpired(orderProcessingTime)) {
+                throw OrderValidationException(OrderStatus.Cancelled, "expired")
             }
         }
     }

@@ -281,11 +281,13 @@ class MarketOrderService @Autowired constructor(
         }
         messageWrapper.writeMarketOrderResponse(marketOrderResponse)
     }
+
     private fun writeErrorResponse(messageWrapper: MessageWrapper,
                                    order: MarketOrder,
                                    statusReason: String? = null) {
         writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), statusReason)
     }
+
     private fun sendErrorNotification(messageWrapper: MessageWrapper,
                                       order: MarketOrder,
                                       now: Date) {
@@ -299,12 +301,14 @@ class MarketOrderService @Autowired constructor(
                 marketOrderWithTrades)
         messageSender.sendMessage(outgoingMessage)
     }
+
     private fun getMidPrice(orderSideBestPrice: BigDecimal, oppositeSideBestPrice: BigDecimal, assetPair: AssetPair): BigDecimal? {
         if (NumberUtils.equalsIgnoreScale(orderSideBestPrice, BigDecimal.ZERO) || NumberUtils.equalsIgnoreScale(oppositeSideBestPrice, BigDecimal.ZERO)) {
             return null
         }
         return NumberUtils.setScaleRoundUp(NumberUtils.divideWithMaxScale(orderSideBestPrice + oppositeSideBestPrice, BigDecimal.valueOf(2)), assetPair.accuracy)
     }
+
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
         messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid

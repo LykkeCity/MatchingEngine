@@ -13,18 +13,6 @@ class PersistenceData(val balancesData: BalancesData?,
     constructor(processedMessage: ProcessedMessage?, messageSequenceNumber: Long?) : this(null, processedMessage, null, null, messageSequenceNumber, null)
     constructor(processedMessage: ProcessedMessage?) : this(null, processedMessage, null, null, null, null)
 
-    fun details(): String {
-        val result = StringBuilder()
-        append(result, "m: ", processedMessage?.messageId)
-        append(result, "w: ", balancesData?.wallets?.size)
-        append(result, "b: ", balancesData?.balances?.size)
-        append(result, "o: ", orderBooksData?.orderBooks?.size)
-        append(result, "so: ", stopOrderBooksData?.orderBooks?.size)
-        append(result, "sn: ", messageSequenceNumber)
-        append(result, "md: ", midPricePersistenceData?.midPrices?.size)
-        return result.toString()
-    }
-
     fun isEmpty(): Boolean {
         return isEmptyWithoutOrders() &&
                 isOrdersEmpty()
@@ -43,12 +31,35 @@ class PersistenceData(val balancesData: BalancesData?,
                 midPricePersistenceData == null
     }
 
-    private fun append(builder: StringBuilder, prefix: String, obj: Any?) {
-        obj?.let {
-            if (builder.isNotEmpty()) {
-                builder.append(", ")
-            }
-            builder.append(prefix).append(obj)
+    fun getSummary(): String {
+        val result = ArrayList<String>()
+
+        balancesData?.let {
+            result.add("w: ${it.wallets.size}")
+            result.add("b: ${it.balances.size}")
         }
+
+        orderBooksData?.let {
+            result.add("ob: ${it.orderBooks.size}")
+            result.add("os: ${it.ordersToSave.size}")
+            result.add("or: ${it.ordersToRemove.size}")
+        }
+
+        stopOrderBooksData?.let {
+            result.add("sob: ${it.orderBooks.size}")
+            result.add("sos: ${it.ordersToSave.size}")
+            result.add("sor: ${it.ordersToRemove.size}")
+        }
+
+        midPricePersistenceData?.let {
+            result.add("md: ${it.midPrices?.size}")
+            result.add("md remove all: ${it.removeAll}")
+        }
+
+        messageSequenceNumber?.let {
+            result.add("sn: $messageSequenceNumber")
+        }
+
+        return result.joinToString()
     }
 }

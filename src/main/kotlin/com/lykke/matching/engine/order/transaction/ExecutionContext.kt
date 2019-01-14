@@ -74,13 +74,23 @@ open class ExecutionContext(val messageId: String,
     fun getClientsLimitOrdersWithTrades() = clientLimitOrdersWithTradesByInternalId.values
     fun getTrustedClientsLimitOrdersWithTrades() = trustedClientLimitOrdersWithTradesByInternalId.values
 
+    fun debug(message: String) {
+        logger.debug(getLogMessage(message))
+    }
+
     fun info(message: String) {
-        logger.info("[$messageId] $message")
+        logger.info(getLogMessage(message))
     }
 
     fun error(message: String) {
-        logger.error("[$messageId] $message")
+        logger.error(getLogMessage(message))
     }
+
+    fun error(message: String, t: Throwable) {
+        logger.error(getLogMessage(message), t)
+    }
+
+    private fun getLogMessage(message: String) = "[$messageId] $message"
 
     fun controlsInfo(message: String) {
         controlsLogger.info("[$messageId] $message")
