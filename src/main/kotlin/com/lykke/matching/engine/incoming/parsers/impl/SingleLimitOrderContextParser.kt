@@ -130,6 +130,8 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                 upperPrice = if (message.hasUpperPrice()) BigDecimal.valueOf(message.upperPrice) else null,
                 previousExternalId = null,
                 timeInForce = if (message.hasTimeInForce()) OrderTimeInForce.getByExternalId(message.timeInForce) else null,
-                expiryTime = if (message.hasExpiryTime()) Date(message.expiryTime) else null)
+                expiryTime = if (message.hasExpiryTime()) Date(message.expiryTime) else null,
+                parentOrderExternalId = null,
+                childOrderExternalId = null)
     }
 }

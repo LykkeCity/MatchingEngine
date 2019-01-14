@@ -344,7 +344,9 @@ class LimitOrderInputValidatorTest {
                 lowerLimitPrice = lowerLimitPrice, lowerPrice = lowerPrice,
                 upperLimitPrice = upperLimitPrice, upperPrice = upperPrice, previousExternalId = null,
                 timeInForce = null,
-                expiryTime = null)
+                expiryTime = null,
+                parentOrderExternalId = null,
+                childOrderExternalId = null)
     }
 
     fun getLimitOrder(fee: LimitOrderFeeInstruction?,
@@ -361,7 +363,9 @@ class LimitOrderInputValidatorTest {
                 price, OrderStatus.InOrderBook.name, Date(), Date(), Date(), BigDecimal.valueOf(1.0), null,
                 type = type, fee = fee, fees = fees, lowerLimitPrice = lowerLimitPrice, lowerPrice = lowerPrice, upperLimitPrice = upperLimitPrice, upperPrice = upperPrice, previousExternalId = null,
                 timeInForce = null,
-                expiryTime = null)
+                expiryTime = null,
+                parentOrderExternalId = null,
+                childOrderExternalId = null)
     }
 
     fun getNewLimitFee(): NewLimitOrderFeeInstruction {

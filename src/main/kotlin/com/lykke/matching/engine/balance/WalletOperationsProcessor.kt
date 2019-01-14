@@ -4,7 +4,6 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
@@ -27,7 +26,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
                                 private val applicationSettingsHolder: ApplicationSettingsHolder,
                                 private val persistenceManager: PersistenceManager,
                                 private val assetsHolder: AssetsHolder,
-                                private val validate: Boolean,
                                 private val logger: Logger?): BalancesGetter {
 
     companion object {
@@ -61,17 +59,15 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
                 changedAssetBalance.reserved
         }
 
-        if (validate) {
-            try {
-                changedAssetBalances.values.forEach { validateBalanceChange(it) }
-            } catch (e: BalanceException) {
-                if (!allowInvalidBalance) {
-                    throw e
-                }
-                val message = "Force applying of invalid balance: ${e.message}"
-                (logger ?: LOGGER).error(message)
-                METRICS_LOGGER.logError(message, e)
+        try {
+            changedAssetBalances.values.forEach { validateBalanceChange(it) }
+        } catch (e: BalanceException) {
+            if (!allowInvalidBalance) {
+                throw e
             }
+            val message = "Force applying of invalid balance: ${e.message}"
+            (logger ?: LOGGER).error(message)
+            METRICS_LOGGER.logError(message, e)
         }
 
         changedAssetBalances.forEach { processChangedAssetBalance(it.value) }
