@@ -27,7 +27,6 @@ import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
@@ -41,7 +40,6 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as Outgo
 @SpringBootTest(classes = [(TestApplicationContext::class), (MultiLimitOrderServiceTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MultiLimitOrderServiceTest: AbstractTest() {
-
 
     @TestConfiguration
     open class Config {
@@ -1373,7 +1371,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
                 volume = -10.0,
                 price = 10.0))
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(clientId = "Client1",
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper(clientId = "Client1",
                 pair = "EURUSD",
                 orders = listOf(IncomingLimitOrder(6.0, 11.0, uid = "Matched", timeInForce = OrderTimeInForce.IOC),
                         IncomingLimitOrder(6.0, 10.0, uid = "PartiallyMatched", timeInForce = OrderTimeInForce.IOC),
@@ -1407,7 +1405,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
                 volume = -10.0,
                 price = 10.0))
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(clientId = "Client1",
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper(clientId = "Client1",
                 pair = "EURUSD",
                 orders = listOf(IncomingLimitOrder(6.0, 11.0, uid = "Matched", timeInForce = OrderTimeInForce.FOK),
                         IncomingLimitOrder(6.0, 10.0, uid = "PartiallyMatched", timeInForce = OrderTimeInForce.FOK),

@@ -374,6 +374,8 @@ companion object {
         order.lowerPrice?.let { builder.setLowerPrice(it.toDouble()) }
         order.upperLimitPrice?.let { builder.setUpperLimitPrice(it.toDouble()) }
         order.upperPrice?.let { builder.setUpperPrice(it.toDouble()) }
+        order.expiryTime?.let { builder.setExpiryTime(it.time) }
+        order.timeInForce?.let { builder.setTimeInForce(it.externalId) }
         val messageWrapper = MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), TestClientHandler(), messageId = "test", id = "test")
         singleLimitOrderPreprocessor.preProcess(messageWrapper)
 

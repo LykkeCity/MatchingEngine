@@ -690,6 +690,7 @@ open class TestApplicationContext {
                 cashTransferInputQueue,
                 limitOrderCancelInputQueue,
                 limitOrderMassCancelInputQueue,
+                preProcessedMessageQueue,
                 preProcessedMessageQueue)
     }
 }

@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.MultiLimitOrder
 import com.lykke.matching.engine.daos.context.MultilimitOrderContext
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
@@ -132,9 +133,11 @@ class MultilimitOrderContextParser(
                     lowerPrice = lowerPrice,
                     upperLimitPrice = upperLimitPrice,
                     upperPrice = upperPrice,
-                    previousExternalId = previousExternalId
-//                    timeInForce = if (currentOrder.hasTimeInForce()) OrderTimeInForce.getByExternalId(currentOrder.timeInForce) else null,
-//                    expiryTime = if (currentOrder.hasExpiryTime()) Date(currentOrder.expiryTime) else null
+                    previousExternalId = previousExternalId,
+                    timeInForce = if (currentOrder.hasTimeInForce()) OrderTimeInForce.getByExternalId(currentOrder.timeInForce) else null,
+                    expiryTime = if (currentOrder.hasExpiryTime()) Date(currentOrder.expiryTime) else null,
+                    parentOrderExternalId = null,
+                    childOrderExternalId = null
             )
 
             orders.add(order)
