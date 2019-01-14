@@ -1,5 +1,9 @@
 package com.lykke.matching.engine.config.spring
 
+import com.lykke.matching.engine.AppInitialData
+import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.services.GenericLimitOrderService
+import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.monitoring.MonitoredComponent
 import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
@@ -15,6 +19,15 @@ open class AppConfiguration {
 
     @Autowired
     private lateinit var config: Config
+
+
+    @Bean
+    open fun appInitData(genericLimitOrderService: GenericLimitOrderService,
+                         genericStopLimitOrderService: GenericStopLimitOrderService,
+                         balanceHolder: BalancesHolder): AppInitialData {
+        return AppInitialData(genericLimitOrderService.initialOrdersCount, genericStopLimitOrderService.initialStopOrdersCount,
+                balanceHolder.initialBalancesCount, balanceHolder.initialClientsCount)
+    }
 
     @Bean
     open fun azureStatusProcessor(): Runnable {

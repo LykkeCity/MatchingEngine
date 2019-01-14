@@ -27,10 +27,10 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExpiryOrdersQueue
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
+import com.lykke.matching.engine.order.process.common.LimitOrdersCancelExecutor
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
@@ -59,7 +59,7 @@ import com.lykke.matching.engine.services.validators.input.LimitOrderCancelOpera
 import com.lykke.matching.engine.services.validators.input.impl.CashInOutOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.CashTransferOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
-import com.lykke.matching.engine.services.validators.input.input.LimitOrderCancelOperationInputValidatorImpl
+import com.lykke.matching.engine.services.validators.input.impl.LimitOrderCancelOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.settings.SettingValidator
 import com.lykke.matching.engine.services.validators.settings.impl.DisabledFunctionalitySettingValidator
 import com.lykke.matching.engine.services.validators.settings.impl.MessageProcessingSwitchSettingValidator
@@ -391,29 +391,13 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun genericLimitOrdersCancellerFactory(executionContextFactory: ExecutionContextFactory,
-                                                stopOrderBookProcessor: StopOrderBookProcessor,
-                                                executionDataApplyService: ExecutionDataApplyService,
-                                                dictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor,
-                                                assetsHolder: AssetsHolder,
-                                                assetsPairsHolder: AssetsPairsHolder, balancesHolder: BalancesHolder,
-                                                genericLimitOrderService: GenericLimitOrderService, genericStopLimitOrderService: GenericStopLimitOrderService,
-                                                orderBookQueue: BlockingQueue<OrderBook>,
-                                                rabbitOrderBookQueue: BlockingQueue<OrderBook>,
-                                                clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                                trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                                messageSequenceNumberHolder: MessageSequenceNumberHolder, messageSender: MessageSender): GenericLimitOrdersCancellerFactory {
-        return GenericLimitOrdersCancellerFactory(executionContextFactory,
-                stopOrderBookProcessor,
-                executionDataApplyService,
-                dictionariesDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, genericLimitOrderService,
-                genericStopLimitOrderService)
-    }
-
-    @Bean
-    open fun minVolumeOrderCanceller(assetsPairsHolder: AssetsPairsHolder, genericLimitOrderService: GenericLimitOrderService,
-                                     genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory): MinVolumeOrderCanceller {
-        return MinVolumeOrderCanceller(assetsPairsHolder, genericLimitOrderService, genericLimitOrdersCancellerFactory, true)
+    open fun minVolumeOrderCanceller(assetsPairsHolder: AssetsPairsHolder,
+                                     genericLimitOrderService: GenericLimitOrderService,
+                                     limitOrdersCancelExecutor: LimitOrdersCancelExecutor): MinVolumeOrderCanceller {
+        return MinVolumeOrderCanceller(assetsPairsHolder,
+                genericLimitOrderService,
+                limitOrdersCancelExecutor,
+                true)
     }
 
     @Bean
@@ -481,10 +465,13 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun allOrdersCanceller(assetsPairsHolder: AssetsPairsHolder, genericLimitOrderService: GenericLimitOrderService,
-                                genericStopLimitOrderService: GenericStopLimitOrderService, genericLimitOrdersCancellerFactory:
-                                GenericLimitOrdersCancellerFactory): AllOrdersCanceller {
-        return AllOrdersCanceller(assetsPairsHolder, genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory, true)
+    open fun allOrdersCanceller(genericLimitOrderService: GenericLimitOrderService,
+                                genericStopLimitOrderService: GenericStopLimitOrderService,
+                                limitOrdersCancelExecutor: LimitOrdersCancelExecutor): AllOrdersCanceller {
+        return AllOrdersCanceller(genericLimitOrderService,
+                genericStopLimitOrderService,
+                limitOrdersCancelExecutor,
+                true)
     }
 
     @Bean
@@ -619,17 +606,16 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun limitOrdersCancelHelper(cancellerFactory: GenericLimitOrdersCancellerFactory): LimitOrdersCancelHelper {
-        return LimitOrdersCancelHelper(cancellerFactory)
+    open fun limitOrdersCancelServiceHelper(limitOrdersCancelExecutor: LimitOrdersCancelExecutor): LimitOrdersCancelServiceHelper {
+        return LimitOrdersCancelServiceHelper(limitOrdersCancelExecutor)
     }
 
     @Bean
     open fun limitOrderCancelService(genericLimitOrderService: GenericLimitOrderService,
                                      genericStopLimitOrderService: GenericStopLimitOrderService,
-                                     cancellerFactory: GenericLimitOrdersCancellerFactory,
                                      validator: LimitOrderCancelOperationBusinessValidator,
-                                     limitOrdersCancelHelper: LimitOrdersCancelHelper): LimitOrderCancelService {
-        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelHelper)
+                                     limitOrdersCancelServiceHelper: LimitOrdersCancelServiceHelper): LimitOrderCancelService {
+        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelServiceHelper)
     }
 
     @Bean
@@ -645,17 +631,16 @@ open class TestApplicationContext {
     @Bean
     open fun limitOrderMassCancelService(genericLimitOrderService: GenericLimitOrderService,
                                          genericStopLimitOrderService: GenericStopLimitOrderService,
-                                         cancellerFactory: GenericLimitOrdersCancellerFactory,
-                                         limitOrdersCancelHelper: LimitOrdersCancelHelper): LimitOrderMassCancelService {
-        return LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, limitOrdersCancelHelper)
+                                         limitOrdersCancelServiceHelper: LimitOrdersCancelServiceHelper): LimitOrderMassCancelService {
+        return LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, limitOrdersCancelServiceHelper)
     }
 
     @Bean
     open fun multiLimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService,
-                                          genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
-                                          applicationSettingsHolder: ApplicationSettingsHolder,
-                                          assetsPairsHolder: AssetsPairsHolder): MultiLimitOrderCancelService {
-        return MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory,
+                                          limitOrdersCancelServiceHelper: LimitOrdersCancelServiceHelper,
+                                          applicationSettingsHolder: ApplicationSettingsHolder): MultiLimitOrderCancelService {
+        return MultiLimitOrderCancelService(genericLimitOrderService,
+                limitOrdersCancelServiceHelper,
                 applicationSettingsHolder)
     }
 

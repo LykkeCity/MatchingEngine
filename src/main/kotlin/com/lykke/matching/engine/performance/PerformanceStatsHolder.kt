@@ -9,6 +9,37 @@ class PerformanceStatsHolder {
     private var statsMap = HashMap<Byte, PerformanceStats>()
 
     fun addMessage(type: Byte,
+                   startTimestamp: Long,
+                   writeResponseTime: Long?,
+                   messagePreProcessorStartTimestamp: Long?,
+                   messagePreProcessorEndTimestamp: Long?,
+                   startMessageProcessingTime: Long,
+                   endMessageProcessingTime: Long) {
+        val totalTime = endMessageProcessingTime - startTimestamp
+        val processingTime = endMessageProcessingTime - startMessageProcessingTime
+
+        val inputQueueTime = messagePreProcessorStartTimestamp?.let {
+            it - startTimestamp
+        }
+
+        val preProcessingTime = messagePreProcessorStartTimestamp?.let {
+            messagePreProcessorEndTimestamp!! - it
+        }
+
+        val preProcessedMessageQueueStartTime = messagePreProcessorEndTimestamp
+                ?: startTimestamp
+        val preProcessedMessageQueueTime = startMessageProcessingTime - preProcessedMessageQueueStartTime
+
+        addMessage(type = type,
+                inputQueueTime = inputQueueTime,
+                preProcessedQueueTime = preProcessedMessageQueueTime,
+                preProcessingTime = preProcessingTime,
+                processingTime = processingTime,
+                writeResponseTime = writeResponseTime,
+                totalTime = totalTime)
+    }
+
+    fun addMessage(type: Byte,
                    inputQueueTime: Long?,
                    preProcessedQueueTime: Long,
                    preProcessingTime: Long?,

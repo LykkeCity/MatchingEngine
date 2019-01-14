@@ -1,11 +1,9 @@
 package com.lykke.matching.engine.utils.order
 
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.order.OrderOperation
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCanceller
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
+import com.lykke.matching.engine.order.process.common.CancelRequest
+import com.lykke.matching.engine.order.process.common.LimitOrdersCancelExecutor
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import org.apache.log4j.Logger
@@ -21,20 +19,13 @@ import java.util.stream.Stream
 
 @Component
 @Order(4)
-class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: AssetsPairsHolder,
-                                                private val genericLimitOrderService: GenericLimitOrderService,
+class AllOrdersCanceller @Autowired constructor(private val genericLimitOrderService: GenericLimitOrderService,
                                                 private val genericStopLimitOrderService: GenericStopLimitOrderService,
-                                                genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
+                                                private val limitOrdersCancelExecutor: LimitOrdersCancelExecutor,
                                                 @Value("#{Config.me.cancelAllOrders}") private val cancelAllOrders: Boolean) : ApplicationRunner {
-
-    private val genericLimitOrdersCanceller: GenericLimitOrdersCanceller
 
     companion object {
         private val LOGGER = Logger.getLogger(AllOrdersCanceller::class.java.name)
-    }
-
-    init {
-        genericLimitOrdersCanceller = genericLimitOrdersCancellerFactory.create(LOGGER, Date())
     }
 
     override fun run(args: ApplicationArguments?) {
@@ -44,59 +35,45 @@ class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: A
     }
 
     fun cancelAllOrders() {
-        val operationId = getOperationId()
+        val operationId = generateOperationId()
         LOGGER.info("Starting cancel all orders in all order books, operation Id: ($operationId)")
 
-        preProcessLimitOrders()
-        preProcessStopOrders()
-        genericLimitOrdersCanceller.applyFull(null, operationId, operationId, null,
-                MessageType.LIMIT_ORDER, true)
+        val limitOrdersToCancel = getLimitOrders()
+        val stopLimitOrdersToCancel = getStopLimitOrders()
+
+        LOGGER.info("Limit orders count: ${limitOrdersToCancel.size}, " +
+                "stop limit orders count: ${stopLimitOrdersToCancel.size}")
+
+        limitOrdersCancelExecutor.cancelOrdersAndApply(CancelRequest(limitOrdersToCancel,
+                stopLimitOrdersToCancel,
+                operationId,
+                operationId,
+                MessageType.LIMIT_ORDER,
+                Date(),
+                null,
+                null,
+                LOGGER))
+
         LOGGER.info("Completed to cancel all orders")
     }
 
-    private fun preProcessLimitOrders() {
-        val operationToOrder = getOperationToLimitOrders()
-
-        val ordersToCancel = operationToOrder[OrderOperation.CANCEL] ?: emptyList()
-        val ordersToRemove = operationToOrder[OrderOperation.REMOVE] ?: emptyList()
-
-        LOGGER.info("Start cancel of all limit orders orders to cancel count: ${ordersToCancel.size}, " +
-                "orders to remove count: ${ordersToRemove.size}")
-        genericLimitOrdersCanceller.preProcessLimitOrders(ordersToCancel, ordersToRemove)
-    }
-
-    private fun getOperationToLimitOrders(): Map<OrderOperation, List<LimitOrder>> {
+    private fun getLimitOrders(): List<LimitOrder> {
         return genericLimitOrderService.getAllOrderBooks()
                 .values
                 .stream()
                 .map { it.copy() }
                 .flatMap { Stream.concat(it.getSellOrderBook().stream(), it.getBuyOrderBook().stream()) }
-                .collect(Collectors.groupingBy(::getOrderOperation))
+                .collect(Collectors.toList())
     }
 
-    private fun preProcessStopOrders() {
-        val operationToOrder = getOperationToStopLimitOrders()
-        val ordersToCancel = operationToOrder[OrderOperation.CANCEL] ?: emptyList()
-        val ordersToRemove = operationToOrder[OrderOperation.REMOVE] ?: emptyList()
-
-        LOGGER.info("Start cancel of all stop orders orders to cancel: ${ordersToCancel.size}, orders to remove count: ${ordersToRemove.size}")
-        genericLimitOrdersCanceller.preProcessStopLimitOrders(ordersToCancel,
-                ordersToRemove)
-    }
-
-    private fun getOperationToStopLimitOrders(): Map<OrderOperation, List<LimitOrder>> {
+    private fun getStopLimitOrders(): List<LimitOrder> {
         return genericStopLimitOrderService.getAllOrderBooks()
                 .values
                 .stream()
                 .map { it.copy() }
                 .flatMap { Stream.concat(it.getSellOrderBook().stream(), it.getBuyOrderBook().stream()) }
-                .collect(Collectors.groupingBy(::getOrderOperation))
+                .collect(Collectors.toList())
     }
 
-    private fun getOrderOperation(limitOrder: LimitOrder): OrderOperation {
-        assetsPairsHolder.getAssetPairAllowNulls(limitOrder.assetPairId) ?: return OrderOperation.REMOVE
-        return OrderOperation.CANCEL
-    }
-
-    private fun getOperationId() = UUID.randomUUID().toString()
+    private fun generateOperationId() = UUID.randomUUID().toString()
 }

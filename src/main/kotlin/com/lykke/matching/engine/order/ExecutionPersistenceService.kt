@@ -27,6 +27,8 @@ class ExecutionPersistenceService(private val persistenceManager: PersistenceMan
         messageWrapper?.persisted = persisted
         if (persisted) {
             executionContext.apply()
+        } else {
+            executionContext.error("Unable to persist result")
         }
         return persisted
     }
