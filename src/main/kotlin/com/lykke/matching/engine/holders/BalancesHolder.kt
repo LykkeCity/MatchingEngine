@@ -144,7 +144,6 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
                 applicationSettingsHolder,
                 persistenceManager,
                 assetsHolder,
-                validate,
                 logger)
     }
 

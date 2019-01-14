@@ -4,12 +4,16 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.CopyWrapper
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
+import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.MessageBuilder
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
@@ -23,11 +27,38 @@ import java.util.concurrent.PriorityBlockingQueue
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class CurrentTransactionOrderBooksHolderTest {
 
+    private lateinit var currentTransactionOrderBooksHolder: CurrentTransactionOrderBooksHolder
+
     @Autowired
     private lateinit var genericLimitOrderService: GenericLimitOrderService
 
     @Autowired
     private lateinit var testOrderBookWrapper: TestOrderBookWrapper
+
+    @Before
+    fun setUp() {
+        val genericLimitOrderService = Mockito.mock(GenericLimitOrderService::class.java)
+
+        Mockito.`when`(genericLimitOrderService.getOrderBook("EURUSD"))
+                .thenReturn(AssetOrderBook("EURUSD"))
+
+        currentTransactionOrderBooksHolder = CurrentTransactionOrderBooksHolder(genericLimitOrderService)
+    }
+
+    @Test
+    fun testGetPersistenceDataAfterCreatingAndChangingCopyOfNewOrder() {
+        val order = buildLimitOrder(assetId = "EURUSD", status = "Status1", uid = "NewOrderToChange")
+        currentTransactionOrderBooksHolder.addOrder(order)
+        currentTransactionOrderBooksHolder.addOrder(buildLimitOrder(assetId = "EURUSD", uid = "OtherNewOrder"))
+        currentTransactionOrderBooksHolder.getOrPutOrderCopyWrapper(order)
+                .copy
+                .updateStatus(OrderStatus.Processing, Date())
+
+        val persistenceData = currentTransactionOrderBooksHolder.getPersistenceData()
+
+        assertEquals(2, persistenceData.ordersToSave.size)
+        assertEquals(OrderStatus.Processing.name, persistenceData.ordersToSave.single { it.externalId == "NewOrderToChange" }.status)
+    }
 
     @Test
     fun oneSubTransactionTest() {

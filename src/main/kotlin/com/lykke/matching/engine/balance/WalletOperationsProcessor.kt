@@ -58,17 +58,15 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
                 changedAssetBalance.reserved
         }
 
-        if (validate) {
-            try {
-                changedAssetBalances.values.forEach { validateBalanceChange(it) }
-            } catch (e: BalanceException) {
-                if (!forceApply) {
-                    throw e
-                }
-                val message = "Force applying of invalid balance: ${e.message}"
-                (logger ?: LOGGER).error(message)
-                METRICS_LOGGER.logError(message, e)
+        try {
+            changedAssetBalances.values.forEach { validateBalanceChange(it) }
+        } catch (e: BalanceException) {
+            if (!forceApply) {
+                throw e
             }
+            val message = "Force applying of invalid balance: ${e.message}"
+            (logger ?: LOGGER).error(message)
+            METRICS_LOGGER.logError(message, e)
         }
 
         changedAssetBalances.forEach { processChangedAssetBalance(it.value) }

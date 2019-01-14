@@ -172,6 +172,7 @@ message ExecutionEvent {
             CANCELLED = 5;
             REPLACED = 6;
             REJECTED = 7;
+            EXECUTED = 8;
         }
         int32 status = 10;
 
@@ -187,6 +188,18 @@ message ExecutionEvent {
         bool straight = 20;
         repeated FeeInstruction fees = 21;
         repeated Trade trades = 22;
+
+        enum OrderTimeInForce {
+             UNKNOWN_ORDER_TIME_IN_FORCE = 0;
+             GTC = 1;
+             GTD = 2;
+             IOC = 3;
+             FOK = 4;
+        }
+        int32 timeInForce = 23;
+        google.protobuf.Timestamp expiryTime = 24;
+        string parentExternalId = 25;
+        string childExternalId = 26;
     }
     Header header = 1;
     repeated BalanceUpdate balanceUpdates = 2;

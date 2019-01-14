@@ -73,9 +73,6 @@ class MarketOrderServiceTest : AbstractTest() {
     }
 
     @Autowired
-    private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
-
-    @Autowired
     private lateinit var messageBuilder: MessageBuilder
 
     @Before

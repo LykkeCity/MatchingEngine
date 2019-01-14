@@ -42,9 +42,12 @@ class MultiOrderFilterTest {
 
     @Test
     fun testNotSortedOrdersOfTrustedClient() {
-        val filter = createFilter(true)
-        notSortedOrders().forEach { filter.checkAndAdd(it) }
-        assertFilteredResult(filter)
+        // 1000 cases to test different shuffled orders
+        (1..1000).forEach {
+            val filter = createFilter(true)
+            notSortedOrders().forEach { filter.checkAndAdd(it) }
+            assertFilteredResult(filter)
+        }
     }
 
     @Test

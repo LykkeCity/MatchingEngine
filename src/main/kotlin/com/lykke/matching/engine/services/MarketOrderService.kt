@@ -60,7 +60,7 @@ class MarketOrderService @Autowired constructor(
         private val applicationSettingsHolder: ApplicationSettingsHolder,
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
         private val messageSender: MessageSender,
-        private val messageProcessingStatusHolder: MessageProcessingStatusHolder): AbstractService {
+        private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
         private val STATS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.stats")
