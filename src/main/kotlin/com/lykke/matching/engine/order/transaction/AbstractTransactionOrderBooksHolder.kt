@@ -32,10 +32,6 @@ abstract class AbstractTransactionOrderBooksHolder<AssetOrderBook : AbstractAsse
         }
     }
 
-    fun setOrderBook(orderBook: AssetOrderBook) {
-        assetOrderBookCopiesByAssetPairId[orderBook.assetPairId] = orderBook
-    }
-
     fun addInputOrderCopyWrapper(orderCopyWrapper: CopyWrapper<Order>) {
         inputOrderCopyWrappers.add(orderCopyWrapper)
     }
