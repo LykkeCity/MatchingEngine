@@ -42,7 +42,6 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
 
         limitOrdersCancelServiceHelper.cancelOrdersAndWriteResponse(CancelRequest(ordersByType[LimitOrderType.LIMIT] ?: emptyList(),
                 ordersByType[LimitOrderType.STOP_LIMIT] ?: emptyList(),
-                null,
                 context.messageId,
                 context.uid,
                 context.messageType,

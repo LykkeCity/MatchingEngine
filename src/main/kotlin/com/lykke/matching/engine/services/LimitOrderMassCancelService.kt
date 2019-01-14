@@ -24,7 +24,6 @@ class LimitOrderMassCancelService(private val genericLimitOrderService: GenericL
 
         limitOrdersCancelServiceHelper.cancelOrdersAndWriteResponse(CancelRequest(genericLimitOrderService.searchOrders(context.clientId, context.assetPairId, context.isBuy),
                 genericStopLimitOrderService.searchOrders(context.clientId, context.assetPairId, context.isBuy),
-                context.assetPairId,
                 context.messageId,
                 context.uid,
                 context.messageType,

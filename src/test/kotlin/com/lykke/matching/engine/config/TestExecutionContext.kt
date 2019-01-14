@@ -60,8 +60,8 @@ open class TestExecutionContext {
                                      assetsHolder: AssetsHolder): ExecutionContextFactory {
         return ExecutionContextFactory(walletOperationsProcessorFactory,
                 genericLimitOrderService,
-                genericStopLimitOrderService,
                 midPriceHolder,
+                genericStopLimitOrderService,
                 assetsHolder,
                 priceDeviationThresholdHolder)
     }

@@ -33,7 +33,6 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExecutionEventSender
 import com.lykke.matching.engine.order.ExecutionPersistenceService
-import com.lykke.matching.engine.order.process.common.LimitOrdersCancellerImpl
 import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.LimitOrderProcessor
@@ -216,8 +215,8 @@ abstract class AbstractPerformanceTest {
 
         val executionContextFactory = ExecutionContextFactory(walletOperationsProcessorFactory,
                 genericLimitOrderService,
-                genericStopLimitOrderService,
                 midPriceHolder,
+                genericStopLimitOrderService,
                 assetsHolder,
                 priceDeviationThresholdHolder)
 
