@@ -5,11 +5,11 @@ import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
+import com.lykke.matching.engine.database.redis.accessor.impl.*
 import com.lykke.matching.engine.database.common.strategy.OrdersPersistInSecondaryDbStrategy
 import com.lykke.matching.engine.database.common.strategy.PersistOrdersDuringRedisTransactionStrategy
 import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.MidPricesPersistEvent
-import com.lykke.matching.engine.database.redis.accessor.impl.*
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.CurrentTransactionDataHolder
@@ -123,7 +123,6 @@ class RedisPersistenceManager(
             RedisPersistenceManager.LOGGER.trace("Mid price is empty - skipping")
             return
         }
-        persistMidPricesApplicationEventPublisher.publishEvent(MidPricesPersistEvent(midPricePersistenceData))
     }
 
     private fun persistProcessedMessages(transaction: Transaction, processedMessage: ProcessedMessage?) {

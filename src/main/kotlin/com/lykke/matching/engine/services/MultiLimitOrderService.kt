@@ -135,7 +135,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                 midPriceHolder.getReferenceMidPrice(assetPair, executionContext))
 
         if (!isOrderBookMidPriceValidBeforeProcessing(executionContext, lowerMidPriceBound, upperMidPriceBound, assetPair)) {
-            processOrderBookMidPriceInvalidBeforeProcessing(executionContext, processingMultiLimitOrder, assetPair, upperMidPriceBound, lowerMidPriceBound)
+            processOrderBookMidPriceInvalidBeforeProcessing(executionContext, inputMultiLimitOrder, assetPair, upperMidPriceBound, lowerMidPriceBound)
         }
 
         val processedOrders = genericLimitOrdersProcessor.processOrders(ordersToProcess, executionContext)

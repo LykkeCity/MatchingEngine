@@ -52,8 +52,9 @@ class AllOrdersCanceller @Autowired constructor(private val genericLimitOrderSer
                 Date(),
                 null,
                 null,
-                true,
-                LOGGER))
+                LOGGER,
+                LOGGER,
+                true))
 
         LOGGER.info("Completed to cancel all orders")
     }

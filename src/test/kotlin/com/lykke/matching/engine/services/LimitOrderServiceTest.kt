@@ -48,7 +48,7 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
-import java.util.Date
+import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -82,6 +82,10 @@ class LimitOrderServiceTest : AbstractTest() {
         }
     }
 
+
+    @Autowired
+    private lateinit var assetsPairsHolder: AssetsPairsHolder
+
     @Autowired
     private lateinit var messageBuilder: MessageBuilder
 
@@ -91,8 +95,6 @@ class LimitOrderServiceTest : AbstractTest() {
     @Autowired
     private lateinit var midPriceHolder: MidPriceHolder
 
-    @Autowired
-    private lateinit var assetsPairsHolder: AssetsPairsHolder
 
     private var executionContextMock = mock<ExecutionContext> {
         on { date } doAnswer { Date() }

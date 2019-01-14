@@ -15,5 +15,6 @@ class CancelRequest(val limitOrders: Collection<LimitOrder>,
                     val date: Date,
                     val processedMessage: ProcessedMessage?,
                     val messageWrapper: MessageWrapper?,
-                    val cancelAll: Boolean,
-                    val logger: Logger)
+                    val logger: Logger,
+                    val controlsLogger: Logger = logger,
+                    val cancelAll: Boolean? = false)

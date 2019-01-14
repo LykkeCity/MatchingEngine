@@ -194,8 +194,7 @@ abstract class AbstractPerformanceTest {
                         applicationSettingsHolder, assetsPairsHolder, assetsHolder, TestUUIDHolder()),
                         LinkedBlockingQueue<MessageWrapper>(), ThrottlingLogger.getLogger("test")))
 
-        genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder,
-                expiryOrdersQueue)
+        genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, expiryOrdersQueue)
 
         val executionEventsSequenceNumbersGenerator = ExecutionEventsSequenceNumbersGenerator(messageSequenceNumberHolder)
         val executionPersistenceService = ExecutionPersistenceService(persistenceManager)
