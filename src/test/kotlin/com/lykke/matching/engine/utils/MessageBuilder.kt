@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
@@ -45,12 +46,18 @@ companion object {
                             reservedVolume: Double? = null,
                             fee: LimitOrderFeeInstruction? = null,
                             fees: List<NewLimitOrderFeeInstruction> = listOf(),
-                            previousExternalId: String? = null): LimitOrder =
+                            previousExternalId: String? = null,
+                            timeInForce: OrderTimeInForce? = null,
+                            expiryTime: Date? = null): LimitOrder =
                 LimitOrder(uid, uid, assetId, clientId, BigDecimal.valueOf(volume), BigDecimal.valueOf(price), status, registered, registered, registered, BigDecimal.valueOf(volume), null,
                         reservedVolume?.toBigDecimal(), fee, fees,
                         type, lowerLimitPrice?.toBigDecimal(), lowerPrice?.toBigDecimal(),
                         upperLimitPrice?.toBigDecimal(), upperPrice?.toBigDecimal(),
-                        previousExternalId)
+                        previousExternalId,
+                        timeInForce,
+                        expiryTime,
+                        null,
+                        null)
 
         fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
             val builder = ProtocolMessages.MarketOrder.newBuilder()
@@ -299,6 +306,8 @@ companion object {
             order.type?.let { orderBuilder.type = it.externalId }
             order.lowerLimitPrice?.let { orderBuilder.lowerLimitPrice = it }
             order.lowerPrice?.let { orderBuilder.lowerPrice = it }
+            order.timeInForce?.let { orderBuilder.timeInForce = it.externalId }
+            order.expiryTime?.let { orderBuilder.expiryTime = it.time }
             order.upperLimitPrice?.let { orderBuilder.upperLimitPrice = it }
             order.upperPrice?.let { orderBuilder.upperPrice = it }
             multiOrderBuilder.addOrders(orderBuilder.build())

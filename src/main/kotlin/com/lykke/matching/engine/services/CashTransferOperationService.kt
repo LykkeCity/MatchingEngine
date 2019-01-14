@@ -97,9 +97,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         messageSender.sendMessage(result.outgoingMessage)
 
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setMatchingEngineId(transferOperation.matchingEngineOperationId)
-                .setStatus(OK.type))
+        writeResponse(messageWrapper, transferOperation.matchingEngineOperationId, OK)
         LOGGER.info("Cash transfer operation (${transferOperation.externalId}) from client ${transferOperation.fromClientId} to client ${transferOperation.toClientId}," +
                 " asset $asset, volume: ${NumberUtils.roundForPrint(transferOperation.volume)} processed")
     }
@@ -117,8 +115,8 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         val fees = feeProcessor.processFee(operation.fees, receiptOperation, operations, balancesGetter = balancesHolder)
 
-        val walletProcessor = balancesHolder.createWalletProcessor(LOGGER, false)
-        walletProcessor.preProcess(operations)
+        val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
+                .preProcess(operations, true)
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
         val updated = walletProcessor.persistBalances(cashTransferContext.processedMessage, null, null, sequenceNumber)
@@ -140,6 +138,12 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                 fees)
 
         return OperationResult(outgoingMessage, fees)
+    }
+
+    fun writeResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus) {
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setMatchingEngineId(matchingEngineOperationId)
+                .setStatus(status.type))
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

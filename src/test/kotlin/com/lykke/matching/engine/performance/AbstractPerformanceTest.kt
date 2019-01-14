@@ -31,12 +31,13 @@ import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExecutionEventSender
 import com.lykke.matching.engine.order.ExecutionPersistenceService
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
+import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.LimitOrderProcessor
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopLimitOrderProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
+import com.lykke.matching.engine.order.process.common.LimitOrdersCancellerImpl
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.transaction.ExecutionEventsSequenceNumbersGenerator
@@ -75,8 +76,6 @@ abstract class AbstractPerformanceTest {
     protected lateinit var multiLimitOrderService: MultiLimitOrderService
     protected lateinit var marketOrderService: MarketOrderService
 
-    protected lateinit var genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory
-
     protected lateinit var assetsHolder: AssetsHolder
     protected lateinit var balancesHolder: BalancesHolder
     protected lateinit var assetsPairsHolder: AssetsPairsHolder
@@ -108,6 +107,7 @@ abstract class AbstractPerformanceTest {
     protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
     private lateinit var feeProcessor: FeeProcessor
+    private lateinit var expiryOrdersQueue: ExpiryOrdersQueue
 
     protected lateinit var messageBuilder: MessageBuilder
 
@@ -145,6 +145,7 @@ abstract class AbstractPerformanceTest {
         testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
         applicationSettingsCache = ApplicationSettingsCache(testSettingsDatabaseAccessor, ApplicationEventPublisher {})
         applicationSettingsHolder = ApplicationSettingsHolder(applicationSettingsCache)
+        val limitOrdersCanceller = LimitOrdersCancellerImpl(applicationSettingsHolder)
 
         assetCache = AssetsCache(testBackOfficeDatabaseAccessor)
         assetsHolder = AssetsHolder(assetCache)
@@ -162,7 +163,10 @@ abstract class AbstractPerformanceTest {
         assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
         assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
 
-        genericLimitOrderService = GenericLimitOrderService(ordersDatabaseAccessorsHolder, Optional.of(tradeInfoQueue))
+        expiryOrdersQueue = ExpiryOrdersQueue()
+        genericLimitOrderService = GenericLimitOrderService(ordersDatabaseAccessorsHolder,
+                Optional.of(tradeInfoQueue),
+                expiryOrdersQueue)
 
         feeProcessor = FeeProcessor(assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
@@ -182,7 +186,7 @@ abstract class AbstractPerformanceTest {
                         applicationSettingsHolder, assetsPairsHolder, assetsHolder),
                         LinkedBlockingQueue<MessageWrapper>(), ThrottlingLogger.getLogger("test")))
 
-        genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder)
+        genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, expiryOrdersQueue)
 
         val executionEventsSequenceNumbersGenerator = ExecutionEventsSequenceNumbersGenerator(messageSequenceNumberHolder)
         val executionPersistenceService = ExecutionPersistenceService(persistenceManager)
@@ -222,17 +226,7 @@ abstract class AbstractPerformanceTest {
 
         val stopOrderBookProcessor = StopOrderBookProcessor(limitOrderProcessor, applicationSettingsHolder)
 
-        genericLimitOrdersCancellerFactory = GenericLimitOrdersCancellerFactory(executionContextFactory,
-                stopOrderBookProcessor,
-                executionDataApplyService,
-                testDictionariesDatabaseAccessor,
-                assetsHolder,
-                assetsPairsHolder,
-                balancesHolder,
-                genericLimitOrderService,
-                genericStopLimitOrderService)
-
-        val previousLimitOrdersProcessor = PreviousLimitOrdersProcessor(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
+        val previousLimitOrdersProcessor = PreviousLimitOrdersProcessor(genericLimitOrderService, genericStopLimitOrderService, limitOrdersCanceller)
 
         singleLimitOrderService = SingleLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,

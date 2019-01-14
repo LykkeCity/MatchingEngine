@@ -94,12 +94,17 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
                     && !matchedWithZeroLatestTrade
                     && (order.takePrice() == null || (if (isBuy) order.takePrice()!! >= workingOrderBook.peek().price else order.takePrice()!! <= workingOrderBook.peek().price))) {
                 val limitOrderOrigin = workingOrderBook.poll()
+                if (limitOrderOrigin.isExpired(now)) {
+                    executionContext.info("Added order (id: ${limitOrderOrigin.externalId}) to cancelled limit orders due to expired time")
+                    cancelledLimitOrders.add(CopyWrapper(limitOrderOrigin))
+                    continue
+                }
                 if (order.clientId == limitOrderOrigin.clientId) {
                     skipLimitOrders.add(limitOrderOrigin)
                     continue
                 }
 
-                val limitOrderCopyWrapper = executionContext.orderBooksHolder.getOrPutOrderCopyWrapper(limitOrderOrigin) { CopyWrapper(limitOrderOrigin) }
+                val limitOrderCopyWrapper = executionContext.orderBooksHolder.getOrPutOrderCopyWrapper(limitOrderOrigin)
                 val limitOrder = limitOrderCopyWrapper.copy
 
                 var isFullyMatched = false
@@ -192,12 +197,6 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
                     order.updateStatus(OrderStatus.InvalidFee, now)
                     executionContext.info("Invalid fee for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}, marketBalance: ${getMarketBalance(availableBalances, order, asset)} : ${e.message}")
                     return MatchingResult(orderWrapper, cancelledLimitOrders)
-                }
-                if (takerFees.isNotEmpty()) {
-                    executionContext.info("Taker fee transfers: ${takerFees.map { it.transfer }}")
-                }
-                if (makerFees.isNotEmpty()) {
-                    executionContext.info("Maker fee transfers: ${makerFees.map { it.transfer }}")
                 }
 
                 val matchedLimitOrderCopyWrapper = CopyWrapper(limitOrder)

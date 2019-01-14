@@ -154,7 +154,11 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
                 order.lowerPrice?.toBigDecimal(),
                 order.upperLimitPrice?.toBigDecimal(),
                 order.upperPrice?.toBigDecimal(),
-                order.previousExternalId
+                order.previousExternalId,
+                null,
+                null,
+                null,
+                null
         )
     }
 

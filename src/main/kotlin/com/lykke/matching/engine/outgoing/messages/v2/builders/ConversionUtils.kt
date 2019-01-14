@@ -18,6 +18,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.common.Order
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderSide
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderTimeInForce
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderType
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.Trade
 import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
@@ -80,7 +81,11 @@ private fun convertLimitOrder(limitOrderWithTrades: LimitOrderWithTrades): Order
             bigDecimalToString(limitOrder.upperPrice),
             null,
             feeInstructions?.mapIndexed { index, feeInstruction -> convertFeeInstruction(index, feeInstruction) },
-            limitOrderWithTrades.trades.map { convertTrade(it) })
+            limitOrderWithTrades.trades.map { convertTrade(it) },
+            orderTimeInForce(limitOrder.timeInForce),
+            limitOrder.expiryTime,
+            limitOrder.parentOrderExternalId,
+            limitOrder.childOrderExternalId)
 }
 
 private fun convertMarketOrder(marketOrderWithTrades: MarketOrderWithTrades): Order {
@@ -108,7 +113,11 @@ private fun convertMarketOrder(marketOrderWithTrades: MarketOrderWithTrades): Or
             null,
             marketOrder.isStraight(),
             feeInstructions?.mapIndexed { index, feeInstruction -> convertFeeInstruction(index, feeInstruction) },
-            marketOrderWithTrades.trades.map { convertTrade(it) })
+            marketOrderWithTrades.trades.map { convertTrade(it) },
+            null,
+            null,
+            null,
+            null)
 }
 
 private fun orderType(order: LimitOrder): OrderType {
@@ -131,6 +140,7 @@ private fun orderStatusInfo(order: com.lykke.matching.engine.daos.Order): OrderS
         com.lykke.matching.engine.order.OrderStatus.InOrderBook.name -> OrderStatusInfo(OrderStatus.PLACED)
         com.lykke.matching.engine.order.OrderStatus.Processing.name -> OrderStatusInfo(OrderStatus.PARTIALLY_MATCHED)
         com.lykke.matching.engine.order.OrderStatus.Pending.name -> OrderStatusInfo(OrderStatus.PENDING)
+        com.lykke.matching.engine.order.OrderStatus.Executed.name -> OrderStatusInfo(OrderStatus.EXECUTED)
         com.lykke.matching.engine.order.OrderStatus.Cancelled.name -> OrderStatusInfo(OrderStatus.CANCELLED)
         com.lykke.matching.engine.order.OrderStatus.Replaced.name -> OrderStatusInfo(OrderStatus.REPLACED)
         com.lykke.matching.engine.order.OrderStatus.Matched.name -> OrderStatusInfo(OrderStatus.MATCHED)
@@ -232,4 +242,14 @@ private fun convertFeeTransfer(index: Int, internalFeeTransfer: com.lykke.matchi
             internalFeeTransfer.asset,
             bigDecimalToString(internalFeeTransfer.feeCoef),
             index)
+}
+
+private fun orderTimeInForce(internalTimeInForce: com.lykke.matching.engine.daos.order.OrderTimeInForce?): OrderTimeInForce? {
+    return when (internalTimeInForce) {
+        com.lykke.matching.engine.daos.order.OrderTimeInForce.GTC -> OrderTimeInForce.GTC
+        com.lykke.matching.engine.daos.order.OrderTimeInForce.GTD -> OrderTimeInForce.GTD
+        com.lykke.matching.engine.daos.order.OrderTimeInForce.IOC -> OrderTimeInForce.IOC
+        com.lykke.matching.engine.daos.order.OrderTimeInForce.FOK -> OrderTimeInForce.FOK
+        null -> null
+    }
 }

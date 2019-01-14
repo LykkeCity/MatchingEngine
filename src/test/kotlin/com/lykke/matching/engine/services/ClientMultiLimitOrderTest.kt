@@ -554,7 +554,7 @@ class ClientMultiLimitOrderTest : AbstractTest() {
         val report = testClientLimitOrderListener.getQueue().first() as LimitOrdersReport
         assertEquals(5, report.orders.size)
 
-        assertTrue(genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).map { it.externalId } == listOf("3"))
+        assertEquals(genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).map { it.externalId }, listOf("3"))
 
         assertEquals(1, clientsEventsQueue.size)
         assertEquals(5, (clientsEventsQueue.poll() as ExecutionEvent).orders.size)
@@ -810,7 +810,12 @@ class ClientMultiLimitOrderTest : AbstractTest() {
         assertEventBalanceUpdate("Client4", "BTC", "2", "4.5", "2", "0", event.balanceUpdates!!)
         assertEventBalanceUpdate("Client4", "USD", "530", "4", "301", "0", event.balanceUpdates!!)
 
-        assertEquals(11, event.orders.size)
+        assertEquals(15, event.orders.size)
+
+        val stopOrder1Child = event.orders.single { it.parentExternalId == "StopOrder-1" }
+        val stopOrder2Child = event.orders.single { it.parentExternalId == "StopOrder-2" }
+        val stopOrder3Child = event.orders.single { it.parentExternalId == "StopOrder-3" }
+        val incoming1Child = event.orders.single { it.parentExternalId == "Incoming-1" }
 
         assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "LimitOrder-3" }.status)
         assertEquals(0, event.orders.single { it.externalId == "LimitOrder-3" }.trades?.size)
@@ -825,23 +830,38 @@ class ClientMultiLimitOrderTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.MATCHED, order.status)
         assertEquals(2, order.trades?.size)
         assertEquals("Incoming-2", order.trades!!.single { it.index == 1 }.oppositeExternalOrderId)
-        assertEquals("StopOrder-3", order.trades!!.single { it.index == 3 }.oppositeExternalOrderId)
+        assertEquals(stopOrder3Child.externalId, order.trades!!.single { it.index == 3 }.oppositeExternalOrderId)
 
         order = event.orders.single { it.externalId == "LimitOrder-2" }
         assertEquals(OutgoingOrderStatus.MATCHED, order.status)
         assertEquals(1, order.trades?.size)
-        assertEquals("Incoming-1", order.trades!!.single { it.index == 0 }.oppositeExternalOrderId)
+        assertEquals(incoming1Child.externalId, order.trades!!.single { it.index == 0 }.oppositeExternalOrderId)
 
         order = event.orders.single { it.externalId == "StopOrder-1" }
+        assertEquals(OutgoingOrderStatus.EXECUTED, order.status)
+        assertEquals(stopOrder1Child.externalId, order.childExternalId)
+        assertEquals(0, order.trades?.size)
+
+        order = stopOrder1Child
         assertEquals(OutgoingOrderStatus.MATCHED, order.status)
         assertEquals(1, order.trades?.size)
-        assertEquals("Incoming-1", order.trades!!.single { it.index == 2 }.oppositeExternalOrderId)
+        assertEquals(incoming1Child.externalId, order.trades!!.single { it.index == 2 }.oppositeExternalOrderId)
 
         order = event.orders.single { it.externalId == "StopOrder-2" }
+        assertEquals(OutgoingOrderStatus.EXECUTED, order.status)
+        assertEquals(stopOrder2Child.externalId, order.childExternalId)
+        assertEquals(0, order.trades?.size)
+
+        order = stopOrder2Child
         assertEquals(OutgoingOrderStatus.PLACED, order.status)
         assertEquals(0, order.trades?.size)
 
         order = event.orders.single { it.externalId == "StopOrder-3" }
+        assertEquals(OutgoingOrderStatus.EXECUTED, order.status)
+        assertEquals(stopOrder3Child.externalId, order.childExternalId)
+        assertEquals(0, order.trades?.size)
+
+        order = stopOrder3Child
         assertEquals(OutgoingOrderStatus.PARTIALLY_MATCHED, order.status)
         assertEquals(1, order.trades?.size)
         assertEquals("LimitOrder-1", order.trades!!.single { it.index == 3 }.oppositeExternalOrderId)
@@ -851,10 +871,15 @@ class ClientMultiLimitOrderTest : AbstractTest() {
         assertEquals(0, event.orders.single { it.externalId == "IncomingInvalidPrice" }.trades?.size)
 
         order = event.orders.single { it.externalId == "Incoming-1" }
+        assertEquals(OutgoingOrderStatus.EXECUTED, order.status)
+        assertEquals(incoming1Child.externalId, order.childExternalId)
+        assertEquals(0, order.trades?.size)
+
+        order = incoming1Child
         assertEquals(OutgoingOrderStatus.MATCHED, order.status)
         assertEquals(2, order.trades?.size)
         assertEquals("LimitOrder-2", order.trades!!.single { it.index == 0 }.oppositeExternalOrderId)
-        assertEquals("StopOrder-1", order.trades!!.single { it.index == 2 }.oppositeExternalOrderId)
+        assertEquals(stopOrder1Child.externalId, order.trades!!.single { it.index == 2 }.oppositeExternalOrderId)
 
         order = event.orders.single { it.externalId == "Incoming-2" }
         assertEquals(OutgoingOrderStatus.MATCHED, order.status)

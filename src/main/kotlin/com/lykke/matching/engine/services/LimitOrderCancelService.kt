@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.order.process.common.CancelRequest
 import com.lykke.matching.engine.services.validators.business.LimitOrderCancelOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
@@ -18,7 +19,7 @@ import java.util.stream.Collectors
 class LimitOrderCancelService(private val genericLimitOrderService: GenericLimitOrderService,
                               private val genericStopLimitOrderService: GenericStopLimitOrderService,
                               private val validator: LimitOrderCancelOperationBusinessValidator,
-                              private val limitOrdersCancelHelper: LimitOrdersCancelHelper) : AbstractService {
+                              private val limitOrdersCancelServiceHelper: LimitOrdersCancelServiceHelper) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
     }
@@ -28,7 +29,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         val context = messageWrapper.context as LimitOrderCancelOperationContext
 
 
-        LOGGER.debug("Got limit order cancel request (id: ${context.uid}, orders: ${context.limitOrderIds})")
+        LOGGER.debug("Got limit order cancel request (messageId: ${context.messageId}, id: ${context.uid}, orders: ${context.limitOrderIds})")
         val ordersByType = getLimitOrderTypeToLimitOrders(context.limitOrderIds)
 
         try {
@@ -39,15 +40,15 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
             return
         }
 
-        val updateSuccessful = limitOrdersCancelHelper.cancelOrders(LimitOrdersCancelHelper.CancelRequest(context.uid,
+        limitOrdersCancelServiceHelper.cancelOrdersAndWriteResponse(CancelRequest(ordersByType[LimitOrderType.LIMIT] ?: emptyList(),
+                ordersByType[LimitOrderType.STOP_LIMIT] ?: emptyList(),
                 context.messageId,
+                context.uid,
                 context.messageType,
-                ordersByType[LimitOrderType.LIMIT],
-                ordersByType[LimitOrderType.STOP_LIMIT], now, context.processedMessage, false,
-                messageWrapper))
-
-
-        limitOrdersCancelHelper.processPersistResults(updateSuccessful, messageWrapper, context.messageId)
+                now,
+                context.processedMessage,
+                messageWrapper,
+                LOGGER))
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
