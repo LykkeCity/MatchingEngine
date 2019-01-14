@@ -40,7 +40,6 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
                 now,
                 messageWrapper.processedMessage,
                 messageWrapper,
-                false,
                 LOGGER))
 
         if (updateSuccessful) {

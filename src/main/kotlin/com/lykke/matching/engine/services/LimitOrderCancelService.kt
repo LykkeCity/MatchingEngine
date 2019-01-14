@@ -48,7 +48,6 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                 now,
                 context.processedMessage,
                 messageWrapper,
-                false,
                 LOGGER))
     }
 

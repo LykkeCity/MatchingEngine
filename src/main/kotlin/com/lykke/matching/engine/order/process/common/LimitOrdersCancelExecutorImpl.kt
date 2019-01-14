@@ -37,7 +37,7 @@ class LimitOrdersCancelExecutorImpl(private val assetsPairsHolder: AssetsPairsHo
                     emptyList(),
                     executionContext)
 
-            if (cancelAll != null) {
+            if (cancelAll == true) {
                 executionContext.currentTransactionMidPriceHolder.clear()
             } else {
                 executionContext.currentTransactionMidPriceHolder.addMidPrices(
@@ -61,8 +61,8 @@ class LimitOrdersCancelExecutorImpl(private val assetsPairsHolder: AssetsPairsHo
     private fun recordNewMidPrices(executionContext: ExecutionContext, assetPairs: Set<AssetPair>) {
         assetPairs.forEach { assetPair ->
             if (executionContext.orderBooksHolder.isOrderBookChanged(assetPair.assetPairId)) {
-                executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(assetPair.assetPairId).getMidPrice()?.let { newMidPrice ->
-                    executionContext.currentTransactionMidPriceHolder.addMidPrice(assetPair.assetPairId, newMidPrice, executionContext)
+                executionContext.orderBooksHolder.getOrderBook(assetPair.assetPairId).getMidPrice()?.let { newMidPrice ->
+                    executionContext.currentTransactionMidPriceHolder.addMidPrice(assetPair, newMidPrice, executionContext)
                 }
             }
         }

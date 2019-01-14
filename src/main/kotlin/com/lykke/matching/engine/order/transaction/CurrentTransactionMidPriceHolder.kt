@@ -43,6 +43,11 @@ class CurrentTransactionMidPriceHolder(private val midPriceHolder: MidPriceHolde
         return MidPricePersistenceData(midPricesList, removeAll)
     }
 
+    fun setRemoveAllFlag() {
+        midPriceByAssetPair.clear()
+        removeAll = true
+    }
+
     override fun getReferenceMidPrice(assetPair: AssetPair, executionContext: ExecutionContext,
                                       notSavedMidPricesSum: BigDecimal?,
                                       notSavedMidPricesLength: Int?): BigDecimal {
