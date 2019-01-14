@@ -21,7 +21,6 @@ class WalletOperationsProcessor(private val balancesService: BalancesService,
                                 private val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
                                 private val applicationSettingsHolder: ApplicationSettingsHolder,
                                 private val assetsHolder: AssetsHolder,
-                                private val validate: Boolean,
                                 private val logger: Logger?) : BalancesGetter {
 
     companion object {
@@ -52,9 +51,8 @@ class WalletOperationsProcessor(private val balancesService: BalancesService,
                 changedAssetBalance.reserved
         }
 
-        if (validate) {
-            validateChangedAssetBalances(changedAssetBalances, forceApply)
-        }
+        validateChangedAssetBalances(changedAssetBalances, forceApply)
+
 
         changedAssetBalances.forEach { processChangedAssetBalance(it.value) }
         return this

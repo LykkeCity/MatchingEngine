@@ -2,7 +2,7 @@ package com.lykke.matching.engine.incoming.parsers.impl
 
 import com.lykke.matching.engine.daos.context.LimitOrderCancelOperationContext
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
+import com.lykke.matching.engine.incoming.parsers.data.LimitOrderCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper

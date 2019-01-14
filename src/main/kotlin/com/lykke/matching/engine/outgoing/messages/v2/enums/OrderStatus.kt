@@ -8,5 +8,6 @@ enum class OrderStatus(val id: Int) {
     PENDING(4),
     CANCELLED(5),
     REPLACED(6),
-    REJECTED(7)
+    REJECTED(7),
+    EXECUTED(8)
 }

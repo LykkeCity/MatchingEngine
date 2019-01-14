@@ -7,6 +7,8 @@ enum class OrderStatus {
     ,Processing
     //Stop limit order pending
     ,Pending
+    //Stop limit order executed
+    ,Executed
     //Fully matched
     ,Matched
     //Not enough funds on account

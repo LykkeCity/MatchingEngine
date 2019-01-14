@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.MultiLimitOrder
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -123,7 +124,8 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
             processedOrder.reason?.let { statusBuilder.statusReason = processedOrder.reason }
             responseBuilder.addStatuses(statusBuilder)
         }
-        messageWrapper.writeMultiLimitOrderResponse(responseBuilder)
+        writeResponse(messageWrapper, responseBuilder)
+
     }
 
     private fun readMultiLimitOrder(messageId: String,
@@ -198,10 +200,11 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                     lowerPrice = lowerPrice,
                     upperLimitPrice = upperLimitPrice,
                     upperPrice = upperPrice,
-                    previousExternalId = previousExternalId
-//                    timeInForce = if (currentOrder.hasTimeInForce()) OrderTimeInForce.getByExternalId(currentOrder.timeInForce) else null,
-//                    expiryTime = if (currentOrder.hasExpiryTime()) Date(currentOrder.expiryTime) else null
-            )
+                    previousExternalId = previousExternalId,
+                    timeInForce = if (currentOrder.hasTimeInForce()) OrderTimeInForce.getByExternalId(currentOrder.timeInForce) else null,
+                    expiryTime = if (currentOrder.hasExpiryTime()) Date(currentOrder.expiryTime) else null,
+                    parentOrderExternalId = null,
+                    childOrderExternalId = null)
 
             filter.checkAndAdd(order)
             previousExternalId?.let {
@@ -239,8 +242,8 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                 (if (incomingOrder.hasUpperLimitPrice()) ", upperLimitPrice: ${NumberUtils.roundForPrint(incomingOrder.upperLimitPrice)}" else "") +
                 (if (incomingOrder.hasUpperPrice()) ", upperPrice: ${NumberUtils.roundForPrint(incomingOrder.upperPrice)}" else "") +
                 (if (incomingOrder.hasOldUid()) ", oldUid: ${incomingOrder.oldUid}" else "") +
-//                (if (incomingOrder.hasTimeInForce()) ", timeInForce: ${incomingOrder.timeInForce}" else "") +
-//                (if (incomingOrder.hasExpiryTime()) ", expiryTime: ${incomingOrder.expiryTime}" else "") +
+                (if (incomingOrder.hasTimeInForce()) ", timeInForce: ${incomingOrder.timeInForce}" else "") +
+                (if (incomingOrder.hasExpiryTime()) ", expiryTime: ${incomingOrder.expiryTime}" else "") +
                 (if (incomingOrder.hasFee()) ", fee: ${getIncomingFeeInfo(incomingOrder.fee)}" else "") +
                 (if (incomingOrder.feesCount > 0) ", fees: ${incomingOrder.feesList.asSequence().map { getIncomingFeeInfo(incomingOrder.fee) }.joinToString(", ")}" else "")
     }
@@ -271,6 +274,10 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
             null
         else
             ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)
+    }
+
+    fun writeResponse(messageWrapper: MessageWrapper, responseBuilder: ProtocolMessages.MultiLimitOrderResponse.Builder) {
+        messageWrapper.writeMultiLimitOrderResponse(responseBuilder)
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

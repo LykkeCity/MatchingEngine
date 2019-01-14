@@ -65,6 +65,9 @@ class ApplicationSettingsHolder(val applicationSettingsCache: ApplicationSetting
 
     @EventListener
     private fun onSettingCreate(event: ApplicationSettingCreateOrUpdateEvent) {
+        if (!event.setting.enabled) {
+            return
+        }
         val settingValueByName = getSettingNameToValueByGroup(event.settingGroup) ?: return
         settingValueByName[event.setting.name] = event.setting.value
     }

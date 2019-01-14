@@ -6,18 +6,22 @@ import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
+import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExecutionEventSender
 import com.lykke.matching.engine.order.ExecutionPersistenceService
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.LimitOrderProcessor
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopLimitOrderProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
+import com.lykke.matching.engine.order.process.common.LimitOrdersCancelExecutor
+import com.lykke.matching.engine.order.process.common.LimitOrdersCancelExecutorImpl
+import com.lykke.matching.engine.order.process.common.LimitOrdersCanceller
+import com.lykke.matching.engine.order.process.common.LimitOrdersCancellerImpl
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.transaction.ExecutionEventsSequenceNumbersGenerator
@@ -130,14 +134,34 @@ open class TestExecutionContext {
         return StopOrderBookProcessor(limitOrderProcessor, applicationSettingsHolder)
     }
 
-    @Bean fun matchingResultHandlingHelper(applicationSettingsHolder: ApplicationSettingsHolder): MatchingResultHandlingHelper {
+    @Bean
+    fun matchingResultHandlingHelper(applicationSettingsHolder: ApplicationSettingsHolder): MatchingResultHandlingHelper {
         return MatchingResultHandlingHelper(applicationSettingsHolder)
     }
 
     @Bean
     open fun previousLimitOrdersProcessor(genericLimitOrderService: GenericLimitOrderService,
                                           genericStopLimitOrderService: GenericStopLimitOrderService,
-                                          genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory): PreviousLimitOrdersProcessor {
-        return PreviousLimitOrdersProcessor(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
+                                          limitOrdersCanceller: LimitOrdersCanceller): PreviousLimitOrdersProcessor {
+        return PreviousLimitOrdersProcessor(genericLimitOrderService, genericStopLimitOrderService, limitOrdersCanceller)
     }
+
+    @Bean
+    open fun limitOrdersCanceller(applicationSettingsHolder: ApplicationSettingsHolder): LimitOrdersCanceller {
+        return LimitOrdersCancellerImpl(applicationSettingsHolder)
+    }
+
+    @Bean
+    open fun limitOrdersCancelExecutor(assetsPairsHolder: AssetsPairsHolder,
+                                       executionContextFactory: ExecutionContextFactory,
+                                       limitOrdersCanceller: LimitOrdersCanceller,
+                                       stopOrderBookProcessor: StopOrderBookProcessor,
+                                       executionDataApplyService: ExecutionDataApplyService): LimitOrdersCancelExecutor {
+        return LimitOrdersCancelExecutorImpl(assetsPairsHolder,
+                executionContextFactory,
+                limitOrdersCanceller,
+                stopOrderBookProcessor,
+                executionDataApplyService)
+    }
+
 }

@@ -17,7 +17,8 @@ import java.time.LocalDateTime
 class ClientHandlerImpl(
         private val messageRouter: MessageRouter,
         private val socket: Socket,
-        private val socketServer: ClientsRequestsSocketServer) : Thread(ClientHandlerImpl::class.java.name), ClientHandler {
+        private val socketServer: ClientsRequestsSocketServer,
+        private val lifeTimeMinutes: Long) : Thread(ClientHandlerImpl::class.java.name), ClientHandler {
 
     companion object {
         val LOGGER = Logger.getLogger(ClientHandlerImpl::class.java.name)
@@ -95,7 +96,7 @@ class ClientHandlerImpl(
 
     override fun isConnected(): Boolean {
         val now = LocalDateTime.now()
-        return now.minusMinutes(1).isBefore(lastMessageAt)
+        return now.minusMinutes(lifeTimeMinutes).isBefore(lastMessageAt)
     }
 
     override fun disconnect() {

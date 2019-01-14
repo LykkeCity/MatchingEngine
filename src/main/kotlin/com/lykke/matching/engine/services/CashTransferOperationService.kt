@@ -100,9 +100,7 @@ class CashTransferOperationService(private val walletOperationsProcessorFactory:
 
         messageSender.sendMessage(result.outgoingMessage)
 
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setMatchingEngineId(transferOperation.matchingEngineOperationId)
-                .setStatus(OK.type))
+        writeResponse(messageWrapper, transferOperation.matchingEngineOperationId, OK)
         LOGGER.info("Cash transfer operation (${transferOperation.externalId}) from client ${transferOperation.fromClientId} to client ${transferOperation.toClientId}," +
                 " asset $asset, volume: ${NumberUtils.roundForPrint(transferOperation.volume)} processed")
     }
@@ -118,9 +116,9 @@ class CashTransferOperationService(private val walletOperationsProcessorFactory:
         val receiptOperation = WalletOperation(operation.toClientId, assetId, operation.volume)
         operations.add(receiptOperation)
 
-        val fees = feeProcessor.processFee(operation.fees, receiptOperation, operations)
+        val fees = feeProcessor.processFee(operation.fees, receiptOperation, operations, balancesGetter = balancesHolder)
 
-        val walletProcessor = walletOperationsProcessorFactory.create(LOGGER, false)
+        val walletProcessor = walletOperationsProcessorFactory.create(LOGGER)
         walletProcessor.preProcess(operations)
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
@@ -147,6 +145,12 @@ class CashTransferOperationService(private val walletOperationsProcessorFactory:
                 fees)
 
         return OperationResult(outgoingMessage, fees)
+    }
+
+    fun writeResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus) {
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setMatchingEngineId(matchingEngineOperationId)
+                .setStatus(status.type))
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

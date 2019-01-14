@@ -28,10 +28,7 @@ class ExecutionContextFactory(private val walletOperationsProcessorFactory: Wall
                date: Date,
                logger: Logger,
                assetsById: Map<String, Asset> = getAssetsByIdMap(assetPairsById),
-               preProcessorValidationResultsByOrderId: Map<String, OrderValidationResult> = emptyMap(),
-               walletOperationsProcessor: WalletOperationsProcessor = walletOperationsProcessorFactory.create(logger),
-               orderBooksHolder: CurrentTransactionOrderBooksHolder = genericLimitOrderService.createCurrentTransactionOrderBooksHolder(),
-               stopOrderBooksHolder: CurrentTransactionStopOrderBooksHolder = genericStopLimitOrderService.createCurrentTransactionOrderBooksHolder()): ExecutionContext {
+               preProcessorValidationResultsByOrderId: Map<String, OrderValidationResult> = emptyMap()): ExecutionContext {
         return ExecutionContext(messageId,
                 requestId,
                 messageType,
@@ -39,9 +36,9 @@ class ExecutionContextFactory(private val walletOperationsProcessorFactory: Wall
                 assetPairsById,
                 assetsById,
                 preProcessorValidationResultsByOrderId,
-                walletOperationsProcessor,
-                orderBooksHolder,
-                stopOrderBooksHolder,
+                walletOperationsProcessorFactory.create(logger),
+                genericLimitOrderService.createCurrentTransactionOrderBooksHolder(),
+                genericStopLimitOrderService.createCurrentTransactionOrderBooksHolder(),
                 date,
                 logger)
     }

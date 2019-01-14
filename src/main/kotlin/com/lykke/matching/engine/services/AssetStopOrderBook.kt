@@ -12,59 +12,29 @@ class AssetStopOrderBook(assetPairId: String): AbstractAssetOrderBook(assetPairI
 
         private val LOGGER = Logger.getLogger(AssetStopOrderBook::class.java.name)
 
-        private val LOWER_SELL_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
+        private val LOWER_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
             var result = o2.lowerLimitPrice!!.compareTo(o1.lowerLimitPrice!!)
             if (result == 0) {
-                result = o1.lowerPrice!!.compareTo(o2.lowerPrice!!)
-                if (result == 0) {
-                    result = o1.createdAt.compareTo(o2.createdAt)
-                }
+                result = o1.createdAt.compareTo(o2.createdAt)
             }
 
             result
         }
 
-        private val UPPER_SELL_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
+        private val UPPER_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
             var result = o1.upperLimitPrice!!.compareTo(o2.upperLimitPrice!!)
             if (result == 0) {
-                result = o1.upperPrice!!.compareTo(o2.upperPrice!!)
-                if (result == 0) {
-                    result = o1.createdAt.compareTo(o2.createdAt)
-                }
-            }
-
-            result
-        }
-
-        private val LOWER_BUY_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
-            var result = o2.lowerLimitPrice!!.compareTo(o1.lowerLimitPrice!!)
-            if (result == 0) {
-                result = o2.lowerPrice!!.compareTo(o1.lowerPrice!!)
-                if (result == 0) {
-                    result = o1.createdAt.compareTo(o2.createdAt)
-                }
-            }
-
-            result
-        }
-
-        private val UPPER_BUY_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
-            var result = o1.upperLimitPrice!!.compareTo(o2.upperLimitPrice!!)
-            if (result == 0) {
-                result = o2.upperPrice!!.compareTo(o1.upperPrice!!)
-                if (result == 0) {
-                    result = o1.createdAt.compareTo(o2.createdAt)
-                }
+                result = o1.createdAt.compareTo(o2.createdAt)
             }
 
             result
         }
     }
 
-    private var lowerAskOrderBook = PriorityBlockingQueue<LimitOrder>(50, LOWER_SELL_COMPARATOR)
-    private var upperAskOrderBook = PriorityBlockingQueue<LimitOrder>(50, UPPER_SELL_COMPARATOR)
-    private var lowerBidOrderBook = PriorityBlockingQueue<LimitOrder>(50, LOWER_BUY_COMPARATOR)
-    private var upperBidOrderBook = PriorityBlockingQueue<LimitOrder>(50, UPPER_BUY_COMPARATOR)
+    private var lowerAskOrderBook = PriorityBlockingQueue<LimitOrder>(50, LOWER_COMPARATOR)
+    private var upperAskOrderBook = PriorityBlockingQueue<LimitOrder>(50, UPPER_COMPARATOR)
+    private var lowerBidOrderBook = PriorityBlockingQueue<LimitOrder>(50, LOWER_COMPARATOR)
+    private var upperBidOrderBook = PriorityBlockingQueue<LimitOrder>(50, UPPER_COMPARATOR)
 
     private val askOrderBook = ConcurrentHashMap<String, LimitOrder>(50)
     private val bidOrderBook = ConcurrentHashMap<String, LimitOrder>(50)

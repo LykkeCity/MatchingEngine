@@ -92,7 +92,7 @@ class MatchingResultHandlingHelper(private val applicationSettingsHolder: Applic
         }
     }
 
-    private fun preProcessCancelledOrdersWalletOperations(orderExecutionContext: OrderExecutionContext<*>) {
+    fun preProcessCancelledOrdersWalletOperations(orderExecutionContext: OrderExecutionContext<*>) {
         try {
             orderExecutionContext.executionContext.walletOperationsProcessor.preProcess(orderExecutionContext.cancelledOppositeOrdersWalletOperations!!)
         } catch (e: BalanceException) {
