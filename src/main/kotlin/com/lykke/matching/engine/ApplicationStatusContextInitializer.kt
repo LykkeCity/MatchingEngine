@@ -1,7 +1,6 @@
 package com.lykke.matching.engine
 
-import com.lykke.matching.engine.config.HttpConfigParser
-import com.lykke.matching.engine.config.LocalConfig
+import com.lykke.matching.engine.config.ConfigFactory
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
 import com.lykke.utils.alivestatus.processor.AliveStatusProcessorFactory
@@ -23,11 +22,7 @@ class ApplicationStatusContextInitializer : ApplicationContextInitializer<Generi
     }
 
     private fun getConfig(environment: Environment): Config {
-        return if(environment.activeProfiles.contains("local_config")) {
-            LocalConfig().getObject()
-        } else {
-            HttpConfigParser(environment).getObject()
-        }
+        return ConfigFactory.getConfig(environment)
     }
 
     private fun getAzureStatusProcessor(config: Config): Runnable {
