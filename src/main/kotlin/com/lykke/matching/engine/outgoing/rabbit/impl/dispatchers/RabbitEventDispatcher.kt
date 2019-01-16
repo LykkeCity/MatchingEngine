@@ -44,6 +44,8 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
 
     @PostConstruct
     private fun init() {
+        val queueNames = queueNameToQueue.keys.joinToString()
+        LOGGER.info("Starting rabbit dispatcher for queues: $queueNames")
         this.start()
     }
 
