@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.annotation.Scheduled
 import java.util.concurrent.BlockingQueue
+import javax.annotation.PostConstruct
 
 class QueueSizeHealthChecker(private val monitoredComponent: MonitoredComponent,
                              private val nameToInputQueue: Map<String, BlockingQueue<*>>,
@@ -25,6 +26,12 @@ class QueueSizeHealthChecker(private val monitoredComponent: MonitoredComponent,
 
     @Autowired
     private lateinit var applicationEventPublisher: ApplicationEventPublisher
+
+    @PostConstruct
+    fun init() {
+        val monitoredQueueNames = nameToInputQueue.keys.joinToString()
+        LOGGER.info("Starting health monitoring for queues: $monitoredQueueNames")
+    }
 
     @Scheduled(fixedRateString = "#{Config.me.queueConfig.queueSizeHealthCheckInterval}", initialDelayString = "#{Config.me.queueConfig.queueSizeHealthCheckInterval}")
     fun checkQueueSize() {
