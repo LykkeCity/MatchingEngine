@@ -18,12 +18,11 @@ import java.util.LinkedList
 import java.util.Optional
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.PriorityBlockingQueue
 
 @Component
 class GenericLimitOrderService @Autowired constructor(private val orderBookDatabaseAccessorHolder: OrdersDatabaseAccessorsHolder,
                                                       private val tradeInfoQueue: Optional<BlockingQueue<TradeInfo>>,
-                                                      private val expiryOrdersQueue: ExpiryOrdersQueue) : AbstractGenericLimitOrderService<AssetOrderBook> {
+                                                      private val expiryOrdersQueue: ExpiryOrdersQueue) : AbstractGenericLimitOrderService<AssetOrderBook>() {
 
     //asset -> orderBook
     private val limitOrdersQueues = ConcurrentHashMap<String, AssetOrderBook>()
@@ -75,21 +74,11 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
         limitOrdersQueues[assetPairId] = assetOrderBook
     }
 
-    fun setOrderBook(assetPair: String, isBuy: Boolean, book: PriorityBlockingQueue<LimitOrder>) {
-        limitOrdersQueues.getOrPut(assetPair) { AssetOrderBook(assetPair) }.setOrderBook(isBuy, book)
-    }
+    override fun getLimitOrdersByClientIdMap() = clientLimitOrdersMap
+
+    override fun getOrderBooksByAssetPairIdMap() = limitOrdersQueues
 
     fun getOrder(uid: String) = limitOrdersMap[uid]
-
-    fun searchOrders(clientId: String, assetPair: String?, isBuy: Boolean?): List<LimitOrder> {
-        val result = mutableListOf<LimitOrder>()
-        clientLimitOrdersMap[clientId]?.forEach { limitOrder ->
-            if ((assetPair == null || limitOrder.assetPairId == assetPair) && (isBuy == null || limitOrder.isBuySide() == isBuy)) {
-                result.add(limitOrder)
-            }
-        }
-        return result
-    }
 
     fun cancelLimitOrder(date: Date, uid: String, removeFromClientMap: Boolean = false): LimitOrder? {
         val order = limitOrdersMap.remove(uid) ?: return null

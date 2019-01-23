@@ -10,7 +10,7 @@ import com.lykke.matching.engine.services.utils.AbstractAssetOrderBook
 import java.util.Date
 
 abstract class AbstractTransactionOrderBooksHolder<AssetOrderBook : AbstractAssetOrderBook,
-        GenericService : AbstractGenericLimitOrderService<AssetOrderBook>>(protected val ordersService: GenericService): AbstractGenericLimitOrderService<AssetOrderBook> {
+        GenericService : AbstractGenericLimitOrderService<AssetOrderBook>>(protected val ordersService: GenericService): AbstractGenericLimitOrderService<AssetOrderBook>() {
 
     protected val inputOrderCopyWrappers = mutableListOf<CopyWrapper<Order>>()
     protected val newOrdersByExternalId = LinkedHashMap<String, LimitOrder>()
@@ -22,6 +22,16 @@ abstract class AbstractTransactionOrderBooksHolder<AssetOrderBook : AbstractAsse
 
     override fun getOrderBook(assetPairId: String): AssetOrderBook {
         return assetOrderBookCopiesByAssetPairId[assetPairId] ?: ordersService.getOrderBook(assetPairId)
+    }
+
+    override fun getLimitOrdersByClientIdMap(): Map<String, Collection<LimitOrder>> {
+        // not needed method in transaction holder
+        return emptyMap()
+    }
+
+    override fun getOrderBooksByAssetPairIdMap(): Map<String, AssetOrderBook> {
+        // not needed method in transaction holder
+        return emptyMap()
     }
 
     @Suppress("unchecked_cast")
