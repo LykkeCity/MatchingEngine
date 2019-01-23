@@ -92,8 +92,9 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
                 return
             } catch (exception: Exception) {
                 publishFailureEvent(item)
-                LOGGER.error("Exception during RabbitMQ publishing: ${exception.message}", exception)
-                METRICS_LOGGER.logError("Exception during RabbitMQ publishing: ${exception.message}", exception)
+                val message = "Exception during RabbitMQ publishing (uri: $uri, exchange name: $exchangeName): ${exception.message}"
+                LOGGER.error(message, exception)
+                METRICS_LOGGER.logError(message, exception)
                 tryConnectUntilSuccess()
             }
         }
