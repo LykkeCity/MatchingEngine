@@ -30,6 +30,6 @@ class RabbitMqOldServiceImpl(private val gson: Gson,
                                 exchangeType: BuiltinExchangeType,
                                 messageDatabaseLogger: DatabaseLogger<Any>?) {
         rabbitPublishersThreadPool.execute(RabbitMqOldFormatPublisher(config.uri, config.exchange, publisherName, queue, appName, appVersion, exchangeType,
-                gson, applicationEventPublisher, meConfig.me.rabbitMqConfigs.hearBeatTimeout, messageDatabaseLogger))
+                gson, applicationEventPublisher, meConfig.me.rabbitMqConfigs.hearBeatTimeout, meConfig.me.rabbitMqConfigs.handshakeTimeout, messageDatabaseLogger))
     }
 }

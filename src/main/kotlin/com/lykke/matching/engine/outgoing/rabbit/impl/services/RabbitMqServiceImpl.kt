@@ -27,6 +27,6 @@ class RabbitMqServiceImpl(private val gson: Gson,
                                 appVersion: String, exchangeType: BuiltinExchangeType,
                                 messageDatabaseLogger: DatabaseLogger<Event<*>>?) {
         rabbitPublishersThreadPool.execute(RabbitMqPublisher(config.uri, config.exchange, publisherName, queue, appName, appVersion, exchangeType,
-                gson, applicationEventPublisher, meConfig.me.rabbitMqConfigs.hearBeatTimeout, messageDatabaseLogger))
+                gson, applicationEventPublisher, meConfig.me.rabbitMqConfigs.hearBeatTimeout, meConfig.me.rabbitMqConfigs.handshakeTimeout, messageDatabaseLogger))
     }
 }
