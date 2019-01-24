@@ -11,6 +11,7 @@ import com.rabbitmq.client.*
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.TimeUnit
 
 abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
                                             private val exchangeName: String,
@@ -24,9 +25,9 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
                                             private val METRICS_LOGGER: MetricsLogger,
                                             private val STATS_LOGGER: Logger,
                                             private val applicationEventPublisher: ApplicationEventPublisher,
-
+                                            private val hearBeatTimeout: Long,
                                             /** null if do not need to log */
-                                            private val messageDatabaseLogger: DatabaseLogger<T>? = null): Runnable {
+                                            private val messageDatabaseLogger: DatabaseLogger<T>? = null) : Runnable {
 
     companion object {
         private const val LOG_COUNT = 1000
@@ -42,12 +43,12 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
 
 
     @Volatile
-    private  var currentlyPublishedItem: T? = null
+    private var currentlyPublishedItem: T? = null
 
     private fun connect(): Boolean {
         val factory = ConnectionFactory()
         factory.setUri(uri)
-
+        factory.requestedHeartbeat =  TimeUnit.MILLISECONDS.toSeconds(hearBeatTimeout).toInt()
         LOGGER.info("Connecting to RabbitMQ: ${factory.host}:${factory.port}, exchange: $exchangeName")
 
         try {
@@ -144,7 +145,7 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
         }
     }
 
-    inner class RmqBlockListener: BlockedListener {
+    inner class RmqBlockListener : BlockedListener {
         override fun handleBlocked(reason: String?) {
             val message = "Rabbit mq publisher for queue $queueName received socket block signal from broker, reason: $reason"
             LOGGER.error(message)

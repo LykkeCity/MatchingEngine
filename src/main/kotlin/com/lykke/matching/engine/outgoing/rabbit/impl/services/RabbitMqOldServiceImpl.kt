@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.lykke.matching.engine.logging.DatabaseLogger
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.outgoing.rabbit.impl.publishers.RabbitMqOldFormatPublisher
+import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.rabbitmq.client.BuiltinExchangeType
 import org.springframework.beans.factory.annotation.Qualifier
@@ -17,6 +18,7 @@ import java.util.concurrent.BlockingQueue
 @Profile("default")
 @Deprecated("consider to use new message format")
 class RabbitMqOldServiceImpl(private val gson: Gson,
+                             private val meConfig: Config,
                              private val applicationEventPublisher: ApplicationEventPublisher,
                              @Qualifier("rabbitPublishersThreadPool")
                              private val rabbitPublishersThreadPool: TaskExecutor) : RabbitMqService<Any> {
@@ -28,6 +30,6 @@ class RabbitMqOldServiceImpl(private val gson: Gson,
                                 exchangeType: BuiltinExchangeType,
                                 messageDatabaseLogger: DatabaseLogger<Any>?) {
         rabbitPublishersThreadPool.execute(RabbitMqOldFormatPublisher(config.uri, config.exchange, publisherName, queue, appName, appVersion, exchangeType,
-                gson, applicationEventPublisher, messageDatabaseLogger))
+                gson, applicationEventPublisher, meConfig.me.rabbitMqConfigs.hearBeatTimeout, messageDatabaseLogger))
     }
 }

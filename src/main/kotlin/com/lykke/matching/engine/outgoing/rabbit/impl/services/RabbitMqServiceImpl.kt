@@ -5,6 +5,7 @@ import com.lykke.matching.engine.logging.DatabaseLogger
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.outgoing.rabbit.impl.publishers.RabbitMqPublisher
+import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.rabbitmq.client.BuiltinExchangeType
 import org.springframework.beans.factory.annotation.Qualifier
@@ -17,6 +18,7 @@ import java.util.concurrent.BlockingQueue
 @Service("rabbitMqService")
 @Profile("default")
 class RabbitMqServiceImpl(private val gson: Gson,
+                          private val meConfig: Config,
                           private val applicationEventPublisher: ApplicationEventPublisher,
                           @Qualifier("rabbitPublishersThreadPool")
                           private val rabbitPublishersThreadPool: TaskExecutor) : RabbitMqService<Event<*>> {
@@ -25,6 +27,6 @@ class RabbitMqServiceImpl(private val gson: Gson,
                                 appVersion: String, exchangeType: BuiltinExchangeType,
                                 messageDatabaseLogger: DatabaseLogger<Event<*>>?) {
         rabbitPublishersThreadPool.execute(RabbitMqPublisher(config.uri, config.exchange, publisherName, queue, appName, appVersion, exchangeType,
-                gson, applicationEventPublisher, messageDatabaseLogger))
+                gson, applicationEventPublisher, meConfig.me.rabbitMqConfigs.hearBeatTimeout, messageDatabaseLogger))
     }
 }
