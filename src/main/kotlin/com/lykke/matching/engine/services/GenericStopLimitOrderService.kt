@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Component
 class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
-                                   private val expiryOrdersQueue: ExpiryOrdersQueue) : AbstractGenericLimitOrderService<AssetStopOrderBook> {
+                                   private val expiryOrdersQueue: ExpiryOrdersQueue) : AbstractGenericLimitOrderService<AssetStopOrderBook>() {
 
     var initialStopOrdersCount = 0
     private val stopLimitOrdersQueues = ConcurrentHashMap<String, AssetStopOrderBook>()
@@ -54,16 +54,6 @@ class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder
         }
     }
 
-    fun searchOrders(clientId: String, assetPair: String?, isBuy: Boolean?): List<LimitOrder> {
-        val result = mutableListOf<LimitOrder>()
-        clientStopLimitOrdersMap[clientId]?.forEach { limitOrder ->
-            if ((assetPair == null || limitOrder.assetPairId == assetPair) && (isBuy == null || limitOrder.isBuySide() == isBuy)) {
-                result.add(limitOrder)
-            }
-        }
-        return result
-    }
-
     override fun removeOrdersFromMapsAndSetStatus(orders: Collection<LimitOrder>, status: OrderStatus?, date: Date?) {
         orders.forEach { order ->
             val removedOrder = stopLimitOrdersMap.remove(order.externalId)
@@ -82,6 +72,10 @@ class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder
     override fun setOrderBook(assetPairId: String, assetOrderBook: AssetStopOrderBook) {
         stopLimitOrdersQueues[assetPairId] = assetOrderBook
     }
+
+    override fun getLimitOrdersByClientIdMap() = clientStopLimitOrdersMap
+
+    override fun getOrderBooksByAssetPairIdMap() = stopLimitOrdersQueues
 
     fun createCurrentTransactionOrderBooksHolder() = CurrentTransactionStopOrderBooksHolder(this)
 
