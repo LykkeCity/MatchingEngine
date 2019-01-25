@@ -37,9 +37,9 @@ abstract class AbstractMessagePreprocessor<T : ParsedData>(private val contextPa
                 false
             }
             !messageProcessingStatusHolder.isHealthStatusOk() -> {
-                val errorMessage = "Message processing is disabled, message type: ${messageWrapper.type}, message id: ${messageWrapper.messageId}"
-                writeResponse(parsedMessageWrapper, MessageStatus.RUNTIME, "Message processing is disabled")
-                logger.error(errorMessage)
+                val errorMessage = "Message processing is disabled"
+                writeResponse(parsedMessageWrapper, MessageStatus.RUNTIME, errorMessage)
+                logger.error( "Message processing is disabled, message type: ${messageWrapper.type}, message id: ${messageWrapper.messageId}")
                 METRICS_LOGGER.logError(errorMessage)
                 false
             }
