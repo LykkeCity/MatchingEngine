@@ -20,11 +20,11 @@ class RabbitMqPublisher(uri: String,
                         exchangeType: BuiltinExchangeType,
                         private val gson: Gson,
                         applicationEventPublisher: ApplicationEventPublisher,
-                        hearBeatTimeout: Long,
+                        heartBeatTimeout: Long,
                         handshakeTimeout: Long,
                         private val messageDatabaseLogger: DatabaseLogger<Event<*>>? = null) : AbstractRabbitMqPublisher<Event<*>>(uri, exchangeName, publisherName,
         queue, appName, appVersion, exchangeType, LOGGER,
-        MESSAGES_LOGGER, METRICS_LOGGER, STATS_LOGGER, applicationEventPublisher, hearBeatTimeout, handshakeTimeout, messageDatabaseLogger) {
+        MESSAGES_LOGGER, METRICS_LOGGER, STATS_LOGGER, applicationEventPublisher, heartBeatTimeout, handshakeTimeout, messageDatabaseLogger) {
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(RabbitMqPublisher::class.java.name)
         private val MESSAGES_LOGGER = Logger.getLogger("${RabbitMqPublisher::class.java.name}.message")

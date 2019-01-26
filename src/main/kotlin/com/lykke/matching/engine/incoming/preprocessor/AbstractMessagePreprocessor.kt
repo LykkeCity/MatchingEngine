@@ -4,6 +4,7 @@ import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.data.ParsedData
 import com.lykke.matching.engine.messages.MessageStatus
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.utils.logging.MetricsLogger
@@ -39,7 +40,7 @@ abstract class AbstractMessagePreprocessor<T : ParsedData>(private val contextPa
             !messageProcessingStatusHolder.isHealthStatusOk() -> {
                 val errorMessage = "Message processing is disabled"
                 writeResponse(parsedMessageWrapper, MessageStatus.RUNTIME, errorMessage)
-                logger.error( "Message processing is disabled, message type: ${messageWrapper.type}, message id: ${messageWrapper.messageId}")
+                logger.error( "Message processing is disabled, message type: ${MessageType.valueOf(messageWrapper.type)}, message id: ${messageWrapper.messageId}")
                 METRICS_LOGGER.logError(errorMessage)
                 false
             }
