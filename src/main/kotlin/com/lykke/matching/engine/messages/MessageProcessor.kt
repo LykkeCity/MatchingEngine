@@ -123,7 +123,7 @@ class MessageProcessor : Thread(MessageProcessor::class.java.name) {
 
             if (!messageProcessingStatusHolder.isHealthStatusOk()) {
                 service.writeResponse(message, MessageStatus.RUNTIME)
-                val errorMessage = "Message processing is disabled, message type: ${message.type}, message id: ${message.messageId}"
+                val errorMessage = "Message processing is disabled, message type: ${MessageType.valueOf(message.type)}, message id: ${message.messageId}"
                 LOGGER.error(errorMessage)
                 METRICS_LOGGER.logError(errorMessage)
                 return

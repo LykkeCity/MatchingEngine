@@ -4,10 +4,10 @@ import com.google.gson.Gson
 import com.lykke.matching.engine.logging.DatabaseLogger
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.outgoing.rabbit.impl.publishers.RabbitMqOldFormatPublisher
-import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.rabbitmq.client.BuiltinExchangeType
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Profile
 import org.springframework.core.task.TaskExecutor
@@ -18,7 +18,10 @@ import java.util.concurrent.BlockingQueue
 @Profile("default")
 @Deprecated("consider to use new message format")
 class RabbitMqOldServiceImpl(private val gson: Gson,
-                             private val meConfig: Config,
+                             @Value("#Config.me.rabbitMqConfigs.heartBeatTimeout")
+                             private val heartBeatTimeout: Long,
+                             @Value("#Config.me.rabbitMqConfigs.handshakeTimeout")
+                             private val handshakeTimeout: Long,
                              private val applicationEventPublisher: ApplicationEventPublisher,
                              @Qualifier("rabbitPublishersThreadPool")
                              private val rabbitPublishersThreadPool: TaskExecutor) : RabbitMqService<Any> {
@@ -30,6 +33,6 @@ class RabbitMqOldServiceImpl(private val gson: Gson,
                                 exchangeType: BuiltinExchangeType,
                                 messageDatabaseLogger: DatabaseLogger<Any>?) {
         rabbitPublishersThreadPool.execute(RabbitMqOldFormatPublisher(config.uri, config.exchange, publisherName, queue, appName, appVersion, exchangeType,
-                gson, applicationEventPublisher, meConfig.me.rabbitMqConfigs.hearBeatTimeout, meConfig.me.rabbitMqConfigs.handshakeTimeout, messageDatabaseLogger))
+                gson, applicationEventPublisher, heartBeatTimeout, handshakeTimeout, messageDatabaseLogger))
     }
 }

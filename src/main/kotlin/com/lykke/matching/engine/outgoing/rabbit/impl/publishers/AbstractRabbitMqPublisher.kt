@@ -25,7 +25,7 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
                                             private val METRICS_LOGGER: MetricsLogger,
                                             private val STATS_LOGGER: Logger,
                                             private val applicationEventPublisher: ApplicationEventPublisher,
-                                            private val hearBeatTimeout: Long,
+                                            private val heartBeatTimeout: Long,
                                             private val handshakeTimeout: Long,
                                             /** null if do not need to log */
                                             private val messageDatabaseLogger: DatabaseLogger<T>? = null) : Runnable {
@@ -49,7 +49,7 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
     private fun connect(): Boolean {
         val factory = ConnectionFactory()
         factory.setUri(uri)
-        factory.requestedHeartbeat =  TimeUnit.MILLISECONDS.toSeconds(hearBeatTimeout).toInt()
+        factory.requestedHeartbeat =  TimeUnit.MILLISECONDS.toSeconds(heartBeatTimeout).toInt()
         factory.handshakeTimeout =  handshakeTimeout.toInt()
         factory.isAutomaticRecoveryEnabled = false
         LOGGER.info("Connecting to RabbitMQ: ${factory.host}:${factory.port}, exchange: $exchangeName")
