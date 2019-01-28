@@ -18,9 +18,9 @@ import java.util.concurrent.BlockingQueue
 @Profile("default")
 @Deprecated("consider to use new message format")
 class RabbitMqOldServiceImpl(private val gson: Gson,
-                             @Value("#Config.me.rabbitMqConfigs.heartBeatTimeout")
+                             @Value("#{Config.me.rabbitMqConfigs.heartBeatTimeout}")
                              private val heartBeatTimeout: Long,
-                             @Value("#Config.me.rabbitMqConfigs.handshakeTimeout")
+                             @Value("#{Config.me.rabbitMqConfigs.handshakeTimeout}")
                              private val handshakeTimeout: Long,
                              private val applicationEventPublisher: ApplicationEventPublisher,
                              @Qualifier("rabbitPublishersThreadPool")

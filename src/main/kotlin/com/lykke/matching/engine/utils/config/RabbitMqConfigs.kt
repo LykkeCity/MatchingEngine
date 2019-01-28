@@ -23,7 +23,7 @@ data class RabbitMqConfigs(
         val trustedLimitOrders: RabbitConfig,
         val events: Set<RabbitConfig>,
         val trustedClientsEvents: Set<RabbitConfig>,
-        @SerializedName("HearBeatTimeout")
+        @SerializedName("HeartBeatTimeout")
         val heartBeatTimeout: Long,
         @SerializedName("HandshakeTimeout")
         val handshakeTimeout: Long
