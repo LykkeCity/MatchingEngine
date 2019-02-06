@@ -1,9 +1,11 @@
 package com.lykke.matching.engine.config.spring
 
 import com.lykke.matching.engine.config.ConfigFactory
+import com.lykke.matching.engine.logging.MessageWrapper
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.rabbit.utils.RabbitEventUtils
+import com.lykke.matching.engine.utils.config.RabbitConfig
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory
 import org.springframework.beans.factory.support.AutowireCandidateQualifier
@@ -22,6 +24,7 @@ open class DynamicRabbitMqQueueConfig : BeanFactoryPostProcessor, EnvironmentAwa
 
     private var clientEvents: BlockingQueue<Event<*>>? = null
     private var trustedEvents: BlockingQueue<ExecutionEvent>? = null
+    private var databaseLogQueue: BlockingQueue<MessageWrapper>? = null
 
     override fun setEnvironment(environment: Environment) {
         this.environment = environment
@@ -32,45 +35,41 @@ open class DynamicRabbitMqQueueConfig : BeanFactoryPostProcessor, EnvironmentAwa
         registerTrustedClientsEventsQueue(beanFactory)
     }
 
-
     @RabbitQueue
     private fun registerClientEventsQueue(factory: DefaultListableBeanFactory) {
-        val annotations = DynamicRabbitMqQueueConfig::class.java.getDeclaredMethod(Throwable().stackTrace[0].methodName, DefaultListableBeanFactory::class.java)
-                .annotations
-                .map { it.annotationClass.java }
-
         val config = ConfigFactory.getConfig(environment)
-
-        val queueBeanDefinition = RootBeanDefinition(LinkedBlockingQueue::class.java)
-        queueBeanDefinition.setTargetType(ResolvableType.forField(DynamicRabbitMqQueueConfig::class.java.getDeclaredField("clientEvents")))
-
-        annotations.forEach {
-            queueBeanDefinition.addQualifier(AutowireCandidateQualifier(it))
-        }
-
-        config.me.rabbitMqConfigs.events.forEachIndexed { index, eventConfig ->
-            factory.registerBeanDefinition(RabbitEventUtils.getClientEventConsumerQueueName(eventConfig.exchange, index), queueBeanDefinition)
-        }
+        registerQueue(factory, config.me.rabbitMqConfigs.events, "clientEvents", RabbitEventUtils.Companion::getClientEventConsumerQueueName)
     }
 
     @RabbitQueue
     private fun registerTrustedClientsEventsQueue(factory: DefaultListableBeanFactory) {
+        val config = ConfigFactory.getConfig(environment)
+        registerQueue(factory, config.me.rabbitMqConfigs.trustedClientsEvents, "trustedEvents", RabbitEventUtils.Companion::getTrustedClientsEventConsumerQueueName)
+    }
 
-        val annotations = DynamicRabbitMqQueueConfig::class.java.getDeclaredMethod(Throwable().stackTrace[0].methodName, DefaultListableBeanFactory::class.java)
+    @DataQueue
+    private fun registerClientDatabaseLogQueues(factory: DefaultListableBeanFactory) {
+        val config = ConfigFactory.getConfig(environment)
+        registerQueue(factory, config.me.rabbitMqConfigs.events, "databaseLogQueue", RabbitEventUtils.Companion::getDatabaseLogQueueName)
+    }
+
+    private fun registerQueue(factory: DefaultListableBeanFactory,
+                              configs: Set<RabbitConfig>,
+                              typeFieldName: String,
+                              queueNameStrategy: (exchangeName: String, index: Int)-> String) {
+        val annotations = DynamicRabbitMqQueueConfig::class.java.getDeclaredMethod(Throwable().stackTrace[1].methodName, DefaultListableBeanFactory::class.java)
                 .annotations
                 .map { it.annotationClass.java }
 
-        val config = ConfigFactory.getConfig(environment)
-
         val queueBeanDefinition = RootBeanDefinition(LinkedBlockingQueue::class.java)
-        queueBeanDefinition.setTargetType(ResolvableType.forField(DynamicRabbitMqQueueConfig::class.java.getDeclaredField("trustedEvents")))
+        queueBeanDefinition.setTargetType(ResolvableType.forField(DynamicRabbitMqQueueConfig::class.java.getDeclaredField(typeFieldName)))
 
         annotations.forEach {
             queueBeanDefinition.addQualifier(AutowireCandidateQualifier(it))
         }
 
-        config.me.rabbitMqConfigs.trustedClientsEvents.forEachIndexed { index, eventConfig ->
-            factory.registerBeanDefinition(RabbitEventUtils.getTrustedClientsEventConsumerQueueName(eventConfig.exchange, index), queueBeanDefinition)
+        configs.forEachIndexed { index, eventConfig ->
+            factory.registerBeanDefinition(queueNameStrategy.invoke(eventConfig.exchange, index), queueBeanDefinition)
         }
     }
 }

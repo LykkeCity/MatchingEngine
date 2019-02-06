@@ -120,6 +120,57 @@ open class QueueConfig {
     }
     //</editor-fold>
 
+    //<editor-fold desc="Data queues">
+
+    @Bean
+    @DataQueue
+    open fun balanceUpdatesLogQueue(): BlockingQueue<com.lykke.matching.engine.logging.MessageWrapper> {
+        return LinkedBlockingQueue()
+    }
+
+    @Bean
+    @DataQueue
+    open fun cashInOutLogQueue(): BlockingQueue<com.lykke.matching.engine.logging.MessageWrapper> {
+        return LinkedBlockingQueue()
+    }
+
+    @Bean
+    @DataQueue
+    open fun cashTransferLogQueue(): BlockingQueue<com.lykke.matching.engine.logging.MessageWrapper> {
+        return LinkedBlockingQueue()
+    }
+
+    @Bean
+    @DataQueue
+    open fun clientLimitOrdersLogQueue(): BlockingQueue<com.lykke.matching.engine.logging.MessageWrapper> {
+        return LinkedBlockingQueue()
+    }
+
+    @Bean
+    @DataQueue
+    open fun clientsEventLogQueue(): BlockingQueue<com.lykke.matching.engine.logging.MessageWrapper> {
+        return LinkedBlockingQueue()
+    }
+
+    @Bean
+    @DataQueue
+    open fun marketOrderWithTradesLogQueue(): BlockingQueue<com.lykke.matching.engine.logging.MessageWrapper> {
+        return LinkedBlockingQueue()
+    }
+
+    @Bean
+    @DataQueue
+    open fun orderBookLogQueue(): BlockingQueue<com.lykke.matching.engine.logging.MessageWrapper> {
+        return LinkedBlockingQueue()
+    }
+
+    @Bean
+    @DataQueue
+    open fun reservedCashOperationLogQueue(): BlockingQueue<com.lykke.matching.engine.logging.MessageWrapper> {
+        return LinkedBlockingQueue()
+    }
+
+    //</editor-fold>
 
     //<editor-fold desc="Etc queues">
     @Bean
