@@ -121,7 +121,6 @@ open class QueueConfig {
     //</editor-fold>
 
     //<editor-fold desc="Data queues">
-
     @Bean
     @DataQueue
     open fun balanceUpdatesLogQueue(): BlockingQueue<com.lykke.matching.engine.logging.MessageWrapper> {
@@ -170,37 +169,41 @@ open class QueueConfig {
         return LinkedBlockingQueue()
     }
 
-    //</editor-fold>
-
-    //<editor-fold desc="Etc queues">
     @Bean
-    open fun orderBookQueue(): BlockingQueue<OrderBook> {
-        return LinkedBlockingQueue<OrderBook>()
-    }
-
-    @Bean
-    open fun dbTransferOperationQueue(): BlockingQueue<TransferOperation> {
-        return LinkedBlockingQueue<TransferOperation>()
-    }
-
-    @Bean
-    open fun lkkTradesQueue(): BlockingQueue<List<LkkTrade>> {
-        return LinkedBlockingQueue<List<LkkTrade>>()
-    }
-
-    @Bean
+    @DataQueue
     open fun updatedOrderBooksQueue(): BlockingQueue<OrderBookPersistEvent>? {
         return LinkedBlockingQueue<OrderBookPersistEvent>()
     }
 
     @Bean
+    @DataQueue
     open fun updatedStopOrderBooksQueue(): BlockingQueue<StopOrderBookPersistEvent>? {
         return LinkedBlockingQueue<StopOrderBookPersistEvent>()
     }
 
     @Bean
+    @DataQueue
     open fun updatedWalletsQueue(): BlockingQueue<AccountPersistEvent>? {
         return LinkedBlockingQueue<AccountPersistEvent>()
+    }
+
+    @Bean
+    @DataQueue
+    open fun lkkTradesQueue(): BlockingQueue<List<LkkTrade>> {
+        return LinkedBlockingQueue<List<LkkTrade>>()
+    }
+
+    @Bean
+    @DataQueue
+    open fun orderBookQueue(): BlockingQueue<OrderBook> {
+        return LinkedBlockingQueue<OrderBook>()
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Etc queues">
+    @Bean
+    open fun dbTransferOperationQueue(): BlockingQueue<TransferOperation> {
+        return LinkedBlockingQueue<TransferOperation>()
     }
     //</editor-fold>
 }
