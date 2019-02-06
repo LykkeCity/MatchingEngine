@@ -35,6 +35,7 @@ class CashInOutListener {
     @Autowired
     private lateinit var applicationEventPublisher: ApplicationEventPublisher
 
+    @Autowired
     private lateinit var cashInOutDatabaseLogger: DatabaseLogger<Any>
 
     @PostConstruct

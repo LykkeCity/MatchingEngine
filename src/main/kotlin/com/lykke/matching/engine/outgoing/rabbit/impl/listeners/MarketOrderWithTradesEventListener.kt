@@ -34,6 +34,7 @@ class MarketOrderWithTradesEventListener {
     @Autowired
     private lateinit var applicationEventPublisher: ApplicationEventPublisher
 
+    @Autowired
     private lateinit var marketOrderWithTradesDatabaseLogger: DatabaseLogger<Any>
 
     @PostConstruct

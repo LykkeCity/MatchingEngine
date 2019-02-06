@@ -35,6 +35,7 @@ class ClientLimitOrdersListener {
     @Autowired
     private lateinit var applicationEventPublisher: ApplicationEventPublisher
 
+    @Autowired
     private lateinit var clientLimitOrderDatabaseLogger: DatabaseLogger<Any>
 
     @PostConstruct

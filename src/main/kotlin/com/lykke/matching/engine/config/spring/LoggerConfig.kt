@@ -93,7 +93,6 @@ open class LoggerConfig {
                                             logBlobName: String,
                                             @Value("\${azure.logs.limit.orders.table}")
                                             logTable: String,
-                                            dbAccessor: MessageLogDatabaseAccessor,
                                             clientLimitOrdersLogQueue: BlockingQueue<MessageWrapper>): DatabaseLogger<*> {
         return DatabaseLogger<LimitOrdersReport>(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString,
                 logTable, logBlobName), clientLimitOrdersLogQueue)

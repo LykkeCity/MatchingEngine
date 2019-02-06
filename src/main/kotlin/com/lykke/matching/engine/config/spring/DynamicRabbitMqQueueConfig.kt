@@ -33,6 +33,7 @@ open class DynamicRabbitMqQueueConfig : BeanFactoryPostProcessor, EnvironmentAwa
     override fun postProcessBeanFactory(beanFactory: ConfigurableListableBeanFactory) {
         registerClientEventsQueue(beanFactory as DefaultListableBeanFactory)
         registerTrustedClientsEventsQueue(beanFactory)
+        registerClientDatabaseLogQueues(beanFactory)
     }
 
     @RabbitQueue
