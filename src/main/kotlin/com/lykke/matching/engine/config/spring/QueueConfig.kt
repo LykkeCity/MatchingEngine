@@ -15,6 +15,7 @@ import java.util.concurrent.BlockingDeque
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.LinkedBlockingQueue
+import com.lykke.matching.engine.logging.MessageWrapper as LoggingMessageWrapper
 
 @Configuration
 open class QueueConfig {
@@ -123,49 +124,37 @@ open class QueueConfig {
     //<editor-fold desc="Data queues">
     @Bean
     @DataQueue
-    open fun balanceUpdatesLogQueue(): BlockingQueue<com.lykke.matching.engine.logging.MessageWrapper> {
+    open fun balanceUpdatesLogQueue(): BlockingQueue<LoggingMessageWrapper> {
         return LinkedBlockingQueue()
     }
 
     @Bean
     @DataQueue
-    open fun cashInOutLogQueue(): BlockingQueue<com.lykke.matching.engine.logging.MessageWrapper> {
+    open fun cashInOutLogQueue(): BlockingQueue<LoggingMessageWrapper> {
         return LinkedBlockingQueue()
     }
 
     @Bean
     @DataQueue
-    open fun cashTransferLogQueue(): BlockingQueue<com.lykke.matching.engine.logging.MessageWrapper> {
+    open fun cashTransferLogQueue(): BlockingQueue<LoggingMessageWrapper> {
         return LinkedBlockingQueue()
     }
 
     @Bean
     @DataQueue
-    open fun clientLimitOrdersLogQueue(): BlockingQueue<com.lykke.matching.engine.logging.MessageWrapper> {
+    open fun clientLimitOrdersLogQueue(): BlockingQueue<LoggingMessageWrapper> {
         return LinkedBlockingQueue()
     }
 
     @Bean
     @DataQueue
-    open fun clientsEventLogQueue(): BlockingQueue<com.lykke.matching.engine.logging.MessageWrapper> {
+    open fun marketOrderWithTradesLogQueue(): BlockingQueue<LoggingMessageWrapper> {
         return LinkedBlockingQueue()
     }
 
     @Bean
     @DataQueue
-    open fun marketOrderWithTradesLogQueue(): BlockingQueue<com.lykke.matching.engine.logging.MessageWrapper> {
-        return LinkedBlockingQueue()
-    }
-
-    @Bean
-    @DataQueue
-    open fun orderBookLogQueue(): BlockingQueue<com.lykke.matching.engine.logging.MessageWrapper> {
-        return LinkedBlockingQueue()
-    }
-
-    @Bean
-    @DataQueue
-    open fun reservedCashOperationLogQueue(): BlockingQueue<com.lykke.matching.engine.logging.MessageWrapper> {
+    open fun reservedCashOperationLogQueue(): BlockingQueue<LoggingMessageWrapper> {
         return LinkedBlockingQueue()
     }
 
@@ -198,10 +187,9 @@ open class QueueConfig {
     open fun orderBookQueue(): BlockingQueue<OrderBook> {
         return LinkedBlockingQueue<OrderBook>()
     }
-    //</editor-fold>
 
-    //<editor-fold desc="Etc queues">
     @Bean
+    @DataQueue
     open fun dbTransferOperationQueue(): BlockingQueue<TransferOperation> {
         return LinkedBlockingQueue<TransferOperation>()
     }

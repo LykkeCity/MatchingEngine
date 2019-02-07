@@ -47,7 +47,7 @@ open class AppConfiguration {
     }
 
     @Bean
-    open fun rabbitQueueSizeChecker(@RabbitQueue  namesToInputQueues: Map<String, BlockingQueue<*>>): QueueSizeHealthChecker {
+    open fun rabbitQueueSizeChecker(@RabbitQueue namesToInputQueues: Map<String, BlockingQueue<*>>): QueueSizeHealthChecker {
         return QueueSizeHealthChecker(
                 MonitoredComponent.RABBIT_QUEUE,
                 namesToInputQueues,
