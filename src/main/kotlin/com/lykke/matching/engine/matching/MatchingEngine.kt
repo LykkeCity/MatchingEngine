@@ -99,10 +99,9 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
                         order.updateStatus(OrderStatus.LeadToNegativeSpread, now)
                         executionContext.info("Order ${order.externalId} (client: ${order.clientId}) leads to negative spread with order ${limitOrderOrigin.externalId}")
                         return MatchingResult(orderWrapper, cancelledLimitOrders)
-                    } else {
-                        skipLimitOrders.add(limitOrderOrigin)
-                        continue
                     }
+                    skipLimitOrders.add(limitOrderOrigin)
+                    continue
                 }
 
                 val limitOrderCopyWrapper = executionContext.orderBooksHolder.getOrPutOrderCopyWrapper(limitOrderOrigin)
