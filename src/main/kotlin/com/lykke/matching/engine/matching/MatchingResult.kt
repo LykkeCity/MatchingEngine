@@ -8,15 +8,14 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.TradeInfo
 import java.math.BigDecimal
-import java.util.*
 import java.util.concurrent.PriorityBlockingQueue
 
 class MatchingResult(
         val orderCopyWrapper: CopyWrapper<Order>,
-        val cancelledLimitOrders: Set<CopyWrapper<LimitOrder>> = HashSet(),
-        private val matchedOrders: List<CopyWrapper<LimitOrder>> = LinkedList(),
-        val skipLimitOrders: Set<LimitOrder> = HashSet(),
-        val completedLimitOrders: List<CopyWrapper<LimitOrder>> = LinkedList(),
+        val cancelledLimitOrders: Set<CopyWrapper<LimitOrder>> = emptySet(),
+        private val matchedOrders: List<CopyWrapper<LimitOrder>> = emptyList(),
+        val skipLimitOrders: Set<LimitOrder> = emptySet(),
+        val completedLimitOrders: List<CopyWrapper<LimitOrder>> = emptyList(),
         matchedUncompletedLimitOrderWrapper: CopyWrapper<LimitOrder>? = null,
         uncompletedLimitOrderWrapper: CopyWrapper<LimitOrder>? = null,
         val lkkTrades: List<LkkTrade> = emptyList(),
