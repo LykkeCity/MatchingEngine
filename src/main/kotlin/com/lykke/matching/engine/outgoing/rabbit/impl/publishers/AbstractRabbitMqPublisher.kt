@@ -11,6 +11,7 @@ import com.rabbitmq.client.*
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.TimeUnit
 
 abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
                                             private val exchangeName: String,
@@ -24,9 +25,10 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
                                             private val METRICS_LOGGER: MetricsLogger,
                                             private val STATS_LOGGER: Logger,
                                             private val applicationEventPublisher: ApplicationEventPublisher,
-
+                                            private val heartBeatTimeout: Long,
+                                            private val handshakeTimeout: Long,
                                             /** null if do not need to log */
-                                            private val messageDatabaseLogger: DatabaseLogger<T>? = null): Runnable {
+                                            private val messageDatabaseLogger: DatabaseLogger<T>? = null) : Runnable {
 
     companion object {
         private const val LOG_COUNT = 1000
@@ -42,12 +44,14 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
 
 
     @Volatile
-    private  var currentlyPublishedItem: T? = null
+    private var currentlyPublishedItem: T? = null
 
     private fun connect(): Boolean {
         val factory = ConnectionFactory()
         factory.setUri(uri)
-
+        factory.requestedHeartbeat =  TimeUnit.MILLISECONDS.toSeconds(heartBeatTimeout).toInt()
+        factory.handshakeTimeout =  handshakeTimeout.toInt()
+        factory.isAutomaticRecoveryEnabled = false
         LOGGER.info("Connecting to RabbitMQ: ${factory.host}:${factory.port}, exchange: $exchangeName")
 
         try {
@@ -92,8 +96,9 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
                 return
             } catch (exception: Exception) {
                 publishFailureEvent(item)
-                LOGGER.error("Exception during RabbitMQ publishing: ${exception.message}", exception)
-                METRICS_LOGGER.logError("Exception during RabbitMQ publishing: ${exception.message}", exception)
+                val message = "Exception during RabbitMQ publishing (uri: $uri, exchange name: $exchangeName): ${exception.message}"
+                LOGGER.error(message, exception)
+                METRICS_LOGGER.logError(message, exception)
                 tryConnectUntilSuccess()
             }
         }
@@ -143,7 +148,7 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
         }
     }
 
-    inner class RmqBlockListener: BlockedListener {
+    inner class RmqBlockListener : BlockedListener {
         override fun handleBlocked(reason: String?) {
             val message = "Rabbit mq publisher for queue $queueName received socket block signal from broker, reason: $reason"
             LOGGER.error(message)
