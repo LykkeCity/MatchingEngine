@@ -82,6 +82,7 @@ dependencies {
 
 compileKotlin {
     kotlinOptions {
+        freeCompilerArgs = ["-Xno-param-assertions", "-Xno-call-assertions"]
         apiVersion = "1.2"
         jvmTarget = "1.8"
     }
