@@ -38,7 +38,7 @@ import com.lykke.matching.engine.order.process.context.MarketOrderExecutionConte
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
@@ -62,8 +62,8 @@ class MarketOrderService @Autowired constructor(
         private val messageSender: MessageSender,
         private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : AbstractService {
     companion object {
-        private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
-        private val STATS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.stats")
+        private val LOGGER = LoggerFactory.getLogger(MarketOrderService::class.java.name)
+        private val STATS_LOGGER = LoggerFactory.getLogger("${MarketOrderService::class.java.name}.stats")
     }
 
     private var messagesCount: Long = 0

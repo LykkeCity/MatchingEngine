@@ -2,7 +2,7 @@ package com.lykke.matching.engine.utils
 
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.DependsOn
 import org.springframework.context.annotation.Profile
@@ -17,7 +17,7 @@ import java.util.stream.Collectors
 class QueueSizeLogger @Autowired constructor(private val queues: Map<String, BlockingQueue<*>?>,
                                              private val config: Config) {
     companion object {
-        val LOGGER = Logger.getLogger(QueueSizeLogger::class.java.name)
+        val LOGGER = LoggerFactory.getLogger(QueueSizeLogger::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
 
         val ENTRY_FORMAT = "%s: %d; "

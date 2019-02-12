@@ -12,7 +12,7 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.utils.NumberUtils
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
@@ -25,7 +25,7 @@ class MarketOrderValidatorImpl
                        private val applicationSettingsHolder: ApplicationSettingsHolder) : MarketOrderValidator {
 
     companion object {
-        private val LOGGER = Logger.getLogger(MarketOrderValidatorImpl::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(MarketOrderValidatorImpl::class.java.name)
     }
 
     override fun performValidation(order: MarketOrder, orderBook: PriorityBlockingQueue<LimitOrder>,
