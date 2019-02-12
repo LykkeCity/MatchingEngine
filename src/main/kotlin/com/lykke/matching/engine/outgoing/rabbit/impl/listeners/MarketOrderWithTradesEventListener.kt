@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.outgoing.rabbit.impl.listeners
 
 import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.logging.DatabaseLogger
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
@@ -36,6 +37,9 @@ class MarketOrderWithTradesEventListener {
     @Autowired
     private lateinit var applicationEventPublisher: ApplicationEventPublisher
 
+    @Autowired
+    private lateinit var uuidHolder: UUIDHolder
+
     @Value("\${azure.logs.blob.container}")
     private lateinit var logBlobName: String
 
@@ -52,7 +56,9 @@ class MarketOrderWithTradesEventListener {
                 BuiltinExchangeType.FANOUT,
                 DatabaseLogger(
                         AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString,
-                                logTable, logBlobName)))
+                                logTable,
+                                logBlobName,
+                                uuidHolder)))
     }
 
     @EventListener
