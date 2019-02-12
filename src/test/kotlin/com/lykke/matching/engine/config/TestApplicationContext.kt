@@ -300,13 +300,15 @@ open class TestApplicationContext {
                                         messageProcessingStatusHolder: MessageProcessingStatusHolder,
                                         persistenceManager: PersistenceManager,
                                         messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                        messageSender: MessageSender): ReservedCashInOutOperationService {
+                                        messageSender: MessageSender,
+                                        uuidHolder: UUIDHolder): ReservedCashInOutOperationService {
         return ReservedCashInOutOperationService(assetsHolder, walletOperationsProcessorFactory, reservedCashOperationQueue,
                 reservedCashInOutOperationValidator,
                 messageSequenceNumberHolder,
                 messageSender,
                 messageProcessingStatusHolder,
-                persistenceManager)
+                persistenceManager,
+                uuidHolder)
     }
 
     @Bean
@@ -365,7 +367,6 @@ open class TestApplicationContext {
                                     assetsPairsHolder: AssetsPairsHolder,
                                     balancesHolder: BalancesHolder,
                                     applicationSettingsHolder: ApplicationSettingsHolder,
-                                    testUUIDHolder: TestUUIDHolder,
                                     midPriceHolder: MidPriceHolder,
                                     priceDeviationThreshold: PriceDeviationThresholdHolder): MultiLimitOrderService {
         return MultiLimitOrderService(executionContextFactory,
@@ -396,7 +397,8 @@ open class TestApplicationContext {
                                 priceDeviationThreshold: PriceDeviationThresholdHolder,
                                 midPriceHolder: MidPriceHolder,
                                 applicationSettingsCache: ApplicationSettingsCache,
-                                messageProcessingStatusHolder: MessageProcessingStatusHolder): MarketOrderService {
+                                messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                uuidHolder: UUIDHolder): MarketOrderService {
         return MarketOrderService(matchingEngine,
                 executionContextFactory,
                 stopOrderBookProcessor,
@@ -410,7 +412,8 @@ open class TestApplicationContext {
                 priceDeviationThreshold,
                 midPriceHolder,
                 messageProcessingStatusHolder,
-                messageSender)
+                messageSender,
+                uuidHolder)
     }
 
     @Bean
@@ -508,8 +511,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashInOutContextParser(assetsHolder: AssetsHolder): CashInOutContextParser {
-        return CashInOutContextParser(assetsHolder)
+    open fun cashInOutContextParser(assetsHolder: AssetsHolder, uuidHolder: UUIDHolder): CashInOutContextParser {
+        return CashInOutContextParser(assetsHolder, uuidHolder)
     }
 
     @Bean
@@ -532,8 +535,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashTransferInitializer(assetsHolder: AssetsHolder): CashTransferContextParser {
-        return CashTransferContextParser(assetsHolder)
+    open fun cashTransferInitializer(assetsHolder: AssetsHolder, uuidHolder: UUIDHolder): CashTransferContextParser {
+        return CashTransferContextParser(assetsHolder, uuidHolder)
     }
 
     @Bean
@@ -601,11 +604,14 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun singleLimitOrderContextParser(assetsPairsHolder: AssetsPairsHolder, assetsHolder: AssetsHolder,
-                                           applicationSettingsHolder: ApplicationSettingsHolder): SingleLimitOrderContextParser {
+    open fun singleLimitOrderContextParser(assetsPairsHolder: AssetsPairsHolder,
+                                           assetsHolder: AssetsHolder,
+                                           applicationSettingsHolder: ApplicationSettingsHolder,
+                                           uuidHolder: UUIDHolder): SingleLimitOrderContextParser {
         return SingleLimitOrderContextParser(assetsPairsHolder,
                 assetsHolder,
                 applicationSettingsHolder,
+                uuidHolder,
                 ThrottlingLogger.getLogger("limitOrder"))
     }
 

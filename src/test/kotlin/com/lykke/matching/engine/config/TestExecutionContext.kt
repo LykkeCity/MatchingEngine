@@ -11,6 +11,7 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExecutionEventSender
@@ -45,10 +46,11 @@ open class TestExecutionContext {
 
     @Bean
     open fun matchingEngine(genericLimitOrderService: GenericLimitOrderService,
-                            balancesHolder: BalancesHolder,
-                            feeProcessor: FeeProcessor): MatchingEngine {
+                            feeProcessor: FeeProcessor,
+                            uuidHolder: UUIDHolder): MatchingEngine {
         return MatchingEngine(genericLimitOrderService,
-                feeProcessor)
+                feeProcessor,
+                uuidHolder)
     }
 
     @Bean
@@ -121,11 +123,13 @@ open class TestExecutionContext {
     @Bean
     open fun stopLimitOrdersProcessor(stopOrderBusinessValidator: StopOrderBusinessValidator,
                                       applicationSettingsHolder: ApplicationSettingsHolder,
-                                      limitOrderProcessor: LimitOrderProcessor): StopLimitOrderProcessor {
+                                      limitOrderProcessor: LimitOrderProcessor,
+                                      uuidHolder: UUIDHolder): StopLimitOrderProcessor {
         return StopLimitOrderProcessor(
                 stopOrderBusinessValidator,
                 applicationSettingsHolder,
-                limitOrderProcessor)
+                limitOrderProcessor,
+                uuidHolder)
     }
 
     @Bean
@@ -139,12 +143,14 @@ open class TestExecutionContext {
                                     applicationSettingsHolder: ApplicationSettingsHolder,
                                     executionContextFactory: ExecutionContextFactory,
                                     priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
-                                    midPriceHolder: MidPriceHolder): StopOrderBookProcessor {
+                                    midPriceHolder: MidPriceHolder,
+                                    uuidHolder: UUIDHolder): StopOrderBookProcessor {
         return StopOrderBookProcessor(limitOrderProcessor,
                 applicationSettingsHolder,
                 executionContextFactory,
                 priceDeviationThresholdHolder,
-                midPriceHolder)
+                midPriceHolder,
+                uuidHolder)
     }
 
     @Bean

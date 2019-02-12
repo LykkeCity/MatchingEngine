@@ -152,6 +152,7 @@ abstract class AbstractPerformanceTest {
     }
 
     open fun initServices() {
+        val uuidHolder = TestUUIDHolder()
         clearMessageQueues()
         testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
         applicationSettingsCache = ApplicationSettingsCache(testSettingsDatabaseAccessor, ApplicationEventPublisher {})
@@ -181,9 +182,13 @@ abstract class AbstractPerformanceTest {
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
         val limitOrderInputValidator = LimitOrderInputValidatorImpl(applicationSettingsHolder)
-        singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsHolder, LOGGER)
-        cashInOutContextParser = CashInOutContextParser(assetsHolder)
-        cashTransferContextParser = CashTransferContextParser(assetsHolder)
+        singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder,
+                assetsHolder,
+                applicationSettingsHolder,
+                uuidHolder,
+                LOGGER)
+        cashInOutContextParser = CashInOutContextParser(assetsHolder, uuidHolder)
+        cashTransferContextParser = CashTransferContextParser(assetsHolder, uuidHolder)
 
         messageBuilder = MessageBuilder(SingleLimitOrderPreprocessor(singleLimitOrderContextParser, LinkedBlockingQueue<MessageWrapper>(), messageProcessingStatusHolder, ThrottlingLogger.getLogger("test")),
                 cashInOutContextParser,
@@ -221,7 +226,7 @@ abstract class AbstractPerformanceTest {
 
         val matchingResultHandlingHelper = MatchingResultHandlingHelper(applicationSettingsHolder)
 
-        val matchingEngine = MatchingEngine(genericLimitOrderService, feeProcessor)
+        val matchingEngine = MatchingEngine(genericLimitOrderService, feeProcessor, uuidHolder)
         val priceDeviationThresholdHolder = PriceDeviationThresholdHolder(applicationSettingsHolder)
 
         val limitOrderProcessor = LimitOrderProcessor(
@@ -233,12 +238,13 @@ abstract class AbstractPerformanceTest {
         val stopOrderProcessor = StopLimitOrderProcessor(
                 StopOrderBusinessValidatorImpl(),
                 applicationSettingsHolder,
-                limitOrderProcessor)
+                limitOrderProcessor,
+                uuidHolder)
 
         val genericLimitOrdersProcessor = GenericLimitOrdersProcessor(limitOrderProcessor, stopOrderProcessor)
 
         val stopOrderBookProcessor = StopOrderBookProcessor(limitOrderProcessor, applicationSettingsHolder,
-                executionContextFactory, priceDeviationThresholdHolder, midPriceHolder)
+                executionContextFactory, priceDeviationThresholdHolder, midPriceHolder, uuidHolder)
 
         val previousLimitOrdersProcessor = PreviousLimitOrdersProcessor(genericLimitOrderService, genericStopLimitOrderService, limitOrdersCanceller)
 
@@ -274,7 +280,8 @@ abstract class AbstractPerformanceTest {
                 priceDeviationThresholdHolder,
                 midPriceHolder,
                 messageProcessingStatusHolder,
-                notificationSender)
+                notificationSender,
+                uuidHolder)
 
     }
 }

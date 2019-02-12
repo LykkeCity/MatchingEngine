@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.process.common.OrderUtils
 import com.lykke.matching.engine.order.transaction.ExecutionContext
@@ -21,7 +22,8 @@ class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcesso
                              private val applicationSettingsHolder: ApplicationSettingsHolder,
                              private val executionContextFactory: ExecutionContextFactory,
                              private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
-                             private val midPriceHolder: MidPriceHolder) {
+                             private val midPriceHolder: MidPriceHolder,
+                             private val uuidHolder: UUIDHolder) {
 
     fun checkAndExecuteStopLimitOrders(executionContext: ExecutionContext): List<ProcessedOrder> {
         val processedOrders = mutableListOf<ProcessedOrder>()
@@ -60,7 +62,10 @@ class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcesso
                                                      upperMidPriceBound: BigDecimal?,
                                                      midPrice: BigDecimal?): ProcessedOrder {
         addOrderToReport(order, executionContext)
-        val childLimitOrder = OrderUtils.createChildLimitOrder(order, executionContext.date)
+        val childLimitOrder = OrderUtils.createChildLimitOrder(order,
+                uuidHolder.getNextValue(),
+                uuidHolder.getNextValue(),
+                executionContext.date)
         childLimitOrder.updateStatus(OrderStatus.TooHighMidPriceDeviation, executionContext.date)
         val assetPair = executionContext.assetPairsById[order.assetPairId]!!
 
@@ -85,7 +90,10 @@ class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcesso
 
     private fun processStopOrder(order: LimitOrder, executionContext: ExecutionContext): ProcessedOrder {
         reduceReservedBalance(order, executionContext)
-        val childLimitOrder = OrderUtils.createChildLimitOrder(order, executionContext.date)
+        val childLimitOrder = OrderUtils.createChildLimitOrder(order,
+                uuidHolder.getNextValue(),
+                uuidHolder.getNextValue(),
+                executionContext.date)
         order.childOrderExternalId = childLimitOrder.externalId
         addOrderToReport(order, executionContext)
         executionContext.info("Created child limit order (${childLimitOrder.externalId}) based on stop order ${order.externalId}")
