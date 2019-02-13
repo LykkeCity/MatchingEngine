@@ -25,7 +25,7 @@ import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.util.*
@@ -40,9 +40,9 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
                               private val midPriceHolder: MidPriceHolder,
                               private val applicationSettingsHolder: ApplicationSettingsHolder) : AbstractService {
     companion object {
-        private val LOGGER = Logger.getLogger(SingleLimitOrderService::class.java.name)
-        private val STATS_LOGGER = Logger.getLogger("${SingleLimitOrderService::class.java.name}.stats")
-        private val CONTROLS_LOGGER = Logger.getLogger("${SingleLimitOrderService::class.java.name}.controls")
+        private val LOGGER = LoggerFactory.getLogger(SingleLimitOrderService::class.java.name)
+        private val STATS_LOGGER = LoggerFactory.getLogger("${SingleLimitOrderService::class.java.name}.stats")
+        private val CONTROLS_LOGGER = LoggerFactory.getLogger("${SingleLimitOrderService::class.java.name}.controls")
     }
 
     private class OrderProcessingResult(val executionContext: ExecutionContext, val processedOrder: ProcessedOrder)

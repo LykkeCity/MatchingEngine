@@ -25,7 +25,7 @@ import com.lykke.matching.engine.services.utils.MidPriceUtils
 import com.lykke.matching.engine.services.utils.MultiOrderFilter
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.utils.NumberUtils
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.util.Date
@@ -41,8 +41,8 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                              private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder) : AbstractService {
 
     companion object {
-        private val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
-        private val CONTROLS_LOGGER = Logger.getLogger("${MultiLimitOrderService::class.java.name}.controls")
+        private val LOGGER = LoggerFactory.getLogger(MultiLimitOrderService::class.java.name)
+        private val CONTROLS_LOGGER = LoggerFactory.getLogger("${MultiLimitOrderService::class.java.name}.controls")
     }
 
 

@@ -7,7 +7,7 @@ import com.lykke.utils.logging.ThrottlingLogger
 import com.rabbitmq.client.BuiltinExchangeType
 import com.rabbitmq.client.MessageProperties
 import org.apache.commons.lang3.StringUtils
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.BlockingQueue
 
@@ -29,9 +29,9 @@ class RabbitMqOldFormatPublisher(uri: String,
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(RabbitMqOldFormatPublisher::class.java.name)
-        private val MESSAGES_LOGGER = Logger.getLogger("${RabbitMqOldFormatPublisher::class.java.name}.message")
+        private val MESSAGES_LOGGER = LoggerFactory.getLogger("${RabbitMqOldFormatPublisher::class.java.name}.message")
         private val METRICS_LOGGER = MetricsLogger.getLogger()
-        private val STATS_LOGGER = Logger.getLogger("${RabbitMqOldFormatPublisher::class.java.name}.stats")
+        private val STATS_LOGGER = LoggerFactory.getLogger("${RabbitMqOldFormatPublisher::class.java.name}.stats")
     }
 
     override fun getRabbitPublishRequest(item: Any): RabbitPublishRequest {

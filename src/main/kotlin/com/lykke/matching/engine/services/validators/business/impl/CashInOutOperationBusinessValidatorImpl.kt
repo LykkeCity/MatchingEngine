@@ -5,14 +5,14 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component("CashInOutOperationBusinessValidator")
 class CashInOutOperationBusinessValidatorImpl(private val balancesHolder: BalancesHolder) : CashInOutOperationBusinessValidator {
     companion object {
-        private val LOGGER = Logger.getLogger(CashInOutOperationBusinessValidatorImpl::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(CashInOutOperationBusinessValidatorImpl::class.java.name)
     }
 
     override fun performValidation(cashInOutContext: CashInOutContext) {

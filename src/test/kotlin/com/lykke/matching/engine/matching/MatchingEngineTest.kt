@@ -14,9 +14,9 @@ import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.assertEquals
-import org.apache.log4j.Logger
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.slf4j.LoggerFactory
 import org.junit.Before
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.TestConfiguration
@@ -96,8 +96,8 @@ abstract class MatchingEngineTest {
                 null,
                 testDictionariesDatabaseAccessor.loadAssetPairs(),
                 now,
-                Logger.getLogger(MatchingEngineTest::class.java),
-                Logger.getLogger(MatchingEngineTest::class.java),
+                LoggerFactory.getLogger(MatchingEngineTest::class.java),
+                LoggerFactory.getLogger(MatchingEngineTest::class.java),
                 testBackOfficeDatabaseAccessor.assets)
     }
 

@@ -44,7 +44,7 @@ import com.lykke.matching.engine.services.validators.impl.OrderValidationExcepti
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
@@ -69,9 +69,9 @@ class MarketOrderService @Autowired constructor(
         private val messageSender: MessageSender,
         private val uuidHolder: UUIDHolder) : AbstractService {
     companion object {
-        private val CONTROLS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.controls")
-        private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
-        private val STATS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.stats")
+        private val CONTROLS_LOGGER = LoggerFactory.getLogger("${MarketOrderService::class.java.name}.controls")
+        private val LOGGER = LoggerFactory.getLogger(MarketOrderService::class.java.name)
+        private val STATS_LOGGER = LoggerFactory.getLogger("${MarketOrderService::class.java.name}.stats")
     }
 
     private var messagesCount: Long = 0

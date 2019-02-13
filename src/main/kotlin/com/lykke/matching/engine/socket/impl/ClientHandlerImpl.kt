@@ -6,7 +6,7 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.socket.ClientHandler
 import com.lykke.matching.engine.socket.ClientsRequestsSocketServer
 import com.lykke.matching.engine.utils.IntUtils
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.DataInputStream
@@ -21,7 +21,7 @@ class ClientHandlerImpl(
         private val lifeTimeMinutes: Long) : Thread(ClientHandlerImpl::class.java.name), ClientHandler {
 
     companion object {
-        val LOGGER = Logger.getLogger(ClientHandlerImpl::class.java.name)
+        val LOGGER = LoggerFactory.getLogger(ClientHandlerImpl::class.java.name)
     }
 
     @Volatile

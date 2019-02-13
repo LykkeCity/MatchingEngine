@@ -4,7 +4,7 @@ import com.lykke.matching.engine.balance.BalancesGetter
 import com.lykke.matching.engine.balance.WalletsManager
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
@@ -12,7 +12,7 @@ import java.math.BigDecimal
 class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAccessorsHolder): BalancesGetter, WalletsManager {
 
     companion object {
-        private val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(BalancesHolder::class.java.name)
     }
 
     lateinit var wallets: MutableMap<String, Wallet>

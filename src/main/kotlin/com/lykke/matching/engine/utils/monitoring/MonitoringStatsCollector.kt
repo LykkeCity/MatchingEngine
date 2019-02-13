@@ -2,7 +2,7 @@ package com.lykke.matching.engine.utils.monitoring
 
 import com.lykke.matching.engine.daos.monitoring.MonitoringResult
 import com.sun.management.OperatingSystemMXBean
-import org.apache.log4j.Logger
+import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
