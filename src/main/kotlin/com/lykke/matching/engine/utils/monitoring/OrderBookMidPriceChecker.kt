@@ -3,7 +3,7 @@ package com.lykke.matching.engine.utils.monitoring
 import com.lykke.matching.engine.common.events.RefMidPriceDangerousChangeEvent
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.utils.logging.MetricsLogger
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
@@ -11,7 +11,7 @@ import java.math.BigDecimal
 class OrderBookMidPriceChecker {
     companion object {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
-        private val LOGGER = Logger.getLogger(OrderBookMidPriceChecker::class.java)
+        private val LOGGER = LoggerFactory.getLogger(OrderBookMidPriceChecker::class.java)
     }
 
     fun checkOrderBook(refMidPriceDangerousChangeEvent: RefMidPriceDangerousChangeEvent) {

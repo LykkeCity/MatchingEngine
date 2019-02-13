@@ -4,7 +4,6 @@ import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.CopyWrapper
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
@@ -16,9 +15,9 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.assertEquals
-import org.apache.log4j.Logger
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
@@ -150,7 +149,7 @@ class ExecutionContextTest : AbstractTest() {
                 "requestId",
                 MessageType.MARKET_ORDER, null,
                 mapOf("BTCUSD" to assetsPairsHolder.getAssetPair("BTCUSD")),
-                Date(), Logger.getLogger("test"), Logger.getLogger("test"))
+                Date(), LoggerFactory.getLogger("test"), LoggerFactory.getLogger("test"))
 
         //when
         val subExecutionContext = executionContextFactory.create(executionContext)
@@ -183,8 +182,8 @@ class ExecutionContextTest : AbstractTest() {
                 "requestId",
                 MessageType.MARKET_ORDER, null,
                 mapOf("BTCUSD" to assetsPairsHolder.getAssetPair("BTCUSD")),
-                Date(), Logger.getLogger("test"),
-                Logger.getLogger("test"))
+                Date(), LoggerFactory.getLogger("test"),
+                LoggerFactory.getLogger("test"))
 
         val workingOrderBook = PriorityBlockingQueue(executionContext.orderBooksHolder.getOrderBook("BTCUSD").getOrderBook(true))
         val order = workingOrderBook.poll()

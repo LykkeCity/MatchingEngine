@@ -5,7 +5,7 @@ import com.lykke.matching.engine.database.MidPriceDatabaseAccessor
 import com.lykke.matching.engine.database.ReadOnlyMidPriceDatabaseAccessor
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.database.redis.utils.KeyUtils
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.util.CollectionUtils
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.Transaction
@@ -24,7 +24,7 @@ class RedisMidPriceDatabaseAccessor(private val dbIndex: Int,
     private companion object {
         val KEY_PREFIX = "MID_PRICE"
         val DELIMITER = ":"
-        val LOGGER = Logger.getLogger(RedisMidPriceDatabaseAccessor::class.java)
+        val LOGGER = LoggerFactory.getLogger(RedisMidPriceDatabaseAccessor::class.java)
     }
 
     override fun save(transaction: Transaction, midPrices: Collection<MidPrice>) {

@@ -5,7 +5,7 @@ import com.lykke.matching.engine.database.MidPriceDatabaseAccessor
 import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.database.reconciliation.events.MidPricesPersistEvent
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.util.CollectionUtils
 import redis.clients.jedis.Transaction
 import java.util.concurrent.BlockingQueue
@@ -16,7 +16,7 @@ class MidPricesPersistListener(private val redisConnection: RedisConnection,
                                private val redisMidPriceDatabaseAccessor: MidPriceDatabaseAccessor,
                                private val persistMidPricesQueue: BlockingQueue<MidPricesPersistEvent>) : QueueConsumer<MidPricesPersistEvent> {
     private companion object {
-        val LOGGER = Logger.getLogger(MidPricesPersistListener::class.java)
+        val LOGGER = LoggerFactory.getLogger(MidPricesPersistListener::class.java)
     }
 
     @PostConstruct

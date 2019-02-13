@@ -7,7 +7,7 @@ import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.utils.logging.MetricsLogger
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.concurrent.BlockingQueue
 
@@ -16,7 +16,7 @@ class BalancesServiceImpl(private val balancesHolder: BalancesHolder,
                           private val persistenceManager: PersistenceManager,
                           private val balanceUpdateQueue: BlockingQueue<BalanceUpdate>): BalancesService {
     private companion object {
-        val LOGGER = Logger.getLogger(BalancesServiceImpl::class.java.name)
+        val LOGGER = LoggerFactory.getLogger(BalancesServiceImpl::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 

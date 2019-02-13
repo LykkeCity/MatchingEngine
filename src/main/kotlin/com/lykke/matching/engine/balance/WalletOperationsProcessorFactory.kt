@@ -4,7 +4,7 @@ import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolderFactory
 import com.lykke.matching.engine.services.BalancesService
-import org.apache.log4j.Logger
+import org.slf4j.Logger
 import org.springframework.stereotype.Component
 
 @Component

@@ -4,7 +4,7 @@ import com.lykke.matching.engine.daos.setting.Setting
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.*
 
 fun getSetting(value: String, name: String = value) = Setting(name, value, true)
@@ -16,6 +16,6 @@ fun getExecutionContext(date: Date, executionContextFactory: ExecutionContextFac
             null,
             emptyMap(),
             date,
-            Logger.getLogger(""),
-            Logger.getLogger(""))
+            LoggerFactory.getLogger(""),
+            LoggerFactory.getLogger(""))
 }
