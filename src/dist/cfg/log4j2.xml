@@ -45,6 +45,50 @@
             </Policies>
         </RollingRandomAccessFile>
 
+        <RollingRandomAccessFile name="MultiLimitOrderControlsLog" filePattern="../log/isAlive.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/multiLimitOrderControls.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="SingleLimitOrderLog" filePattern="../log/isAlive.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/singleLimitOrderControls.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="MarketOrderControlsLog" filePattern="../log/isAlive.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/marketOrderControls.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="UUIDHolderLog" filePattern="../log/isAlive.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/uuidHolder.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
         <RollingRandomAccessFile name="CashLog" filePattern="../log/cashOperations.log.%d{MM-dd-yyyy}"
                                  fileName="../log/cashOperations.log"
                                  immediateFlush="false">
@@ -460,6 +504,11 @@
             <AppenderRef ref="MultiLimitLog"/>
         </AsyncLogger>
 
+        <Logger name="MultiLimitOrderPreProcessing"
+                     level="debug" additivity="false">
+            <AppenderRef ref="MultiLimitLog"/>
+        </Logger>
+
         # Multi Limit Cancel Order
         <AsyncLogger name="com.lykke.matching.engine.services.MultiLimitOrderCancelService"
                      level="debug" additivity="false">
@@ -588,6 +637,41 @@
         <AsyncLogger name = "org.springframework" level="info">
             <AppenderRef ref="ServerLog"/>
             <AppenderRef ref="ConsoleLog"/>
+        </AsyncLogger>
+
+        # UUID holder
+        <AsyncLogger name = "com.lykke.matching.engine.holders.UUIDHolderImpl" level="debug">
+            <AppenderRef ref="UUIDHolderLog"/>
+        </AsyncLogger>
+
+        # Market Order controls
+        <AsyncLogger name = "com.lykke.matching.engine.services.MarketOrderService.controls" level="debug">
+            <AppenderRef ref="MarketOrderControlsLog"/>
+        </AsyncLogger>
+
+        #Multi Limit Order controls
+        <AsyncLogger name = "com.lykke.matching.engine.services.MultiLimitOrderService.controls" level="debug">
+            <AppenderRef ref="MultiLimitOrderControlsLog"/>
+        </AsyncLogger>
+
+        #Single Limit Order controls
+        <AsyncLogger name = "com.lykke.matching.engine.services.SingleLimitOrderService.controls" level="debug">
+            <AppenderRef ref="SingleLimitOrderLog"/>
+        </AsyncLogger>
+
+        <AsyncLogger name = "com.lykke.matching.engine.database.reconciliation.AccountsMigrationService" level="debug">
+            <AppenderRef ref="ConsoleLog"/>
+            <AppenderRef ref="ServerLog"/>
+        </AsyncLogger>
+
+        <AsyncLogger name = "com.lykke.matching.engine.database.reconciliation.OrdersMigrationService" level="debug">
+            <AppenderRef ref="ConsoleLog"/>
+            <AppenderRef ref="ServerLog"/>
+        </AsyncLogger>
+
+        <AsyncLogger name = "com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator" level="debug">
+            <AppenderRef ref="ConsoleLog"/>
+            <AppenderRef ref="ServerLog"/>
         </AsyncLogger>
 
     </Loggers>
