@@ -1,0 +1,594 @@
+<Configuration>
+    <Appenders>
+        <!-- Async Loggers will auto-flush in batches, so switch off immediateFlush. -->
+        <RollingRandomAccessFile name="ServerLog" filePattern="../log/server.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/server.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%t] [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="ReservedBalanceLog" filePattern="../log/reservedBalanceUpdate.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/reservedBalanceUpdate.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="MonitoringLog" filePattern="../log/monitoring.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/monitoring.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="IsAliveRequestHandlerLog" filePattern="../log/isAlive.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/isAlive.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="CashLog" filePattern="../log/cashOperations.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/cashOperations.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="LimitCancelLog" filePattern="../log/limitOrderCancel.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/limitOrderCancel.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="SingleLimitLog" filePattern="../log/singleLimitOrder.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/singleLimitOrder.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="MultiLimitLog" filePattern="../log/multiLimitOrder.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/multiLimitOrder.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="MultiLimitCancelLog"
+                                 filePattern="../log/cancelMultiLimitOrder.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/cancelMultiLimitOrder.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="GenericLimitOrderLog" filePattern="../log/genericLimitOrder.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/genericLimitOrder.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="RabbitMqOldFormatPublisherLog"
+                                 filePattern="../log/rabbitOldMessages.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/rabbitOldMessages.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="RabbitMqOldFormatPublisherStatsLog"
+                                 filePattern="../log/statsRabbitOldMessages.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/statsRabbitOldMessages.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="MarketOrderLog" filePattern="../log/marketOrder.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/marketOrder.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="StatsMarketOrderLog" filePattern="../log/statsMarketOrder.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/statsMarketOrder.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="BackendLog" filePattern="../log/backend.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/backend.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="QueueSizeLog" filePattern="../log/queueSizeLogger.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/queueSizeLogger.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="WalletCredentialsLog"
+                                 filePattern="../log/walletCredentialsCache.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/walletCredentialsCache.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="BalanceUpdatesLog" filePattern="../log/balanceUpdates.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/balanceUpdates.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="MetricsLog" filePattern="../log/metricsLogger.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/metricsLogger.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="ThrottlingLog" filePattern="../log/throttlingLogger.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/throttlingLogger.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="HistoryPersistStatsLog"
+                                 filePattern="../log/historyPersistStats.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/historyPersistStats.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="PerformanceStatsLog" filePattern="../log/performanceStats.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/performanceStats.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="MarketStateCacheLog" filePattern="../log/historyTicksStats.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/historyTicksStats.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="OrderBooksRequestLog" filePattern="../log/orderBooksRequest.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/orderBooksRequest.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="ConnectionsCountLog" filePattern="../log/connectionsCount.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/connectionsCount.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="RedisPerformanceLog" filePattern="../log/redisPerformance.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/redisPerformance.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="LogCleanerLog" filePattern="../log/logCleaner.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/logCleaner.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <Console name="ConsoleLog">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%t] [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Root level="debug" additivity="false">
+            <AppenderRef ref="ServerLog"/>
+        </Root>
+        <!-- pattern layout actually uses location, so we need to include it -->
+        <AsyncLogger name="AppStarter" level="info" additivity="false">
+            <AppenderRef ref="ServerLog"/>
+            <AppenderRef ref="ConsoleLog"/>
+        </AsyncLogger>
+
+        <AsyncLogger name="com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller"
+                     level="info" additivity="false">
+            <AppenderRef ref="ServerLog"/>
+            <AppenderRef ref="ConsoleLog"/>
+
+        </AsyncLogger>
+        <AsyncLogger name="com.lykke.matching.engine.utils.order.AllOrdersCanceller"
+                     level="info" additivity="false">
+            <AppenderRef ref="ServerLog"/>
+            <AppenderRef ref="ConsoleLog"/>
+        </AsyncLogger>
+        <AsyncLogger name="com.lykke.matching.engine.services.events.listeners.MessageProcessingSwitchListener"
+                     level="info" additivity="false">
+            <AppenderRef ref="ServerLog"/>
+            <AppenderRef ref="ConsoleLog"/>
+        </AsyncLogger>
+        <AsyncLogger name="com.lykke.matching.engine.socket.impl.ClientHandlerImpl"
+                     level="info" additivity="false">
+            <AppenderRef ref="ServerLog"/>
+        </AsyncLogger>
+        <AsyncLogger name="com.lykke.matching.engine.messages.MessageProcessor"
+                     level="info" additivity="false">
+            <AppenderRef ref="ServerLog"/>
+        </AsyncLogger>
+        <AsyncLogger name="org.apache.http"
+                     level="info" additivity="false">
+            <AppenderRef ref="ServerLog"/>
+        </AsyncLogger>
+        <AsyncLogger name="com.lykke.matching.engine.services.ReservedBalanceUpdateService"
+                     level="debug" additivity="false">
+            <AppenderRef ref="ReservedBalanceLog"/>
+        </AsyncLogger>
+
+        <AsyncLogger name="com.lykke.matching.engine.messages.MessageProcessor.monitoring"
+                     level="debug" additivity="false">
+            <AppenderRef ref="MonitoringLog"/>
+        </AsyncLogger>
+
+        <AsyncLogger name="com.lykke.utils.keepalive.http.IsAliveRequestHandler"
+                     level="debug" additivity="false">
+            <AppenderRef ref="IsAliveRequestHandlerLog"/>
+        </AsyncLogger>
+
+        <AsyncLogger name="com.lykke.utils.keepalive.http.IsAliveRequestHandler"
+                     level="debug" additivity="false">
+            <AppenderRef ref="IsAliveRequestHandlerLog"/>
+        </AsyncLogger>
+
+        # Cash Operations
+        <AsyncLogger name="com.lykke.matching.engine.services.CashInOutOperationService"
+                     level="debug" additivity="false">
+            <AppenderRef ref="CashLog"/>
+        </AsyncLogger>
+
+        <AsyncLogger name="com.lykke.matching.engine.services.ReservedCashInOutOperationService"
+                     level="debug" additivity="false">
+            <AppenderRef ref="CashLog"/>
+        </AsyncLogger>
+
+        <AsyncLogger name="com.lykke.matching.engine.services.CashTransferOperationService"
+                     level="debug" additivity="false">
+            <AppenderRef ref="CashLog"/>
+        </AsyncLogger>
+
+        <Logger name="CashInOutPreProcessing"
+                level="debug" additivity="false">
+            <AppenderRef ref="CashLog"/>
+        </Logger>
+
+        <Logger name="CashTransferPreProcessing"
+                level="debug" additivity="false">
+            <AppenderRef ref="CashLog"/>
+        </Logger>
+
+        <AsyncLogger
+                name="com.lykke.matching.engine.services.validators.input.impl.CashInOutOperationInputValidatorImpl"
+                level="debug" additivity="false">
+            <AppenderRef ref="CashLog"/>
+        </AsyncLogger>
+
+        <AsyncLogger
+                name="com.lykke.matching.engine.services.validators.business.impl.CashInOutOperationBusinessValidatorImpl"
+                level="debug" additivity="false">
+            <AppenderRef ref="CashLog"/>
+        </AsyncLogger>
+
+        <AsyncLogger
+                name="com.lykke.matching.engine.services.validators.input.impl.CashTransferOperationInputValidatorImpl"
+                level="debug" additivity="false">
+            <AppenderRef ref="CashLog"/>
+        </AsyncLogger>
+
+        <AsyncLogger
+                name="com.lykke.matching.engine.services.validators.business.impl.CashTransferOperationBusinessValidatorImpl"
+                level="debug" additivity="false">
+            <AppenderRef ref="CashLog"/>
+        </AsyncLogger>
+        `
+        # Limit Order Cancel
+        <Logger name="LimitOrderCancelPreProcessing"
+                level="debug" additivity="false">
+            <AppenderRef ref="LimitCancelLog"/>
+        </Logger>
+
+        <Logger name="LimitOrderCancelPreProcessing"
+                level="debug" additivity="false">
+            <AppenderRef ref="LimitCancelLog"/>
+        </Logger>
+
+        <AsyncLogger name="com.lykke.matching.engine.services.LimitOrderCancelService"
+                     level="debug" additivity="false">
+            <AppenderRef ref="LimitCancelLog"/>
+        </AsyncLogger>
+
+        <AsyncLogger name="com.lykke.matching.engine.services.LimitOrderMassCancelService"
+                     level="debug" additivity="false">
+            <AppenderRef ref="LimitCancelLog"/>
+        </AsyncLogger>
+
+        # Single Limit Order
+        <Logger name="SingleLimitOrderPreProcessing"
+                level="debug" additivity="false">
+            <AppenderRef ref="SingleLimitLog"/>
+        </Logger>
+
+        <AsyncLogger name="com.lykke.matching.engine.services.SingleLimitOrderService"
+                     level="debug" additivity="false">
+            <AppenderRef ref="SingleLimitLog"/>
+        </AsyncLogger>
+
+        # Multi Limit Order
+        <AsyncLogger name="com.lykke.matching.engine.services.validators.impl.MultiLimitOrderValidatorImpl"
+                     level="debug" additivity="false">
+            <AppenderRef ref="MultiLimitLog"/>
+        </AsyncLogger>
+
+        <AsyncLogger name="com.lykke.matching.engine.services.MultiLimitOrderService"
+                     level="debug" additivity="false">
+            <AppenderRef ref="MultiLimitLog"/>
+        </AsyncLogger>
+
+        # Multi Limit Cancel Order
+        <AsyncLogger name="com.lykke.matching.engine.services.MultiLimitOrderCancelService"
+                     level="debug" additivity="false">
+            <AppenderRef ref="MultiLimitCancelLog"/>
+        </AsyncLogger>
+
+        # Generic Limit Order
+        <AsyncLogger name="com.lykke.matching.engine.services.GenericLimitOrderService"
+                     level="debug" additivity="false">
+            <AppenderRef ref="GenericLimitOrderLog"/>
+        </AsyncLogger>
+
+        # Rabbit old Messages
+        <Logger name="com.lykke.matching.engine.outgoing.rabbit.impl.publishers.RabbitMqOldFormatPublisher.message"
+                level="debug" additivity="false">
+            <AppenderRef ref="RabbitMqOldFormatPublisherLog"/>
+        </Logger>
+
+        # Rabbit old Messages stats
+        <Logger name="com.lykke.matching.engine.outgoing.rabbit.impl.publishers.RabbitMqOldFormatPublisher.stats"
+                level="debug" additivity="false">
+            <AppenderRef ref="RabbitMqOldFormatPublisherStatsLog"/>
+        </Logger>
+
+        # Market Order
+        <AsyncLogger name="com.lykke.matching.engine.services.MarketOrderService"
+                     level="debug" additivity="false">
+            <AppenderRef ref="MarketOrderLog"/>
+        </AsyncLogger>
+
+        <AsyncLogger name="com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl"
+                     level="debug" additivity="false">
+            <AppenderRef ref="MarketOrderLog"/>
+        </AsyncLogger>
+
+        # Market Order stats
+        <AsyncLogger name="com.lykke.matching.engine.services.MarketOrderService.stats"
+                     level="debug" additivity="false">
+            <AppenderRef ref="StatsMarketOrderLog"/>
+        </AsyncLogger>
+
+        # Backend
+        <AsyncLogger name="com.lykke.utils.queue"
+                     level="debug" additivity="false">
+            <AppenderRef ref="BackendLog"/>
+        </AsyncLogger>
+
+        # Queue size logger
+        <AsyncLogger name="com.lykke.utils.queue"
+                     level="debug" additivity="false">
+            <AppenderRef ref="QueueSizeLog"/>
+        </AsyncLogger>
+
+        # Wallet Cache
+        <AsyncLogger name="com.lykke.matching.engine.cache.WalletCredentialsCache"
+                     level="debug" additivity="false">
+            <AppenderRef ref="WalletCredentialsLog"/>
+        </AsyncLogger>
+
+        # Balance updates
+        <AsyncLogger name="com.lykke.matching.engine.holders.BalancesHolder"
+                     level="info" additivity="false">
+            <AppenderRef ref="BalanceUpdatesLog"/>
+        </AsyncLogger>
+
+        # Errors logger
+        <AsyncLogger name="com.lykke.utils.logging.MetricsLogger"
+                     level="debug" additivity="false">
+            <AppenderRef ref="MetricsLog"/>
+        </AsyncLogger>
+
+        # Throttling Logger
+        <AsyncLogger name="com.lykke.utils.logging.ThrottlingLogger"
+                     level="debug" additivity="false">
+            <AppenderRef ref="ThrottlingLog"/>
+        </AsyncLogger>
+
+        # Timer Services Stats
+        <AsyncLogger name="historyPersistStats"
+                     level="debug" additivity="false">
+            <AppenderRef ref="HistoryPersistStatsLog"/>
+        </AsyncLogger>
+
+        # Performance Stats
+        <AsyncLogger name="com.lykke.matching.engine.performance.PerformanceStatsLogger"
+                     level="debug" additivity="false">
+            <AppenderRef ref="PerformanceStatsLog"/>
+        </AsyncLogger>
+
+        # History ticks persist stats
+        <AsyncLogger name="marketStateCache"
+                     level="debug" additivity="false">
+            <AppenderRef ref="MarketStateCacheLog"/>
+        </AsyncLogger>
+
+        # Order book requests
+        <AsyncLogger name="com.lykke.matching.engine.web.controllers.web.OrderBooksController"
+                     level="debug" additivity="false">
+            <AppenderRef ref="OrderBooksRequestLog"/>
+        </AsyncLogger>
+
+        <AsyncLogger name="com.lykke.matching.engine.outgoing.socket.ConnectionsHolder"
+                     level="debug" additivity="false">
+            <AppenderRef ref="OrderBooksRequestLog"/>
+        </AsyncLogger>
+
+        # Log Cleaner
+        <AsyncLogger name="com.lykke.utils.files.clean"
+                     level="debug" additivity="false">
+            <AppenderRef ref="LogCleanerLog"/>
+        </AsyncLogger>
+
+        # Redis Performance
+        <AsyncLogger name="com.lykke.matching.engine.database.redis.RedisPersistenceManager.redis"
+                     level="debug" additivity="false">
+            <AppenderRef ref="RedisPerformanceLog"/>
+        </AsyncLogger>
+
+        # Connections count
+        <AsyncLogger name="com.lykke.matching.engine.utils.monitoring.ClientConnectionsCountLogger"
+                     level="debug" additivity="false">
+            <AppenderRef ref="ConnectionsCountLog"/>
+        </AsyncLogger>
+
+        #Spring logs
+        <AsyncLogger name = "org.springframework" level="info">
+            <AppenderRef ref="ServerLog"/>
+            <AppenderRef ref="ConsoleLog"/>
+        </AsyncLogger>
+
+    </Loggers>
+</Configuration>
