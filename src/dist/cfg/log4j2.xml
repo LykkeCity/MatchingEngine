@@ -122,6 +122,17 @@
             </Policies>
         </RollingRandomAccessFile>
 
+        <RollingRandomAccessFile name="SingleLimitStatsLog" filePattern="../log/singleLimitOrder.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/singleLimitOrder.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
         <RollingRandomAccessFile name="MultiLimitLog" filePattern="../log/multiLimitOrder.log.%d{MM-dd-yyyy}"
                                  fileName="../log/multiLimitOrder.log"
                                  immediateFlush="false">
@@ -159,6 +170,18 @@
         <RollingRandomAccessFile name="RabbitMqOldFormatPublisherLog"
                                  filePattern="../log/rabbitOldMessages.log.%d{MM-dd-yyyy}"
                                  fileName="../log/rabbitOldMessages.log"
+                                 immediateFlush="false">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="RabbitMqPublisherLog"
+                                 filePattern="../log/rabbitMessages.log.%d{MM-dd-yyyy}"
+                                 fileName="../log/rabbitMessages.log"
                                  immediateFlush="false">
             <PatternLayout>
                 <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
@@ -387,25 +410,26 @@
                      level="info" additivity="false">
             <AppenderRef ref="ServerLog"/>
         </AsyncLogger>
+
+        # HttpClient for metrics
         <AsyncLogger name="org.apache.http"
                      level="info" additivity="false">
             <AppenderRef ref="ServerLog"/>
         </AsyncLogger>
+
+        # Reserved Balance Update
         <AsyncLogger name="com.lykke.matching.engine.services.ReservedBalanceUpdateService"
                      level="debug" additivity="false">
             <AppenderRef ref="ReservedBalanceLog"/>
         </AsyncLogger>
 
+        # Monitoring
         <AsyncLogger name="com.lykke.matching.engine.messages.MessageProcessor.monitoring"
                      level="debug" additivity="false">
             <AppenderRef ref="MonitoringLog"/>
         </AsyncLogger>
 
-        <AsyncLogger name="com.lykke.utils.keepalive.http.IsAliveRequestHandler"
-                     level="debug" additivity="false">
-            <AppenderRef ref="IsAliveRequestHandlerLog"/>
-        </AsyncLogger>
-
+        # IsAlive
         <AsyncLogger name="com.lykke.utils.keepalive.http.IsAliveRequestHandler"
                      level="debug" additivity="false">
             <AppenderRef ref="IsAliveRequestHandlerLog"/>
@@ -493,6 +517,11 @@
             <AppenderRef ref="SingleLimitLog"/>
         </AsyncLogger>
 
+        <AsyncLogger name="com.lykke.matching.engine.services.SingleLimitOrderService.stats"
+                     level="debug" additivity="false">
+            <AppenderRef ref="SingleLimitStatsLog"/>
+        </AsyncLogger>
+
         # Multi Limit Order
         <AsyncLogger name="com.lykke.matching.engine.services.validators.impl.MultiLimitOrderValidatorImpl"
                      level="debug" additivity="false">
@@ -531,6 +560,12 @@
         <Logger name="com.lykke.matching.engine.outgoing.rabbit.impl.publishers.RabbitMqOldFormatPublisher.stats"
                 level="debug" additivity="false">
             <AppenderRef ref="RabbitMqOldFormatPublisherStatsLog"/>
+        </Logger>
+
+        # Rabbit new Messages
+        <Logger name="com.lykke.matching.engine.outgoing.rabbit.impl.publishers.RabbitMqPublisher.message"
+                level="info" additivity="false">
+            <AppenderRef ref="RabbitMqPublisherLog"/>
         </Logger>
 
         # Market Order
