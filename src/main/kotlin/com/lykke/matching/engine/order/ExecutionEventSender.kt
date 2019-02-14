@@ -10,8 +10,11 @@ import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.utils.event.isThereClientEvent
 import com.lykke.matching.engine.utils.event.isThereTrustedClientEvent
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.core.task.TaskExecutor
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
+import javax.annotation.PostConstruct
 
 @Component
 class ExecutionEventSender(private val messageSender: MessageSender,
@@ -21,11 +24,29 @@ class ExecutionEventSender(private val messageSender: MessageSender,
                            private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                            private val genericLimitOrderService: GenericLimitOrderService,
                            private val orderBookQueue: BlockingQueue<OrderBook>,
-                           private val rabbitOrderBookQueue: BlockingQueue<OrderBook>) {
+                           private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
+                           private val rabbitEventsDataQueue: BlockingQueue<ExecutionEventSender.RabbitEventData>,
+                           @Qualifier("rabbitPublishersThreadPool")
+                           private val rabbitPublishersThreadPool: TaskExecutor) {
+
+    @PostConstruct
+    private fun init() {
+        rabbitPublishersThreadPool.execute {
+            Thread.currentThread().name = ExecutionEventSender::class.java.simpleName
+            while(true) {
+                sendEvents(rabbitEventsDataQueue.take())
+            }
+        }
+    }
 
     fun sendEvents(executionContext: ExecutionContext,
                    sequenceNumbers: SequenceNumbersWrapper) {
+        rabbitEventsDataQueue.put(RabbitEventData(executionContext, sequenceNumbers))
+    }
 
+    private fun sendEvents(event: ExecutionEventSender.RabbitEventData) {
+        val executionContext = event.executionContext
+        val sequenceNumbers = event.sequenceNumbers
         if (executionContext.lkkTrades.isNotEmpty()) {
             lkkTradesQueue.put(executionContext.lkkTrades)
         }
@@ -69,4 +90,6 @@ class ExecutionEventSender(private val messageSender: MessageSender,
         }
     }
 
+    class RabbitEventData(val executionContext: ExecutionContext,
+                          val sequenceNumbers: SequenceNumbersWrapper)
 }
