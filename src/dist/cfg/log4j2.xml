@@ -543,7 +543,7 @@
         </AsyncLogger>
 
         # Queue size logger
-        <AsyncLogger name="com.lykke.utils.queue"
+        <AsyncLogger name="com.lykke.matching.engine.utils.QueueSizeLogger"
                      level="debug" additivity="false">
             <AppenderRef ref="QueueSizeLog"/>
         </AsyncLogger>
