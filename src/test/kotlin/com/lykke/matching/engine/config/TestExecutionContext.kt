@@ -33,12 +33,56 @@ import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.business.StopOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
+import com.nhaarman.mockito_kotlin.any
+import org.mockito.Mock
+import org.mockito.Mockito
+import org.mockito.MockitoAnnotations
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.task.TaskExecutor
+import java.util.concurrent.BlockingDeque
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.locks.ReentrantLock
 
 @Configuration
 open class TestExecutionContext {
+
+    @Mock
+    private lateinit var syncEventsQueue: BlockingQueue<ExecutionEventSender.RabbitEventData>
+
+    init {
+        MockitoAnnotations.initMocks(this)
+
+        val queue = LinkedBlockingQueue<Any>()
+
+        val lock = ReentrantLock()
+        val condition = lock.newCondition()
+
+        var prevEvent: Any? = null
+        var curEvent: Any? = null
+        var consumedEvent: Any? = null
+
+        Mockito.`when`(syncEventsQueue.put(any())).thenAnswer { invocation ->
+            lock.lock()
+            val event = invocation.arguments[0]
+            queue.put(event)
+            while (consumedEvent != event) {
+                condition.await()
+            }
+            lock.unlock()
+        }
+        Mockito.`when`(syncEventsQueue.take()).thenAnswer {
+            prevEvent = curEvent
+            lock.lock()
+            consumedEvent = prevEvent
+            condition.signal()
+            lock.unlock()
+            curEvent = queue.take()
+            curEvent
+
+        }
+    }
 
     @Bean
     open fun matchingEngine(genericLimitOrderService: GenericLimitOrderService,
@@ -77,7 +121,9 @@ open class TestExecutionContext {
                                   lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                                   genericLimitOrderService: GenericLimitOrderService,
                                   orderBookQueue: BlockingQueue<OrderBook>,
-                                  rabbitOrderBookQueue: BlockingQueue<OrderBook>): ExecutionEventSender {
+                                  rabbitOrderBookQueue: BlockingQueue<OrderBook>,
+                                  rabbitEventsDataQueue: BlockingDeque<ExecutionEventSender.RabbitEventData>,
+                                  rabbitPublishersThreadPool: TaskExecutor): ExecutionEventSender {
         return ExecutionEventSender(messageSender,
                 clientLimitOrdersQueue,
                 trustedClientsLimitOrdersQueue,
@@ -85,7 +131,9 @@ open class TestExecutionContext {
                 lkkTradesQueue,
                 genericLimitOrderService,
                 orderBookQueue,
-                rabbitOrderBookQueue)
+                rabbitOrderBookQueue,
+                syncEventsQueue,
+                rabbitPublishersThreadPool)
     }
 
     @Bean
@@ -162,5 +210,4 @@ open class TestExecutionContext {
                 stopOrderBookProcessor,
                 executionDataApplyService)
     }
-
 }
