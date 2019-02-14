@@ -81,6 +81,7 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
+import org.springframework.core.task.TaskExecutor
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.Optional
 import java.util.concurrent.BlockingQueue
@@ -102,6 +103,14 @@ open class TestApplicationContext {
         threadPoolTaskExecutor.threadNamePrefix = "executor-task"
         threadPoolTaskExecutor.corePoolSize = 2
         threadPoolTaskExecutor.maxPoolSize = 2
+
+        return threadPoolTaskExecutor
+    }
+
+    @Bean
+    open fun rabbitPublishersThreadPool(): TaskExecutor {
+        val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
+        threadPoolTaskExecutor.threadNamePrefix = "rabbit-task"
 
         return threadPoolTaskExecutor
     }

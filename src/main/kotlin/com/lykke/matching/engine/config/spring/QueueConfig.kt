@@ -7,6 +7,7 @@ import com.lykke.matching.engine.database.reconciliation.events.MidPricesPersist
 import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 import com.lykke.matching.engine.messages.MessageWrapper
+import com.lykke.matching.engine.order.ExecutionEventSender
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
@@ -80,6 +81,13 @@ open class QueueConfig {
     open fun trustedClientsLimitOrdersQueue(): BlockingDeque<LimitOrdersReport> {
         return LinkedBlockingDeque<LimitOrdersReport>()
     }
+
+    @Bean
+    @RabbitQueue
+    open fun rabbitEventsDataQueue(): BlockingDeque<ExecutionEventSender.RabbitEventData> {
+        return LinkedBlockingDeque<ExecutionEventSender.RabbitEventData>()
+    }
+
     //</editor-fold>
 
 

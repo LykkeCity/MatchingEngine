@@ -60,6 +60,7 @@ import com.lykke.matching.engine.utils.monitoring.OrderBookMidPriceChecker
 import com.lykke.utils.logging.ThrottlingLogger
 import org.mockito.Mockito
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.core.task.TaskExecutor
 import java.util.Optional
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -124,7 +125,9 @@ abstract class AbstractPerformanceTest {
 
     val rabbitOrderBookQueue = LinkedBlockingQueue<OrderBook>()
 
-    val rabbitSwapQueue = LinkedBlockingQueue<MarketOrderWithTrades>()
+    val rabbitEventDataQueue = LinkedBlockingQueue<ExecutionEventSender.RabbitEventData>()
+
+    val rabbitSwapQueue  = LinkedBlockingQueue<MarketOrderWithTrades>()
 
     val trustedClientsLimitOrdersQueue = LinkedBlockingQueue<LimitOrdersReport>()
 
@@ -210,7 +213,10 @@ abstract class AbstractPerformanceTest {
                 lkkTradesQueue,
                 genericLimitOrderService,
                 orderBookQueue,
-                rabbitOrderBookQueue)
+                rabbitOrderBookQueue,
+                rabbitEventDataQueue,
+                TaskExecutor { task -> task.run() })
+
         val executionDataApplyService = ExecutionDataApplyService(executionEventsSequenceNumbersGenerator,
                 executionPersistenceService,
                 executionEventSender)
