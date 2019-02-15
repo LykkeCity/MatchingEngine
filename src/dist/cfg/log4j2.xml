@@ -1,7 +1,7 @@
 <Configuration>
     <Appenders>
         <!-- Async Loggers will auto-flush in batches, so switch off immediateFlush. -->
-        <RollingRandomAccessFile name="ServerLog" filePattern="../log/server.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="ServerLog" filePattern="../log/server.log.%d{yyyy-MM-dd}"
                                  fileName="../log/server.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -12,7 +12,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="ReservedBalanceLog" filePattern="../log/reservedBalanceUpdate.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="ReservedBalanceLog" filePattern="../log/reservedBalanceUpdate.log.%d{yyyy-MM-dd}"
                                  fileName="../log/reservedBalanceUpdate.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -23,7 +23,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="MonitoringLog" filePattern="../log/monitoring.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="MonitoringLog" filePattern="../log/monitoring.log.%d{yyyy-MM-dd}"
                                  fileName="../log/monitoring.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -34,7 +34,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="IsAliveRequestHandlerLog" filePattern="../log/isAlive.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="IsAliveRequestHandlerLog" filePattern="../log/isAlive.log.%d{yyyy-MM-dd}"
                                  fileName="../log/isAlive.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -45,7 +45,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="CashLog" filePattern="../log/cashOperations.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="CashLog" filePattern="../log/cashOperations.log.%d{yyyy-MM-dd}"
                                  fileName="../log/cashOperations.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -56,7 +56,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="LimitCancelLog" filePattern="../log/limitOrderCancel.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="LimitCancelLog" filePattern="../log/limitOrderCancel.log.%d{yyyy-MM-dd}"
                                  fileName="../log/limitOrderCancel.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -67,7 +67,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="SingleLimitLog" filePattern="../log/singleLimitOrder.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="SingleLimitLog" filePattern="../log/singleLimitOrder.log.%d{yyyy-MM-dd}"
                                  fileName="../log/singleLimitOrder.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -78,7 +78,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="SingleLimitStatsLog" filePattern="../log/singleLimitOrder.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="SingleLimitStatsLog" filePattern="../log/singleLimitOrder.log.%d{yyyy-MM-dd}"
                                  fileName="../log/singleLimitOrder.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -89,7 +89,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="MultiLimitLog" filePattern="../log/multiLimitOrder.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="MultiLimitLog" filePattern="../log/multiLimitOrder.log.%d{yyyy-MM-dd}"
                                  fileName="../log/multiLimitOrder.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -101,7 +101,7 @@
         </RollingRandomAccessFile>
 
         <RollingRandomAccessFile name="MultiLimitCancelLog"
-                                 filePattern="../log/cancelMultiLimitOrder.log.%d{MM-dd-yyyy}"
+                                 filePattern="../log/cancelMultiLimitOrder.log.%d{yyyy-MM-dd}"
                                  fileName="../log/cancelMultiLimitOrder.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -112,7 +112,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="GenericLimitOrderLog" filePattern="../log/genericLimitOrder.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="GenericLimitOrderLog" filePattern="../log/genericLimitOrder.log.%d{yyyy-MM-dd}"
                                  fileName="../log/genericLimitOrder.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -124,7 +124,7 @@
         </RollingRandomAccessFile>
 
         <RollingRandomAccessFile name="RabbitMqOldFormatPublisherLog"
-                                 filePattern="../log/rabbitOldMessages.log.%d{MM-dd-yyyy}"
+                                 filePattern="../log/rabbitOldMessages.log.%d{yyyy-MM-dd}"
                                  fileName="../log/rabbitOldMessages.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -136,7 +136,7 @@
         </RollingRandomAccessFile>
 
         <RollingRandomAccessFile name="RabbitMqPublisherLog"
-                                 filePattern="../log/rabbitMessages.log.%d{MM-dd-yyyy}"
+                                 filePattern="../log/rabbitMessages.log.%d{yyyy-MM-dd}"
                                  fileName="../log/rabbitMessages.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -148,7 +148,7 @@
         </RollingRandomAccessFile>
 
         <RollingRandomAccessFile name="RabbitMqOldFormatPublisherStatsLog"
-                                 filePattern="../log/statsRabbitOldMessages.log.%d{MM-dd-yyyy}"
+                                 filePattern="../log/statsRabbitOldMessages.log.%d{yyyy-MM-dd}"
                                  fileName="../log/statsRabbitOldMessages.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -159,7 +159,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="MarketOrderLog" filePattern="../log/marketOrder.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="MarketOrderLog" filePattern="../log/marketOrder.log.%d{yyyy-MM-dd}"
                                  fileName="../log/marketOrder.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -170,7 +170,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="StatsMarketOrderLog" filePattern="../log/statsMarketOrder.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="StatsMarketOrderLog" filePattern="../log/statsMarketOrder.log.%d{yyyy-MM-dd}"
                                  fileName="../log/statsMarketOrder.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -181,7 +181,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="BackendLog" filePattern="../log/backend.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="BackendLog" filePattern="../log/backend.log.%d{yyyy-MM-dd}"
                                  fileName="../log/backend.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -192,7 +192,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="QueueSizeLog" filePattern="../log/queueSizeLogger.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="QueueSizeLog" filePattern="../log/queueSizeLogger.log.%d{yyyy-MM-dd}"
                                  fileName="../log/queueSizeLogger.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -204,7 +204,7 @@
         </RollingRandomAccessFile>
 
         <RollingRandomAccessFile name="WalletCredentialsLog"
-                                 filePattern="../log/walletCredentialsCache.log.%d{MM-dd-yyyy}"
+                                 filePattern="../log/walletCredentialsCache.log.%d{yyyy-MM-dd}"
                                  fileName="../log/walletCredentialsCache.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -215,7 +215,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="BalanceUpdatesLog" filePattern="../log/balanceUpdates.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="BalanceUpdatesLog" filePattern="../log/balanceUpdates.log.%d{yyyy-MM-dd}"
                                  fileName="../log/balanceUpdates.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -226,7 +226,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="MetricsLog" filePattern="../log/metricsLogger.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="MetricsLog" filePattern="../log/metricsLogger.log.%d{yyyy-MM-dd}"
                                  fileName="../log/metricsLogger.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -237,7 +237,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="ThrottlingLog" filePattern="../log/throttlingLogger.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="ThrottlingLog" filePattern="../log/throttlingLogger.log.%d{yyyy-MM-dd}"
                                  fileName="../log/throttlingLogger.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -249,7 +249,7 @@
         </RollingRandomAccessFile>
 
         <RollingRandomAccessFile name="HistoryPersistStatsLog"
-                                 filePattern="../log/historyPersistStats.log.%d{MM-dd-yyyy}"
+                                 filePattern="../log/historyPersistStats.log.%d{yyyy-MM-dd}"
                                  fileName="../log/historyPersistStats.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -260,7 +260,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="PerformanceStatsLog" filePattern="../log/performanceStats.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="PerformanceStatsLog" filePattern="../log/performanceStats.log.%d{yyyy-MM-dd}"
                                  fileName="../log/performanceStats.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -271,7 +271,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="MarketStateCacheLog" filePattern="../log/historyTicksStats.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="MarketStateCacheLog" filePattern="../log/historyTicksStats.log.%d{yyyy-MM-dd}"
                                  fileName="../log/historyTicksStats.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -282,7 +282,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="OrderBooksRequestLog" filePattern="../log/orderBooksRequest.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="OrderBooksRequestLog" filePattern="../log/orderBooksRequest.log.%d{yyyy-MM-dd}"
                                  fileName="../log/orderBooksRequest.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -293,7 +293,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="ConnectionsCountLog" filePattern="../log/connectionsCount.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="ConnectionsCountLog" filePattern="../log/connectionsCount.log.%d{yyyy-MM-dd}"
                                  fileName="../log/connectionsCount.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -304,7 +304,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="RedisPerformanceLog" filePattern="../log/redisPerformance.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="RedisPerformanceLog" filePattern="../log/redisPerformance.log.%d{yyyy-MM-dd}"
                                  fileName="../log/redisPerformance.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -315,7 +315,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="LogCleanerLog" filePattern="../log/logCleaner.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="LogCleanerLog" filePattern="../log/logCleaner.log.%d{yyyy-MM-dd}"
                                  fileName="../log/logCleaner.log"
                                  immediateFlush="true">
             <PatternLayout>
