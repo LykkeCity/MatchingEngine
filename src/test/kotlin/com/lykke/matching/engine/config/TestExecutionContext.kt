@@ -65,19 +65,25 @@ open class TestExecutionContext {
 
         Mockito.`when`(syncEventsQueue.put(any())).thenAnswer { invocation ->
             lock.lock()
-            val event = invocation.arguments[0]
-            queue.put(event)
-            while (consumedEvent != event) {
-                condition.await()
+            try {
+                val event = invocation.arguments[0]
+                queue.put(event)
+                while (consumedEvent != event) {
+                    condition.await()
+                }
+            } finally {
+                lock.unlock()
             }
-            lock.unlock()
         }
         Mockito.`when`(syncEventsQueue.take()).thenAnswer {
             prevEvent = curEvent
             lock.lock()
-            consumedEvent = prevEvent
-            condition.signal()
-            lock.unlock()
+            try {
+                consumedEvent = prevEvent
+                condition.signal()
+            } finally {
+                lock.unlock()
+            }
             curEvent = queue.take()
             curEvent
 
