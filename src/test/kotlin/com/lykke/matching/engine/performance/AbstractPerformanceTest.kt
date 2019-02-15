@@ -110,7 +110,7 @@ abstract class AbstractPerformanceTest {
 
     val balanceUpdateQueue = LinkedBlockingQueue<BalanceUpdate>()
 
-    val clientLimitOrdersQueue  = LinkedBlockingQueue<LimitOrdersReport>()
+    val clientLimitOrdersQueue = LinkedBlockingQueue<LimitOrdersReport>()
 
     val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
 
@@ -120,9 +120,9 @@ abstract class AbstractPerformanceTest {
 
     val rabbitEventDataQueue = LinkedBlockingQueue<ExecutionEventSender.RabbitEventData>()
 
-    val rabbitSwapQueue  = LinkedBlockingQueue<MarketOrderWithTrades>()
+    val rabbitSwapQueue = LinkedBlockingQueue<MarketOrderWithTrades>()
 
-    val trustedClientsLimitOrdersQueue  = LinkedBlockingQueue<LimitOrdersReport>()
+    val trustedClientsLimitOrdersQueue = LinkedBlockingQueue<LimitOrdersReport>()
 
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
@@ -195,7 +195,7 @@ abstract class AbstractPerformanceTest {
                 orderBookQueue,
                 rabbitOrderBookQueue,
                 rabbitEventDataQueue,
-                TaskExecutor { task -> task.run() })
+                TaskExecutor { task -> Thread({ task.run()  }).start() })
 
         val executionDataApplyService = ExecutionDataApplyService(executionEventsSequenceNumbersGenerator,
                 executionPersistenceService,
