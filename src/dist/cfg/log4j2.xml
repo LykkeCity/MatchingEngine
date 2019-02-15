@@ -45,7 +45,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="MultiLimitOrderControlsLog" filePattern="../log/isAlive.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="MultiLimitOrderControlsLog" filePattern="../log/isAlive.log.%d{yyyy-MM-dd}"
                                  fileName="../log/multiLimitOrderControls.log"
                                  immediateFlush="false">
             <PatternLayout>
@@ -56,7 +56,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="SingleLimitOrderLog" filePattern="../log/isAlive.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="SingleLimitOrderLog" filePattern="../log/isAlive.log.%d{yyyy-MM-dd}"
                                  fileName="../log/singleLimitOrderControls.log"
                                  immediateFlush="false">
             <PatternLayout>
@@ -67,7 +67,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="MarketOrderControlsLog" filePattern="../log/isAlive.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="MarketOrderControlsLog" filePattern="../log/isAlive.log.%d{yyyy-MM-dd}"
                                  fileName="../log/marketOrderControls.log"
                                  immediateFlush="false">
             <PatternLayout>
@@ -78,7 +78,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="UUIDHolderLog" filePattern="../log/isAlive.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="UUIDHolderLog" filePattern="../log/isAlive.log.%d{yyyy-MM-dd}"
                                  fileName="../log/uuidHolder.log"
                                  immediateFlush="false">
             <PatternLayout>
@@ -89,7 +89,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="CashLog" filePattern="../log/cashOperations.log.%d{MM-dd-yyyy}"
+        <RollingRandomAccessFile name="CashLog" filePattern="../log/cashOperations.log.%d{yyyy-MM-dd}"
                                  fileName="../log/cashOperations.log"
                                  immediateFlush="true">
             <PatternLayout>
