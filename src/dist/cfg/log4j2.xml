@@ -627,6 +627,11 @@
             <AppenderRef ref="BalanceUpdatesLog"/>
         </AsyncLogger>
 
+        <AsyncLogger name="com.lykke.matching.engine.services.BalancesServiceImpl"
+                     level="info" additivity="false">
+            <AppenderRef ref="BalanceUpdatesLog"/>
+        </AsyncLogger>
+
         # Errors logger
         <AsyncLogger name="com.lykke.utils.logging.MetricsLogger"
                      level="debug" additivity="false">
