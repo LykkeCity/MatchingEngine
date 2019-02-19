@@ -203,6 +203,18 @@
             </Policies>
         </RollingRandomAccessFile>
 
+        <RollingRandomAccessFile name="RabbitMqPublisherStatsLog"
+                                 filePattern="../log/statsRabbitMessages.log.%d{yyyy-MM-dd}"
+                                 fileName=".../log/statsRabbitMessages.log"
+                                 immediateFlush="true">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
         <RollingRandomAccessFile name="MarketOrderLog" filePattern="../log/marketOrder.log.%d{yyyy-MM-dd}"
                                  fileName="../log/marketOrder.log"
                                  immediateFlush="true">
@@ -568,6 +580,12 @@
             <AppenderRef ref="RabbitMqPublisherLog"/>
         </Logger>
 
+        # Rabbit new Messages stats
+        <Logger name="com.lykke.matching.engine.outgoing.rabbit.impl.publishers.RabbitMqPublisher.stats"
+                level="debug" additivity="false">
+            <AppenderRef ref="RabbitMqPublisherStatsLog"/>
+        </Logger>
+
         # Market Order
         <AsyncLogger name="com.lykke.matching.engine.services.MarketOrderService"
                      level="debug" additivity="false">
@@ -605,6 +623,11 @@
 
         # Balance updates
         <AsyncLogger name="com.lykke.matching.engine.holders.BalancesHolder"
+                     level="info" additivity="false">
+            <AppenderRef ref="BalanceUpdatesLog"/>
+        </AsyncLogger>
+
+        <AsyncLogger name="com.lykke.matching.engine.services.BalancesServiceImpl"
                      level="info" additivity="false">
             <AppenderRef ref="BalanceUpdatesLog"/>
         </AsyncLogger>
@@ -707,6 +730,12 @@
         <AsyncLogger name = "com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator" level="debug">
             <AppenderRef ref="ConsoleLog"/>
             <AppenderRef ref="ServerLog"/>
+        </AsyncLogger>
+
+        #Springfox logs
+        <AsyncLogger name = "springfox.documentation.spring.web" level="info">
+            <AppenderRef ref="ServerLog"/>
+            <AppenderRef ref="ConsoleLog"/>
         </AsyncLogger>
 
     </Loggers>
