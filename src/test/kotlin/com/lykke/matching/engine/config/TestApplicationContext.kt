@@ -104,6 +104,8 @@ open class TestApplicationContext {
     open fun rabbitPublishersThreadPool(): TaskExecutor {
         val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
         threadPoolTaskExecutor.threadNamePrefix = "rabbit-task"
+        threadPoolTaskExecutor.corePoolSize = 0
+        threadPoolTaskExecutor.corePoolSize = Integer.MAX_VALUE
 
         return threadPoolTaskExecutor
     }

@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.performance
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
+import com.lykke.matching.engine.daos.ExecutionData
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.*
@@ -52,9 +53,9 @@ import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.utils.logging.ThrottlingLogger
 import org.mockito.Mockito
 import org.springframework.context.ApplicationEventPublisher
-import org.springframework.core.task.TaskExecutor
 import java.util.Optional
 import java.util.concurrent.LinkedBlockingQueue
+import kotlin.concurrent.thread
 
 abstract class AbstractPerformanceTest {
 
@@ -117,8 +118,6 @@ abstract class AbstractPerformanceTest {
     val orderBookQueue = LinkedBlockingQueue<OrderBook>()
 
     val rabbitOrderBookQueue = LinkedBlockingQueue<OrderBook>()
-
-    val rabbitEventDataQueue = LinkedBlockingQueue<ExecutionEventSender.RabbitEventData>()
 
     val rabbitSwapQueue = LinkedBlockingQueue<MarketOrderWithTrades>()
 
@@ -186,16 +185,13 @@ abstract class AbstractPerformanceTest {
 
         val executionEventsSequenceNumbersGenerator = ExecutionEventsSequenceNumbersGenerator(messageSequenceNumberHolder)
         val executionPersistenceService = ExecutionPersistenceService(persistenceManager)
-        val executionEventSender = ExecutionEventSender(notificationSender,
-                clientLimitOrdersQueue,
-                trustedClientsLimitOrdersQueue,
-                rabbitSwapQueue,
+        val executionEventSender = ExecutionEventSender(
                 lkkTradesQueue,
                 genericLimitOrderService,
                 orderBookQueue,
                 rabbitOrderBookQueue,
-                rabbitEventDataQueue,
-                TaskExecutor { task -> Thread({ task.run()  }).start() })
+                emptyList())
+
 
         val executionDataApplyService = ExecutionDataApplyService(executionEventsSequenceNumbersGenerator,
                 executionPersistenceService,
@@ -258,6 +254,5 @@ abstract class AbstractPerformanceTest {
                 messageSequenceNumberHolder,
                 notificationSender,
                 messageProcessingStatusHolder)
-
     }
 }

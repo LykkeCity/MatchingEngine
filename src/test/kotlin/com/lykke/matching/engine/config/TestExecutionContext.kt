@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.config
 
+import com.lykke.matching.engine.daos.ExecutionData
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.fee.FeeProcessor
@@ -27,67 +28,37 @@ import com.lykke.matching.engine.order.transaction.ExecutionEventsSequenceNumber
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.outgoing.senders.SpecializedExecutionEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.ExecutionEventSenderImpl
+import com.lykke.matching.engine.outgoing.senders.impl.OldFormatExecutionEventSenderImpl
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.business.StopOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
-import com.nhaarman.mockito_kotlin.any
+import com.lykke.matching.engine.utils.initSyncQueue
 import org.mockito.Mock
-import org.mockito.Mockito
 import org.mockito.MockitoAnnotations
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.task.TaskExecutor
-import java.util.concurrent.BlockingDeque
 import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.locks.ReentrantLock
 
 @Configuration
 open class TestExecutionContext {
 
     @Mock
-    private lateinit var syncEventsQueue: BlockingQueue<ExecutionEventSender.RabbitEventData>
+    private lateinit var syncExecutionEventDataQueue: BlockingQueue<ExecutionData>
+
+    @Mock
+    private lateinit var syncExecutionEventOldDataQueue: BlockingQueue<ExecutionData>
 
     init {
         MockitoAnnotations.initMocks(this)
 
-        val queue = LinkedBlockingQueue<Any>()
-
-        val lock = ReentrantLock()
-        val condition = lock.newCondition()
-
-        var prevEvent: Any? = null
-        var curEvent: Any? = null
-        var consumedEvent: Any? = null
-
-        Mockito.`when`(syncEventsQueue.put(any())).thenAnswer { invocation ->
-            lock.lock()
-            try {
-                val event = invocation.arguments[0]
-                queue.put(event)
-                while (consumedEvent != event) {
-                    condition.await()
-                }
-            } finally {
-                lock.unlock()
-            }
-        }
-        Mockito.`when`(syncEventsQueue.take()).thenAnswer {
-            prevEvent = curEvent
-            lock.lock()
-            try {
-                consumedEvent = prevEvent
-                condition.signal()
-            } finally {
-                lock.unlock()
-            }
-            curEvent = queue.take()
-            curEvent
-
-        }
+        initSyncQueue(syncExecutionEventDataQueue)
+        initSyncQueue(syncExecutionEventOldDataQueue)
     }
 
     @Bean
@@ -120,25 +91,35 @@ open class TestExecutionContext {
     }
 
     @Bean
-    open fun executionEventSender(messageSender: MessageSender,
-                                  clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                  trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                  rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
-                                  lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
-                                  genericLimitOrderService: GenericLimitOrderService,
-                                  orderBookQueue: BlockingQueue<OrderBook>,
-                                  rabbitOrderBookQueue: BlockingQueue<OrderBook>,
-                                  rabbitEventsDataQueue: BlockingDeque<ExecutionEventSender.RabbitEventData>,
-                                  rabbitPublishersThreadPool: TaskExecutor): ExecutionEventSender {
-        return ExecutionEventSender(messageSender,
+    open fun executionEventSender(
+            lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
+            genericLimitOrderService: GenericLimitOrderService,
+            orderBookQueue: BlockingQueue<OrderBook>,
+            rabbitOrderBookQueue: BlockingQueue<OrderBook>,
+            specializedExecutionEventSenders: List<SpecializedExecutionEventSender>): ExecutionEventSender {
+        return ExecutionEventSender(
+                lkkTradesQueue,
+                genericLimitOrderService,
+                rabbitOrderBookQueue,
+                rabbitOrderBookQueue,
+                specializedExecutionEventSenders)
+    }
+
+    @Bean
+    open fun specializedExecutionEventSender(messageSender: MessageSender,
+                                             rabbitPublishersThreadPool: TaskExecutor): SpecializedExecutionEventSender {
+        return ExecutionEventSenderImpl(messageSender, syncExecutionEventDataQueue, rabbitPublishersThreadPool)
+    }
+
+    @Bean
+    open fun oldExecutionEventSender(clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                                     trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                                     rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
+                                     rabbitPublishersThreadPool: TaskExecutor): SpecializedExecutionEventSender {
+        return OldFormatExecutionEventSenderImpl(syncExecutionEventOldDataQueue,
                 clientLimitOrdersQueue,
                 trustedClientsLimitOrdersQueue,
                 rabbitSwapQueue,
-                lkkTradesQueue,
-                genericLimitOrderService,
-                orderBookQueue,
-                rabbitOrderBookQueue,
-                syncEventsQueue,
                 rabbitPublishersThreadPool)
     }
 
