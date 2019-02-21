@@ -37,6 +37,7 @@ import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.outgoing.senders.impl.CashInOutEventSender
 import com.lykke.matching.engine.services.CashInOutOperationService
 import com.lykke.matching.engine.services.CashTransferOperationService
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -265,13 +266,15 @@ open class TestApplicationContext {
 
     @Bean
     open fun cashInOutOperationService(balancesHolder: BalancesHolder,
-                                       rabbitCashInOutQueue: BlockingQueue<CashOperation>,
                                        feeProcessor: FeeProcessor,
                                        cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator,
                                        messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                       messageSender: MessageSender): CashInOutOperationService {
-        return CashInOutOperationService(balancesHolder, rabbitCashInOutQueue, feeProcessor,
-                cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
+                                       cashInOut: CashInOutEventSender): CashInOutOperationService {
+        return CashInOutOperationService(balancesHolder,
+                feeProcessor,
+                cashInOutOperationBusinessValidator,
+                messageSequenceNumberHolder,
+                cashInOut)
     }
 
     @Bean

@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.performance
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
+import com.lykke.matching.engine.daos.ExecutionData
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.*
@@ -25,7 +26,7 @@ import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOpera
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.ExecutionDataApplyService
-import com.lykke.matching.engine.order.ExecutionEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.ExecutionEventSender
 import com.lykke.matching.engine.order.ExecutionPersistenceService
 import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
@@ -52,8 +53,10 @@ import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.utils.logging.ThrottlingLogger
 import org.mockito.Mockito
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.core.task.TaskExecutor
 import java.util.Optional
 import java.util.concurrent.LinkedBlockingQueue
+import kotlin.concurrent.thread
 
 abstract class AbstractPerformanceTest {
 
@@ -123,6 +126,8 @@ abstract class AbstractPerformanceTest {
 
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
+    val executionEventDataQueue = LinkedBlockingQueue<ExecutionData>()
+
     private fun clearMessageQueues() {
         rabbitEventsQueue.clear()
         rabbitTrustedClientsEventsQueue.clear()
@@ -187,7 +192,8 @@ abstract class AbstractPerformanceTest {
                 genericLimitOrderService,
                 orderBookQueue,
                 rabbitOrderBookQueue,
-                emptyList())
+                executionEventDataQueue,
+                emptyList(), TaskExecutor { task -> thread(name = "rabbitMessageProcessor") { task.run() } })
 
 
         val executionDataApplyService = ExecutionDataApplyService(executionEventsSequenceNumbersGenerator,
@@ -248,5 +254,9 @@ abstract class AbstractPerformanceTest {
                 marketOrderValidator,
                 applicationSettingsHolder,
                 messageProcessingStatusHolder)
+
+        thread(name = "ExecutionEventProcessor") {
+            executionEventDataQueue.take()
+        }
     }
 }

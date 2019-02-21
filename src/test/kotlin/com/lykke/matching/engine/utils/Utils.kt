@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.utils
 
-import com.lykke.matching.engine.daos.ExecutionData
 import com.lykke.matching.engine.daos.setting.Setting
 import com.nhaarman.mockito_kotlin.any
 import org.mockito.Mockito
@@ -10,7 +9,7 @@ import java.util.concurrent.locks.ReentrantLock
 
 fun getSetting(value: String, name: String = value) = Setting(name, value, true)
 
-fun initSyncQueue(queueMock: BlockingQueue<ExecutionData>) {
+inline fun <reified T : Any> initSyncQueue(queueMock: BlockingQueue<T>) {
 
     val queue = LinkedBlockingQueue<Any>()
 
@@ -44,6 +43,5 @@ fun initSyncQueue(queueMock: BlockingQueue<ExecutionData>) {
         }
         curEvent = queue.take()
         curEvent
-
     }
 }

@@ -8,6 +8,7 @@ import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersist
 import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.outgoing.messages.*
+import com.lykke.matching.engine.outgoing.messages.v2.CashInOutEventData
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import org.springframework.context.annotation.Bean
@@ -89,8 +90,8 @@ open class QueueConfig {
 
     @Bean
     @RabbitQueue
-    open fun executionEventOldData(): BlockingQueue<ExecutionData> {
-        return LinkedBlockingQueue<ExecutionData>()
+    open fun cashInOutEventData(): BlockingQueue<CashInOutEventData> {
+        return LinkedBlockingQueue<CashInOutEventData>()
     }
 
     //</editor-fold>

@@ -11,7 +11,7 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.order.ExecutionDataApplyService
-import com.lykke.matching.engine.order.ExecutionEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.ExecutionEventSender
 import com.lykke.matching.engine.order.ExecutionPersistenceService
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.LimitOrderProcessor
@@ -25,10 +25,16 @@ import com.lykke.matching.engine.order.process.common.LimitOrdersCancellerImpl
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.transaction.ExecutionEventsSequenceNumbersGenerator
+import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.outgoing.messages.v2.CashInOutEventData
+import com.lykke.matching.engine.outgoing.senders.SpecializedCashInOutEventSender
 import com.lykke.matching.engine.outgoing.senders.SpecializedExecutionEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.CashInOutEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.CashInOutEventSenderImpl
+import com.lykke.matching.engine.outgoing.senders.impl.CashInOutOldEventSender
 import com.lykke.matching.engine.outgoing.senders.impl.ExecutionEventSenderImpl
 import com.lykke.matching.engine.outgoing.senders.impl.OldFormatExecutionEventSenderImpl
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -52,13 +58,13 @@ open class TestExecutionContext {
     private lateinit var syncExecutionEventDataQueue: BlockingQueue<ExecutionData>
 
     @Mock
-    private lateinit var syncExecutionEventOldDataQueue: BlockingQueue<ExecutionData>
+    private lateinit var syncCashInOutDataQueue: BlockingQueue<CashInOutEventData>
 
     init {
         MockitoAnnotations.initMocks(this)
 
         initSyncQueue(syncExecutionEventDataQueue)
-        initSyncQueue(syncExecutionEventOldDataQueue)
+        initSyncQueue(syncCashInOutDataQueue)
     }
 
     @Bean
@@ -96,31 +102,47 @@ open class TestExecutionContext {
             genericLimitOrderService: GenericLimitOrderService,
             orderBookQueue: BlockingQueue<OrderBook>,
             rabbitOrderBookQueue: BlockingQueue<OrderBook>,
-            specializedExecutionEventSenders: List<SpecializedExecutionEventSender>): ExecutionEventSender {
+            specializedExecutionEventSenders: List<SpecializedExecutionEventSender>,
+            rabbitPublishersThreadPool: TaskExecutor): ExecutionEventSender {
         return ExecutionEventSender(
                 lkkTradesQueue,
                 genericLimitOrderService,
                 orderBookQueue,
                 rabbitOrderBookQueue,
-                specializedExecutionEventSenders)
+                syncExecutionEventDataQueue,
+                specializedExecutionEventSenders,
+                rabbitPublishersThreadPool)
     }
 
     @Bean
-    open fun specializedExecutionEventSender(messageSender: MessageSender,
-                                             rabbitPublishersThreadPool: TaskExecutor): SpecializedExecutionEventSender {
-        return ExecutionEventSenderImpl(messageSender, syncExecutionEventDataQueue, rabbitPublishersThreadPool)
+    open fun cashInOutEventSender(specializedEventSenders: List<SpecializedCashInOutEventSender>,
+                                  rabbitPublishersThreadPool: TaskExecutor): CashInOutEventSender {
+        return CashInOutEventSender(specializedEventSenders, syncCashInOutDataQueue, rabbitPublishersThreadPool)
     }
 
     @Bean
-    open fun oldExecutionEventSender(clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+    open fun specializedExecutionEventSender(messageSender: MessageSender): SpecializedExecutionEventSender {
+        return ExecutionEventSenderImpl(messageSender)
+    }
+
+    @Bean
+    open fun specializedOldExecutionEventSender(clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                      trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                     rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
-                                     rabbitPublishersThreadPool: TaskExecutor): SpecializedExecutionEventSender {
-        return OldFormatExecutionEventSenderImpl(syncExecutionEventOldDataQueue,
+                                     rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>): SpecializedExecutionEventSender {
+        return OldFormatExecutionEventSenderImpl(
                 clientLimitOrdersQueue,
                 trustedClientsLimitOrdersQueue,
-                rabbitSwapQueue,
-                rabbitPublishersThreadPool)
+                rabbitSwapQueue)
+    }
+
+    @Bean
+    open fun specializedCashInOutEventSender(messageSender: MessageSender): SpecializedCashInOutEventSender {
+        return CashInOutEventSenderImpl(messageSender)
+    }
+
+    @Bean
+    open fun specializedCashInOutOldEventSender(rabbitCashInOutQueue: BlockingQueue<CashOperation>): SpecializedCashInOutEventSender {
+        return CashInOutOldEventSender(rabbitCashInOutQueue)
     }
 
     @Bean

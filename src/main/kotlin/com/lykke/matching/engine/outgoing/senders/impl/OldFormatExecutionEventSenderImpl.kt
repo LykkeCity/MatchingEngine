@@ -7,41 +7,17 @@ import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.senders.SpecializedExecutionEventSender
 import com.lykke.matching.engine.utils.event.isThereClientEvent
 import com.lykke.matching.engine.utils.event.isThereTrustedClientEvent
-import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.core.task.TaskExecutor
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
-import javax.annotation.PostConstruct
 
 @Deprecated("Old format of outgoing message is deprecated")
 @Component
-class OldFormatExecutionEventSenderImpl(private val executionEventOldData: BlockingQueue<ExecutionData>,
-                                        private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+class OldFormatExecutionEventSenderImpl(private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                         private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                        private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
-                                        @Qualifier("rabbitPublishersThreadPool")
-                                        private val rabbitPublishersThreadPool: TaskExecutor) : SpecializedExecutionEventSender {
+                                        private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>) : SpecializedExecutionEventSender {
 
-    @PostConstruct
-    private fun init() {
-        rabbitPublishersThreadPool.execute {
-            Thread.currentThread().name = OldFormatExecutionEventSenderImpl::class.java.simpleName
-            while (true) {
-                try {
-                    processEventData(executionEventOldData.take())
-                } catch (e: InterruptedException) {
-                    Thread.currentThread().interrupt()
-                    return@execute
-                }
-            }
-        }
-    }
 
-    override fun sendEvent(executionEventData: ExecutionData) {
-        executionEventOldData.put(executionEventData)
-    }
-
-    private fun processEventData(executionData: ExecutionData) {
+    override fun sendEvent(executionData: ExecutionData) {
         val executionContext = executionData.executionContext
         sendBalanceUpdateEvent(executionContext)
         sendTrustedClientsExecutionEventIfNeeded(executionContext)
