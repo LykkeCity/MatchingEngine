@@ -1,7 +1,6 @@
 package com.lykke.matching.engine.performance
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
-import com.lykke.matching.engine.daos.ExecutionData
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.*
@@ -55,7 +54,6 @@ import org.mockito.Mockito
 import org.springframework.context.ApplicationEventPublisher
 import java.util.Optional
 import java.util.concurrent.LinkedBlockingQueue
-import kotlin.concurrent.thread
 
 abstract class AbstractPerformanceTest {
 
@@ -169,7 +167,6 @@ abstract class AbstractPerformanceTest {
         feeProcessor = FeeProcessor(assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())
-        val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
         val limitOrderInputValidator = LimitOrderInputValidatorImpl(applicationSettingsHolder)
         singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsHolder, LOGGER)
         cashInOutContextParser = CashInOutContextParser(assetsHolder)
@@ -248,11 +245,8 @@ abstract class AbstractPerformanceTest {
                 matchingResultHandlingHelper,
                 genericLimitOrderService,
                 assetsPairsHolder,
-                rabbitSwapQueue,
                 marketOrderValidator,
                 applicationSettingsHolder,
-                messageSequenceNumberHolder,
-                notificationSender,
                 messageProcessingStatusHolder)
     }
 }

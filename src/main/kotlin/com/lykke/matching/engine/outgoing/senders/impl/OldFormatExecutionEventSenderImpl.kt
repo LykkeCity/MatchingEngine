@@ -31,6 +31,7 @@ class OldFormatExecutionEventSenderImpl(private val executionEventOldData: Block
                     processEventData(executionEventOldData.take())
                 } catch (e: InterruptedException) {
                     Thread.currentThread().interrupt()
+                    return@execute
                 }
             }
         }

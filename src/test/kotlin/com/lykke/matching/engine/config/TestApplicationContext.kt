@@ -379,10 +379,7 @@ open class TestApplicationContext {
                                 matchingResultHandlingHelper: MatchingResultHandlingHelper,
                                 genericLimitOrderService: GenericLimitOrderService,
                                 assetsPairsHolder: AssetsPairsHolder,
-                                rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
                                 marketOrderValidator: MarketOrderValidator,
-                                messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                messageSender: MessageSender,
                                 applicationSettingsHolder: ApplicationSettingsHolder,
                                 messageProcessingStatusHolder: MessageProcessingStatusHolder): MarketOrderService {
         return MarketOrderService(matchingEngine,
@@ -392,11 +389,8 @@ open class TestApplicationContext {
                 matchingResultHandlingHelper,
                 genericLimitOrderService,
                 assetsPairsHolder,
-                rabbitSwapQueue,
                 marketOrderValidator,
                 applicationSettingsHolder,
-                messageSequenceNumberHolder,
-                messageSender,
                 messageProcessingStatusHolder)
     }
 

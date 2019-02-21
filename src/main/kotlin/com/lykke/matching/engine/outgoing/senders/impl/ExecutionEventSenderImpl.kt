@@ -27,6 +27,7 @@ class ExecutionEventSenderImpl(private val messageSender: MessageSender,
                     processEventData(executionEventDataQueue.take())
                 } catch (e: InterruptedException) {
                     Thread.currentThread().interrupt()
+                    return@execute
                 }
             }
         }
