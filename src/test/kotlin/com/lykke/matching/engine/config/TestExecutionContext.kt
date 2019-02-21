@@ -100,7 +100,7 @@ open class TestExecutionContext {
         return ExecutionEventSender(
                 lkkTradesQueue,
                 genericLimitOrderService,
-                rabbitOrderBookQueue,
+                orderBookQueue,
                 rabbitOrderBookQueue,
                 specializedExecutionEventSenders)
     }

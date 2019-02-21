@@ -27,7 +27,11 @@ class OldFormatExecutionEventSenderImpl(private val executionEventOldData: Block
         rabbitPublishersThreadPool.execute {
             Thread.currentThread().name = OldFormatExecutionEventSenderImpl::class.java.simpleName
             while (true) {
-                processEventData(executionEventOldData.take())
+                try {
+                    processEventData(executionEventOldData.take())
+                } catch (e: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                }
             }
         }
     }

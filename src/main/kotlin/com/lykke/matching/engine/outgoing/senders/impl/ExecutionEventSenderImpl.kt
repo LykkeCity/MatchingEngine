@@ -23,7 +23,11 @@ class ExecutionEventSenderImpl(private val messageSender: MessageSender,
         rabbitPublishersThreadPool.execute {
             Thread.currentThread().name = ExecutionEventSenderImpl::class.java.simpleName
             while (true) {
-                processEventData(executionEventDataQueue.take())
+                try {
+                    processEventData(executionEventDataQueue.take())
+                } catch (e: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                }
             }
         }
     }
