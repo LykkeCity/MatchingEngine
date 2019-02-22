@@ -39,6 +39,19 @@ class OrderBook {
         }
     }
 
+    constructor(assetPair: String,
+                isBuy: Boolean,
+                timestamp: Date,
+                orders: Array<LimitOrder>) {
+        this.assetPair = assetPair
+        this.isBuy = isBuy
+        this.timestamp = timestamp
+
+        for (order in orders) {
+            addVolumePrice(order.externalId, order.clientId, order.remainingVolume, order.price)
+        }
+    }
+
     fun addVolumePrice(id: String, clientId: String, volume: BigDecimal, price: BigDecimal) {
         prices.add(Order(id, clientId, volume, price))
     }

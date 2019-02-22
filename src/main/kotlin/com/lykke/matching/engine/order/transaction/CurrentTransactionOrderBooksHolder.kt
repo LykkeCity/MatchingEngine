@@ -21,7 +21,7 @@ class CurrentTransactionOrderBooksHolder(ordersService: AbstractGenericLimitOrde
     private val orderCopyWrappersByOriginalOrder = HashMap<LimitOrder, CopyWrapper<LimitOrder>>()
 
     val tradeInfoList = mutableListOf<TradeInfo>()
-    val outgoingOrderBooks = mutableListOf<OrderBook>()
+    val outgoingOrderBooks = ArrayList<OrderBookData>()
 
     fun getOrPutOrderCopyWrapper(limitOrder: LimitOrder): CopyWrapper<LimitOrder> {
         return orderCopyWrappersByOriginalOrder.getOrPut(limitOrder) {
@@ -136,15 +136,20 @@ class CurrentTransactionOrderBooksHolder(ordersService: AbstractGenericLimitOrde
         }
     }
 
-    private fun processChangedOrderBookSide(orderBookCopy: AssetOrderBook,
+    private fun processChangedOrderBookSide(orderBook: AssetOrderBook,
                                             isBuySide: Boolean,
                                             date: Date) {
-        val assetPairId = orderBookCopy.assetPairId
-        val price = if (isBuySide) orderBookCopy.getBidPrice() else orderBookCopy.getAskPrice()
+        val assetPairId = orderBook.assetPairId
+        val price = if (isBuySide) orderBook.getBidPrice() else orderBook.getAskPrice()
         tradeInfoList.add(TradeInfo(assetPairId, isBuySide, price, date))
-        outgoingOrderBooks.add(OrderBook(assetPairId,
-                isBuySide,
+        outgoingOrderBooks.add(OrderBookData(orderBook.getOrderBook(isBuySide).toArray(),
+                assetPairId,
                 date,
-                orderBookCopy.getOrderBook(isBuySide)))
+                isBuySide))
     }
+
+    class OrderBookData(val orders: Array<Any>,
+                        val assetPair: String,
+                        val date: Date,
+                        val isBuySide: Boolean)
 }

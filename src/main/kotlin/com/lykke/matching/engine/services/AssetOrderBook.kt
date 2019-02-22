@@ -8,27 +8,39 @@ import java.util.*
 import java.util.concurrent.PriorityBlockingQueue
 
 open class AssetOrderBook(assetId: String) : AbstractAssetOrderBook(assetId) {
+    companion object {
+        private val SELL_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
+            var result = o1.price.compareTo(o2.price)
+            if (result == 0) {
+                result = o1.createdAt.compareTo(o2.createdAt)
+            }
 
-    private val SELL_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
-        var result = o1.price.compareTo(o2.price)
-        if (result == 0) {
-            result = o1.createdAt.compareTo(o2.createdAt)
+            result
         }
 
-        result
-    }
+        private val BUY_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
+            var result = o2.price.compareTo(o1.price)
+            if (result == 0) {
+                result = o1.createdAt.compareTo(o2.createdAt)
+            }
 
-    private val BUY_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
-        var result = o2.price.compareTo(o1.price)
-        if (result == 0) {
-            result = o1.createdAt.compareTo(o2.createdAt)
+            result
         }
 
-        result
+        fun sortOrderBook(isBuySide: Boolean, orders: Array<LimitOrder>): Array<LimitOrder> {
+            Arrays.sort(orders, if (isBuySide) BUY_COMPARATOR else SELL_COMPARATOR)
+            return orders
+        }
+
     }
 
     private var askOrderBook = PriorityBlockingQueue<LimitOrder>(50, SELL_COMPARATOR)
     private var bidOrderBook = PriorityBlockingQueue<LimitOrder>(50, BUY_COMPARATOR)
+
+    fun getArrayOrders(isBuySide: Boolean): Array<LimitOrder> {
+        return getOrderBook(isBuySide).toArray() as Array<LimitOrder>
+    }
+
 
     override fun getOrderBook(isBuySide: Boolean) = if (isBuySide) bidOrderBook else askOrderBook
 
