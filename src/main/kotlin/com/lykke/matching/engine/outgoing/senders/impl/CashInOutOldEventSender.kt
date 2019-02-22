@@ -2,7 +2,7 @@ package com.lykke.matching.engine.outgoing.senders.impl
 
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.CashOperation
-import com.lykke.matching.engine.outgoing.messages.v2.CashInOutEventData
+import com.lykke.matching.engine.outgoing.messages.CashInOutEventData
 import com.lykke.matching.engine.outgoing.senders.SpecializedCashInOutEventSender
 import com.lykke.matching.engine.utils.NumberUtils
 import org.springframework.stereotype.Component

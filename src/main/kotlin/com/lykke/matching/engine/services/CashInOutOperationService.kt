@@ -13,7 +13,7 @@ import com.lykke.matching.engine.messages.MessageStatus.OK
 import com.lykke.matching.engine.messages.MessageStatus.RUNTIME
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.outgoing.messages.v2.CashInOutEventData
+import com.lykke.matching.engine.outgoing.messages.CashInOutEventData
 import com.lykke.matching.engine.outgoing.senders.impl.CashInOutEventSender
 import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException

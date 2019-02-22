@@ -1,4 +1,4 @@
-package com.lykke.matching.engine.outgoing.messages.v2
+package com.lykke.matching.engine.outgoing.messages
 
 import com.lykke.matching.engine.balance.WalletOperationsProcessor
 import com.lykke.matching.engine.daos.Asset

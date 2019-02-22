@@ -38,6 +38,7 @@ import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.senders.impl.CashInOutEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.CashTransferOperationEventSender
 import com.lykke.matching.engine.services.CashInOutOperationService
 import com.lykke.matching.engine.services.CashTransferOperationService
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -554,12 +555,13 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashTransferOperationService(balancesHolder: BalancesHolder, notification: BlockingQueue<CashTransferOperation>,
+    open fun cashTransferOperationService(balancesHolder: BalancesHolder,
                                           dbTransferOperationQueue: BlockingQueue<TransferOperation>, feeProcessor: FeeProcessor,
-                                          cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator, messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                          messageSender: MessageSender): CashTransferOperationService {
-        return CashTransferOperationService(balancesHolder, notification, dbTransferOperationQueue, feeProcessor,
-                cashTransferOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
+                                          cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator,
+                                          messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                          cashTransferOperationEventSender: CashTransferOperationEventSender): CashTransferOperationService {
+        return CashTransferOperationService(balancesHolder,  dbTransferOperationQueue, feeProcessor,
+                cashTransferOperationBusinessValidator, messageSequenceNumberHolder, cashTransferOperationEventSender)
     }
 
     @Bean

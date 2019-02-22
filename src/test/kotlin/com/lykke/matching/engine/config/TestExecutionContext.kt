@@ -29,12 +29,18 @@ import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.outgoing.messages.v2.CashInOutEventData
+import com.lykke.matching.engine.outgoing.messages.CashInOutEventData
+import com.lykke.matching.engine.outgoing.messages.CashTransferEventData
+import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.senders.SpecializedCashInOutEventSender
+import com.lykke.matching.engine.outgoing.senders.SpecializedCashTransferEventSender
 import com.lykke.matching.engine.outgoing.senders.SpecializedExecutionEventSender
 import com.lykke.matching.engine.outgoing.senders.impl.CashInOutEventSender
 import com.lykke.matching.engine.outgoing.senders.impl.CashInOutEventSenderImpl
 import com.lykke.matching.engine.outgoing.senders.impl.CashInOutOldEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.CashTransferEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.CashTransferOldEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.CashTransferOperationEventSender
 import com.lykke.matching.engine.outgoing.senders.impl.ExecutionEventSenderImpl
 import com.lykke.matching.engine.outgoing.senders.impl.OldFormatExecutionEventSenderImpl
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -60,11 +66,15 @@ open class TestExecutionContext {
     @Mock
     private lateinit var syncCashInOutDataQueue: BlockingQueue<CashInOutEventData>
 
+    @Mock
+    private lateinit var syncCashTransferQueue: BlockingQueue<CashTransferEventData>
+
     init {
         MockitoAnnotations.initMocks(this)
 
         initSyncQueue(syncExecutionEventDataQueue)
         initSyncQueue(syncCashInOutDataQueue)
+        initSyncQueue(syncCashTransferQueue)
     }
 
     @Bean
@@ -97,6 +107,12 @@ open class TestExecutionContext {
     }
 
     @Bean
+    open fun cashTransferEventSender(senders: List<SpecializedCashTransferEventSender>,
+                                     rabbitPublishersThreadPool: TaskExecutor): CashTransferEventSender {
+        return CashTransferEventSender(syncCashTransferQueue, senders, rabbitPublishersThreadPool)
+    }
+
+    @Bean
     open fun executionEventSender(
             lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
             genericLimitOrderService: GenericLimitOrderService,
@@ -112,6 +128,16 @@ open class TestExecutionContext {
                 syncExecutionEventDataQueue,
                 specializedExecutionEventSenders,
                 rabbitPublishersThreadPool)
+    }
+
+    @Bean
+    open fun cashTransferOldSender(notificationQueue: BlockingQueue<CashTransferOperation>): SpecializedCashTransferEventSender {
+        return CashTransferOldEventSender(notificationQueue)
+    }
+
+    @Bean
+    open fun cashTransferNewSender(messageSender: MessageSender): SpecializedCashTransferEventSender {
+        return CashTransferOperationEventSender(messageSender)
     }
 
     @Bean
