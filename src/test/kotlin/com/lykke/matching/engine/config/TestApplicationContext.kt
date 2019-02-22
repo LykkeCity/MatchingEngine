@@ -37,7 +37,7 @@ import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
-import com.lykke.matching.engine.outgoing.senders.impl.CashInOutEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.CashInOutEventSenderService
 import com.lykke.matching.engine.outgoing.senders.impl.CashTransferOperationEventSender
 import com.lykke.matching.engine.services.CashInOutOperationService
 import com.lykke.matching.engine.services.CashTransferOperationService
@@ -270,7 +270,7 @@ open class TestApplicationContext {
                                        feeProcessor: FeeProcessor,
                                        cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator,
                                        messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                       cashInOut: CashInOutEventSender): CashInOutOperationService {
+                                       cashInOut: CashInOutEventSenderService): CashInOutOperationService {
         return CashInOutOperationService(balancesHolder,
                 feeProcessor,
                 cashInOutOperationBusinessValidator,

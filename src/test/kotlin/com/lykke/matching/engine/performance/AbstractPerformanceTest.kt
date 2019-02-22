@@ -26,7 +26,7 @@ import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOpera
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.ExecutionDataApplyService
-import com.lykke.matching.engine.outgoing.senders.impl.ExecutionEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.ExecutionEventSenderService
 import com.lykke.matching.engine.order.ExecutionPersistenceService
 import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
@@ -187,7 +187,7 @@ abstract class AbstractPerformanceTest {
 
         val executionEventsSequenceNumbersGenerator = ExecutionEventsSequenceNumbersGenerator(messageSequenceNumberHolder)
         val executionPersistenceService = ExecutionPersistenceService(persistenceManager)
-        val executionEventSender = ExecutionEventSender(
+        val executionEventSender = ExecutionEventSenderService(
                 lkkTradesQueue,
                 genericLimitOrderService,
                 orderBookQueue,

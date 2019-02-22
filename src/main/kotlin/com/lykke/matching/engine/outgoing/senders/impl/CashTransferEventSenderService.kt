@@ -4,12 +4,12 @@ import com.lykke.matching.engine.outgoing.messages.CashTransferEventData
 import com.lykke.matching.engine.outgoing.senders.SpecializedCashTransferEventSender
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.task.TaskExecutor
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
 import java.util.concurrent.BlockingQueue
 import javax.annotation.PostConstruct
 
-@Component
-class CashTransferEventSender(
+@Service
+class CashTransferEventSenderService(
         private val cashTransferEventData: BlockingQueue<CashTransferEventData>,
         private val eventSenders: List<SpecializedCashTransferEventSender>,
         @Qualifier("rabbitPublishersThreadPool")
@@ -18,7 +18,7 @@ class CashTransferEventSender(
     @PostConstruct
     private fun init() {
         rabbitPublishersThreadPool.execute {
-            Thread.currentThread().name = CashTransferEventSender::class.java.simpleName
+            Thread.currentThread().name = CashTransferEventSenderService::class.java.simpleName
             while (true) {
                 try {
                     processEvent(cashTransferEventData.take())

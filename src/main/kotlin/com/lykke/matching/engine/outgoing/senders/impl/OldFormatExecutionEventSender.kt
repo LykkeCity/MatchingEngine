@@ -12,9 +12,9 @@ import java.util.concurrent.BlockingQueue
 
 @Deprecated("Old format of outgoing message is deprecated")
 @Component
-class OldFormatExecutionEventSenderImpl(private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                        private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                        private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>) : SpecializedExecutionEventSender {
+class OldFormatExecutionEventSender(private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                                    private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                                    private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>) : SpecializedExecutionEventSender {
 
 
     override fun sendEvent(executionData: ExecutionData) {
