@@ -8,7 +8,7 @@ import com.lykke.matching.engine.services.MessageSender
 import org.springframework.stereotype.Component
 
 @Component
-class CashTransferOperationEventSender(val messageSender: MessageSender): SpecializedCashTransferEventSender {
+class CashTransferEventSender(val messageSender: MessageSender): SpecializedCashTransferEventSender {
 
     override fun sendEvent(cashTransferEventData: CashTransferEventData) {
         val outgoingMessage = EventFactory.createCashTransferEvent(cashTransferEventData.sequenceNumber,

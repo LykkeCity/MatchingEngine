@@ -40,7 +40,7 @@ import com.lykke.matching.engine.outgoing.senders.impl.CashInOutEventSender
 import com.lykke.matching.engine.outgoing.senders.impl.CashInOutOldEventSender
 import com.lykke.matching.engine.outgoing.senders.impl.CashTransferEventSenderService
 import com.lykke.matching.engine.outgoing.senders.impl.CashTransferOldEventSender
-import com.lykke.matching.engine.outgoing.senders.impl.CashTransferOperationEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.CashTransferEventSender
 import com.lykke.matching.engine.outgoing.senders.impl.ExecutionEventSenderImpl
 import com.lykke.matching.engine.outgoing.senders.impl.OldFormatExecutionEventSender
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -137,7 +137,7 @@ open class TestExecutionContext {
 
     @Bean
     open fun cashTransferNewSender(messageSender: MessageSender): SpecializedCashTransferEventSender {
-        return CashTransferOperationEventSender(messageSender)
+        return CashTransferEventSender(messageSender)
     }
 
     @Bean

@@ -38,7 +38,7 @@ import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.senders.impl.CashInOutEventSenderService
-import com.lykke.matching.engine.outgoing.senders.impl.CashTransferOperationEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.CashTransferEventSender
 import com.lykke.matching.engine.services.CashInOutOperationService
 import com.lykke.matching.engine.services.CashTransferOperationService
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -559,7 +559,7 @@ open class TestApplicationContext {
                                           dbTransferOperationQueue: BlockingQueue<TransferOperation>, feeProcessor: FeeProcessor,
                                           cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator,
                                           messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                          cashTransferOperationEventSender: CashTransferOperationEventSender): CashTransferOperationService {
+                                          cashTransferOperationEventSender: CashTransferEventSender): CashTransferOperationService {
         return CashTransferOperationService(balancesHolder,  dbTransferOperationQueue, feeProcessor,
                 cashTransferOperationBusinessValidator, messageSequenceNumberHolder, cashTransferOperationEventSender)
     }

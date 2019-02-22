@@ -17,7 +17,7 @@ import com.lykke.matching.engine.messages.MessageStatus.RUNTIME
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashTransferEventData
-import com.lykke.matching.engine.outgoing.senders.impl.CashTransferOperationEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.CashTransferEventSenderService
 import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -35,7 +35,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                                    private val feeProcessor: FeeProcessor,
                                    private val cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator,
                                    private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                   private val cashTransferOperationEventSender: CashTransferOperationEventSender) : AbstractService {
+                                   private val cashTransferOperationEventSender: CashTransferEventSenderService) : AbstractService {
     override fun parseMessage(messageWrapper: MessageWrapper) {
         //do nothing
     }
