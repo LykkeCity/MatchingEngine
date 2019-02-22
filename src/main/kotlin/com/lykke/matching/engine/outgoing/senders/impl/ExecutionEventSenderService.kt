@@ -1,11 +1,13 @@
 package com.lykke.matching.engine.outgoing.senders.impl
 
 import com.lykke.matching.engine.daos.ExecutionData
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.outgoing.senders.SpecializedExecutionEventSender
+import com.lykke.matching.engine.services.AssetOrderBook
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.task.TaskExecutor
 import org.springframework.stereotype.Service
@@ -55,8 +57,10 @@ class ExecutionEventSenderService(private val lkkTradesQueue: BlockingQueue<List
 
     private fun sendOrderBooksEvents(executionContext: ExecutionContext) {
         executionContext.orderBooksHolder.outgoingOrderBooks.forEach {
-            orderBookQueue.put(it)
-            rabbitOrderBookQueue.put(it)
+            val orders = Array(it.orders.size) { idx -> it.orders[idx] as LimitOrder }
+            val orderBook = OrderBook(it.assetPair, it.isBuySide, it.date, AssetOrderBook.sortOrderBook(it.isBuySide, orders))
+            orderBookQueue.put(orderBook)
+            rabbitOrderBookQueue.put(orderBook)
         }
     }
 
