@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.config.spring
 
+import com.lykke.matching.engine.daos.ExecutionData
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
@@ -7,8 +8,8 @@ import com.lykke.matching.engine.database.reconciliation.events.MidPricesPersist
 import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.order.ExecutionEventSender
 import com.lykke.matching.engine.outgoing.messages.*
+import com.lykke.matching.engine.outgoing.messages.CashInOutEventData
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import org.springframework.context.annotation.Bean
@@ -84,8 +85,20 @@ open class QueueConfig {
 
     @Bean
     @RabbitQueue
-    open fun rabbitEventsDataQueue(): BlockingDeque<ExecutionEventSender.RabbitEventData> {
-        return LinkedBlockingDeque<ExecutionEventSender.RabbitEventData>()
+    open fun executionEventData(): BlockingQueue<ExecutionData> {
+        return LinkedBlockingQueue<ExecutionData>()
+    }
+
+    @Bean
+    @RabbitQueue
+    open fun cashInOutEventData(): BlockingQueue<CashInOutEventData> {
+        return LinkedBlockingQueue<CashInOutEventData>()
+    }
+
+    @Bean
+    @RabbitQueue
+    open fun cashTransferEventData(): BlockingQueue<CashTransferEventData> {
+        return LinkedBlockingQueue<CashTransferEventData>()
     }
 
     //</editor-fold>

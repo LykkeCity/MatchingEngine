@@ -1,20 +1,20 @@
 package com.lykke.matching.engine.config
 
 import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
+import com.lykke.matching.engine.daos.ExecutionData
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
 import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.order.ExecutionDataApplyService
-import com.lykke.matching.engine.order.ExecutionEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.ExecutionEventSenderService
 import com.lykke.matching.engine.order.ExecutionPersistenceService
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.LimitOrderProcessor
@@ -28,64 +28,56 @@ import com.lykke.matching.engine.order.process.common.LimitOrdersCancellerImpl
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.transaction.ExecutionEventsSequenceNumbersGenerator
+import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.outgoing.messages.CashInOutEventData
+import com.lykke.matching.engine.outgoing.messages.CashTransferEventData
+import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
+import com.lykke.matching.engine.outgoing.senders.SpecializedCashInOutEventSender
+import com.lykke.matching.engine.outgoing.senders.SpecializedCashTransferEventSender
+import com.lykke.matching.engine.outgoing.senders.SpecializedExecutionEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.CashInOutEventSenderService
+import com.lykke.matching.engine.outgoing.senders.impl.CashInOutEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.CashInOutOldEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.CashTransferEventSenderService
+import com.lykke.matching.engine.outgoing.senders.impl.CashTransferOldEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.CashTransferOperationEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.ExecutionEventSenderImpl
+import com.lykke.matching.engine.outgoing.senders.impl.OldFormatExecutionEventSender
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.business.StopOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
-import com.nhaarman.mockito_kotlin.any
+import com.lykke.matching.engine.utils.initSyncQueue
 import org.mockito.Mock
-import org.mockito.Mockito
 import org.mockito.MockitoAnnotations
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.task.TaskExecutor
-import java.util.concurrent.BlockingDeque
 import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.locks.ReentrantLock
 
 @Configuration
 open class TestExecutionContext {
 
     @Mock
-    private lateinit var syncEventsQueue: BlockingQueue<ExecutionEventSender.RabbitEventData>
+    private lateinit var syncExecutionEventDataQueue: BlockingQueue<ExecutionData>
+
+    @Mock
+    private lateinit var syncCashInOutDataQueue: BlockingQueue<CashInOutEventData>
+
+    @Mock
+    private lateinit var syncCashTransferQueue: BlockingQueue<CashTransferEventData>
 
     init {
         MockitoAnnotations.initMocks(this)
 
-        val queue = LinkedBlockingQueue<Any>()
-
-        val lock = ReentrantLock()
-        val condition = lock.newCondition()
-
-        var prevEvent: Any? = null
-        var curEvent: Any? = null
-        var consumedEvent: Any? = null
-
-        Mockito.`when`(syncEventsQueue.put(any())).thenAnswer { invocation ->
-            lock.lock()
-            val event = invocation.arguments[0]
-            queue.put(event)
-            while (consumedEvent != event) {
-                condition.await()
-            }
-            lock.unlock()
-        }
-        Mockito.`when`(syncEventsQueue.take()).thenAnswer {
-            prevEvent = curEvent
-            lock.lock()
-            consumedEvent = prevEvent
-            condition.signal()
-            lock.unlock()
-            curEvent = queue.take()
-            curEvent
-
-        }
+        initSyncQueue(syncExecutionEventDataQueue)
+        initSyncQueue(syncCashInOutDataQueue)
+        initSyncQueue(syncCashTransferQueue)
     }
 
     @Bean
@@ -123,32 +115,74 @@ open class TestExecutionContext {
     }
 
     @Bean
-    open fun executionEventSender(messageSender: MessageSender,
-                                  clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                  trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                  rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
-                                  lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
-                                  genericLimitOrderService: GenericLimitOrderService,
-                                  orderBookQueue: BlockingQueue<OrderBook>,
-                                  rabbitOrderBookQueue: BlockingQueue<OrderBook>,
-                                  rabbitEventsDataQueue: BlockingDeque<ExecutionEventSender.RabbitEventData>,
-                                  rabbitPublishersThreadPool: TaskExecutor): ExecutionEventSender {
-        return ExecutionEventSender(messageSender,
-                clientLimitOrdersQueue,
-                trustedClientsLimitOrdersQueue,
-                rabbitSwapQueue,
+    open fun cashTransferEventSender(senders: List<SpecializedCashTransferEventSender>,
+                                     rabbitPublishersThreadPool: TaskExecutor): CashTransferEventSenderService {
+        return CashTransferEventSenderService(syncCashTransferQueue, senders, rabbitPublishersThreadPool)
+    }
+
+    @Bean
+    open fun executionEventSender(
+            lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
+            genericLimitOrderService: GenericLimitOrderService,
+            orderBookQueue: BlockingQueue<OrderBook>,
+            rabbitOrderBookQueue: BlockingQueue<OrderBook>,
+            specializedExecutionEventSenders: List<SpecializedExecutionEventSender>,
+            rabbitPublishersThreadPool: TaskExecutor): ExecutionEventSenderService {
+        return ExecutionEventSenderService(
                 lkkTradesQueue,
                 genericLimitOrderService,
                 orderBookQueue,
                 rabbitOrderBookQueue,
-                syncEventsQueue,
+                syncExecutionEventDataQueue,
+                specializedExecutionEventSenders,
                 rabbitPublishersThreadPool)
+    }
+
+    @Bean
+    open fun cashTransferOldSender(notificationQueue: BlockingQueue<CashTransferOperation>): SpecializedCashTransferEventSender {
+        return CashTransferOldEventSender(notificationQueue)
+    }
+
+    @Bean
+    open fun cashTransferNewSender(messageSender: MessageSender): SpecializedCashTransferEventSender {
+        return CashTransferOperationEventSender(messageSender)
+    }
+
+    @Bean
+    open fun cashInOutEventSender(specializedEventSenders: List<SpecializedCashInOutEventSender>,
+                                  rabbitPublishersThreadPool: TaskExecutor): CashInOutEventSenderService {
+        return CashInOutEventSenderService(specializedEventSenders, syncCashInOutDataQueue, rabbitPublishersThreadPool)
+    }
+
+    @Bean
+    open fun specializedExecutionEventSender(messageSender: MessageSender): SpecializedExecutionEventSender {
+        return ExecutionEventSenderImpl(messageSender)
+    }
+
+    @Bean
+    open fun specializedOldExecutionEventSender(clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                                     trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                                     rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>): SpecializedExecutionEventSender {
+        return OldFormatExecutionEventSender(
+                clientLimitOrdersQueue,
+                trustedClientsLimitOrdersQueue,
+                rabbitSwapQueue)
+    }
+
+    @Bean
+    open fun specializedCashInOutEventSender(messageSender: MessageSender): SpecializedCashInOutEventSender {
+        return CashInOutEventSender(messageSender)
+    }
+
+    @Bean
+    open fun specializedCashInOutOldEventSender(rabbitCashInOutQueue: BlockingQueue<CashOperation>): SpecializedCashInOutEventSender {
+        return CashInOutOldEventSender(rabbitCashInOutQueue)
     }
 
     @Bean
     open fun executionDataApplyService(executionEventsSequenceNumbersGenerator: ExecutionEventsSequenceNumbersGenerator,
                                        executionPersistenceService: ExecutionPersistenceService,
-                                       executionEventSender: ExecutionEventSender): ExecutionDataApplyService {
+                                       executionEventSender: ExecutionEventSenderService): ExecutionDataApplyService {
         return ExecutionDataApplyService(executionEventsSequenceNumbersGenerator,
                 executionPersistenceService,
                 executionEventSender)
