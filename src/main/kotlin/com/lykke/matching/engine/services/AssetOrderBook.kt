@@ -37,11 +37,6 @@ open class AssetOrderBook(assetId: String) : AbstractAssetOrderBook(assetId) {
     private var askOrderBook = PriorityBlockingQueue<LimitOrder>(50, SELL_COMPARATOR)
     private var bidOrderBook = PriorityBlockingQueue<LimitOrder>(50, BUY_COMPARATOR)
 
-    fun getArrayOrders(isBuySide: Boolean): Array<LimitOrder> {
-        return getOrderBook(isBuySide).toArray() as Array<LimitOrder>
-    }
-
-
     override fun getOrderBook(isBuySide: Boolean) = if (isBuySide) bidOrderBook else askOrderBook
 
     fun setOrderBook(isBuySide: Boolean, queue: PriorityBlockingQueue<LimitOrder>) = if (isBuySide) bidOrderBook = queue else askOrderBook = queue
