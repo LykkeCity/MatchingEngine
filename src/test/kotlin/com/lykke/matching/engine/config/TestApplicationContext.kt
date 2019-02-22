@@ -277,7 +277,7 @@ open class TestApplicationContext {
                                        persistenceManager: PersistenceManager,
                                        cashInOut: CashInOutEventSenderService): CashInOutOperationService {
         return CashInOutOperationService(balancesHolder, feeProcessor, walletOperationsProcessorFactory,
-                cashInOutOperationBusinessValidator, messageSequenceNumberHolder, persistenceManager)
+                cashInOutOperationBusinessValidator, messageSequenceNumberHolder, cashInOut, persistenceManager)
     }
 
     @Bean
@@ -403,8 +403,6 @@ open class TestApplicationContext {
                                 genericLimitOrderService: GenericLimitOrderService,
                                 assetsPairsHolder: AssetsPairsHolder,
                                 marketOrderValidator: MarketOrderValidator,
-                                messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                messageSender: MessageSender,
                                 priceDeviationThreshold: PriceDeviationThresholdHolder,
                                 midPriceHolder: MidPriceHolder,
                                 applicationSettingsCache: ApplicationSettingsCache,
@@ -418,11 +416,9 @@ open class TestApplicationContext {
                 genericLimitOrderService,
                 assetsPairsHolder,
                 marketOrderValidator,
-                messageSequenceNumberHolder,
                 priceDeviationThreshold,
                 midPriceHolder,
                 messageProcessingStatusHolder,
-                messageSender,
                 uuidHolder)
     }
 

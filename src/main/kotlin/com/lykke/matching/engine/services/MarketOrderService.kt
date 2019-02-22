@@ -28,7 +28,6 @@ import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
-import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
 import com.lykke.matching.engine.holders.UUIDHolder
@@ -37,7 +36,6 @@ import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelp
 import com.lykke.matching.engine.order.process.context.MarketOrderExecutionContext
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.ExecutionDataApplyService
-import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.services.utils.MidPriceUtils
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
@@ -49,7 +47,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.util.Date
-import java.util.concurrent.BlockingQueue
 
 @Service
 class MarketOrderService @Autowired constructor(
@@ -61,11 +58,9 @@ class MarketOrderService @Autowired constructor(
         private val genericLimitOrderService: GenericLimitOrderService,
         private val assetsPairsHolder: AssetsPairsHolder,
         private val marketOrderValidator: MarketOrderValidator,
-        private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
         private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
         private val midPriceHolder: MidPriceHolder,
         private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-        private val messageSender: MessageSender,
         private val uuidHolder: UUIDHolder) : AbstractService {
     companion object {
         private val CONTROLS_LOGGER = LoggerFactory.getLogger("${MarketOrderService::class.java.name}.controls")
@@ -116,16 +111,6 @@ class MarketOrderService @Autowired constructor(
                 LOGGER,
                 CONTROLS_LOGGER)
 
-        try {
-            marketOrderValidator.performValidation(order, getOrderBook(order), feeInstruction, feeInstructions)
-        } catch (e: OrderValidationException) {
-            order.updateStatus(e.orderStatus, now)
-            executionContext.marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
-            executionDataApplyService.persistAndSendEvents(messageWrapper, executionContext)
-            writeErrorResponse(messageWrapper, order, e.message)
-            return
-        }
-
         val midPriceDeviationThreshold = priceDeviationThresholdHolder.getMidPriceDeviationThreshold(assetPair.assetPairId, executionContext)
         val marketOrderPriceDeviationThreshold = priceDeviationThresholdHolder.getMarketOrderPriceDeviationThreshold(assetPair.assetPairId, executionContext)
 
@@ -151,7 +136,9 @@ class MarketOrderService @Autowired constructor(
             executionContext.error(message)
             executionContext.controlsError(message)
             order.updateStatus(OrderStatus.TooHighMidPriceDeviation, now)
-            sendErrorNotification(messageWrapper, order, now)
+            executionContext.marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
+            executionDataApplyService.persistAndSendEvents(messageWrapper, executionContext)
+            writeErrorResponse(messageWrapper, order, "Mid price deviation threshold reached")
             return
         }
 

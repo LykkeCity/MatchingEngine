@@ -967,7 +967,7 @@ class MarketOrderServiceTest : AbstractTest() {
     }
 
     @Test
-    fun testOrderBookMidPriceOutOfRance() {
+    fun testOrderBookMidPriceOutOfRange() {
         //given
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 10000.0)
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 10.0)
