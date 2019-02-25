@@ -102,13 +102,13 @@ class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: G
         val assetPairId = orderBook.assetPairId
         val price = if (isBuySide) orderBook.getBidPrice() else orderBook.getAskPrice()
         tradeInfoList.add(TradeInfo(assetPairId, isBuySide, price, date))
-        outgoingOrderBooks.add(OrderBookData(orderBook.getOrderBook(isBuySide).toArray(),
+        outgoingOrderBooks.add(OrderBookData(orderBook.getOrderBook(isBuySide).toArray(emptyArray<LimitOrder>()),
                 assetPairId,
                 date,
                 isBuySide))
     }
 
-    class OrderBookData(val orders: Array<Any>,
+    class OrderBookData(val orders: Array<LimitOrder>,
                         val assetPair: String,
                         val date: Date,
                         val isBuySide: Boolean)

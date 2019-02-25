@@ -57,8 +57,7 @@ class ExecutionEventSenderService(private val lkkTradesQueue: BlockingQueue<List
 
     private fun sendOrderBooksEvents(executionContext: ExecutionContext) {
         executionContext.orderBooksHolder.outgoingOrderBooks.forEach {
-            val orders = Array(it.orders.size) { idx -> it.orders[idx] as LimitOrder }
-            val orderBook = OrderBook(it.assetPair, it.isBuySide, it.date, AssetOrderBook.sortOrderBook(it.isBuySide, orders))
+            val orderBook = OrderBook(it.assetPair, it.isBuySide, it.date, AssetOrderBook.sortOrderBook(it.isBuySide, it.orders))
             orderBookQueue.put(orderBook)
             rabbitOrderBookQueue.put(orderBook)
         }
