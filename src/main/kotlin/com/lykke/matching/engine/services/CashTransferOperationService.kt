@@ -17,7 +17,7 @@ import com.lykke.matching.engine.messages.MessageStatus.RUNTIME
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashTransferEventData
-import com.lykke.matching.engine.outgoing.senders.impl.CashTransferEventSenderService
+import com.lykke.matching.engine.outgoing.senders.OutgoingEventProcessor
 import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -35,7 +35,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                                    private val feeProcessor: FeeProcessor,
                                    private val cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator,
                                    private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                   private val cashTransferOperationEventSender: CashTransferEventSenderService) : AbstractService {
+                                   private val outgoingEventProcessor: OutgoingEventProcessor) : AbstractService {
     override fun parseMessage(messageWrapper: MessageWrapper) {
         //do nothing
     }
@@ -106,7 +106,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
             throw PersistenceException("Unable to save balance")
         }
         walletProcessor.apply()
-        cashTransferOperationEventSender.sendEvent(CashTransferEventData(cashTransferContext.messageId,
+        outgoingEventProcessor.submitCashTransferEvent(CashTransferEventData(cashTransferContext.messageId,
                 walletProcessor,
                 fees,
                 operation,

@@ -86,12 +86,11 @@ class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: G
         orderCopyWrappersByOriginalOrder.forEach { it.value.applyToOrigin() }
         assetOrderBookCopiesByAssetPairId.forEach { assetPairId, orderBook ->
             genericLimitOrderService.setOrderBook(assetPairId, orderBook)
-            val orderBookCopy = orderBook.copy()
             if (changedBuySides.contains(assetPairId)) {
-                processChangedOrderBookSide(orderBookCopy, true, date)
+                processChangedOrderBookSide(orderBook, true, date)
             }
             if (changedSellSides.contains(assetPairId)) {
-                processChangedOrderBookSide(orderBookCopy, false, date)
+                processChangedOrderBookSide(orderBook, false, date)
             }
         }
     }
