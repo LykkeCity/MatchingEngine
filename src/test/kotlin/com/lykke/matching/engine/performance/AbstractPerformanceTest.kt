@@ -64,6 +64,7 @@ import org.mockito.Mockito
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.core.task.TaskExecutor
 import java.util.Optional
+import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
 
@@ -143,6 +144,8 @@ abstract class AbstractPerformanceTest {
     private var messageProcessingStatusHolder = Mockito.mock(MessageProcessingStatusHolder::class.java)
 
     val outgoingEventData = LinkedBlockingQueue<OutgoingEventData>()
+
+    val messageSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
 
     private fun clearMessageQueues() {
         rabbitEventsQueue.clear()
@@ -276,6 +279,9 @@ abstract class AbstractPerformanceTest {
                 executionDataApplyService,
                 matchingResultHandlingHelper,
                 genericLimitOrderService,
+                rabbitSwapQueue,
+                messageSequenceNumberHolder,
+                messageSender,
                 assetsPairsHolder,
                 marketOrderValidator,
                 priceDeviationThresholdHolder,
@@ -283,8 +289,16 @@ abstract class AbstractPerformanceTest {
                 messageProcessingStatusHolder,
                 uuidHolder)
 
-        thread(name = "ExecutionEventProcessor") {
-            outgoingEventData.take()
+        startEventProcessorThread(outgoingEventData, "OutgoingEventData")
+        startEventProcessorThread(rabbitEventsQueue, "ExecutionEventProcessor")
+        startEventProcessorThread(rabbitTrustedClientsEventsQueue, "TrustedExecutionEventProcessor")
+    }
+
+    private fun startEventProcessorThread(queue: BlockingQueue<*>, name: String) {
+        thread(name = name) {
+            while (true) {
+                queue.take()
+            }
         }
     }
 }
