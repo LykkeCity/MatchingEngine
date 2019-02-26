@@ -28,6 +28,7 @@ import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.holders.PriceDeviationThresholdHolder
 import com.lykke.matching.engine.holders.UUIDHolder
@@ -48,6 +49,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.util.Date
+import java.util.concurrent.BlockingQueue
 
 @Service
 class MarketOrderService @Autowired constructor(

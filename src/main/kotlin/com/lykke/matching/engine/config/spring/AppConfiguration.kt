@@ -2,6 +2,7 @@ package com.lykke.matching.engine.config.spring
 
 import com.lykke.matching.engine.AppInitialData
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.utils.config.Config
