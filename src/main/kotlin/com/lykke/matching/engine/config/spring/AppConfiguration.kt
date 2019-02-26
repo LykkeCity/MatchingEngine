@@ -64,6 +64,11 @@ open class AppConfiguration {
     }
 
     @Bean
+    open fun outgoingEventSendersByHandledClass(specializedEventSenders: List<SpecializedEventSender>): Map<Class<*>, List<SpecializedEventSender>> {
+        return specializedEventSenders.groupBy { it.getProcessedMessageClass() }
+    }
+
+    @Bean
     open fun monitoringStatsCollector(): MonitoringStatsCollector {
         return MonitoringStatsCollector()
     }

@@ -1,10 +1,11 @@
-package com.lykke.matching.engine.outgoing.senders.impl
+package com.lykke.matching.engine.outgoing.senders.impl.specialized
 
 import com.lykke.matching.engine.daos.ExecutionData
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
-import com.lykke.matching.engine.outgoing.senders.SpecializedExecutionEventSender
+import com.lykke.matching.engine.outgoing.messages.OutgoingEventData
+import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
 import com.lykke.matching.engine.utils.event.isThereClientEvent
 import com.lykke.matching.engine.utils.event.isThereTrustedClientEvent
 import org.springframework.stereotype.Component
@@ -14,10 +15,14 @@ import java.util.concurrent.BlockingQueue
 @Component
 class OldFormatExecutionEventSender(private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                     private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                    private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>) : SpecializedExecutionEventSender {
+                                    private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>) : SpecializedEventSender {
 
+    override fun getProcessedMessageClass(): Class<*> {
+        return ExecutionData::class.java
+    }
 
-    override fun sendEvent(executionData: ExecutionData) {
+    override fun sendEvent(eventData: OutgoingEventData) {
+        val executionData = eventData.eventData as ExecutionData
         val executionContext = executionData.executionContext
         sendBalanceUpdateEvent(executionContext)
         sendTrustedClientsExecutionEventIfNeeded(executionContext)
@@ -32,12 +37,12 @@ class OldFormatExecutionEventSender(private val clientLimitOrdersQueue: Blocking
         val trustedClientsLimitOrdersWithTrades = executionContext.getTrustedClientsLimitOrdersWithTrades().toMutableList()
 
         if (isThereTrustedClientEvent(trustedClientsLimitOrdersWithTrades)) {
-            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(executionContext.messageId, trustedClientsLimitOrdersWithTrades.toMutableList()))
+            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(executionContext.messageId, trustedClientsLimitOrdersWithTrades))
         }
     }
 
     fun sendClientsExecutionEventIfNeeded(executionContext: ExecutionContext) {
-        val clientsLimitOrdersWithTrades = executionContext.getClientsLimitOrdersWithTrades().toList()
+        val clientsLimitOrdersWithTrades = executionContext.getClientsLimitOrdersWithTrades()
         if (isThereClientEvent(clientsLimitOrdersWithTrades, executionContext.marketOrderWithTrades)) {
             if (clientsLimitOrdersWithTrades.isNotEmpty()) {
                 clientLimitOrdersQueue.put(LimitOrdersReport(executionContext.messageId, clientsLimitOrdersWithTrades.toMutableList()))

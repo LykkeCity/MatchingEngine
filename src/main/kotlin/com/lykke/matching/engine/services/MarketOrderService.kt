@@ -36,6 +36,7 @@ import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelp
 import com.lykke.matching.engine.order.process.context.MarketOrderExecutionContext
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.ExecutionDataApplyService
+import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.services.utils.MidPriceUtils
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
@@ -56,6 +57,9 @@ class MarketOrderService @Autowired constructor(
         private val executionDataApplyService: ExecutionDataApplyService,
         private val matchingResultHandlingHelper: MatchingResultHandlingHelper,
         private val genericLimitOrderService: GenericLimitOrderService,
+        private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
+        private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
+        private val messageSender: MessageSender,
         private val assetsPairsHolder: AssetsPairsHolder,
         private val marketOrderValidator: MarketOrderValidator,
         private val priceDeviationThresholdHolder: PriceDeviationThresholdHolder,
@@ -102,6 +106,17 @@ class MarketOrderService @Autowired constructor(
                 Processing.name, now, Date(parsedMessage.timestamp), now, null, parsedMessage.straight, BigDecimal.valueOf(parsedMessage.reservedLimitVolume),
                 feeInstruction, listOfFee(feeInstruction, feeInstructions))
 
+
+
+        try {
+            marketOrderValidator.performValidation(order, getOrderBook(order), feeInstruction, feeInstructions)
+        } catch (e: OrderValidationException) {
+            order.updateStatus(e.orderStatus, now)
+            sendErrorNotification(messageWrapper, order, now)
+            writeErrorResponse(messageWrapper, order, e.message)
+            return
+        }
+
         val executionContext = executionContextFactory.create(messageWrapper.messageId!!,
                 messageWrapper.id!!,
                 MessageType.MARKET_ORDER,
@@ -116,16 +131,6 @@ class MarketOrderService @Autowired constructor(
 
 
         val (lowerMidPriceBound, upperMidPriceBound) = MidPriceUtils.getMidPricesInterval(midPriceDeviationThreshold, midPriceHolder.getReferenceMidPrice(assetPair, executionContext))
-
-        try {
-            marketOrderValidator.performValidation(order, getOrderBook(order), feeInstruction, feeInstructions)
-        } catch (e: OrderValidationException) {
-            order.updateStatus(e.orderStatus, now)
-            executionContext.marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
-            executionDataApplyService.persistAndSendEvents(messageWrapper, executionContext)
-            writeErrorResponse(messageWrapper, order, e.message)
-            return
-        }
 
         val marketOrderExecutionContext = MarketOrderExecutionContext(order, executionContext)
         val assetOrderBook = genericLimitOrderService.getOrderBook(order.assetPairId)
@@ -314,6 +319,20 @@ class MarketOrderService @Autowired constructor(
         }
 
         return NumberUtils.setScaleRoundUp(NumberUtils.divideWithMaxScale(orderSideBestPrice + oppositeSideBestPrice, BigDecimal.valueOf(2)), assetPair.accuracy)
+    }
+
+    private fun sendErrorNotification(messageWrapper: MessageWrapper,
+                                      order: MarketOrder,
+                                      now: Date) {
+        val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
+        rabbitSwapQueue.put(marketOrderWithTrades)
+        val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
+                messageWrapper.messageId!!,
+                messageWrapper.id!!,
+                now,
+                MessageType.MARKET_ORDER,
+                marketOrderWithTrades)
+        messageSender.sendMessage(outgoingMessage)
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {

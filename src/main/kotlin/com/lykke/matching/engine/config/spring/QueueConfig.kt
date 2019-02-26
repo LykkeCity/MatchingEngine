@@ -85,22 +85,9 @@ open class QueueConfig {
 
     @Bean
     @RabbitQueue
-    open fun executionEventData(): BlockingQueue<ExecutionData> {
-        return LinkedBlockingQueue<ExecutionData>()
+    open fun outgoingEventData(): BlockingQueue<OutgoingEventData> {
+        return LinkedBlockingQueue<OutgoingEventData>();
     }
-
-    @Bean
-    @RabbitQueue
-    open fun cashInOutEventData(): BlockingQueue<CashInOutEventData> {
-        return LinkedBlockingQueue<CashInOutEventData>()
-    }
-
-    @Bean
-    @RabbitQueue
-    open fun cashTransferEventData(): BlockingQueue<CashTransferEventData> {
-        return LinkedBlockingQueue<CashTransferEventData>()
-    }
-
     //</editor-fold>
 
 

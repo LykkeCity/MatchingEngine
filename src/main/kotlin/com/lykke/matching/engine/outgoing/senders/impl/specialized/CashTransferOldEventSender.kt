@@ -1,19 +1,25 @@
-package com.lykke.matching.engine.outgoing.senders.impl
+package com.lykke.matching.engine.outgoing.senders.impl.specialized
 
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.fee.singleFeeTransfer
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.CashTransferEventData
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
-import com.lykke.matching.engine.outgoing.senders.SpecializedCashTransferEventSender
+import com.lykke.matching.engine.outgoing.messages.OutgoingEventData
+import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
 import com.lykke.matching.engine.utils.NumberUtils
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
 
 @Component
 @Deprecated("Old format of outgoing message is deprecated")
-class CashTransferOldEventSender(val notificationQueue: BlockingQueue<CashTransferOperation>) : SpecializedCashTransferEventSender {
-    override fun sendEvent(cashTransferEventData: CashTransferEventData) {
+class CashTransferOldEventSender(val notificationQueue: BlockingQueue<CashTransferOperation>) : SpecializedEventSender {
+    override fun getProcessedMessageClass(): Class<*> {
+        return CashTransferEventData::class.java
+    }
+
+    override fun sendEvent(outgoingEventData: OutgoingEventData) {
+        val cashTransferEventData = outgoingEventData.eventData as CashTransferEventData
         val transferOperation = cashTransferEventData.transferOperation
 
         sendBalanceUpdateEvent(cashTransferEventData, transferOperation)

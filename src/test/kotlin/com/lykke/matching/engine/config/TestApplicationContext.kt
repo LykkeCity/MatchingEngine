@@ -40,9 +40,8 @@ import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
-import com.lykke.matching.engine.outgoing.senders.impl.CashInOutEventSenderService
-import com.lykke.matching.engine.outgoing.senders.impl.CashTransferEventSender
-import com.lykke.matching.engine.outgoing.senders.impl.CashTransferEventSenderService
+import com.lykke.matching.engine.outgoing.senders.OutgoingEventProcessor
+import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
 import com.lykke.matching.engine.services.CashInOutOperationService
 import com.lykke.matching.engine.services.CashTransferOperationService
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -276,9 +275,9 @@ open class TestApplicationContext {
                                        cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator,
                                        messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                        persistenceManager: PersistenceManager,
-                                       cashInOut: CashInOutEventSenderService): CashInOutOperationService {
+                                       outgoingEventProcessor: OutgoingEventProcessor): CashInOutOperationService {
         return CashInOutOperationService(balancesHolder, feeProcessor, walletOperationsProcessorFactory,
-                cashInOutOperationBusinessValidator, messageSequenceNumberHolder, cashInOut, persistenceManager)
+                cashInOutOperationBusinessValidator, messageSequenceNumberHolder, outgoingEventProcessor, persistenceManager)
     }
 
     @Bean
@@ -591,9 +590,9 @@ open class TestApplicationContext {
                                           balancesHolder: BalancesHolder,
                                           cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator, messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                           messageSender: MessageSender, persistenceManager: PersistenceManager,
-                                          cashTransferOperationEventSender: CashTransferEventSenderService): CashTransferOperationService {
+                                          outgoingEventProcessor: OutgoingEventProcessor): CashTransferOperationService {
         return CashTransferOperationService(walletOperationsProcessorFactory,balancesHolder,  dbTransferOperationQueue, feeProcessor,
-                cashTransferOperationBusinessValidator, messageSequenceNumberHolder, cashTransferOperationEventSender, persistenceManager)
+                cashTransferOperationBusinessValidator, messageSequenceNumberHolder, outgoingEventProcessor, persistenceManager)
     }
 
     @Bean
@@ -781,5 +780,10 @@ open class TestApplicationContext {
                 multilimitOrderContextParser,
                 preProcessedMessageQueue,
                 ThrottlingLogger.getLogger("multilimitOrder"))
+    }
+
+    @Bean
+    open fun outgoingEventSendersByHandledClass(specializedEventSenders: List<SpecializedEventSender>): Map<Class<*>, List<SpecializedEventSender>> {
+        return specializedEventSenders.groupBy { it.getProcessedMessageClass() }
     }
 }
