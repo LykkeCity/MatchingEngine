@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.config
 
-import com.lykke.matching.engine.daos.ExecutionData
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.fee.FeeProcessor
@@ -37,7 +36,7 @@ import com.lykke.matching.engine.outgoing.senders.impl.specialized.CashInOutOldE
 import com.lykke.matching.engine.outgoing.senders.impl.OutgoingEventProcessorImpl
 import com.lykke.matching.engine.outgoing.senders.impl.specialized.CashTransferOldEventSender
 import com.lykke.matching.engine.outgoing.senders.impl.specialized.CashTransferEventSender
-import com.lykke.matching.engine.outgoing.senders.impl.specialized.ExecutionEventSenderImpl
+import com.lykke.matching.engine.outgoing.senders.impl.specialized.ExecutionEventSender
 import com.lykke.matching.engine.outgoing.senders.impl.specialized.OldFormatExecutionEventSender
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
@@ -119,7 +118,7 @@ open class TestExecutionContext {
                                              genericLimitOrderService: GenericLimitOrderService,
                                              orderBookQueue: BlockingQueue<OrderBook>,
                                              rabbitOrderBookQueue: BlockingQueue<OrderBook>): SpecializedEventSender {
-        return ExecutionEventSenderImpl(messageSender, lkkTradesQueue, genericLimitOrderService, orderBookQueue, rabbitOrderBookQueue)
+        return ExecutionEventSender(messageSender, lkkTradesQueue, genericLimitOrderService, orderBookQueue, rabbitOrderBookQueue)
     }
 
     @Bean

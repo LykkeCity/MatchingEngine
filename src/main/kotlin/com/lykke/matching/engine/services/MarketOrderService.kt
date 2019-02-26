@@ -54,6 +54,9 @@ class MarketOrderService @Autowired constructor(
         private val executionDataApplyService: ExecutionDataApplyService,
         private val matchingResultHandlingHelper: MatchingResultHandlingHelper,
         private val genericLimitOrderService: GenericLimitOrderService,
+        private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
+        private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
+        private val messageSender: MessageSender,
         private val assetsPairsHolder: AssetsPairsHolder,
         private val marketOrderValidator: MarketOrderValidator,
         private val applicationSettingsHolder: ApplicationSettingsHolder,
@@ -97,6 +100,17 @@ class MarketOrderService @Autowired constructor(
                 Processing.name, now, Date(parsedMessage.timestamp), now, null, parsedMessage.straight, BigDecimal.valueOf(parsedMessage.reservedLimitVolume),
                 feeInstruction, listOfFee(feeInstruction, feeInstructions))
 
+
+
+        try {
+            marketOrderValidator.performValidation(order, getOrderBook(order), feeInstruction, feeInstructions)
+        } catch (e: OrderValidationException) {
+            order.updateStatus(e.orderStatus, now)
+            sendErrorNotification(messageWrapper, order, now)
+            writeErrorResponse(messageWrapper, order, e.message)
+            return
+        }
+
         val executionContext = executionContextFactory.create(messageWrapper.messageId!!,
                 messageWrapper.id!!,
                 MessageType.MARKET_ORDER,
@@ -104,16 +118,6 @@ class MarketOrderService @Autowired constructor(
                 mapOf(Pair(assetPair!!.assetPairId, assetPair)),
                 now,
                 LOGGER)
-
-        try {
-            marketOrderValidator.performValidation(order, getOrderBook(order), feeInstruction, feeInstructions)
-        } catch (e: OrderValidationException) {
-            order.updateStatus(e.orderStatus, now)
-            executionContext.marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
-            executionDataApplyService.persistAndSendEvents(messageWrapper, executionContext)
-            writeErrorResponse(messageWrapper, order, e.message)
-            return
-        }
 
         val marketOrderExecutionContext = MarketOrderExecutionContext(order, executionContext)
 
@@ -240,6 +244,20 @@ class MarketOrderService @Autowired constructor(
                                    order: MarketOrder,
                                    statusReason: String? = null) {
         writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), statusReason)
+    }
+
+    private fun sendErrorNotification(messageWrapper: MessageWrapper,
+                                      order: MarketOrder,
+                                      now: Date) {
+        val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
+        rabbitSwapQueue.put(marketOrderWithTrades)
+        val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
+                messageWrapper.messageId!!,
+                messageWrapper.id!!,
+                now,
+                MessageType.MARKET_ORDER,
+                marketOrderWithTrades)
+        messageSender.sendMessage(outgoingMessage)
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
