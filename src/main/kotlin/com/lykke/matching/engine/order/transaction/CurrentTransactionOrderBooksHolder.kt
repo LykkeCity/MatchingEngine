@@ -2,6 +2,7 @@ package com.lykke.matching.engine.order.transaction
 
 import com.lykke.matching.engine.daos.CopyWrapper
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.OrderBookEntry
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
@@ -140,14 +141,37 @@ class CurrentTransactionOrderBooksHolder(ordersService: AbstractGenericLimitOrde
         val assetPairId = orderBook.assetPairId
         val price = if (isBuySide) orderBook.getBidPrice() else orderBook.getAskPrice()
         tradeInfoList.add(TradeInfo(assetPairId, isBuySide, price, date))
-        outgoingOrderBooks.add(OrderBookData(orderBook.getOrderBook(isBuySide).toArray(emptyArray<LimitOrder>()),
+        val orders = orderBook.getOrderBook(isBuySide).toArray(emptyArray<LimitOrder>())
+        val volumePrices = Array(orders.size) { idx -> with(orders[idx]) { VolumePrice(externalId,
+                clientId,
+                price,
+                volume,
+                remainingVolume,
+                createdAt) } }
+
+        outgoingOrderBooks.add(OrderBookData(volumePrices,
                 assetPairId,
                 date,
                 isBuySide))
     }
 
-    class OrderBookData(val orders: Array<LimitOrder>,
+    class OrderBookData(val volumePrices: Array<VolumePrice>,
                         val assetPair: String,
                         val date: Date,
                         val isBuySide: Boolean)
+
+    class VolumePrice(val externalId: String,
+                      val clientId: String,
+                      val price: BigDecimal,
+                      val volume: BigDecimal,
+                      val remainingVolume: BigDecimal,
+                      val createdAt: Date) : OrderBookEntry {
+        override fun getOrderPrice(): BigDecimal {
+            return price
+        }
+
+        override fun getCreationDate(): Date {
+            return createdAt
+        }
+    }
 }

@@ -39,7 +39,15 @@ class LimitOrder(id: String,
                  val parentOrderExternalId: String?,
                  @Version(2)
                  var childOrderExternalId: String?)
-    : Order(id, externalId, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume, fee, fees, statusDate), Serializable {
+    : Order(id, externalId, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume, fee, fees, statusDate), Serializable, OrderBookEntry {
+
+    override fun getOrderPrice(): BigDecimal {
+        return price
+    }
+
+    override fun getCreationDate(): Date {
+        return createdAt
+    }
 
     fun getAbsRemainingVolume(): BigDecimal {
         return remainingVolume.abs()

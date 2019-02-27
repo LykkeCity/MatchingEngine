@@ -12,22 +12,26 @@ import java.util.concurrent.BlockingQueue
 @Deprecated("Old format of outgoing message is deprecated")
 @Component
 class CashInOutOldEventSender(private val rabbitCashInOutQueue: BlockingQueue<CashOperation>) : SpecializedEventSender {
-    override fun getProcessedMessageClass(): Class<*> {
+    override fun getEventClass(): Class<*> {
         return CashInOutEventData::class.java
     }
 
     override fun sendEvent(eventData: OutgoingEventData) {
         val cashInOutEventData = eventData.eventData as CashInOutEventData
-        cashInOutEventData.walletProcessor.sendNotification(cashInOutEventData.externalId, MessageType.CASH_IN_OUT_OPERATION.name, cashInOutEventData.messageId)
+        cashInOutEventData
+                .walletProcessor
+                .sendNotification(id = cashInOutEventData.externalId,
+                        type = MessageType.CASH_IN_OUT_OPERATION.name,
+                        messageId = cashInOutEventData.messageId)
 
         rabbitCashInOutQueue.put(CashOperation(
-                cashInOutEventData.externalId,
-                cashInOutEventData.walletOperation.clientId,
-                cashInOutEventData.timestamp,
-                NumberUtils.setScaleRoundHalfUp(cashInOutEventData.walletOperation.amount, cashInOutEventData.asset.accuracy).toPlainString(),
-                cashInOutEventData.asset.assetId,
-                cashInOutEventData.messageId,
-                cashInOutEventData.internalFees
+                id =  cashInOutEventData.externalId,
+                clientId = cashInOutEventData.walletOperation.clientId,
+                dateTime = cashInOutEventData.timestamp,
+                volume = NumberUtils.setScaleRoundHalfUp(cashInOutEventData.walletOperation.amount, cashInOutEventData.asset.accuracy).toPlainString(),
+                asset = cashInOutEventData.asset.assetId,
+                messageId = cashInOutEventData.messageId,
+                fees = cashInOutEventData.internalFees
         ))
     }
 }

@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.OrderBookEntry
 import com.lykke.matching.engine.services.utils.AbstractAssetOrderBook
 import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
@@ -9,29 +10,28 @@ import java.util.concurrent.PriorityBlockingQueue
 
 open class AssetOrderBook(assetId: String) : AbstractAssetOrderBook(assetId) {
     companion object {
-        private val SELL_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
-            var result = o1.price.compareTo(o2.price)
+        private val SELL_COMPARATOR = Comparator<OrderBookEntry> { o1, o2 ->
+            var result = o1.getOrderPrice().compareTo(o2.getOrderPrice())
             if (result == 0) {
-                result = o1.createdAt.compareTo(o2.createdAt)
+                result = o1.getCreationDate().compareTo(o2.getCreationDate())
             }
 
             result
         }
 
-        private val BUY_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
-            var result = o2.price.compareTo(o1.price)
+        private val BUY_COMPARATOR = Comparator<OrderBookEntry> { o1, o2 ->
+            var result = o2.getOrderPrice().compareTo(o1.getOrderPrice())
             if (result == 0) {
-                result = o1.createdAt.compareTo(o2.createdAt)
+                result = o1.getCreationDate().compareTo(o2.getCreationDate())
             }
 
             result
         }
 
-        fun sortOrderBook(isBuySide: Boolean, orders: Array<LimitOrder>): Array<LimitOrder> {
+        fun <T: OrderBookEntry> sort(isBuySide: Boolean, orders: Array<T>): Array<T> {
             Arrays.sort(orders, if (isBuySide) BUY_COMPARATOR else SELL_COMPARATOR)
             return orders
         }
-
     }
 
     private var askOrderBook = PriorityBlockingQueue<LimitOrder>(50, SELL_COMPARATOR)

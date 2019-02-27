@@ -113,7 +113,6 @@ open class TestApplicationContext {
     open fun rabbitPublishersThreadPool(): TaskExecutor {
         val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
         threadPoolTaskExecutor.threadNamePrefix = "rabbit-task"
-        threadPoolTaskExecutor.corePoolSize = 0
         threadPoolTaskExecutor.corePoolSize = Integer.MAX_VALUE
 
         return threadPoolTaskExecutor
@@ -790,6 +789,6 @@ open class TestApplicationContext {
 
     @Bean
     open fun outgoingEventSendersByHandledClass(specializedEventSenders: List<SpecializedEventSender>): Map<Class<*>, List<SpecializedEventSender>> {
-        return specializedEventSenders.groupBy { it.getProcessedMessageClass() }
+        return specializedEventSenders.groupBy { it.getEventClass() }
     }
 }
