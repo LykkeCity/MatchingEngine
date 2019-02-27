@@ -100,8 +100,6 @@ class MarketOrderService @Autowired constructor(
                 Processing.name, now, Date(parsedMessage.timestamp), now, null, parsedMessage.straight, BigDecimal.valueOf(parsedMessage.reservedLimitVolume),
                 feeInstruction, listOfFee(feeInstruction, feeInstructions))
 
-
-
         try {
             marketOrderValidator.performValidation(order, getOrderBook(order), feeInstruction, feeInstructions)
         } catch (e: OrderValidationException) {

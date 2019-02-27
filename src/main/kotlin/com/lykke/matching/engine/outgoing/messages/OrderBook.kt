@@ -2,6 +2,7 @@ package com.lykke.matching.engine.outgoing.messages
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.order.transaction.CurrentTransactionOrderBooksHolder
 import java.math.BigDecimal
 import java.util.ArrayList
 import java.util.Date
@@ -38,7 +39,7 @@ class OrderBook {
     constructor(assetPair: String,
                 isBuy: Boolean,
                 timestamp: Date,
-                orders: Array<LimitOrder>) {
+                orders: Array<CurrentTransactionOrderBooksHolder.VolumePrice>) {
         this.assetPair = assetPair
         this.isBuy = isBuy
         this.timestamp = timestamp
