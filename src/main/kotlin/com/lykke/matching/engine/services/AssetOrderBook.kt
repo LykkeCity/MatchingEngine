@@ -27,7 +27,7 @@ open class AssetOrderBook(assetId: String) : AbstractAssetOrderBook(assetId) {
             result
         }
 
-        fun <T: OrderBookEntry> sortOrderBook(isBuySide: Boolean, orders: Array<T>): Array<T> {
+        fun <T: OrderBookEntry> sort(isBuySide: Boolean, orders: Array<T>): Array<T> {
             Arrays.sort(orders, if (isBuySide) BUY_COMPARATOR else SELL_COMPARATOR)
             return orders
         }

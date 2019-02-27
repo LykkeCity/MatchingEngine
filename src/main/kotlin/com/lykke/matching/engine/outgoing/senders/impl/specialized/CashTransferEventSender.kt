@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class CashTransferEventSender(val messageSender: MessageSender): SpecializedEventSender {
-    override fun getProcessedMessageClass(): Class<*> {
+    override fun getEventClass(): Class<*> {
         return CashTransferEventData::class.java
     }
 

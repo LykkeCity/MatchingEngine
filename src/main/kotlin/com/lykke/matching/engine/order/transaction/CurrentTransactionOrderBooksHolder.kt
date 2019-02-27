@@ -117,7 +117,7 @@ class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: G
                 isBuySide))
     }
 
-    class OrderBookData(val orders: Array<VolumePrice>,
+    class OrderBookData(val volumePrices: Array<VolumePrice>,
                         val assetPair: String,
                         val date: Date,
                         val isBuySide: Boolean)

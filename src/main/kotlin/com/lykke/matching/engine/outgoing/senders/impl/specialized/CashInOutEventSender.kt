@@ -10,21 +10,21 @@ import org.springframework.stereotype.Component
 
 @Component
 class CashInOutEventSender(private val messageSender: MessageSender) : SpecializedEventSender {
-    override fun getProcessedMessageClass(): Class<*> {
+    override fun getEventClass(): Class<*> {
         return CashInOutEventData::class.java
     }
 
     override fun sendEvent(eventData: OutgoingEventData) {
         val cashInOutEventData = eventData.eventData as CashInOutEventData
-        val outgoingMessage = EventFactory.createCashInOutEvent(cashInOutEventData.walletOperation.amount,
-                cashInOutEventData.sequenceNumber,
-                cashInOutEventData.messageId,
-                cashInOutEventData.externalId,
-                cashInOutEventData.now,
-                MessageType.CASH_IN_OUT_OPERATION,
-                cashInOutEventData.walletProcessor.getClientBalanceUpdates(),
-                cashInOutEventData.walletOperation,
-                cashInOutEventData.internalFees)
+        val outgoingMessage = EventFactory.createCashInOutEvent(volume =  cashInOutEventData.walletOperation.amount,
+                sequenceNumber = cashInOutEventData.sequenceNumber,
+                messageId = cashInOutEventData.messageId,
+                requestId = cashInOutEventData.externalId,
+                date = cashInOutEventData.now,
+                messageType = MessageType.CASH_IN_OUT_OPERATION,
+                clientBalanceUpdates = cashInOutEventData.walletProcessor.getClientBalanceUpdates(),
+                cashInOperation = cashInOutEventData.walletOperation,
+                internalFees = cashInOutEventData.internalFees)
 
         messageSender.sendMessage(outgoingMessage)
     }

@@ -18,14 +18,13 @@ inline fun <reified T : Any> initSyncQueue(queueMock: BlockingQueue<T>) {
 
     var prevEvent: Any? = null
     var curEvent: Any? = null
-    var consumedEvent: Any? = null
 
     Mockito.`when`(queueMock.put(any())).thenAnswer { invocation ->
         lock.lock()
         try {
             val event = invocation.arguments[0]
             queue.put(event)
-            while (consumedEvent != event) {
+            while (prevEvent != event) {
                 condition.await()
             }
         } finally {
@@ -33,10 +32,9 @@ inline fun <reified T : Any> initSyncQueue(queueMock: BlockingQueue<T>) {
         }
     }
     Mockito.`when`(queueMock.take()).thenAnswer {
-        prevEvent = curEvent
         lock.lock()
         try {
-            consumedEvent = prevEvent
+            prevEvent = curEvent
             condition.signal()
         } finally {
             lock.unlock()

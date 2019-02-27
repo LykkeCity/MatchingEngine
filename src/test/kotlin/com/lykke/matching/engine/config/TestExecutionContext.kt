@@ -96,7 +96,7 @@ open class TestExecutionContext {
 
 
     @Bean
-    open fun outGoingEventProcessor(messageSendersByEventClass: Map<Class<*>, List<SpecializedEventSender>>,
+    open fun outgoingEventProcessor(messageSendersByEventClass: Map<Class<*>, List<SpecializedEventSender>>,
                                     @Qualifier("rabbitPublishersThreadPool")
                                     rabbitPublishersThreadPool: TaskExecutor): OutgoingEventProcessor {
         return OutgoingEventProcessorImpl(outgoingEvents, messageSendersByEventClass, rabbitPublishersThreadPool)

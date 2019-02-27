@@ -17,7 +17,7 @@ class OldFormatExecutionEventSender(private val clientLimitOrdersQueue: Blocking
                                     private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                     private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>) : SpecializedEventSender {
 
-    override fun getProcessedMessageClass(): Class<*> {
+    override fun getEventClass(): Class<*> {
         return ExecutionData::class.java
     }
 
@@ -29,19 +29,23 @@ class OldFormatExecutionEventSender(private val clientLimitOrdersQueue: Blocking
         sendClientsExecutionEventIfNeeded(executionContext)
     }
 
-    fun sendBalanceUpdateEvent(executionContext: ExecutionContext) {
-        executionContext.walletOperationsProcessor.sendNotification(executionContext.requestId, executionContext.messageType.name, executionContext.messageId)
+    private fun sendBalanceUpdateEvent(executionContext: ExecutionContext) {
+        executionContext
+                .walletOperationsProcessor
+                .sendNotification(id = executionContext.requestId,
+                        type = executionContext.messageType.name,
+                        messageId = executionContext.messageId)
     }
 
-    fun sendTrustedClientsExecutionEventIfNeeded(executionContext: ExecutionContext) {
-        val trustedClientsLimitOrdersWithTrades = executionContext.getTrustedClientsLimitOrdersWithTrades().toMutableList()
+    private fun sendTrustedClientsExecutionEventIfNeeded(executionContext: ExecutionContext) {
+        val trustedClientsLimitOrdersWithTrades = executionContext.getTrustedClientsLimitOrdersWithTrades()
 
         if (isThereTrustedClientEvent(trustedClientsLimitOrdersWithTrades)) {
-            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(executionContext.messageId, trustedClientsLimitOrdersWithTrades))
+            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(executionContext.messageId, trustedClientsLimitOrdersWithTrades.toMutableList()))
         }
     }
 
-    fun sendClientsExecutionEventIfNeeded(executionContext: ExecutionContext) {
+    private fun sendClientsExecutionEventIfNeeded(executionContext: ExecutionContext) {
         val clientsLimitOrdersWithTrades = executionContext.getClientsLimitOrdersWithTrades()
         if (isThereClientEvent(clientsLimitOrdersWithTrades, executionContext.marketOrderWithTrades)) {
             if (clientsLimitOrdersWithTrades.isNotEmpty()) {

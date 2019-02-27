@@ -21,12 +21,12 @@ class ExecutionEventSender(private val messageSender: MessageSender,
                            private val genericLimitOrderService: GenericLimitOrderService,
                            private val orderBookQueue: BlockingQueue<OrderBook>,
                            private val rabbitOrderBookQueue: BlockingQueue<OrderBook>) : SpecializedEventSender {
-    override fun getProcessedMessageClass(): Class<*> {
+    override fun getEventClass(): Class<*> {
         return ExecutionData::class.java
     }
 
-    override fun sendEvent(outgointData: OutgoingEventData) {
-        val executionData = outgointData.eventData as  ExecutionData
+    override fun sendEvent(eventData: OutgoingEventData) {
+        val executionData = eventData.eventData as  ExecutionData
 
         sendNonRabbitEvents(executionData.executionContext)
         sendOrderBooksEvents(executionData.executionContext)
@@ -40,14 +40,14 @@ class ExecutionEventSender(private val messageSender: MessageSender,
 
         val clientsLimitOrdersWithTrades = executionContext.getClientsLimitOrdersWithTrades().toList()
         if (isThereClientEvent(clientsLimitOrdersWithTrades, executionContext.marketOrderWithTrades)) {
-            messageSender.sendMessage(EventFactory.createExecutionEvent(executionData.sequenceNumbers.clientsSequenceNumber!!,
-                    executionContext.messageId,
-                    executionContext.requestId,
-                    executionContext.date,
-                    executionContext.messageType,
-                    executionContext.walletOperationsProcessor.getClientBalanceUpdates(),
-                    clientsLimitOrdersWithTrades,
-                    executionContext.marketOrderWithTrades))
+            messageSender.sendMessage(EventFactory.createExecutionEvent(sequenceNumber = executionData.sequenceNumbers.clientsSequenceNumber!!,
+                    messageId =  executionContext.messageId,
+                    requestId = executionContext.requestId,
+                    date = executionContext.date,
+                    messageType = executionContext.messageType,
+                    clientBalanceUpdates =  executionContext.walletOperationsProcessor.getClientBalanceUpdates(),
+                    limitOrdersWithTrades =  clientsLimitOrdersWithTrades,
+                    marketOrderWithTrades =  executionContext.marketOrderWithTrades))
         }
     }
 
@@ -56,18 +56,18 @@ class ExecutionEventSender(private val messageSender: MessageSender,
 
         val trustedClientsLimitOrdersWithTrades = executionContext.getTrustedClientsLimitOrdersWithTrades().toList()
         if (isThereTrustedClientEvent(trustedClientsLimitOrdersWithTrades)) {
-            messageSender.sendTrustedClientsMessage(EventFactory.createTrustedClientsExecutionEvent(executionData.sequenceNumbers.trustedClientsSequenceNumber!!,
-                    executionContext.messageId,
-                    executionContext.requestId,
-                    executionContext.date,
-                    executionContext.messageType,
-                    trustedClientsLimitOrdersWithTrades))
+            messageSender.sendTrustedClientsMessage(EventFactory.createTrustedClientsExecutionEvent(sequenceNumber =  executionData.sequenceNumbers.trustedClientsSequenceNumber!!,
+                    messageId = executionContext.messageId,
+                    requestId = executionContext.requestId,
+                    date = executionContext.date,
+                    messageType = executionContext.messageType,
+                    limitOrdersWithTrades =  trustedClientsLimitOrdersWithTrades))
         }
     }
 
     private fun sendOrderBooksEvents(executionContext: ExecutionContext) {
         executionContext.orderBooksHolder.outgoingOrderBooks.forEach {
-            val orderBook = OrderBook(it.assetPair, it.isBuySide, it.date, AssetOrderBook.sortOrderBook(it.isBuySide, it.orders))
+            val orderBook = OrderBook(it.assetPair, it.isBuySide, it.date, AssetOrderBook.sort(it.isBuySide, it.volumePrices))
             orderBookQueue.put(orderBook)
             rabbitOrderBookQueue.put(orderBook)
         }
