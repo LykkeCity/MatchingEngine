@@ -9,11 +9,11 @@ import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.task.TaskExecutor
 import org.springframework.stereotype.Component
-import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.BlockingQueue
 import javax.annotation.PostConstruct
 
 @Component
-class OutgoingEventProcessorImpl(private val outgoingEvents: LinkedBlockingQueue<OutgoingEventData>,
+class OutgoingEventProcessorImpl(private val outgoingEvents: BlockingQueue<OutgoingEventData>,
                                  private val messageSendersByEventClass: Map<Class<*>, List<SpecializedEventSender>>,
                                  @Qualifier("rabbitPublishersThreadPool")
                                  private val rabbitPublishersThreadPool: TaskExecutor): OutgoingEventProcessor {

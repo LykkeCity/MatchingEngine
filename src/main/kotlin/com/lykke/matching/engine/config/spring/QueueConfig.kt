@@ -85,7 +85,7 @@ open class QueueConfig {
     @Bean
     @RabbitQueue
     open fun outgoingEventData(): BlockingQueue<OutgoingEventData> {
-        return LinkedBlockingQueue<OutgoingEventData>();
+        return LinkedBlockingQueue<OutgoingEventData>()
     }
     //</editor-fold>
 
