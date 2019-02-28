@@ -1,22 +1,10 @@
 <Configuration>
     <Appenders>
-        <!-- Async Loggers will auto-flush in batches, so switch off immediateFlush. -->
         <RollingRandomAccessFile name="ServerLog" filePattern="../log/server.log.%d{yyyy-MM-dd}"
                                  fileName="../log/server.log"
                                  immediateFlush="true">
             <PatternLayout>
                 <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%t] [%c{1}] %m%n</Pattern>
-            </PatternLayout>
-            <Policies>
-                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
-            </Policies>
-        </RollingRandomAccessFile>
-
-        <RollingRandomAccessFile name="ReservedBalanceLog" filePattern="../log/reservedBalanceUpdate.log.%d{yyyy-MM-dd}"
-                                 fileName="../log/reservedBalanceUpdate.log"
-                                 immediateFlush="true">
-            <PatternLayout>
-                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
             </PatternLayout>
             <Policies>
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
@@ -79,7 +67,7 @@
         </RollingRandomAccessFile>
 
         <RollingRandomAccessFile name="SingleLimitStatsLog" filePattern="../log/singleLimitOrder.log.%d{yyyy-MM-dd}"
-                                 fileName="../log/singleLimitOrder.log"
+                                 fileName="../log/statsLimitOrder.log"
                                  immediateFlush="true">
             <PatternLayout>
                 <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
@@ -103,17 +91,6 @@
         <RollingRandomAccessFile name="MultiLimitCancelLog"
                                  filePattern="../log/cancelMultiLimitOrder.log.%d{yyyy-MM-dd}"
                                  fileName="../log/cancelMultiLimitOrder.log"
-                                 immediateFlush="true">
-            <PatternLayout>
-                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
-            </PatternLayout>
-            <Policies>
-                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
-            </Policies>
-        </RollingRandomAccessFile>
-
-        <RollingRandomAccessFile name="GenericLimitOrderLog" filePattern="../log/genericLimitOrder.log.%d{yyyy-MM-dd}"
-                                 fileName="../log/genericLimitOrder.log"
                                  immediateFlush="true">
             <PatternLayout>
                 <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
@@ -206,18 +183,6 @@
 
         <RollingRandomAccessFile name="QueueSizeLog" filePattern="../log/queueSizeLogger.log.%d{yyyy-MM-dd}"
                                  fileName="../log/queueSizeLogger.log"
-                                 immediateFlush="true">
-            <PatternLayout>
-                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
-            </PatternLayout>
-            <Policies>
-                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
-            </Policies>
-        </RollingRandomAccessFile>
-
-        <RollingRandomAccessFile name="WalletCredentialsLog"
-                                 filePattern="../log/walletCredentialsCache.log.%d{yyyy-MM-dd}"
-                                 fileName="../log/walletCredentialsCache.log"
                                  immediateFlush="true">
             <PatternLayout>
                 <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
@@ -348,11 +313,11 @@
         <Root level="debug" additivity="false">
             <AppenderRef ref="ServerLog"/>
         </Root>
-        <!-- pattern layout actually uses location, so we need to include it -->
-        <AsyncLogger name="AppStarter" level="info" additivity="false">
+
+        <Logger name="AppStarter" level="info" additivity="false">
             <AppenderRef ref="ServerLog"/>
             <AppenderRef ref="ConsoleLog"/>
-        </AsyncLogger>
+        </Logger>
 
         <AsyncLogger name="com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller"
                      level="info" additivity="false">
@@ -383,12 +348,6 @@
         <AsyncLogger name="org.apache.http"
                      level="info" additivity="false">
             <AppenderRef ref="ServerLog"/>
-        </AsyncLogger>
-
-        # Reserved Balance Update
-        <AsyncLogger name="com.lykke.matching.engine.services.ReservedBalanceUpdateService"
-                     level="debug" additivity="false">
-            <AppenderRef ref="ReservedBalanceLog"/>
         </AsyncLogger>
 
         # Monitoring
@@ -459,7 +418,7 @@
             <AppenderRef ref="LimitCancelLog"/>
         </Logger>
 
-        <Logger name="LimitOrderCancelPreProcessing"
+        <Logger name="LimitOrderMassCancelPreProcessing"
                 level="debug" additivity="false">
             <AppenderRef ref="LimitCancelLog"/>
         </Logger>
@@ -505,12 +464,6 @@
         <AsyncLogger name="com.lykke.matching.engine.services.MultiLimitOrderCancelService"
                      level="debug" additivity="false">
             <AppenderRef ref="MultiLimitCancelLog"/>
-        </AsyncLogger>
-
-        # Generic Limit Order
-        <AsyncLogger name="com.lykke.matching.engine.services.GenericLimitOrderService"
-                     level="debug" additivity="false">
-            <AppenderRef ref="GenericLimitOrderLog"/>
         </AsyncLogger>
 
         # Rabbit old Messages
@@ -566,12 +519,6 @@
             <AppenderRef ref="QueueSizeLog"/>
         </AsyncLogger>
 
-        # Wallet Cache
-        <AsyncLogger name="com.lykke.matching.engine.cache.WalletCredentialsCache"
-                     level="debug" additivity="false">
-            <AppenderRef ref="WalletCredentialsLog"/>
-        </AsyncLogger>
-
         # Balance updates
         <AsyncLogger name="com.lykke.matching.engine.holders.BalancesHolder"
                      level="info" additivity="false">
@@ -609,7 +556,7 @@
         </AsyncLogger>
 
         # Order book requests
-        <AsyncLogger name="com.lykke.matching.engine.web.controllers.web.OrderBooksController"
+        <AsyncLogger name="com.lykke.matching.engine.web.controllers.OrderBooksController"
                      level="debug" additivity="false">
             <AppenderRef ref="OrderBooksRequestLog"/>
         </AsyncLogger>

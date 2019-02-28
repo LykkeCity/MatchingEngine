@@ -51,9 +51,7 @@ ext {
 
 dependencies {
     // internal libs
-    compile ("org.bitbucket.lykke:kotlin-utils:$kotlin_utils_version") {
-        exclude module: 'log4j'
-    }
+    compile ("org.bitbucket.lykke:kotlin-utils:$kotlin_utils_version")
 
     // external libs
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
