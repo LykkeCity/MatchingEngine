@@ -7,17 +7,17 @@
         </Console>
     </Appenders>
     <Loggers>
-        <AsyncRoot level="debug" additivity="false">
+        <Root level="debug" additivity="false">
             <AppenderRef ref="ConsoleLog"/>
-        </AsyncRoot>
+        </Root>
 
-        <AsyncLogger name ="com.lykke.matching.engine.messages.MessageProcessor" level="info">
-        </AsyncLogger>
+        <Logger name ="com.lykke.matching.engine.messages.MessageProcessor" level="info">
+        </Logger>
 
-        <AsyncLogger name ="org.apache.http" level="info">
-        </AsyncLogger>
+        <Logger name ="org.apache.http" level="info">
+        </Logger>
 
-        <AsyncLogger name = "org.springframework" level="info">
-        </AsyncLogger>
+        <Logger name = "org.springframework" level="info">
+        </Logger>
     </Loggers>
 </Configuration>
