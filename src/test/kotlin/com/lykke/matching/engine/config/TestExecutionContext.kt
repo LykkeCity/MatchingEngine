@@ -47,26 +47,19 @@ import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.business.StopOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
-import com.lykke.matching.engine.utils.initSyncQueue
+import com.lykke.matching.engine.utils.SyncQueue
 import org.mockito.Mock
-import org.mockito.MockitoAnnotations
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.task.TaskExecutor
 import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
 
 @Configuration
 open class TestExecutionContext {
 
     @Mock
-    private lateinit var outgoingEvents: LinkedBlockingQueue<OutgoingEventData>
-
-    init {
-        MockitoAnnotations.initMocks(this)
-        initSyncQueue(outgoingEvents)
-    }
+    private val outgoingEvents = SyncQueue<OutgoingEventData>()
 
     @Bean
     open fun matchingEngine(genericLimitOrderService: GenericLimitOrderService,
