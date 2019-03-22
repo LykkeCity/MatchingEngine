@@ -14,9 +14,9 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
-import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
+import com.lykke.matching.engine.services.GenericLimitOrderService
 import org.junit.After
 import org.junit.Assert.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
@@ -109,11 +109,8 @@ abstract class MatchingEngineTest {
     }
 
     protected fun match(order: Order,
-                        orderBook: PriorityBlockingQueue<LimitOrder>,
                         priceDeviationThreshold: BigDecimal? = null): MatchingResult {
         return matchingEngine.match(order,
-                orderBook,
-                "test",
                 priceDeviationThreshold = priceDeviationThreshold,
                 executionContext = executionContext)
     }

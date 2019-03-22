@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services.validators.business.impl
 
+import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.AssetOrderBook
@@ -12,9 +13,11 @@ import java.util.Date
 
 @Component
 class LimitOrderBusinessValidatorImpl: LimitOrderBusinessValidator {
-    override fun performValidation(isTrustedClient: Boolean, order: LimitOrder,
+    override fun performValidation(isTrustedClient: Boolean,
+                                   order: LimitOrder,
                                    availableBalance: BigDecimal,
                                    limitVolume: BigDecimal,
+                                   assetPair: AssetPair,
                                    orderBook: AssetOrderBook,
                                    date: Date) {
 
@@ -26,6 +29,7 @@ class LimitOrderBusinessValidatorImpl: LimitOrderBusinessValidator {
         validatePreviousOrderNotFound(order)
         validateNotEnoughFounds(order)
         OrderValidationUtils.validateExpiration(order, date)
+        OrderValidationUtils.validateMaxVolume(order, assetPair, orderBook)
     }
 
     private fun validatePreviousOrderNotFound(order: LimitOrder) {

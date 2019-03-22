@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.services.utils.AbstractAssetOrderBook
+import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 import java.util.Comparator
 import java.util.concurrent.PriorityBlockingQueue
@@ -15,7 +16,7 @@ class AssetOrderBook(assetId: String): AbstractAssetOrderBook(assetId) {
         }
 
         result
-    })
+            })
 
     val BUY_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
         var result = o2.price.compareTo(o1.price)
@@ -39,6 +40,13 @@ class AssetOrderBook(assetId: String): AbstractAssetOrderBook(assetId) {
 
     fun getAskPrice() = askOrderBook.peek()?.price ?: BigDecimal.ZERO
     fun getBidPrice() = bidOrderBook.peek()?.price ?: BigDecimal.ZERO
+
+    fun getMidPrice(): BigDecimal? {
+        return if (!NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, getAskPrice()) && !NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, getBidPrice())) {
+            NumberUtils.divideWithMaxScale(getAskPrice() + getBidPrice(), BigDecimal.valueOf(2))
+        } else
+            null
+    }
 
     fun leadToNegativeSpread(order: LimitOrder): Boolean {
         val book = getOrderBook(!order.isBuySide())
