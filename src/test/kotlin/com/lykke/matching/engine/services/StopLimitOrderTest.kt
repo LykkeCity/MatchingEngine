@@ -82,7 +82,6 @@ class StopLimitOrderTest : AbstractTest() {
         testBalanceHolderWrapper.updateReservedBalance("Client1", "USD", 0.0)
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 6))
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "USD", 6, maxValue = BigDecimal.valueOf(8000)))
         initServices()
     }
 

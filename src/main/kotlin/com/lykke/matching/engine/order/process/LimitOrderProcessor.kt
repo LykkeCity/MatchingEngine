@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.order.process
 
 import com.lykke.matching.engine.balance.BalanceException
+import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.order.OrderTimeInForce
@@ -42,16 +43,18 @@ class LimitOrderProcessor(private val limitOrderBusinessValidator: LimitOrderBus
         if (preProcessorValidationResult != null && !preProcessorValidationResult.isValid) {
             return preProcessorValidationResult
         }
-        return performBusinessValidation(orderContext)
+        return performBusinessValidation(orderContext, orderContext.executionContext.assetPairsById.getValue(orderContext.order.assetPairId))
     }
 
-    private fun performBusinessValidation(orderContext: LimitOrderExecutionContext): OrderValidationResult {
+    private fun performBusinessValidation(orderContext: LimitOrderExecutionContext,
+                                          assetPair: AssetPair): OrderValidationResult {
         val order = orderContext.order
         try {
             limitOrderBusinessValidator.performValidation(applicationSettingsHolder.isTrustedClient(order.clientId),
                     order,
                     orderContext.availableLimitAssetBalance!!,
                     orderContext.limitVolume!!,
+                    assetPair,
                     orderContext.executionContext.orderBooksHolder.getOrderBook(order.assetPairId),
                     orderContext.executionContext.date)
         } catch (e: OrderValidationException) {
@@ -107,11 +110,7 @@ class LimitOrderProcessor(private val limitOrderBusinessValidator: LimitOrderBus
     private fun matchOrder(orderContext: LimitOrderExecutionContext): ProcessedOrder {
         val executionContext = orderContext.executionContext
         val order = orderContext.order
-        val orderBook = executionContext.orderBooksHolder.getOrderBook(order.assetPairId)
-
         val matchingResult = matchingEngine.match(order,
-                orderBook.getOrderBook(!order.isBuySide()),
-                executionContext.messageId,
                 orderContext.availableLimitAssetBalance!!,
                 executionContext = executionContext)
         orderContext.matchingResult = matchingResult

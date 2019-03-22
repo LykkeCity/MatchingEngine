@@ -43,7 +43,6 @@ class LimitOrderInputValidatorImpl(val applicationSettingsHolder: ApplicationSet
         validateMaxValue(order, assetPair)
         validatePriceAccuracy(order, assetPair)
         validateVolumeAccuracy(order, baseAsset!!)
-        validateValue(order, assetPair)
     }
 
     override fun validateStopOrder(singleLimitOrderParsedData: SingleLimitOrderParsedData) {
@@ -102,24 +101,18 @@ class LimitOrderInputValidatorImpl(val applicationSettingsHolder: ApplicationSet
         }
     }
 
-    private fun validateValue(order: LimitOrder, assetPair: AssetPair) {
-        if (assetPair.maxValue != null && order.getAbsVolume() * order.price > assetPair.maxValue) {
-            throw OrderValidationException(OrderStatus.InvalidValue, "value is too large")
-        }
-    }
-
     private fun validateMaxValue(limitOrder: LimitOrder, assetPair: AssetPair) {
-        if (assetPair.maxVolume != null && limitOrder.getAbsVolume() > assetPair.maxVolume) {
-            throw OrderValidationException(OrderStatus.InvalidVolume, "volume is too large")
+        val maxValue = assetPair.maxValue ?: return
+        if (limitOrder.getAbsVolume() * limitOrder.price > maxValue) {
+            throw OrderValidationException(OrderStatus.InvalidValue, "value is too large (maxValue=$maxValue)")
         }
     }
 
     private fun validateStopOrderMaxValue(limitOrder: LimitOrder, assetPair: AssetPair) {
-        validateMaxValue(limitOrder, assetPair)
-
-        if (assetPair.maxValue != null && (limitOrder.lowerLimitPrice != null && limitOrder.getAbsVolume() * limitOrder.lowerPrice!! > assetPair.maxValue
-                        || limitOrder.upperLimitPrice != null && limitOrder.getAbsVolume() * limitOrder.upperPrice!! > assetPair.maxValue)) {
-            throw OrderValidationException(OrderStatus.InvalidValue, "value is too large")
+        val maxValue = assetPair.maxValue ?: return
+        if ((limitOrder.lowerLimitPrice != null && limitOrder.getAbsVolume() * limitOrder.lowerPrice!! > maxValue
+                        || limitOrder.upperLimitPrice != null && limitOrder.getAbsVolume() * limitOrder.upperPrice!! > maxValue)) {
+            throw OrderValidationException(OrderStatus.InvalidValue, "value is too large (maxValue=$maxValue)")
         }
     }
 

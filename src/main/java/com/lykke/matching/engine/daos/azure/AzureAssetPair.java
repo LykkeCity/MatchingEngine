@@ -12,7 +12,6 @@ public class AzureAssetPair extends TableServiceEntity {
     private int accuracy;
     private Double minVolume;
     private Double minInvertedVolume;
-    private Double maxVolume;
     private Double maxValue;
     private Double midPriceDeviationThreshold;
     private Double marketOrderPriceDeviationThreshold;
@@ -25,7 +24,6 @@ public class AzureAssetPair extends TableServiceEntity {
                           int accuracy,
                           Double minVolume,
                           Double minInvertedVolume,
-                          Double maxVolume,
                           Double maxValue,
                           Double midPriceDeviationThreshold,
                           Double marketOrderPriceDeviationThreshold) {
@@ -35,7 +33,6 @@ public class AzureAssetPair extends TableServiceEntity {
         this.accuracy = accuracy;
         this.minVolume = minVolume;
         this.minInvertedVolume = minInvertedVolume;
-        this.maxVolume = maxVolume;
         this.maxValue = maxValue;
         this.midPriceDeviationThreshold = midPriceDeviationThreshold;
         this.marketOrderPriceDeviationThreshold = marketOrderPriceDeviationThreshold;
@@ -85,14 +82,6 @@ public class AzureAssetPair extends TableServiceEntity {
         this.minInvertedVolume = minInvertedVolume;
     }
 
-    public Double getMaxVolume() {
-        return maxVolume;
-    }
-
-    public void setMaxVolume(Double maxVolume) {
-        this.maxVolume = maxVolume;
-    }
-
     public Double getMaxValue() {
         return maxValue;
     }
@@ -125,7 +114,6 @@ public class AzureAssetPair extends TableServiceEntity {
                 ", accuracy=" + accuracy +
                 ", minVolume=" + minVolume +
                 ", minInvertedVolume=" + minInvertedVolume +
-                ", maxVolume=" + maxVolume +
                 ", maxValue=" + maxValue +
                 ", midPriceDeviationThreshold=" + midPriceDeviationThreshold +
                 ", marketOrderPriceDeviationThreshold=" + marketOrderPriceDeviationThreshold +

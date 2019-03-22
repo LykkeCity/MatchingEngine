@@ -109,8 +109,14 @@ class MarketOrderService @Autowired constructor(
                 feeInstruction, listOfFee(feeInstruction, feeInstructions))
 
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order), feeInstruction, feeInstructions)
+            marketOrderValidator.performValidation(order,
+                    genericLimitOrderService.getOrderBook(order.assetPairId),
+                    feeInstruction,
+                    feeInstructions)
         } catch (e: OrderValidationException) {
+            if (e.message.isNotEmpty()) {
+                LOGGER.info("Invalid market order (${order.externalId}, messageId: ${messageWrapper.messageId}): ${e.message}")
+            }
             order.updateStatus(e.orderStatus, now)
             sendErrorNotification(messageWrapper, order, now)
             writeErrorResponse(messageWrapper, order, e.message)
@@ -148,8 +154,6 @@ class MarketOrderService @Autowired constructor(
         }
 
         val matchingResult = matchingEngine.match(order,
-                getOrderBook(order),
-                messageWrapper.messageId!!,
                 moPriceDeviationThreshold = marketOrderPriceDeviationThreshold,
                 executionContext = executionContext)
         marketOrderExecutionContext.matchingResult = matchingResult
@@ -278,11 +282,6 @@ class MarketOrderService @Autowired constructor(
             matchingResult.limitOrdersReport?.orders?.let { marketOrderExecutionContext.executionContext.addClientsLimitOrdersWithTrades(it) }
         }
     }
-
-    private fun getOrderBook(order: MarketOrder) =
-            genericLimitOrderService.getOrderBook(order.assetPairId).getOrderBook(!order.isBuySide())
-
-    private fun getAssetPair(order: MarketOrder) = assetsPairsHolder.getAssetPair(order.assetPairId)
 
     private fun parse(array: ByteArray): ProtocolMessages.MarketOrder {
         return ProtocolMessages.MarketOrder.parseFrom(array)

@@ -22,6 +22,7 @@ import com.lykke.matching.engine.outgoing.messages.TradeInfo
 import com.lykke.matching.engine.outgoing.messages.v2.builders.bigDecimalToString
 import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import com.lykke.matching.engine.services.GenericLimitOrderService
+import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils.Companion.checkExecutionPriceDeviation
 import com.lykke.matching.engine.utils.NumberUtils
 import org.springframework.stereotype.Component
@@ -41,14 +42,16 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
     }
 
     fun match(originOrder: Order,
-              orderBook: PriorityBlockingQueue<LimitOrder>,
-              messageId: String,
               balance: BigDecimal? = null,
               moPriceDeviationThreshold: BigDecimal? = null,
               executionContext: ExecutionContext): MatchingResult {
+        val assetOrderBook = executionContext.orderBooksHolder.getOrderBook(originOrder.assetPairId)
+        val orderBook = assetOrderBook.getOrderBook(!originOrder.isBuySide())
+
         val balancesGetter = executionContext.walletOperationsProcessor
         val orderWrapper = CopyWrapper(originOrder)
         val order = orderWrapper.copy
+        val isMarketOrder = isMarketOrder(order)
         val assetPair = executionContext.assetPairsById[order.assetPairId]!!
         val availableBalance = balance ?: getBalance(order, assetPair, balancesGetter)
         val workingOrderBook = PriorityBlockingQueue(orderBook)
@@ -79,11 +82,10 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
 
         val marketOrderTrades = LinkedList<TradeInfo>()
 
-        val limitOrdersReport = LimitOrdersReport(messageId)
+        val limitOrdersReport = LimitOrdersReport(executionContext.messageId)
         var totalLimitVolume = BigDecimal.ZERO
         var matchedWithZeroLatestTrade = false
 
-        if (checkOrderBook(order, workingOrderBook)) {
             while (getMarketBalance(availableBalances, order, asset) >= BigDecimal.ZERO
                     && workingOrderBook.size > 0
                     && !NumberUtils.equalsWithDefaultDelta(remainingVolume, BigDecimal.ZERO)
@@ -311,7 +313,6 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
                 totalLimitVolume += (if (order.isStraight()) marketRoundedVolume else oppositeRoundedVolume).abs()
                 matchedOrders.add(matchedLimitOrderCopyWrapper)
             }
-        }
 
         if (order.takePrice() == null && remainingVolume > BigDecimal.ZERO) {
             if (matchedWithZeroLatestTrade) {
@@ -343,15 +344,22 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
 
         val executionPrice = calculateExecutionPrice(order, assetPair, totalLimitPrice, totalVolume)
 
-        if (!checkMaxVolume(order, assetPair, executionPrice)) {
-            order.updateStatus(OrderStatus.InvalidVolume, now)
-            executionContext.info("Too large volume of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxVolume=${assetPair.maxVolume}, straight=${order.isStraight()}")
-            return MatchingResult(orderWrapper, cancelledLimitOrders)
-        }
-        if (!checkMaxValue(order, assetPair, executionPrice)) {
-            order.updateStatus(OrderStatus.InvalidValue, now)
-            executionContext.info("Too large value of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxValue=${assetPair.maxValue}, straight=${order.isStraight()}")
-            return MatchingResult(orderWrapper, cancelledLimitOrders)
+        if (isMarketOrder) {
+            val maxVolumeInfo = OrderValidationUtils.calculateMaxVolume(assetPair, assetOrderBook)
+            if (!checkMaxVolume(order, executionPrice, maxVolumeInfo?.maxVolume)) {
+                order.updateStatus(OrderStatus.InvalidVolume, now)
+                executionContext.info("Too large volume of market order (${order.externalId}): " +
+                        "volume=${order.volume}, price=$executionPrice, " +
+                        "straight=${order.isStraight()}, maxVolumeInfo: $maxVolumeInfo")
+                return MatchingResult(orderWrapper, cancelledLimitOrders)
+            }
+            if (!checkMaxValue(order, executionPrice, assetPair.maxValue)) {
+                order.updateStatus(OrderStatus.InvalidValue, now)
+                executionContext.info("Too large value of market order (${order.externalId}): " +
+                        "volume=${order.volume}, price=$executionPrice, " +
+                        "straight=${order.isStraight()}, maxValue=${assetPair.maxValue}")
+                return MatchingResult(orderWrapper, cancelledLimitOrders)
+            }
         }
 
         if (order.takePrice() == null && !checkExecutionPriceDeviation(order.isBuySide(), executionPrice, bestPrice, moPriceDeviationThreshold)) {
@@ -391,9 +399,6 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
                 false)
     }
 
-    private fun checkOrderBook(order: Order, orderBook: PriorityBlockingQueue<LimitOrder>): Boolean =
-            orderBook.isEmpty() || orderBook.peek().assetPairId == order.assetPairId && orderBook.peek().isBuySide() != order.isBuySide()
-
     private fun getCrossVolume(volume: BigDecimal, straight: Boolean, price: BigDecimal): BigDecimal {
         return if (straight) volume else NumberUtils.divideWithMaxScale(volume, price)
     }
@@ -428,22 +433,22 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
     }
 
     private fun checkMaxVolume(order: Order,
-                               assetPair: AssetPair,
-                               executionPrice: BigDecimal): Boolean {
+                               executionPrice: BigDecimal,
+                               maxVolume: BigDecimal?): Boolean {
         return when {
-            order.takePrice() != null || assetPair.maxVolume == null -> true
-            order.isStraight() -> order.getAbsVolume() <= assetPair.maxVolume
-            else -> order.getAbsVolume() / executionPrice <= assetPair.maxVolume
+            maxVolume == null -> true
+            order.isStraight() -> order.getAbsVolume() <= maxVolume
+            else -> order.getAbsVolume() / executionPrice <= maxVolume
         }
     }
 
     private fun checkMaxValue(order: Order,
-                              assetPair: AssetPair,
-                              executionPrice: BigDecimal): Boolean {
+                              executionPrice: BigDecimal,
+                              maxValue: BigDecimal?): Boolean {
         return when {
-            order.takePrice() != null || assetPair.maxValue == null -> true
-            order.isStraight() -> order.getAbsVolume() * executionPrice <= assetPair.maxValue
-            else -> order.getAbsVolume() <= assetPair.maxValue
+            maxValue == null -> true
+            order.isStraight() -> order.getAbsVolume() * executionPrice <= maxValue
+            else -> order.getAbsVolume() <= maxValue
         }
     }
 
@@ -462,5 +467,9 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
             limitBalances[order.clientId] = NumberUtils.setScaleRoundHalfUp(availableBalance - volume, accuracy)
         }
         return result
+    }
+
+    private fun isMarketOrder(order: Order): Boolean {
+        return order.takePrice() == null
     }
 }

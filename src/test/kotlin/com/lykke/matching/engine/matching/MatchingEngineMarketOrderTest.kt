@@ -23,7 +23,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchMarketOrderBuyWithEmptyOrderBook() {
         val marketOrder = buildMarketOrder(volume = 100.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult)
     }
@@ -31,7 +31,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchMarketOrderSellWithEmptyOrderBook() {
         val marketOrder = buildMarketOrder(volume = -100.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult)
     }
@@ -39,7 +39,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchMarketOrderNotStraightBuyWithEmptyOrderBook() {
         val marketOrder = buildMarketOrder(volume = -100.0, straight = false)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult)
     }
@@ -47,7 +47,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchMarketOrderNotStraightSellWithEmptyOrderBook() {
         val marketOrder = buildMarketOrder(volume = 100.0, straight = false)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult)
     }
@@ -58,7 +58,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = 100.0))
 
         val marketOrder = buildMarketOrder(volume = 100.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult)
     }
@@ -69,7 +69,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = 100.0))
 
         val marketOrder = buildMarketOrder(volume = -120.0, straight = false)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult)
     }
@@ -79,7 +79,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.3, volume = -100.0))
 
         val marketOrder = buildMarketOrder(volume = 100.01)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult)
     }
@@ -89,7 +89,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.3, volume = -100.0))
 
         val marketOrder = buildMarketOrder(volume = -130.01, straight = false)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult)
     }
@@ -99,7 +99,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -100.01)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult)
     }
@@ -109,21 +109,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = 120.01, straight = false)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true))
-
-        assertMarketOrderMatchingResult(matchingResult)
-    }
-
-    @Test
-    fun testMatchNoLiquidityMarketOrderNotStraightSell2() {
-        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.000028)
-
-        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 1000.0, volume = 0.00001))
-        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 1000.0, volume = 0.000009))
-        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 1000.0, volume = 0.000009))
-
-        val marketOrder = buildMarketOrder(clientId = "Client2", assetId = "BTCUSD", volume = 0.02, straight = false)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult)
     }
@@ -134,7 +120,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 1.2, volume = -100.0))
 
         val marketOrder = buildMarketOrder(volume = 100.0)
-        val matchingResult = match(marketOrder, getOrderBook("BTCUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult)
     }
@@ -145,7 +131,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.2, volume = -100.0))
 
         val marketOrder = buildMarketOrder(volume = 100.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult)
         assertEquals(1, getOrderBook("EURUSD", false).size)
@@ -157,7 +143,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
 
         val marketOrder = buildMarketOrder(volume = 100.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, cancelledSize = 1)
     }
@@ -168,7 +154,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
 
         val marketOrder = buildMarketOrder(volume = -120.0, straight = false)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, cancelledSize = 1)
     }
@@ -179,7 +165,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -100.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, cancelledSize = 1)
     }
@@ -191,7 +177,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
 
         val marketOrder = buildMarketOrder(volume = 100.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, cancelledSize = 1)
     }
@@ -203,7 +189,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -100.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, cancelledSize = 1)
     }
@@ -214,7 +200,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
 
         val marketOrder = buildMarketOrder(volume = 100.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.NotEnoughFunds, marketBalance = null)
     }
@@ -225,7 +211,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -100.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.NotEnoughFunds, marketBalance = null)
     }
@@ -236,7 +222,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = 120.0, straight = false)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.NotEnoughFunds, marketBalance = null)
     }
@@ -248,7 +234,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
 
         val marketOrder = buildMarketOrder(volume = 100.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.NotEnoughFunds, marketBalance = null)
     }
@@ -260,7 +246,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -100.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.NotEnoughFunds, marketBalance = null)
     }
@@ -271,7 +257,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
 
         val marketOrder = buildMarketOrder(volume = 100.0, reservedVolume = 120.01)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.ReservedVolumeGreaterThanBalance, marketBalance = null)
     }
@@ -282,7 +268,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -100.0, reservedVolume = 100.01)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.ReservedVolumeGreaterThanBalance, marketBalance = null)
     }
@@ -294,7 +280,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.0, volume = 1.0))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -3.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true), moPriceDeviationThreshold = BigDecimal.valueOf(0.08))
+        val matchingResult = match(marketOrder, moPriceDeviationThreshold = BigDecimal.valueOf(0.08))
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.TooHighPriceDeviation, marketBalance = null)
     }
 
@@ -305,7 +291,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.0, volume = 1.0))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = 3.3, straight = false)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true), moPriceDeviationThreshold = BigDecimal.valueOf(0.08))
+        val matchingResult = match(marketOrder, moPriceDeviationThreshold = BigDecimal.valueOf(0.08))
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.TooHighPriceDeviation, marketBalance = null)
     }
 
@@ -316,7 +302,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "uncompleted", clientId = "Client2", price = 1.19, volume = -100.0, reservedVolume = 100.0))
 
         val marketOrder = buildMarketOrder(volume = 91.1)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.Matched,
                 marketBalance = BigDecimal.valueOf(891.59),
@@ -358,7 +344,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "uncompleted", price = 1.21, volume = 108.1, reservedVolume = 130.81))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -100.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.Matched,
                 marketBalance = BigDecimal.valueOf(900.00),
@@ -384,7 +370,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "uncompleted", clientId = "Client2", price = 1.19, volume = -100.0, reservedVolume = 100.0))
 
         val marketOrder = buildMarketOrder(volume = -100.0, straight = false)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.Matched,
                 marketBalance = BigDecimal.valueOf(900.00),
@@ -410,7 +396,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "uncompleted", price = 1.21, volume = 108.1, reservedVolume = 130.81))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = 100.0, straight = false)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.Matched,
                 marketBalance = BigDecimal.valueOf(917.3553),
@@ -436,7 +422,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "completed", clientId = "Client2", price = 1.2, volume = -100.0, reservedVolume = 100.0))
 
         val marketOrder = buildMarketOrder(volume = 100.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.Matched,
                 marketBalance = BigDecimal.valueOf(880.0), marketPrice = BigDecimal.valueOf(1.2),
@@ -452,7 +438,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "completed", clientId = "Client2", price = 1.2, volume = -100.0, reservedVolume = 100.0))
 
         val marketOrder = buildMarketOrder(volume = -120.0, straight = false)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.Matched, marketBalance = BigDecimal.valueOf(880.0),
                 marketPrice = BigDecimal.valueOf(1.2), lkkTradesSize = 2, cashMovementsSize = 4, marketOrderTradesSize = 1, completedLimitOrdersSize = 1,
@@ -467,7 +453,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "completed", price = 1.2, volume = 100.0, reservedVolume = 120.0))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -100.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.Matched, marketBalance = BigDecimal.valueOf(900.0),
                 marketPrice = BigDecimal.valueOf(1.2), lkkTradesSize = 2, cashMovementsSize = 4, marketOrderTradesSize = 1, completedLimitOrdersSize = 1,
@@ -481,7 +467,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "completed", price = 1.2, volume = 100.0, reservedVolume = 120.0))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = 120.0, straight = false)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.Matched, marketBalance = BigDecimal.valueOf(900.0),
                 marketPrice = BigDecimal.valueOf(1.2), lkkTradesSize = 2, cashMovementsSize = 4, marketOrderTradesSize = 1, completedLimitOrdersSize = 1,
@@ -496,7 +482,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -50.0, reservedVolume = 50.0))
 
         val marketOrder = buildMarketOrder(volume = 100.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.Matched, marketBalance = BigDecimal.valueOf(880.0),
                 marketPrice = BigDecimal.valueOf(1.2), skipSize = 0, cancelledSize = 0, lkkTradesSize = 4,
@@ -518,7 +504,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
 
         Thread.sleep(100)
         val marketOrder = buildMarketOrder(volume = 100.0)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult,
                 status = OrderStatus.Matched,
@@ -552,7 +538,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.1, volume = 40.0, reservedVolume = 44.0))
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = 122.0, straight = false)
-        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult,
                 status = OrderStatus.Matched,
@@ -582,7 +568,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.00947867, price = 10550.0, reservedVolume = 0.00947867))
 
         val marketOrder = buildMarketOrder(clientId = "Client3", assetId = "BTCUSD", volume = -100.0, straight = false)
-        match(marketOrder, getOrderBook("BTCUSD", false))
+        match(marketOrder)
 
         val orders = testDatabaseAccessor.getOrders("BTCUSD", false).filter { it.clientId == "Client1" }
         assertEquals(1, orders.size)
@@ -596,7 +582,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "CHF", 1.0)
 
         val marketOrder = buildMarketOrder(clientId = "Client4", assetId = "BTCCHF", volume = -0.3772, straight = false)
-        val matchingResult = match(marketOrder, getOrderBook("BTCCHF", false))
+        val matchingResult = match(marketOrder)
 
         assertEquals(1, matchingResult.marketOrderTrades.size)
         assertEquals("0.00041770", matchingResult.marketOrderTrades.first().limitVolume)
@@ -612,7 +598,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 6007.991, volume = -0.01165173, clientId = "Client2"))
 
         val marketOrder = buildMarketOrder(clientId = "Client1", assetId = "BTCCHF", volume = 0.01665173)
-        val matchingResult = match(marketOrder, getOrderBook("BTCCHF", false))
+        val matchingResult = match(marketOrder)
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.NotEnoughFunds)
     }
