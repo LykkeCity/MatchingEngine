@@ -136,6 +136,18 @@
             </Policies>
         </RollingRandomAccessFile>
 
+        <RollingRandomAccessFile name="UUIDHolderLog"
+                                 filePattern="../log/uuidHolder.log.%d{yyyy-MM-dd}"
+                                 fileName="../log/uuidHolder.log"
+                                 immediateFlush="true">
+            <PatternLayout>
+                <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+        </RollingRandomAccessFile>
+
         <RollingRandomAccessFile name="RabbitMqPublisherStatsLog"
                                  filePattern="../log/statsRabbitMessages.log.%d{yyyy-MM-dd}"
                                  fileName=".../log/statsRabbitMessages.log"
@@ -582,6 +594,12 @@
         <AsyncLogger name="com.lykke.matching.engine.utils.monitoring.ClientConnectionsCountLogger"
                      level="debug" additivity="false">
             <AppenderRef ref="ConnectionsCountLog"/>
+        </AsyncLogger>
+
+        # UUID holder
+        <AsyncLogger name="com.lykke.matching.engine.holders.UUIDHolderImpl"
+                     level="debug" additivity="false">
+            <AppenderRef ref="UUIDHolderLog"/>
         </AsyncLogger>
 
         #Spring logs
