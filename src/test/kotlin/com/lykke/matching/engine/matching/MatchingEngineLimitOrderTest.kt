@@ -90,7 +90,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
         val matchingResult = match(limitOrder, getOrderBook("EURUSD", false))
 
-        assertLimitOrderMatchingResult(matchingResult, skipSize = 1, status = OrderStatus.InOrderBook)
+        assertLimitOrderMatchingResult(matchingResult, status = OrderStatus.LeadToNegativeSpread, marketBalance = null)
         assertEquals(1, getOrderBook("EURUSD", false).size)
     }
 
@@ -397,21 +397,8 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
         val matchingResult = match(limitOrder, getOrderBook("EURUSD", false))
 
-        assertLimitOrderMatchingResult(matchingResult,
-                status = OrderStatus.Processing,
-                marketBalance = BigDecimal.valueOf(908.0),
-                remainingVolume = BigDecimal.valueOf(20.0),
-                skipSize = 1,
-                cancelledSize = 0,
-                lkkTradesSize = 4,
-                cashMovementsSize = 8,
-                marketOrderTradesSize = 2,
-                completedLimitOrdersSize = 2,
-                limitOrdersReportSize = 2,
-                orderBookSize = 1)
-
-        assertCompletedLimitOrders(matchingResult.completedLimitOrders, false)
-        assertEquals("Client1", matchingResult.skipLimitOrders.first().clientId)
+        assertLimitOrderMatchingResult(matchingResult, status = OrderStatus.LeadToNegativeSpread, marketBalance = null)
+        assertEquals(4, getOrderBook("EURUSD", false).size)
     }
 
     @Test
@@ -426,21 +413,8 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0)
         val matchingResult = match(limitOrder, getOrderBook("EURUSD", true))
 
-        assertLimitOrderMatchingResult(matchingResult,
-                status = OrderStatus.Processing,
-                marketBalance = BigDecimal.valueOf(920.0),
-                remainingVolume = BigDecimal.valueOf(-20.0),
-                skipSize = 1,
-                cancelledSize = 0,
-                lkkTradesSize = 4,
-                cashMovementsSize = 8,
-                marketOrderTradesSize = 2,
-                completedLimitOrdersSize = 2,
-                limitOrdersReportSize = 2,
-                orderBookSize = 1)
-
-        assertCompletedLimitOrders(matchingResult.completedLimitOrders, false)
-        assertEquals("Client2", matchingResult.skipLimitOrders.first().clientId)
+        assertLimitOrderMatchingResult(matchingResult, status = OrderStatus.LeadToNegativeSpread, marketBalance = null, remainingVolume = BigDecimal.valueOf(-100.0))
+        assertEquals(4, getOrderBook("EURUSD", true).size)
     }
 
     @Test

@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.database.MessageLogDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.logging.DatabaseLogger
 import com.lykke.matching.engine.logging.MessageWrapper
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
@@ -63,9 +63,10 @@ open class LoggerConfig {
                                           logBlobName: String,
                                           @Value("\${azure.logs.balance.update.table}")
                                           logTable: String,
+                                          uuidHolder: UUIDHolder,
                                           balanceUpdatesLogQueue: BlockingQueue<MessageWrapper>): DatabaseLogger<*> {
         return DatabaseLogger<BalanceUpdate>(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString,
-                logTable, logBlobName), balanceUpdatesLogQueue)
+                logTable, logBlobName, uuidHolder), balanceUpdatesLogQueue)
     }
 
     @Bean
@@ -73,9 +74,10 @@ open class LoggerConfig {
                                      logBlobName: String,
                                      @Value("\${azure.logs.cash.operations.table}")
                                      logTable: String,
+                                     uuidHolder: UUIDHolder,
                                      cashInOutLogQueue: BlockingQueue<MessageWrapper>): DatabaseLogger<*> {
         return DatabaseLogger<CashOperation>(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString,
-                logTable, logBlobName), cashInOutLogQueue)
+                logTable, logBlobName, uuidHolder), cashInOutLogQueue)
     }
 
     @Bean
@@ -83,9 +85,10 @@ open class LoggerConfig {
                                         logBlobName: String,
                                         @Value("\${azure.logs.transfers.events.table}")
                                         logTable: String,
+                                        uuidHolder: UUIDHolder,
                                         cashTransferLogQueue: BlockingQueue<MessageWrapper>): DatabaseLogger<*> {
         return DatabaseLogger<CashTransferOperation>(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString,
-                logTable, logBlobName), cashTransferLogQueue)
+                logTable, logBlobName, uuidHolder), cashTransferLogQueue)
     }
 
     @Bean
@@ -93,9 +96,10 @@ open class LoggerConfig {
                                             logBlobName: String,
                                             @Value("\${azure.logs.limit.orders.table}")
                                             logTable: String,
+                                            uuidHolder: UUIDHolder,
                                             clientLimitOrdersLogQueue: BlockingQueue<MessageWrapper>): DatabaseLogger<*> {
         return DatabaseLogger<LimitOrdersReport>(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString,
-                logTable, logBlobName), clientLimitOrdersLogQueue)
+                logTable, logBlobName, uuidHolder), clientLimitOrdersLogQueue)
     }
 
     @Bean
@@ -103,9 +107,10 @@ open class LoggerConfig {
                                                  logBlobName: String,
                                                  @Value("\${azure.logs.market.orders.table}")
                                                  logTable: String,
+                                                 uuidHolder: UUIDHolder,
                                                  marketOrderWithTradesLogQueue: BlockingQueue<MessageWrapper>): DatabaseLogger<*> {
         return DatabaseLogger<MarketOrderWithTrades>(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString,
-                logTable, logBlobName), marketOrderWithTradesLogQueue)
+                logTable, logBlobName, uuidHolder), marketOrderWithTradesLogQueue)
     }
 
     @Bean
@@ -113,9 +118,10 @@ open class LoggerConfig {
                                                  logBlobName: String,
                                                  @Value("\${azure.logs.reserved.cash.operations.table}")
                                                  logTable: String,
+                                                 uuidHolder: UUIDHolder,
                                                  reservedCashOperationLogQueue: BlockingQueue<MessageWrapper>): DatabaseLogger<*> {
         return DatabaseLogger<ReservedCashOperation>(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString,
-                logTable, logBlobName), reservedCashOperationLogQueue)
+                logTable, logBlobName, uuidHolder), reservedCashOperationLogQueue)
     }
 
     @PostConstruct

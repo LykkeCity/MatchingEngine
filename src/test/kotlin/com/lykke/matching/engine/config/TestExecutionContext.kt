@@ -8,6 +8,7 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExecutionPersistenceService
@@ -60,10 +61,11 @@ open class TestExecutionContext {
 
     @Bean
     open fun matchingEngine(genericLimitOrderService: GenericLimitOrderService,
-                            balancesHolder: BalancesHolder,
-                            feeProcessor: FeeProcessor): MatchingEngine {
+                            feeProcessor: FeeProcessor,
+                            uuidHolder: UUIDHolder): MatchingEngine {
         return MatchingEngine(genericLimitOrderService,
-                feeProcessor)
+                feeProcessor,
+                uuidHolder)
     }
 
     @Bean
@@ -160,11 +162,13 @@ open class TestExecutionContext {
     open fun stopLimitOrdersProcessor(limitOrderInputValidator: LimitOrderInputValidator,
                                       stopOrderBusinessValidator: StopOrderBusinessValidator,
                                       applicationSettingsHolder: ApplicationSettingsHolder,
-                                      limitOrderProcessor: LimitOrderProcessor): StopLimitOrderProcessor {
+                                      limitOrderProcessor: LimitOrderProcessor,
+                                      uuidHolder: UUIDHolder): StopLimitOrderProcessor {
         return StopLimitOrderProcessor(limitOrderInputValidator,
                 stopOrderBusinessValidator,
                 applicationSettingsHolder,
-                limitOrderProcessor)
+                limitOrderProcessor,
+                uuidHolder)
     }
 
     @Bean
@@ -175,8 +179,11 @@ open class TestExecutionContext {
 
     @Bean
     open fun stopOrderBookProcessor(limitOrderProcessor: LimitOrderProcessor,
-                                    applicationSettingsHolder: ApplicationSettingsHolder): StopOrderBookProcessor {
-        return StopOrderBookProcessor(limitOrderProcessor, applicationSettingsHolder)
+                                    applicationSettingsHolder: ApplicationSettingsHolder,
+                                    uuidHolder: UUIDHolder): StopOrderBookProcessor {
+        return StopOrderBookProcessor(limitOrderProcessor,
+                applicationSettingsHolder,
+                uuidHolder)
     }
 
     @Bean

@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.outgoing.rabbit.impl.listeners
 
 import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.logging.DatabaseLogger
 import com.lykke.matching.engine.logging.MessageWrapper
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
@@ -28,6 +29,9 @@ class ClientsEventListener {
     @Autowired
     private lateinit var applicationContext: ApplicationContext
 
+    @Autowired
+    private lateinit var uuidHolder: UUIDHolder
+
     @Value("\${azure.logs.blob.container}")
     private lateinit var logBlobName: String
 
@@ -46,7 +50,10 @@ class ClientsEventListener {
                     BuiltinExchangeType.DIRECT,
                     DatabaseLogger(
                             AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString,
-                                    "$logTable$index", "$logBlobName$index"), applicationContext.getBean(RabbitEventUtils.getDatabaseLogQueueName(rabbitConfig.exchange, index)) as BlockingQueue<MessageWrapper>))
+                                    "$logTable$index",
+                                    "$logBlobName$index",
+                                    uuidHolder),
+                            applicationContext.getBean(RabbitEventUtils.getDatabaseLogQueueName(rabbitConfig.exchange, index)) as BlockingQueue<MessageWrapper>))
         }
     }
 }

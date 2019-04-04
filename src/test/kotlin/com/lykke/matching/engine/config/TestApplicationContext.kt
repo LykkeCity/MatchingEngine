@@ -305,9 +305,14 @@ open class TestApplicationContext {
                                         assetsHolder: AssetsHolder,
                                         reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                         reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
-                                        messageProcessingStatusHolder: MessageProcessingStatusHolder): ReservedCashInOutOperationService {
-        return ReservedCashInOutOperationService(assetsHolder, balancesHolder, reservedCashOperationQueue,
-                reservedCashInOutOperationValidator, messageProcessingStatusHolder)
+                                        messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                        uuidHolder: UUIDHolder): ReservedCashInOutOperationService {
+        return ReservedCashInOutOperationService(assetsHolder,
+                balancesHolder,
+                reservedCashOperationQueue,
+                reservedCashInOutOperationValidator,
+                messageProcessingStatusHolder,
+                uuidHolder)
     }
 
     @Bean
@@ -361,7 +366,8 @@ open class TestApplicationContext {
                                     assetsPairsHolder: AssetsPairsHolder,
                                     balancesHolder: BalancesHolder,
                                     applicationSettingsHolder: ApplicationSettingsHolder,
-                                    messageProcessingStatusHolder: MessageProcessingStatusHolder): MultiLimitOrderService {
+                                    messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                    testUUIDHolder: TestUUIDHolder): MultiLimitOrderService {
         return MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
@@ -371,8 +377,12 @@ open class TestApplicationContext {
                 assetsPairsHolder,
                 balancesHolder,
                 applicationSettingsHolder,
-                messageProcessingStatusHolder)
+                messageProcessingStatusHolder,
+                testUUIDHolder)
     }
+
+    @Bean
+    open fun testUUIDHolder() = TestUUIDHolder()
 
     @Bean
     open fun marketOrderService(matchingEngine: MatchingEngine,
@@ -387,7 +397,8 @@ open class TestApplicationContext {
                                 messageSender: MessageSender,
                                 marketOrderValidator: MarketOrderValidator,
                                 applicationSettingsHolder: ApplicationSettingsHolder,
-                                messageProcessingStatusHolder: MessageProcessingStatusHolder): MarketOrderService {
+                                messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                uuidHolder: UUIDHolder): MarketOrderService {
         return MarketOrderService(matchingEngine,
                 executionContextFactory,
                 stopOrderBookProcessor,
@@ -400,7 +411,8 @@ open class TestApplicationContext {
                 assetsPairsHolder,
                 marketOrderValidator,
                 applicationSettingsHolder,
-                messageProcessingStatusHolder)
+                messageProcessingStatusHolder,
+                uuidHolder)
     }
 
     @Bean
@@ -493,8 +505,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashInOutContextParser(assetsHolder: AssetsHolder): CashInOutContextParser {
-        return CashInOutContextParser(assetsHolder)
+    open fun cashInOutContextParser(assetsHolder: AssetsHolder, uuidHolder: UUIDHolder): CashInOutContextParser {
+        return CashInOutContextParser(assetsHolder, uuidHolder)
     }
 
     @Bean
@@ -517,8 +529,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashTransferInitializer(assetsHolder: AssetsHolder): CashTransferContextParser {
-        return CashTransferContextParser(assetsHolder)
+    open fun cashTransferInitializer(assetsHolder: AssetsHolder, uuidHolder: UUIDHolder): CashTransferContextParser {
+        return CashTransferContextParser(assetsHolder, uuidHolder)
     }
 
     @Bean
@@ -585,11 +597,14 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun singleLimitOrderContextParser(assetsPairsHolder: AssetsPairsHolder, assetsHolder: AssetsHolder,
-                                           applicationSettingsHolder: ApplicationSettingsHolder): SingleLimitOrderContextParser {
+    open fun singleLimitOrderContextParser(assetsPairsHolder: AssetsPairsHolder,
+                                           assetsHolder: AssetsHolder,
+                                           applicationSettingsHolder: ApplicationSettingsHolder,
+                                           uuidHolder: UUIDHolder): SingleLimitOrderContextParser {
         return SingleLimitOrderContextParser(assetsPairsHolder,
                 assetsHolder,
                 applicationSettingsHolder,
+                uuidHolder,
                 ThrottlingLogger.getLogger("limitOrder"))
     }
 
