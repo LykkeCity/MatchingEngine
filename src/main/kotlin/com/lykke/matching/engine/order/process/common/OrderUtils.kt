@@ -6,13 +6,15 @@ import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.order.OrderStatus
 import java.util.Date
-import java.util.UUID
 
 class OrderUtils {
     companion object {
-        fun createChildLimitOrder(order: LimitOrder, date: Date): LimitOrder {
-            return LimitOrder(UUID.randomUUID().toString(),
-                    UUID.randomUUID().toString(),
+        fun createChildLimitOrder(order: LimitOrder,
+                                  newOrderId: String,
+                                  newOrderExternalId: String,
+                                  date: Date): LimitOrder {
+            return LimitOrder(newOrderId,
+                    newOrderExternalId,
                     order.assetPairId,
                     order.clientId,
                     order.volume,

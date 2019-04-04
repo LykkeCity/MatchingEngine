@@ -3,6 +3,7 @@ package com.lykke.matching.engine.order.process
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.order.process.common.OrderUtils
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
@@ -11,7 +12,8 @@ import java.math.BigDecimal
 
 @Component
 class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcessor,
-                             private val applicationSettingsHolder: ApplicationSettingsHolder) {
+                             private val applicationSettingsHolder: ApplicationSettingsHolder,
+                             private val uuidHolder: UUIDHolder) {
 
     fun checkAndExecuteStopLimitOrders(executionContext: ExecutionContext): List<ProcessedOrder> {
         val processedOrders = mutableListOf<ProcessedOrder>()
@@ -25,7 +27,10 @@ class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcesso
 
     private fun processStopOrder(order: LimitOrder, executionContext: ExecutionContext): ProcessedOrder {
         reduceReservedBalance(order, executionContext)
-        val childLimitOrder = OrderUtils.createChildLimitOrder(order, executionContext.date)
+        val childLimitOrder = OrderUtils.createChildLimitOrder(order,
+                uuidHolder.getNextValue(),
+                uuidHolder.getNextValue(),
+                executionContext.date)
         order.childOrderExternalId = childLimitOrder.externalId
         addOrderToReport(order, executionContext)
         executionContext.info("Created child limit order (${childLimitOrder.externalId}) based on stop order ${order.externalId}")
