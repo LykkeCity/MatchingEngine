@@ -265,8 +265,6 @@ abstract class AbstractPerformanceTest {
                 assetsPairsHolder,
                 marketOrderValidator,
                 applicationSettingsHolder,
-                messageSequenceNumberHolder,
-                notificationSender,
                 messageProcessingStatusHolder,
                 uuidHolder)
 
