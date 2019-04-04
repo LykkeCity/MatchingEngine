@@ -8,6 +8,7 @@ import com.lykke.matching.engine.outgoing.rabbit.impl.publishers.RabbitMqPublish
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.rabbitmq.client.BuiltinExchangeType
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Profile
 import org.springframework.core.task.TaskExecutor
@@ -17,6 +18,10 @@ import java.util.concurrent.BlockingQueue
 @Service("rabbitMqService")
 @Profile("default")
 class RabbitMqServiceImpl(private val gson: Gson,
+                          @Value("#{Config.me.rabbitMqConfigs.heartBeatTimeout}")
+                          private val heartBeatTimeout: Long,
+                          @Value("#{Config.me.rabbitMqConfigs.handshakeTimeout}")
+                          private val handshakeTimeout: Long,
                           private val applicationEventPublisher: ApplicationEventPublisher,
                           @Qualifier("rabbitPublishersThreadPool")
                           private val rabbitPublishersThreadPool: TaskExecutor) : RabbitMqService<Event<*>> {
@@ -25,6 +30,6 @@ class RabbitMqServiceImpl(private val gson: Gson,
                                 appVersion: String, exchangeType: BuiltinExchangeType,
                                 messageDatabaseLogger: DatabaseLogger<Event<*>>?) {
         rabbitPublishersThreadPool.execute(RabbitMqPublisher(config.uri, config.exchange, publisherName, queue, appName, appVersion, exchangeType,
-                gson, applicationEventPublisher, messageDatabaseLogger))
+                gson, applicationEventPublisher, heartBeatTimeout, handshakeTimeout, messageDatabaseLogger))
     }
 }

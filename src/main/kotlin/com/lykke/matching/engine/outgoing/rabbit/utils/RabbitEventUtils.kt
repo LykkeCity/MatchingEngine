@@ -9,5 +9,9 @@ class RabbitEventUtils {
         fun getTrustedClientsEventConsumerQueueName(exchangeName: String, index: Int): String {
             return "trusted_client_queue_${exchangeName}_$index"
         }
+
+        fun getDatabaseLogQueueName(exchangeName: String, index: Int): String {
+            return "database_rabbit_log_${exchangeName}_$index"
+        }
     }
 }
