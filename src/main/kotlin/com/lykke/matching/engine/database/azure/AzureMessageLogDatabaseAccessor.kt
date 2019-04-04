@@ -3,6 +3,7 @@ package com.lykke.matching.engine.database.azure
 import com.lykke.matching.engine.daos.Message
 import com.lykke.matching.engine.daos.azure.AzureMessage
 import com.lykke.matching.engine.database.MessageLogDatabaseAccessor
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.utils.MAX_AZURE_FIELD_LENGTH
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
@@ -13,9 +14,11 @@ import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableServiceException
 import java.io.ByteArrayInputStream
 import java.net.HttpURLConnection
-import java.util.UUID
 
-class AzureMessageLogDatabaseAccessor(connString: String, tableName: String, logBlobContainer: String) : MessageLogDatabaseAccessor {
+class AzureMessageLogDatabaseAccessor(connString: String,
+                                      tableName: String,
+                                      logBlobContainer: String,
+                                      private val uuidHolder: UUIDHolder) : MessageLogDatabaseAccessor {
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(AzureMessageLogDatabaseAccessor::class.java.name)
@@ -57,7 +60,7 @@ class AzureMessageLogDatabaseAccessor(connString: String, tableName: String, log
     }
 
     private fun saveToBlob(message: String): String {
-        val blobName = UUID.randomUUID().toString()
+        val blobName = uuidHolder.getNextValue()
         val byteArray = message.toByteArray()
         logsBlobContainer.getBlockBlobReference(blobName).upload(ByteArrayInputStream(byteArray), byteArray.size.toLong())
         return blobName

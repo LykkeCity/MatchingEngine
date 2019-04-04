@@ -4,6 +4,7 @@ import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.process.common.OrderUtils
@@ -21,7 +22,8 @@ import java.math.BigDecimal
 class StopLimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputValidator,
                               private val stopOrderBusinessValidator: StopOrderBusinessValidator,
                               private val applicationSettingsHolder: ApplicationSettingsHolder,
-                              private val limitOrderProcessor: LimitOrderProcessor) : OrderProcessor<LimitOrder> {
+                              private val limitOrderProcessor: LimitOrderProcessor,
+                              private val uuidHolder: UUIDHolder) : OrderProcessor<LimitOrder> {
 
     override fun processOrder(order: LimitOrder, executionContext: ExecutionContext): ProcessedOrder {
         val orderContext = StopLimitOrderContext(order, executionContext)
@@ -129,7 +131,10 @@ class StopLimitOrderProcessor(private val limitOrderInputValidator: LimitOrderIn
         val order = orderContext.order
         order.price = orderContext.immediateExecutionPrice!!
         order.updateStatus(OrderStatus.Executed, orderContext.executionContext.date)
-        val childLimitOrder = OrderUtils.createChildLimitOrder(order, orderContext.executionContext.date)
+        val childLimitOrder = OrderUtils.createChildLimitOrder(order,
+                uuidHolder.getNextValue(),
+                uuidHolder.getNextValue(),
+                orderContext.executionContext.date)
         order.childOrderExternalId = childLimitOrder.externalId
         addOrderToReport(orderContext)
         orderContext.executionContext.info("Created child limit order (${childLimitOrder.externalId}) based on stop order ${order.externalId}")

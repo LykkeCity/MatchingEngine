@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.context.CashInOutContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.incoming.parsers.ContextParser
@@ -15,9 +16,10 @@ import java.math.BigDecimal
 import java.util.*
 
 @Component
-class CashInOutContextParser(private val assetsHolder: AssetsHolder) : ContextParser<CashInOutParsedData> {
+class CashInOutContextParser(private val assetsHolder: AssetsHolder,
+                             private val uuidHolder: UUIDHolder) : ContextParser<CashInOutParsedData> {
     override fun parse(messageWrapper: MessageWrapper): CashInOutParsedData {
-        val operationId = UUID.randomUUID().toString()
+        val operationId = uuidHolder.getNextValue()
 
         val message = ProtocolMessages.CashInOutOperation.parseFrom(messageWrapper.byteArray)
 
