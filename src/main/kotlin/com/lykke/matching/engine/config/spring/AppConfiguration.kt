@@ -62,6 +62,15 @@ open class AppConfiguration {
     }
 
     @Bean
+    open fun dataQueueSizeChecker(@DataQueue namesToInputQueues: Map<String, BlockingQueue<*>>): QueueSizeHealthChecker {
+        return QueueSizeHealthChecker(
+                MonitoredComponent.DATA_QUEUE,
+                namesToInputQueues,
+                config.me.queueConfig.dataMaxQueueSizeLimit,
+                config.me.queueConfig.dataRecoverQueueSizeLimit)
+    }
+
+    @Bean
     open fun monitoringStatsCollector(): MonitoringStatsCollector {
         return MonitoringStatsCollector()
     }
