@@ -33,6 +33,7 @@ import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.process.context.MarketOrderExecutionContext
@@ -44,7 +45,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.util.Date
-import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 @Service
@@ -61,7 +61,8 @@ class MarketOrderService @Autowired constructor(
         private val applicationSettingsHolder: ApplicationSettingsHolder,
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
         private val messageSender: MessageSender,
-        private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : AbstractService {
+        private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
+        private val uuidHolder: UUIDHolder) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
         private val STATS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.stats")
@@ -97,7 +98,7 @@ class MarketOrderService @Autowired constructor(
                 "asset: ${parsedMessage.assetPairId}, volume: ${NumberUtils.roundForPrint(parsedMessage.volume)}, " +
                 "straight: ${parsedMessage.straight}, fee: $feeInstruction, fees: $feeInstructions")
 
-        val order = MarketOrder(UUID.randomUUID().toString(), parsedMessage.uid, parsedMessage.assetPairId, parsedMessage.clientId, BigDecimal.valueOf(parsedMessage.volume), null,
+        val order = MarketOrder(uuidHolder.getNextValue(), parsedMessage.uid, parsedMessage.assetPairId, parsedMessage.clientId, BigDecimal.valueOf(parsedMessage.volume), null,
                 Processing.name, now, Date(parsedMessage.timestamp), now, null, parsedMessage.straight, BigDecimal.valueOf(parsedMessage.reservedLimitVolume),
                 feeInstruction, listOfFee(feeInstruction, feeInstructions))
 

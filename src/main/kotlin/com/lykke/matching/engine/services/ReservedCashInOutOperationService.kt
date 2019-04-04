@@ -5,6 +5,7 @@ import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -20,7 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.util.Date
-import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 @Service
@@ -28,7 +28,8 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                                                                 private val balancesHolder: BalancesHolder,
                                                                 private val reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                                                 private val reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
-                                                                private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : AbstractService {
+                                                                private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                                                private val uuidHolder: UUIDHolder) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(ReservedCashInOutOperationService::class.java.name)
@@ -51,7 +52,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                 "asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.reservedVolume)}")
 
         val now = Date()
-        val matchingEngineOperationId = UUID.randomUUID().toString()
+        val matchingEngineOperationId = uuidHolder.getNextValue()
         val operation = WalletOperation(message.clientId, message.assetId, BigDecimal.ZERO, BigDecimal.valueOf(message.reservedVolume))
 
         try {

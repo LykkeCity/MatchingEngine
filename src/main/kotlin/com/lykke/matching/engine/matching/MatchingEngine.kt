@@ -12,6 +12,7 @@ import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.NotEnoughFundsFeeException
 import com.lykke.matching.engine.fee.singleFeeTransfer
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -27,12 +28,12 @@ import java.math.BigDecimal
 import java.util.HashMap
 import java.util.HashSet
 import java.util.LinkedList
-import java.util.UUID
 import java.util.concurrent.PriorityBlockingQueue
 
 @Component
 class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderService,
-                     private val feeProcessor: FeeProcessor) {
+                     private val feeProcessor: FeeProcessor,
+                     private val uuidHolder: UUIDHolder) {
 
     companion object {
         private const val RELATIVE_SPREAD_ACCURACY = 4
@@ -242,7 +243,7 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
 
                 allOppositeCashMovements.addAll(oppositeCashMovements)
                 allOwnCashMovements.addAll(ownCashMovements)
-                val traderId = UUID.randomUUID().toString()
+                val tradeId = uuidHolder.getNextValue()
 
                 val roundedAbsoluteSpread = if (absoluteSpread != null) NumberUtils.setScaleRoundHalfUp(absoluteSpread, assetPair.accuracy) else null
                 val roundedRelativeSpread = if (relativeSpread != null) NumberUtils.setScaleRoundHalfUp(relativeSpread, RELATIVE_SPREAD_ACCURACY) else null
@@ -263,7 +264,7 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
                     quotingLimitVolume = bigDecimalToString(-oppositeRoundedVolume.abs())!!
                 }
 
-                marketOrderTrades.add(TradeInfo(traderId,
+                marketOrderTrades.add(TradeInfo(tradeId,
                         order.clientId,
                         NumberUtils.setScaleRoundHalfUp((if (isBuy) oppositeRoundedVolume else marketRoundedVolume).abs(), asset.accuracy).toPlainString(),
                         asset.assetId,
@@ -286,7 +287,7 @@ class MatchingEngine(private val genericLimitOrderService: GenericLimitOrderServ
                         quotingMarketVolume))
 
                 limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder,
-                        mutableListOf(LimitTradeInfo(traderId,
+                        mutableListOf(LimitTradeInfo(tradeId,
                                 limitOrder.clientId,
                                 limitAsset.assetId,
                                 NumberUtils.setScaleRoundHalfUp((if (isBuy) marketRoundedVolume else oppositeRoundedVolume).abs(), limitAsset.accuracy).toPlainString(),
