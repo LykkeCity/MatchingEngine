@@ -1,7 +1,5 @@
 package com.lykke.matching.engine.outgoing.rabbit.impl.listeners
 
-import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
-import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.logging.DatabaseLogger
 import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
@@ -13,7 +11,6 @@ import com.lykke.matching.engine.utils.monitoring.MonitoredComponent
 import com.lykke.utils.AppVersion
 import com.rabbitmq.client.BuiltinExchangeType
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
@@ -39,13 +36,7 @@ class ReservedCashOperationListener {
     private lateinit var applicationEventPublisher: ApplicationEventPublisher
 
     @Autowired
-    private lateinit var uuidHolder: UUIDHolder
-
-    @Value("\${azure.logs.blob.container}")
-    private lateinit var logBlobName: String
-
-    @Value("\${azure.logs.reserved.cash.operations.table}")
-    private lateinit var logTable: String
+    private lateinit var reservedCashOperationDatabaseLogger: DatabaseLogger<Any>
 
     @PostConstruct
     fun initRabbitMqPublisher() {
@@ -55,17 +46,13 @@ class ReservedCashOperationListener {
                 config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT,
-                DatabaseLogger(
-                        AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString,
-                                logTable,
-                                logBlobName,
-                                uuidHolder)))
+                reservedCashOperationDatabaseLogger)
     }
 
     @EventListener
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
-        if(rabbitFailureEvent.publisherName == ReservedCashOperationListener::class.java.simpleName) {
-            failed =  true
+        if (rabbitFailureEvent.publisherName == ReservedCashOperationListener::class.java.simpleName) {
+            failed = true
             logRmqFail(rabbitFailureEvent.publisherName)
             rabbitFailureEvent.failedEvent?.let {
                 reservedCashOperationQueue.putFirst(it as ReservedCashOperation)
