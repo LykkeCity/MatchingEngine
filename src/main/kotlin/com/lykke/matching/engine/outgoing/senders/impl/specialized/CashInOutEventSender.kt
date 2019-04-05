@@ -2,20 +2,19 @@ package com.lykke.matching.engine.outgoing.senders.impl.specialized
 
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.CashInOutEventData
-import com.lykke.matching.engine.outgoing.messages.OutgoingEventData
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
 import com.lykke.matching.engine.services.MessageSender
 import org.springframework.stereotype.Component
 
 @Component
-class CashInOutEventSender(private val messageSender: MessageSender) : SpecializedEventSender {
-    override fun getEventClass(): Class<*> {
+class CashInOutEventSender(private val messageSender: MessageSender) : SpecializedEventSender<CashInOutEventData> {
+    override fun getEventClass(): Class<CashInOutEventData> {
         return CashInOutEventData::class.java
     }
 
-    override fun sendEvent(eventData: OutgoingEventData) {
-        val cashInOutEventData = eventData.eventData as CashInOutEventData
+    override fun sendEvent(event: Any) {
+        val cashInOutEventData = event as CashInOutEventData
         val outgoingMessage = EventFactory.createCashInOutEvent(volume =  cashInOutEventData.walletOperation.amount,
                 sequenceNumber = cashInOutEventData.sequenceNumber,
                 messageId = cashInOutEventData.messageId,

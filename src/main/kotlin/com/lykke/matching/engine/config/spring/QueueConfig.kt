@@ -83,8 +83,8 @@ open class QueueConfig {
 
     @Bean
     @RabbitQueue
-    open fun outgoingEventData(): BlockingQueue<OutgoingEventData> {
-        return LinkedBlockingQueue<OutgoingEventData>()
+    open fun outgoingEventDataWrapperQueue(): BlockingQueue<OutgoingEventDataWrapper<*>> {
+        return LinkedBlockingQueue<OutgoingEventDataWrapper<*>>()
     }
     //</editor-fold>
 

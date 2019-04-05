@@ -3,7 +3,6 @@ package com.lykke.matching.engine.outgoing.senders.impl.specialized
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.CashInOutEventData
-import com.lykke.matching.engine.outgoing.messages.OutgoingEventData
 import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
 import com.lykke.matching.engine.utils.NumberUtils
 import org.springframework.stereotype.Component
@@ -11,13 +10,13 @@ import java.util.concurrent.BlockingQueue
 
 @Deprecated("Old format of outgoing message is deprecated")
 @Component
-class CashInOutOldEventSender(private val rabbitCashInOutQueue: BlockingQueue<CashOperation>) : SpecializedEventSender {
-    override fun getEventClass(): Class<*> {
+class CashInOutOldEventSender(private val rabbitCashInOutQueue: BlockingQueue<CashOperation>) : SpecializedEventSender<CashInOutEventData> {
+    override fun getEventClass(): Class<CashInOutEventData> {
         return CashInOutEventData::class.java
     }
 
-    override fun sendEvent(eventData: OutgoingEventData) {
-        val cashInOutEventData = eventData.eventData as CashInOutEventData
+    override fun sendEvent(event: Any) {
+        val cashInOutEventData = event as CashInOutEventData
         cashInOutEventData
                 .walletProcessor
                 .sendNotification(id = cashInOutEventData.externalId,

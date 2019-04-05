@@ -4,7 +4,6 @@ import com.lykke.matching.engine.daos.ExecutionData
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
-import com.lykke.matching.engine.outgoing.messages.OutgoingEventData
 import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
 import com.lykke.matching.engine.utils.event.isThereClientEvent
 import com.lykke.matching.engine.utils.event.isThereTrustedClientEvent
@@ -15,14 +14,14 @@ import java.util.concurrent.BlockingQueue
 @Component
 class OldFormatExecutionEventSender(private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                     private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                    private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>) : SpecializedEventSender {
+                                    private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>) : SpecializedEventSender<ExecutionData> {
 
-    override fun getEventClass(): Class<*> {
+    override fun getEventClass(): Class<ExecutionData> {
         return ExecutionData::class.java
     }
 
-    override fun sendEvent(eventData: OutgoingEventData) {
-        val executionData = eventData.eventData as ExecutionData
+    override fun sendEvent(event: Any) {
+        val executionData = event as ExecutionData
         val executionContext = executionData.executionContext
         sendBalanceUpdateEvent(executionContext)
         sendTrustedClientsExecutionEventIfNeeded(executionContext)

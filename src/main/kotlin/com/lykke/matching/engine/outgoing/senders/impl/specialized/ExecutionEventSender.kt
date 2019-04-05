@@ -4,7 +4,6 @@ import com.lykke.matching.engine.daos.ExecutionData
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.outgoing.messages.OutgoingEventData
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
 import com.lykke.matching.engine.services.AssetOrderBook
@@ -20,13 +19,13 @@ class ExecutionEventSender(private val messageSender: MessageSender,
                            private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                            private val genericLimitOrderService: GenericLimitOrderService,
                            private val orderBookQueue: BlockingQueue<OrderBook>,
-                           private val rabbitOrderBookQueue: BlockingQueue<OrderBook>) : SpecializedEventSender {
-    override fun getEventClass(): Class<*> {
+                           private val rabbitOrderBookQueue: BlockingQueue<OrderBook>) : SpecializedEventSender<ExecutionData> {
+    override fun getEventClass(): Class<ExecutionData> {
         return ExecutionData::class.java
     }
 
-    override fun sendEvent(eventData: OutgoingEventData) {
-        val executionData = eventData.eventData as  ExecutionData
+    override fun sendEvent(event: Any) {
+        val executionData = event as ExecutionData
 
         sendNonRabbitEvents(executionData.executionContext)
         sendOrderBooksEvents(executionData.executionContext)

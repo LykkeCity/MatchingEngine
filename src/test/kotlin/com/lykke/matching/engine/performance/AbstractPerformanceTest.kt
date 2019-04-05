@@ -1,7 +1,6 @@
 package com.lykke.matching.engine.performance
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
-import com.lykke.matching.engine.daos.ExecutionData
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.*
@@ -42,7 +41,7 @@ import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.outgoing.messages.OutgoingEventData
+import com.lykke.matching.engine.outgoing.messages.OutgoingEventDataWrapper
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.senders.impl.OutgoingEventProcessorImpl
@@ -129,7 +128,7 @@ abstract class AbstractPerformanceTest {
 
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
-    val outgoingEventData = LinkedBlockingQueue<OutgoingEventData>()
+    val outgoingEventData = LinkedBlockingQueue<OutgoingEventDataWrapper<*>>()
 
     val messageSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
 

@@ -57,7 +57,7 @@ open class AppConfiguration {
     }
 
     @Bean
-    open fun outgoingEventSendersByEventClass(specializedEventSenders: List<SpecializedEventSender>): Map<Class<*>, List<SpecializedEventSender>> {
+    open fun outgoingEventSendersByEventClass(specializedEventSenders: List<SpecializedEventSender<*>>): Map<Class<*>, List<SpecializedEventSender<*>>> {
         return specializedEventSenders.groupBy { it.getEventClass() }
     }
 
