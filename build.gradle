@@ -32,7 +32,7 @@ repositories {
 }
 
 ext {
-    kotlin_utils_version = '0.0.8-SNAPSHOT'
+    kotlin_utils_version = '0.0.9-SNAPSHOT'
     me_outgoing_contract_version = '1.0.0-SNAPSHOT'
     log4j_version = '1.2.17'
     protobuf_version = '3.6.0'
