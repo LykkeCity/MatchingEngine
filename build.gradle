@@ -33,6 +33,7 @@ repositories {
 
 ext {
     kotlin_utils_version = '0.0.8-SNAPSHOT'
+    client_accounts_lib_version = '1.0.2-SNAPSHOT'
     log4j_version = '1.2.17'
     protobuf_version = '3.6.0'
     azure_storage_version = '4.0.0'
@@ -52,6 +53,7 @@ ext {
 dependencies {
     // internal libs
     compile "org.bitbucket.lykke:kotlin-utils:$kotlin_utils_version"
+    compile "org.bitbucket.lykke:common-client-accounts:$client_accounts_lib_version"
 
     // external libs
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
