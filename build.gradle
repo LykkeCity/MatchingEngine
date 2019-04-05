@@ -33,6 +33,7 @@ repositories {
 
 ext {
     kotlin_utils_version = '0.0.14-SNAPSHOT'
+    me_outgoing_contract_version = '1.0.0-SNAPSHOT'
     protobuf_version = '3.6.0'
     azure_storage_version = '4.0.0'
     gson_version = '2.6.2'
@@ -51,7 +52,8 @@ ext {
 
 dependencies {
     // internal libs
-    compile ("org.bitbucket.lykke:kotlin-utils:$kotlin_utils_version")
+    compile "org.bitbucket.lykke:kotlin-utils:$kotlin_utils_version"
+    compile "org.bitbucket.lykke:me-outgoing-contract:$me_outgoing_contract_version"
 
     // external libs
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
