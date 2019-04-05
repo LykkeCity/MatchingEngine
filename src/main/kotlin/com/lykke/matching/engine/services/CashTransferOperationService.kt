@@ -23,7 +23,7 @@ import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.commons.lang3.StringUtils
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.Date
 import java.util.LinkedList
@@ -41,7 +41,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
     }
 
     companion object {
-        private val LOGGER = Logger.getLogger(CashTransferOperationService::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(CashTransferOperationService::class.java.name)
     }
 
     override fun processMessage(messageWrapper: MessageWrapper) {

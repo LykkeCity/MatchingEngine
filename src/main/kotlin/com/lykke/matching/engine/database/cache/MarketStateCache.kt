@@ -4,7 +4,7 @@ import com.lykke.matching.engine.daos.TickUpdateInterval
 import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.history.TickBlobHolder
 import com.lykke.utils.logging.PerformanceLogger
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.util.function.Consumer
 import java.util.stream.Collectors
@@ -14,7 +14,7 @@ class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDat
                        private val frequency: Long) {
 
     companion object {
-        private val performanceLogger = PerformanceLogger(Logger.getLogger("marketStateCache"), 10, "buildTicks: ")
+        private val performanceLogger = PerformanceLogger(LoggerFactory.getLogger("marketStateCache"), 10, "buildTicks: ")
     }
 
     private val assetPairToIntervalTickHolder = HashMap<String, HashMap<TickUpdateInterval, TickBlobHolder>>()

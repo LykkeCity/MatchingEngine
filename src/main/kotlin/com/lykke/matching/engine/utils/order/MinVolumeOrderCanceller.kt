@@ -8,7 +8,7 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.process.common.CancelRequest
 import com.lykke.matching.engine.order.process.common.LimitOrdersCancelExecutor
 import com.lykke.matching.engine.services.GenericLimitOrderService
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.ApplicationArguments
@@ -28,7 +28,7 @@ class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHold
                                                      private val cancelMinVolumeOrders: Boolean) : ApplicationRunner {
 
     companion object {
-        private val LOGGER = Logger.getLogger(MinVolumeOrderCanceller::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(MinVolumeOrderCanceller::class.java.name)
     }
 
     override fun run(args: ApplicationArguments?) {
