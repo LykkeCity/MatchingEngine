@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.outgoing.rabbit.impl.listeners
 
-import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
 import com.lykke.matching.engine.logging.DatabaseLogger
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
@@ -12,7 +11,6 @@ import com.lykke.matching.engine.utils.monitoring.MonitoredComponent
 import com.lykke.utils.AppVersion
 import com.rabbitmq.client.BuiltinExchangeType
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
@@ -37,11 +35,8 @@ class BalanceUpdatesListener {
     @Autowired
     private lateinit var applicationEventPublisher: ApplicationEventPublisher
 
-    @Value("\${azure.logs.blob.container}")
-    private lateinit var logBlobName: String
-
-    @Value("\${azure.logs.balance.update.table}")
-    private lateinit var logTable: String
+    @Autowired
+    private lateinit var balanceUpdatesDatabaseLogger: DatabaseLogger<Any>
 
     @PostConstruct
     fun initRabbitMqPublisher() {
@@ -51,9 +46,7 @@ class BalanceUpdatesListener {
                 config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT,
-                DatabaseLogger(
-                        AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString,
-                                logTable, logBlobName)))
+                balanceUpdatesDatabaseLogger)
     }
 
     @EventListener

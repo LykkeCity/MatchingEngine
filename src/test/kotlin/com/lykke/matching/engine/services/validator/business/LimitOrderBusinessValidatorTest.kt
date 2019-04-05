@@ -30,30 +30,6 @@ class LimitOrderBusinessValidatorTest {
                 maxValue = BigDecimal.valueOf(5.0))
     }
 
-
-    @Test(expected = OrderValidationException::class)
-    fun testLeadToNegativeSpread() {
-        //given
-        val limitOrderBusinessValidatorImpl = LimitOrderBusinessValidatorImpl()
-
-        try {
-            //when
-            val orderBook = getValidOrderBook()
-
-            orderBook.addOrder(getLimitOrder(fee = getValidFee(), volume = BigDecimal.valueOf(-1.0)))
-            limitOrderBusinessValidatorImpl.performValidation(true,
-                    getLimitOrder(fee = getValidFee()),
-                    BigDecimal.valueOf(10.0),
-                    BigDecimal.valueOf(9.0),
-                    ASSET_PAIR,
-                    orderBook,
-                    Date())
-        } catch (e: OrderValidationException) {
-            assertEquals(OrderStatus.LeadToNegativeSpread, e.orderStatus)
-            throw e
-        }
-    }
-
     @Test(expected = OrderValidationException::class)
     fun testPreviousOrderNotFount() {
         //given

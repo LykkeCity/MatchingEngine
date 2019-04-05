@@ -142,6 +142,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
 
         when (OrderStatus.valueOf(orderStatus)) {
             OrderStatus.NoLiquidity,
+            OrderStatus.LeadToNegativeSpread,
             OrderStatus.ReservedVolumeGreaterThanBalance,
             OrderStatus.NotEnoughFunds,
             OrderStatus.InvalidFee,

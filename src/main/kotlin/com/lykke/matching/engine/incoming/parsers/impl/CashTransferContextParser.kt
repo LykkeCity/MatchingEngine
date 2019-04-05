@@ -7,6 +7,7 @@ import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.holders.AssetsHolder
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.incoming.parsers.ContextParser
@@ -17,14 +18,15 @@ import java.math.BigDecimal
 import java.util.*
 
 @Component
-class CashTransferContextParser(private val assetsHolder: AssetsHolder) : ContextParser<CashTransferParsedData> {
+class CashTransferContextParser(private val assetsHolder: AssetsHolder,
+                                private val uuidHolder: UUIDHolder) : ContextParser<CashTransferParsedData> {
     override fun parse(messageWrapper: MessageWrapper): CashTransferParsedData {
         val message = ProtocolMessages.CashTransferOperation.parseFrom(messageWrapper.byteArray)
 
         val feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
         val feeInstructions = NewFeeInstruction.create(message.feesList)
 
-        val transferOperation = TransferOperation(UUID.randomUUID().toString(), message.id,
+        val transferOperation = TransferOperation(uuidHolder.getNextValue(), message.id,
                 message.fromClientId, message.toClientId,
                 assetsHolder.getAssetAllowNulls(message.assetId), Date(message.timestamp),
                 BigDecimal.valueOf(message.volume), BigDecimal.valueOf(message.overdraftLimit),
