@@ -32,7 +32,7 @@ repositories {
 }
 
 ext {
-    kotlin_utils_version = '0.0.10-SNAPSHOT'
+    kotlin_utils_version = '0.0.14-SNAPSHOT'
     protobuf_version = '3.6.0'
     azure_storage_version = '4.0.0'
     gson_version = '2.6.2'
