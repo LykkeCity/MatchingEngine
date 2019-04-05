@@ -707,7 +707,7 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun outgoingEventSendersByHandledClass(specializedEventSenders: List<SpecializedEventSender<*>>): Map<Class<*>, List<SpecializedEventSender<*>>> {
+    open fun specializedEventSendersByHandledClass(specializedEventSenders: List<SpecializedEventSender<*>>): Map<Class<*>, List<SpecializedEventSender<*>>> {
         return specializedEventSenders.groupBy { it.getEventClass() }
     }
 }

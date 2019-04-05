@@ -6,17 +6,24 @@ import com.lykke.matching.engine.outgoing.messages.CashTransferEventData
 import com.lykke.matching.engine.outgoing.messages.OutgoingEventDataWrapper
 import com.lykke.matching.engine.outgoing.senders.OutgoingEventProcessor
 import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
+import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.task.TaskExecutor
 import org.springframework.stereotype.Component
+import org.springframework.util.CollectionUtils
 import java.util.concurrent.BlockingQueue
 import javax.annotation.PostConstruct
 
 @Component
 class OutgoingEventProcessorImpl(private val outgoingEventDataWrapperQueue: BlockingQueue<OutgoingEventDataWrapper<*>>,
-                                 private val messageSendersByEventClass: Map<Class<*>, List<SpecializedEventSender<*>>>,
+                                 private val specializedEventSendersByHandledClass: Map<Class<*>, List<SpecializedEventSender<*>>>,
                                  @Qualifier("rabbitPublishersThreadPool")
                                  private val rabbitPublishersThreadPool: TaskExecutor): OutgoingEventProcessor {
+
+    private companion object {
+        val LOGGER = ThrottlingLogger.getLogger(OutgoingEventProcessorImpl::class.java.name)
+    }
+
     @PostConstruct
     private fun init() {
         rabbitPublishersThreadPool.execute {
@@ -49,7 +56,11 @@ class OutgoingEventProcessorImpl(private val outgoingEventDataWrapperQueue: Bloc
     }
 
     private fun processEvent(outgoingEventDataWrapper: OutgoingEventDataWrapper<*>) {
-        messageSendersByEventClass[outgoingEventDataWrapper.eventClass]?.forEach {
+        val eventSenders = specializedEventSendersByHandledClass[outgoingEventDataWrapper.eventClass]
+        if (CollectionUtils.isEmpty(eventSenders)) {
+            LOGGER.warn("Sender for class: ${outgoingEventDataWrapper.eventClass}, was not found, event is ignored")
+        }
+        eventSenders?.forEach {
             it.sendEvent(outgoingEventDataWrapper.eventData!!)
         }
     }
