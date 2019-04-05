@@ -39,7 +39,7 @@ class OrderBook {
     constructor(assetPair: String,
                 isBuy: Boolean,
                 timestamp: Date,
-                orders: Array<CurrentTransactionOrderBooksHolder.VolumePrice>) {
+                orders: Array<LimitOrder>) {
         this.assetPair = assetPair
         this.isBuy = isBuy
         this.timestamp = timestamp

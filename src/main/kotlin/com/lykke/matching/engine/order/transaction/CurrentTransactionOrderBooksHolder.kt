@@ -2,14 +2,12 @@ package com.lykke.matching.engine.order.transaction
 
 import com.lykke.matching.engine.daos.CopyWrapper
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.OrderBookEntry
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.matching.UpdatedOrderBookAndOrder
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
-import java.math.BigDecimal
 import java.util.Date
 import java.util.HashMap
 import java.util.concurrent.PriorityBlockingQueue
@@ -104,36 +102,15 @@ class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: G
         val price = if (isBuySide) orderBook.getBidPrice() else orderBook.getAskPrice()
         tradeInfoList.add(TradeInfo(assetPairId, isBuySide, price, date))
         val orders = orderBook.getOrderBook(isBuySide).toArray(emptyArray<LimitOrder>())
-        val volumePrices = Array(orders.size) { idx -> with(orders[idx]) { VolumePrice(externalId,
-                clientId,
-                price,
-                volume,
-                remainingVolume,
-                createdAt) } }
 
-        outgoingOrderBooks.add(OrderBookData(volumePrices,
+        outgoingOrderBooks.add(OrderBookData(orders,
                 assetPairId,
                 date,
                 isBuySide))
     }
 
-    class OrderBookData(val volumePrices: Array<VolumePrice>,
+    class OrderBookData(val volumePrices: Array<LimitOrder>,
                         val assetPair: String,
                         val date: Date,
                         val isBuySide: Boolean)
-
-    class VolumePrice(val externalId: String,
-                      val clientId: String,
-                      val price: BigDecimal,
-                      val volume: BigDecimal,
-                      val remainingVolume: BigDecimal,
-                      val createdAt: Date) : OrderBookEntry {
-        override fun getOrderPrice(): BigDecimal {
-            return price
-        }
-
-        override fun getCreationDate(): Date {
-            return createdAt
-        }
-    }
 }

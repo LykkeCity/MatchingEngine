@@ -13,7 +13,7 @@ import java.util.concurrent.BlockingQueue
 import javax.annotation.PostConstruct
 
 @Component
-class OutgoingEventProcessorImpl(private val outgoingEvents: BlockingQueue<OutgoingEventDataWrapper<*>>,
+class OutgoingEventProcessorImpl(private val outgoingEventDataWrapperQueue: BlockingQueue<OutgoingEventDataWrapper<*>>,
                                  private val messageSendersByEventClass: Map<Class<*>, List<SpecializedEventSender<*>>>,
                                  @Qualifier("rabbitPublishersThreadPool")
                                  private val rabbitPublishersThreadPool: TaskExecutor): OutgoingEventProcessor {
@@ -23,7 +23,7 @@ class OutgoingEventProcessorImpl(private val outgoingEvents: BlockingQueue<Outgo
             Thread.currentThread().name = OutgoingEventProcessorImpl::class.java.simpleName
             while (true) {
                 try {
-                    processEvent(outgoingEvents.take())
+                    processEvent(outgoingEventDataWrapperQueue.take())
                 } catch (e: InterruptedException) {
                     Thread.currentThread().interrupt()
                     return@execute
@@ -45,7 +45,7 @@ class OutgoingEventProcessorImpl(private val outgoingEvents: BlockingQueue<Outgo
     }
 
     private fun submitEvent(outgoingEventData: OutgoingEventDataWrapper<*>) {
-        outgoingEvents.put(outgoingEventData)
+        outgoingEventDataWrapperQueue.put(outgoingEventData)
     }
 
     private fun processEvent(outgoingEventDataWrapper: OutgoingEventDataWrapper<*>) {
