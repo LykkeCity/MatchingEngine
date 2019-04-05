@@ -8,7 +8,7 @@ import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.rabbitmq.client.*
-import org.apache.log4j.Logger
+import org.slf4j.Logger
 import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.TimeUnit
