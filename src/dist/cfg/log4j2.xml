@@ -66,7 +66,7 @@
             </Policies>
         </RollingRandomAccessFile>
 
-        <RollingRandomAccessFile name="SingleLimitStatsLog" filePattern="../log/singleLimitOrder.log.%d{yyyy-MM-dd}"
+        <RollingRandomAccessFile name="SingleLimitStatsLog" filePattern="../log/statsLimitOrder.log.%d{yyyy-MM-dd}"
                                  fileName="../log/statsLimitOrder.log"
                                  immediateFlush="true">
             <PatternLayout>
@@ -150,7 +150,7 @@
 
         <RollingRandomAccessFile name="RabbitMqPublisherStatsLog"
                                  filePattern="../log/statsRabbitMessages.log.%d{yyyy-MM-dd}"
-                                 fileName=".../log/statsRabbitMessages.log"
+                                 fileName="../log/statsRabbitMessages.log"
                                  immediateFlush="true">
             <PatternLayout>
                 <Pattern>%d{dd-MM HH:mm:ss:SSS} %p [%c{1}] %m%n</Pattern>
@@ -331,26 +331,30 @@
             <AppenderRef ref="ConsoleLog"/>
         </Logger>
 
-        <AsyncLogger name="com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller"
+        <Logger name="com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller"
                      level="info" additivity="false">
             <AppenderRef ref="ServerLog"/>
             <AppenderRef ref="ConsoleLog"/>
 
-        </AsyncLogger>
-        <AsyncLogger name="com.lykke.matching.engine.utils.order.AllOrdersCanceller"
+        </Logger>
+
+        <Logger name="com.lykke.matching.engine.utils.order.AllOrdersCanceller"
                      level="info" additivity="false">
             <AppenderRef ref="ServerLog"/>
             <AppenderRef ref="ConsoleLog"/>
-        </AsyncLogger>
+        </Logger>
+
         <AsyncLogger name="com.lykke.matching.engine.services.events.listeners.MessageProcessingSwitchListener"
                      level="info" additivity="false">
             <AppenderRef ref="ServerLog"/>
             <AppenderRef ref="ConsoleLog"/>
         </AsyncLogger>
+
         <AsyncLogger name="com.lykke.matching.engine.socket.impl.ClientHandlerImpl"
                      level="info" additivity="false">
             <AppenderRef ref="ServerLog"/>
         </AsyncLogger>
+
         <AsyncLogger name="com.lykke.matching.engine.messages.MessageProcessor"
                      level="info" additivity="false">
             <AppenderRef ref="ServerLog"/>
