@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.daos.ExecutionData
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
@@ -8,7 +7,6 @@ import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersist
 import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.outgoing.messages.*
-import com.lykke.matching.engine.outgoing.messages.CashInOutEventData
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import org.springframework.context.annotation.Bean
