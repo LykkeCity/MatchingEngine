@@ -6,6 +6,7 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -18,12 +19,11 @@ import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.commons.lang3.StringUtils
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.util.Date
-import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 @Service
@@ -32,11 +32,12 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                                                                 private val reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                                                 private val reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
                                                                 private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                                                private val uuidHolder: UUIDHolder,
                                                                 private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                                                 private val messageSender: MessageSender) : AbstractService {
 
     companion object {
-        private val LOGGER = Logger.getLogger(ReservedCashInOutOperationService::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(ReservedCashInOutOperationService::class.java.name)
     }
 
     override fun processMessage(messageWrapper: MessageWrapper) {
@@ -56,7 +57,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                 "asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.reservedVolume)}")
 
         val now = Date()
-        val matchingEngineOperationId = UUID.randomUUID().toString()
+        val matchingEngineOperationId = uuidHolder.getNextValue()
         val operation = WalletOperation(message.clientId, message.assetId, BigDecimal.ZERO, BigDecimal.valueOf(message.reservedVolume))
 
         try {

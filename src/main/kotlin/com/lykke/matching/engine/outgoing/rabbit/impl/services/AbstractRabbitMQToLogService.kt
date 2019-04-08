@@ -5,7 +5,7 @@ import com.lykke.matching.engine.logging.DatabaseLogger
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.rabbitmq.client.BuiltinExchangeType
-import org.apache.log4j.Logger
+import org.slf4j.Logger
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.Executors
 

@@ -5,14 +5,14 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.process.common.CancelRequest
 import com.lykke.matching.engine.order.process.common.LimitOrdersCancelExecutor
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
 class LimitOrdersCancelServiceHelper(private val limitOrdersCancelExecutor: LimitOrdersCancelExecutor) {
 
     companion object {
-        private val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(LimitOrderCancelService::class.java.name)
     }
 
     fun cancelOrdersAndWriteResponse(cancelRequest: CancelRequest): Boolean {

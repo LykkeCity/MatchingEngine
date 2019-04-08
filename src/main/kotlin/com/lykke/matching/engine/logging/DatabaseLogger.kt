@@ -4,17 +4,15 @@ import com.lykke.matching.engine.database.MessageLogDatabaseAccessor
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
 
-class DatabaseLogger<in T>(private val dbAccessor: MessageLogDatabaseAccessor) {
+class DatabaseLogger<in T>(private val dbAccessor: MessageLogDatabaseAccessor,
+                           private val queue: BlockingQueue<MessageWrapper>) {
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(DatabaseLogger::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
-
-    private val queue: BlockingQueue<MessageWrapper> = LinkedBlockingQueue()
 
     fun log(item: T, stringRepresentation: String) {
         queue.put(MessageWrapper(item as Any, stringRepresentation))
@@ -40,4 +38,4 @@ class DatabaseLogger<in T>(private val dbAccessor: MessageLogDatabaseAccessor) {
     }
 }
 
-private class MessageWrapper(val item: Any, val stringRepresentation: String)
+class MessageWrapper(val item: Any, val stringRepresentation: String)
