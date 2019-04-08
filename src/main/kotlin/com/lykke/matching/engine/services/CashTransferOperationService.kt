@@ -121,7 +121,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         val fees = feeProcessor.processFee(operation.fees, receiptOperation, operations, balancesGetter = balancesHolder)
 
         val walletProcessor = walletOperationsProcessorFactory.create(LOGGER)
-        walletProcessor.preProcess(operations)
+        walletProcessor.preProcess(operations, true)
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
         val updated = persistenceManager.persist(PersistenceData(walletProcessor.persistenceData(),
