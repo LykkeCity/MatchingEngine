@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.config.spring
 
 import com.lykke.matching.engine.daos.LkkTrade
+import com.lykke.matching.engine.daos.OutgoingEventData
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
@@ -83,8 +84,8 @@ open class QueueConfig {
 
     @Bean
     @RabbitQueue
-    open fun outgoingEventDataWrapperQueue(): BlockingQueue<OutgoingEventDataWrapper<*>> {
-        return LinkedBlockingQueue<OutgoingEventDataWrapper<*>>()
+    open fun outgoingEventDataQueue(): BlockingQueue<OutgoingEventData> {
+        return LinkedBlockingQueue<OutgoingEventData>()
     }
     //</editor-fold>
 

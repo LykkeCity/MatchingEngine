@@ -2,7 +2,10 @@ package com.lykke.matching.engine.matching
 
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.FeeType
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.holders.UUIDHolder
+import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstructions
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFeeInstruction
@@ -14,6 +17,8 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
+import java.util.*
+import java.util.concurrent.LinkedBlockingQueue
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (MatchingEngineTest.Config::class)])
@@ -69,6 +74,20 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
                 ),
                 matchingResult.oppositeCashMovements
         )
+    }
+
+    @Test
+    fun test() {
+        val assetOrderBook = AssetOrderBook("BTC")
+
+        for (i in 0..9999) {
+            assetOrderBook.addOrder(buildLimitOrder(price = Random().nextDouble() * 10, volume = -501.0))
+        }
+
+        val start = System.nanoTime()
+        assetOrderBook.getOrderBook(false).toArray()
+        val end = System.nanoTime()
+        println((end - start) / 1000_000.0)
     }
 
     @Test

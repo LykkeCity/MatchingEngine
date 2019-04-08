@@ -2,6 +2,7 @@ package com.lykke.matching.engine.config
 
 import com.lykke.matching.engine.daos.ExecutionData
 import com.lykke.matching.engine.daos.LkkTrade
+import com.lykke.matching.engine.daos.OutgoingEventData
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
@@ -32,7 +33,6 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.outgoing.messages.OutgoingEventDataWrapper
 import com.lykke.matching.engine.outgoing.senders.OutgoingEventProcessor
 import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
 import com.lykke.matching.engine.outgoing.senders.impl.specialized.CashInOutEventSender
@@ -60,7 +60,7 @@ import java.util.concurrent.BlockingQueue
 open class TestExecutionContext {
 
     @Mock
-    private val outgoingEvents = SyncQueue<OutgoingEventDataWrapper<*>>()
+    private val outgoingEvents = SyncQueue<OutgoingEventData>()
 
     @Bean
     open fun matchingEngine(genericLimitOrderService: GenericLimitOrderService,

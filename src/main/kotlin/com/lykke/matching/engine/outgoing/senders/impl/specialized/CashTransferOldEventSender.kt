@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.outgoing.senders.impl.specialized
 
+import com.lykke.matching.engine.daos.OutgoingEventData
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.fee.singleFeeTransfer
 import com.lykke.matching.engine.messages.MessageType
@@ -18,7 +19,7 @@ class CashTransferOldEventSender(private val notificationQueue: BlockingQueue<Ca
         return CashTransferEventData::class.java
     }
 
-    override fun sendEvent(event: Any) {
+    override fun sendEvent(event: OutgoingEventData) {
         val cashTransferEventData = event as CashTransferEventData
         val transferOperation = cashTransferEventData.transferOperation
 

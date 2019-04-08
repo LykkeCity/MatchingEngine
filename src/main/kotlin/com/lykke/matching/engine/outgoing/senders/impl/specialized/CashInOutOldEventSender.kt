@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.outgoing.senders.impl.specialized
 
+import com.lykke.matching.engine.daos.OutgoingEventData
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.CashInOutEventData
@@ -15,7 +16,7 @@ class CashInOutOldEventSender(private val rabbitCashInOutQueue: BlockingQueue<Ca
         return CashInOutEventData::class.java
     }
 
-    override fun sendEvent(event: Any) {
+    override fun sendEvent(event: OutgoingEventData) {
         val cashInOutEventData = event as CashInOutEventData
         cashInOutEventData
                 .walletProcessor

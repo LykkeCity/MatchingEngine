@@ -1,6 +1,8 @@
 package com.lykke.matching.engine.outgoing.senders
 
-interface SpecializedEventSender<T> {
+import com.lykke.matching.engine.daos.OutgoingEventData
+
+interface SpecializedEventSender<T : OutgoingEventData> {
     fun getEventClass(): Class<T>
-    fun sendEvent(event: Any)
+    fun sendEvent(event: OutgoingEventData)
 }

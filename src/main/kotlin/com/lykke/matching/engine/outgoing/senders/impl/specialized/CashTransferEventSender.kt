@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.outgoing.senders.impl.specialized
 
+import com.lykke.matching.engine.daos.OutgoingEventData
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.CashTransferEventData
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
@@ -13,7 +14,7 @@ class CashTransferEventSender(val messageSender: MessageSender): SpecializedEven
         return CashTransferEventData::class.java
     }
 
-    override fun sendEvent(event: Any) {
+    override fun sendEvent(event: OutgoingEventData) {
         val cashTransferEventData = event as CashTransferEventData
         val outgoingMessage = EventFactory.createCashTransferEvent(cashTransferEventData.sequenceNumber,
                 cashTransferEventData.messageId,

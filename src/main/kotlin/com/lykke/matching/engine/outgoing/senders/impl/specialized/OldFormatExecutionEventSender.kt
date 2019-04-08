@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.outgoing.senders.impl.specialized
 
 import com.lykke.matching.engine.daos.ExecutionData
+import com.lykke.matching.engine.daos.OutgoingEventData
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
@@ -20,7 +21,7 @@ class OldFormatExecutionEventSender(private val clientLimitOrdersQueue: Blocking
         return ExecutionData::class.java
     }
 
-    override fun sendEvent(event: Any) {
+    override fun sendEvent(event: OutgoingEventData) {
         val executionData = event as ExecutionData
         val executionContext = executionData.executionContext
         sendBalanceUpdateEvent(executionContext)
