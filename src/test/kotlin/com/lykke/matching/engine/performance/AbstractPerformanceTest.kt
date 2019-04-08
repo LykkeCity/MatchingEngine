@@ -189,7 +189,7 @@ abstract class AbstractPerformanceTest {
                 LimitOrderCancelOperationContextParser(),
                 LimitOrderMassCancelOperationContextParser(),
                 MultilimitOrderPreprocessor(messageProcessingStatusHolder, limitOrderInputValidator, MultilimitOrderContextParser(ThrottlingLogger.getLogger("test"),
-                        applicationSettingsHolder, assetsPairsHolder, assetsHolder),
+                        applicationSettingsHolder, assetsPairsHolder, assetsHolder, uuidHolder),
                         LinkedBlockingQueue<MessageWrapper>(), ThrottlingLogger.getLogger("test")))
 
         genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, expiryOrdersQueue)
@@ -246,12 +246,7 @@ abstract class AbstractPerformanceTest {
                 stopOrderBookProcessor,
                 executionDataApplyService,
                 previousLimitOrdersProcessor,
-                assetsHolder,
                 balancesHolder,
-                assetsPairsHolder,
-                balancesHolder,
-                applicationSettingsHolder,
-                messageProcessingStatusHolder,
                 uuidHolder)
 
         val marketOrderValidator = MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder)

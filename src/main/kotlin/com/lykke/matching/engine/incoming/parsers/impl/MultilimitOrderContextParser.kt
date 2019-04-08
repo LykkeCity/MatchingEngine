@@ -12,6 +12,7 @@ import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.data.MultilimitOrderParsedData
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -31,7 +32,8 @@ class MultilimitOrderContextParser(
         val logger: ThrottlingLogger,
         val applicationSettingsHolder: ApplicationSettingsHolder,
         val assertPairsHolder: AssetsPairsHolder,
-        val assetsHolder: AssetsHolder) : ContextParser<MultilimitOrderParsedData> {
+        val assetsHolder: AssetsHolder,
+        val uuid: UUIDHolder) : ContextParser<MultilimitOrderParsedData> {
     override fun parse(messageWrapper: MessageWrapper): MultilimitOrderParsedData {
         val message = parseMultiLimitOrder(messageWrapper.byteArray)
         val trustedClient = applicationSettingsHolder.isTrustedClient(message.clientId)
@@ -114,7 +116,7 @@ class MultilimitOrderContextParser(
             val feeInstructions = NewLimitOrderFeeInstruction.create(currentOrder.feesList)
             val previousExternalId = if (currentOrder.hasOldUid()) currentOrder.oldUid else null
 
-            val order = LimitOrder(UUID.randomUUID().toString(),
+            val order = LimitOrder(uuid.getNextValue(),
                     currentOrder.uid,
                     message.assetPairId,
                     message.clientId,

@@ -352,13 +352,15 @@ open class TestApplicationContext {
                                     assetsHolder: AssetsHolder,
                                     assetsPairsHolder: AssetsPairsHolder,
                                     balancesHolder: BalancesHolder,
-                                    applicationSettingsHolder: ApplicationSettingsHolder): MultiLimitOrderService {
+                                    applicationSettingsHolder: ApplicationSettingsHolder,
+                                    uuidHolder: TestUUIDHolder): MultiLimitOrderService {
         return MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
                 executionDataApplyService,
                 previousLimitOrdersProcessor,
-                balancesHolder)
+                balancesHolder,
+                uuidHolder)
     }
 
     @Bean
@@ -591,8 +593,9 @@ open class TestApplicationContext {
     @Bean
     open fun multilimitOrderContextParser(applicationSettingsHolder: ApplicationSettingsHolder,
                                           assetsPairsHolder: AssetsPairsHolder,
-                                          assetsHolder: AssetsHolder): MultilimitOrderContextParser {
-        return MultilimitOrderContextParser(ThrottlingLogger.getLogger("multilimitOrder"), applicationSettingsHolder, assetsPairsHolder, assetsHolder)
+                                          assetsHolder: AssetsHolder,
+                                          uuidHolder: UUIDHolder): MultilimitOrderContextParser {
+        return MultilimitOrderContextParser(ThrottlingLogger.getLogger("multilimitOrder"), applicationSettingsHolder, assetsPairsHolder, assetsHolder, uuidHolder)
     }
 
     @Bean

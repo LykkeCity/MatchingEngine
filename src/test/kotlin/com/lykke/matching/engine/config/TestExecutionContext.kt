@@ -115,7 +115,8 @@ open class TestExecutionContext {
     @Bean
     open fun stopLimitOrdersProcessor(stopOrderBusinessValidator: StopOrderBusinessValidator,
                                       applicationSettingsHolder: ApplicationSettingsHolder,
-                                      limitOrderProcessor: LimitOrderProcessor): StopLimitOrderProcessor {
+                                      limitOrderProcessor: LimitOrderProcessor,
+                                      uuidHolder: UUIDHolder): StopLimitOrderProcessor {
         return StopLimitOrderProcessor(
                 stopOrderBusinessValidator,
                 applicationSettingsHolder,
