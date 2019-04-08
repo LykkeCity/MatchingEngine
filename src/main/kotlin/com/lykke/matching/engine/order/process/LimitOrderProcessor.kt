@@ -121,6 +121,7 @@ class LimitOrderProcessor(private val limitOrderBusinessValidator: LimitOrderBus
 
         when (OrderStatus.valueOf(orderStatus)) {
             OrderStatus.NoLiquidity,
+            OrderStatus.LeadToNegativeSpread,
             OrderStatus.ReservedVolumeGreaterThanBalance,
             OrderStatus.NotEnoughFunds,
             OrderStatus.InvalidFee,

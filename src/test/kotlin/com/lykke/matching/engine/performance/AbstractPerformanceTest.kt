@@ -20,6 +20,7 @@ import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.TestUUIDHolder
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.MultilimitOrderContextParser
@@ -141,6 +142,7 @@ abstract class AbstractPerformanceTest {
     }
 
     open fun initServices() {
+        val uuidHolder = TestUUIDHolder()
         clearMessageQueues()
         testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
         applicationSettingsCache = ApplicationSettingsCache(testSettingsDatabaseAccessor, ApplicationEventPublisher {})
@@ -173,9 +175,13 @@ abstract class AbstractPerformanceTest {
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
         val limitOrderInputValidator = LimitOrderInputValidatorImpl(applicationSettingsHolder)
-        singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsHolder, LOGGER)
-        cashInOutContextParser = CashInOutContextParser(assetsHolder)
-        cashTransferContextParser = CashTransferContextParser(assetsHolder)
+        singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder,
+                assetsHolder,
+                applicationSettingsHolder,
+                uuidHolder,
+                LOGGER)
+        cashInOutContextParser = CashInOutContextParser(assetsHolder, uuidHolder)
+        cashTransferContextParser = CashTransferContextParser(assetsHolder, uuidHolder)
 
         messageBuilder = MessageBuilder(SingleLimitOrderPreprocessor(singleLimitOrderContextParser, LinkedBlockingQueue<MessageWrapper>(), messageProcessingStatusHolder, ThrottlingLogger.getLogger("test")),
                 cashInOutContextParser,
@@ -209,7 +215,7 @@ abstract class AbstractPerformanceTest {
 
         val matchingResultHandlingHelper = MatchingResultHandlingHelper(applicationSettingsHolder)
 
-        val matchingEngine = MatchingEngine(genericLimitOrderService, feeProcessor)
+        val matchingEngine = MatchingEngine(genericLimitOrderService, feeProcessor, uuidHolder)
 
         val limitOrderProcessor = LimitOrderProcessor(
                 LimitOrderBusinessValidatorImpl(),
@@ -220,11 +226,12 @@ abstract class AbstractPerformanceTest {
         val stopOrderProcessor = StopLimitOrderProcessor(
                 StopOrderBusinessValidatorImpl(),
                 applicationSettingsHolder,
-                limitOrderProcessor)
+                limitOrderProcessor,
+                uuidHolder)
 
         val genericLimitOrdersProcessor = GenericLimitOrdersProcessor(limitOrderProcessor, stopOrderProcessor)
 
-        val stopOrderBookProcessor = StopOrderBookProcessor(limitOrderProcessor, applicationSettingsHolder)
+        val stopOrderBookProcessor = StopOrderBookProcessor(limitOrderProcessor, applicationSettingsHolder, uuidHolder)
 
         val previousLimitOrdersProcessor = PreviousLimitOrdersProcessor(genericLimitOrderService, genericStopLimitOrderService, limitOrdersCanceller)
 
@@ -239,7 +246,13 @@ abstract class AbstractPerformanceTest {
                 stopOrderBookProcessor,
                 executionDataApplyService,
                 previousLimitOrdersProcessor,
-                balancesHolder)
+                assetsHolder,
+                balancesHolder,
+                assetsPairsHolder,
+                balancesHolder,
+                applicationSettingsHolder,
+                messageProcessingStatusHolder,
+                uuidHolder)
 
         val marketOrderValidator = MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder)
         marketOrderService = MarketOrderService(matchingEngine,
@@ -254,7 +267,8 @@ abstract class AbstractPerformanceTest {
                 applicationSettingsHolder,
                 messageSequenceNumberHolder,
                 notificationSender,
-                messageProcessingStatusHolder)
+                messageProcessingStatusHolder,
+                uuidHolder)
 
     }
 }

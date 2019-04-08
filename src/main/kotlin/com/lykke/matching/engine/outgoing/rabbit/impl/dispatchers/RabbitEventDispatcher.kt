@@ -5,7 +5,7 @@ import com.lykke.matching.engine.outgoing.rabbit.events.RabbitReadyEvent
 import com.lykke.matching.engine.utils.monitoring.HealthMonitorEvent
 import com.lykke.matching.engine.utils.monitoring.MonitoredComponent
 import com.lykke.utils.logging.MetricsLogger
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.event.EventListener
@@ -20,7 +20,7 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
 
     companion object {
         val METRICS_LOGGER = MetricsLogger.getLogger()
-        val LOGGER = Logger.getLogger(RabbitEventDispatcher::class.java)
+        val LOGGER = LoggerFactory.getLogger(RabbitEventDispatcher::class.java)
     }
 
     private var failedEventConsumers = HashSet<String>()
@@ -44,6 +44,8 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
 
     @PostConstruct
     private fun init() {
+        val queueNames = queueNameToQueue.keys.joinToString()
+        LOGGER.info("Starting rabbit dispatcher for queues: $queueNames")
         this.start()
     }
 

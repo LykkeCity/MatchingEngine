@@ -15,6 +15,7 @@ import java.util.concurrent.BlockingDeque
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.LinkedBlockingQueue
+import com.lykke.matching.engine.logging.MessageWrapper as LoggingMessageWrapper
 
 @Configuration
 open class QueueConfig {
@@ -126,36 +127,77 @@ open class QueueConfig {
     }
     //</editor-fold>
 
-
-    //<editor-fold desc="Etc queues">
+    //<editor-fold desc="Data queues">
     @Bean
-    open fun orderBookQueue(): BlockingQueue<OrderBook> {
-        return LinkedBlockingQueue<OrderBook>()
+    @DataQueue
+    open fun balanceUpdatesLogQueue(): BlockingQueue<LoggingMessageWrapper> {
+        return LinkedBlockingQueue()
     }
 
     @Bean
-    open fun dbTransferOperationQueue(): BlockingQueue<TransferOperation> {
-        return LinkedBlockingQueue<TransferOperation>()
+    @DataQueue
+    open fun cashInOutLogQueue(): BlockingQueue<LoggingMessageWrapper> {
+        return LinkedBlockingQueue()
     }
 
     @Bean
-    open fun lkkTradesQueue(): BlockingQueue<List<LkkTrade>> {
-        return LinkedBlockingQueue<List<LkkTrade>>()
+    @DataQueue
+    open fun cashTransferLogQueue(): BlockingQueue<LoggingMessageWrapper> {
+        return LinkedBlockingQueue()
     }
 
     @Bean
+    @DataQueue
+    open fun clientLimitOrdersLogQueue(): BlockingQueue<LoggingMessageWrapper> {
+        return LinkedBlockingQueue()
+    }
+
+    @Bean
+    @DataQueue
+    open fun marketOrderWithTradesLogQueue(): BlockingQueue<LoggingMessageWrapper> {
+        return LinkedBlockingQueue()
+    }
+
+    @Bean
+    @DataQueue
+    open fun reservedCashOperationLogQueue(): BlockingQueue<LoggingMessageWrapper> {
+        return LinkedBlockingQueue()
+    }
+
+    @Bean
+    @DataQueue
     open fun updatedOrderBooksQueue(): BlockingQueue<OrderBookPersistEvent>? {
         return LinkedBlockingQueue<OrderBookPersistEvent>()
     }
 
     @Bean
+    @DataQueue
     open fun updatedStopOrderBooksQueue(): BlockingQueue<StopOrderBookPersistEvent>? {
         return LinkedBlockingQueue<StopOrderBookPersistEvent>()
     }
 
     @Bean
+    @DataQueue
     open fun updatedWalletsQueue(): BlockingQueue<AccountPersistEvent>? {
         return LinkedBlockingQueue<AccountPersistEvent>()
+    }
+
+    @Bean
+    @DataQueue
+    open fun lkkTradesQueue(): BlockingQueue<List<LkkTrade>> {
+        return LinkedBlockingQueue<List<LkkTrade>>()
+    }
+
+    @Bean
+    @DataQueue
+    open fun orderBookQueue(): BlockingQueue<OrderBook> {
+        return LinkedBlockingQueue<OrderBook>()
+    }
+
+    @Bean
+    @DataQueue
+    open fun dbTransferOperationQueue(): BlockingQueue<TransferOperation> {
+        return LinkedBlockingQueue<TransferOperation>()
     }
     //</editor-fold>
 }

@@ -3,7 +3,7 @@ package com.lykke.matching.engine.utils.logging
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.files.clean.LogFilesCleaner
 import com.lykke.utils.files.clean.config.LogFilesCleanerConfig
-import org.apache.log4j.Logger
+import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component

@@ -59,7 +59,7 @@ class GeneralHealthMonitor: HealthMonitor {
         previousMaintenanceModeStatus = false
         val message = "Maintenance mode is off"
         LOGGER.info(message)
-        METRICS_LOGGER.logWarning(message)
+        METRICS_LOGGER.logError(message)
     }
 
     private fun getQualifier(event: HealthMonitorEvent): String {

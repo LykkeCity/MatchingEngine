@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.context.MultilimitOrderContext
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -15,7 +16,7 @@ import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
 import com.lykke.matching.engine.services.utils.MultiOrderFilter
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.Date
 
@@ -25,10 +26,11 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                              private val stopOrderBookProcessor: StopOrderBookProcessor,
                              private val executionDataApplyService: ExecutionDataApplyService,
                              private val previousLimitOrdersProcessor: PreviousLimitOrdersProcessor,
-                             private val balancesHolder: BalancesHolder) : AbstractService {
+                             private val balancesHolder: BalancesHolder,
+                             private val uuidHolder: UUIDHolder) : AbstractService {
 
     companion object {
-        private val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(MultiLimitOrderService::class.java.name)
     }
 
     override fun processMessage(messageWrapper: MessageWrapper) {

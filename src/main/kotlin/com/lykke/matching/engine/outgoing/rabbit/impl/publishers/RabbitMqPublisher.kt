@@ -7,7 +7,7 @@ import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.rabbitmq.client.AMQP
 import com.rabbitmq.client.BuiltinExchangeType
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.BlockingQueue
 
@@ -20,14 +20,16 @@ class RabbitMqPublisher(uri: String,
                         exchangeType: BuiltinExchangeType,
                         private val gson: Gson,
                         applicationEventPublisher: ApplicationEventPublisher,
+                        heartBeatTimeout: Long,
+                        handshakeTimeout: Long,
                         private val messageDatabaseLogger: DatabaseLogger<Event<*>>? = null) : AbstractRabbitMqPublisher<Event<*>>(uri, exchangeName, publisherName,
         queue, appName, appVersion, exchangeType, LOGGER,
-        MESSAGES_LOGGER, METRICS_LOGGER, STATS_LOGGER, applicationEventPublisher, messageDatabaseLogger) {
+        MESSAGES_LOGGER, METRICS_LOGGER, STATS_LOGGER, applicationEventPublisher, heartBeatTimeout, handshakeTimeout, messageDatabaseLogger) {
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(RabbitMqPublisher::class.java.name)
-        private val MESSAGES_LOGGER = Logger.getLogger("${RabbitMqPublisher::class.java.name}.message")
+        private val MESSAGES_LOGGER = LoggerFactory.getLogger("${RabbitMqPublisher::class.java.name}.message")
         private val METRICS_LOGGER = MetricsLogger.getLogger()
-        private val STATS_LOGGER = Logger.getLogger("${RabbitMqPublisher::class.java.name}.stats")
+        private val STATS_LOGGER = LoggerFactory.getLogger("${RabbitMqPublisher::class.java.name}.stats")
     }
 
     override fun getRabbitPublishRequest(item: Event<*>): RabbitPublishRequest {
