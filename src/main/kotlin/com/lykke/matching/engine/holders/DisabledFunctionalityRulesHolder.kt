@@ -137,7 +137,7 @@ class DisabledFunctionalityRulesHolder(val applicationSettingsCache: Application
     }
 
     @EventListener
-    private fun onNewAssetPair(newAssetPairEvent: NewAssetPairsEvent) {
+    private fun onNewAssetPair(newAssetPairsEvent: NewAssetPairsEvent) {
         init()
     }
 

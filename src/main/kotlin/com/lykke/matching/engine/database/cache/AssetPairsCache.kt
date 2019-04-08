@@ -23,7 +23,10 @@ class AssetPairsCache @Autowired constructor(
         private val LOGGER = LoggerFactory.getLogger(AssetPairsCache::class.java)
     }
 
+    @Volatile
     private var assetPairsById: Map<String, AssetPair> = HashMap()
+
+    @Volatile
     private var assetPairsByPair: Map<String, AssetPair> = HashMap()
 
     init {
