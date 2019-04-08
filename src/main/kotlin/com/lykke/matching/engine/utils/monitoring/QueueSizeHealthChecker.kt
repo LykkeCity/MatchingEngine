@@ -1,11 +1,12 @@
 package com.lykke.matching.engine.utils.monitoring
 
 import com.lykke.utils.logging.MetricsLogger
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.annotation.Scheduled
 import java.util.concurrent.BlockingQueue
+import javax.annotation.PostConstruct
 
 class QueueSizeHealthChecker(private val monitoredComponent: MonitoredComponent,
                              private val nameToInputQueue: Map<String, BlockingQueue<*>>,
@@ -14,7 +15,7 @@ class QueueSizeHealthChecker(private val monitoredComponent: MonitoredComponent,
 
     private companion object {
         val METRICS_LOGGER = MetricsLogger.getLogger()
-        val LOGGER = Logger.getLogger(QueueSizeHealthChecker::class.java)!!
+        val LOGGER = LoggerFactory.getLogger(QueueSizeHealthChecker::class.java)!!
 
         const val QUEUE_REACHED_THRESHOLD_MESSAGE = "Queue: %s, has reached max size threshold, current queue size is %d"
         const val QUEUE_RECOVERED_MESSAGE = "Queue: %s, has normal size again, current queue size is %d"
@@ -25,6 +26,12 @@ class QueueSizeHealthChecker(private val monitoredComponent: MonitoredComponent,
 
     @Autowired
     private lateinit var applicationEventPublisher: ApplicationEventPublisher
+
+    @PostConstruct
+    fun init() {
+        val monitoredQueueNames = nameToInputQueue.keys.joinToString()
+        LOGGER.info("Starting health monitoring for queues: $monitoredQueueNames")
+    }
 
     @Scheduled(fixedRateString = "#{Config.me.queueConfig.queueSizeHealthCheckInterval}", initialDelayString = "#{Config.me.queueConfig.queueSizeHealthCheckInterval}")
     fun checkQueueSize() {

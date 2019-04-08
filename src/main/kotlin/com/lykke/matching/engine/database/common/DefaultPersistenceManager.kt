@@ -8,7 +8,7 @@ import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.utils.logging.MetricsLogger
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 
 class DefaultPersistenceManager(private val walletDatabaseAccessor: WalletDatabaseAccessor,
                                 private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
@@ -17,7 +17,7 @@ class DefaultPersistenceManager(private val walletDatabaseAccessor: WalletDataba
     : PersistenceManager {
 
     companion object {
-        private val LOGGER = Logger.getLogger(DefaultPersistenceManager::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(DefaultPersistenceManager::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 

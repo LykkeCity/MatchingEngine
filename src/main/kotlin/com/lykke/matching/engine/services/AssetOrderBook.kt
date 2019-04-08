@@ -8,23 +8,23 @@ import java.util.concurrent.PriorityBlockingQueue
 
 class AssetOrderBook(assetId: String): AbstractAssetOrderBook(assetId) {
 
-    val SELL_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
+    private val SELL_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
         var result = o1.price.compareTo(o2.price)
         if (result == 0) {
             result = o1.createdAt.compareTo(o2.createdAt)
         }
 
         result
-    })
+    }
 
-    val BUY_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
+    private val BUY_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
         var result = o2.price.compareTo(o1.price)
         if (result == 0) {
             result = o1.createdAt.compareTo(o2.createdAt)
         }
 
         result
-    })
+    }
 
     private var askOrderBook = PriorityBlockingQueue<LimitOrder>(50, SELL_COMPARATOR)
     private var bidOrderBook = PriorityBlockingQueue<LimitOrder>(50, BUY_COMPARATOR)
@@ -54,40 +54,6 @@ class AssetOrderBook(assetId: String): AbstractAssetOrderBook(assetId) {
         }
     }
 
-    fun leadToNegativeSpreadForClient(order: LimitOrder): Boolean {
-        val book = getCopyOfOrderBook(!order.isBuySide())
-        if (book.isEmpty()) {
-            return false
-        }
-        while (book.isNotEmpty()) {
-            val bookOrder = book.poll()
-            if (if (order.isBuySide()) order.price >= bookOrder.price else order.price <= bookOrder.price) {
-                if (bookOrder.clientId == order.clientId) return true
-            } else {
-                return false
-            }
-        }
-
-        return false
-    }
-
-    fun leadToNegativeSpreadByOtherClient(order: LimitOrder): Boolean {
-        val book = getCopyOfOrderBook(!order.isBuySide())
-        if (book.isEmpty()) {
-            return false
-        }
-        while (book.isNotEmpty()) {
-            val bookOrder = book.poll()
-            if (if (order.isBuySide()) order.price >= bookOrder.price else order.price <= bookOrder.price) {
-                if (bookOrder.clientId != order.clientId) return true
-            } else {
-                return false
-            }
-        }
-
-        return false
-    }
-
     override fun copy() : AssetOrderBook {
         val book = AssetOrderBook(assetPairId)
 
@@ -102,9 +68,4 @@ class AssetOrderBook(assetId: String): AbstractAssetOrderBook(assetId) {
         return book
     }
 
-    fun getCopyOfOrderBook(isBuySide: Boolean) = if (isBuySide) copyQueue(bidOrderBook) else copyQueue(askOrderBook)
-
-    fun copyQueue(queue: PriorityBlockingQueue<LimitOrder>): PriorityBlockingQueue<LimitOrder> {
-        return PriorityBlockingQueue(queue)
-    }
 }

@@ -12,11 +12,9 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.util.*
-import java.util.concurrent.locks.ReentrantReadWriteLock
+import java.util.concurrent.atomic.AtomicReference
 import javax.annotation.PostConstruct
 import kotlin.collections.HashMap
-import kotlin.concurrent.read
-import kotlin.concurrent.write
 
 @Component
 class ProcessedMessagesCacheImpl @Autowired constructor(
@@ -25,37 +23,34 @@ class ProcessedMessagesCacheImpl @Autowired constructor(
         private val config: Config,
         private val taskScheduler: TaskScheduler) : ProcessedMessagesCache {
 
-    private var typeToProcessedMessage = HashMap<Byte, MutableSet<ProcessedMessage>>()
-    private var prevTypeToProcessedMessage = HashMap<Byte, MutableSet<ProcessedMessage>>()
-    private val lock = ReentrantReadWriteLock()
+    private var typeToProcessedMessage = AtomicReference<HashMap<Byte, MutableSet<String>>>()
+    private var prevTypeToProcessedMessage =  AtomicReference<HashMap<Byte, MutableSet<String>>>()
 
     override fun addMessage(message: ProcessedMessage) {
-        lock.write {
-            typeToProcessedMessage.getOrPut(message.type) { HashSet() }.add(message)
-        }
+        typeToProcessedMessage.get().getOrPut(message.type) { HashSet() }.add(message.messageId)
     }
 
     override fun isProcessed(type: Byte, messageId: String): Boolean {
-        lock.read {
-            return containsMessageId(typeToProcessedMessage[type], messageId)
-                    || containsMessageId(prevTypeToProcessedMessage[type], messageId)
-        }
+        return containsMessageId(typeToProcessedMessage.get()[type], messageId)
+                || containsMessageId(prevTypeToProcessedMessage.get()[type], messageId)
     }
 
-    private fun containsMessageId(processedMessages: Set<ProcessedMessage>?, messageId: String): Boolean {
+    private fun containsMessageId(processedMessages: Set<String>?, messageId: String): Boolean {
         if (processedMessages == null) {
             return false
         }
 
-        return processedMessages.find { it.messageId == messageId } != null
+        return processedMessages.contains(messageId)
     }
 
     @PostConstruct
     private fun initCache() {
+        typeToProcessedMessage.set(HashMap())
+        prevTypeToProcessedMessage.set(HashMap())
         val cutoffTime = getCutoffTime()
         readOnlyProcessedMessagesDatabaseAccessor.get().forEach {
             if (it.timestamp > cutoffTime) {
-                typeToProcessedMessage.getOrPut(it.type) { HashSet() }.add(it)
+                typeToProcessedMessage.get().getOrPut(it.type) { HashSet() }.add(it.messageId)
             }
         }
 
@@ -63,10 +58,8 @@ class ProcessedMessagesCacheImpl @Autowired constructor(
     }
 
     private fun clean() {
-        lock.write {
-            prevTypeToProcessedMessage = typeToProcessedMessage
-            typeToProcessedMessage = HashMap()
-        }
+        prevTypeToProcessedMessage.set(typeToProcessedMessage.get())
+        typeToProcessedMessage.set(HashMap())
     }
 
     private fun scheduleCleaning() {

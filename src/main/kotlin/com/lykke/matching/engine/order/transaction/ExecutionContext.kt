@@ -9,7 +9,7 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
-import org.apache.log4j.Logger
+import org.slf4j.Logger
 import java.util.Date
 
 class ExecutionContext(val messageId: String,

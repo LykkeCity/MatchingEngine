@@ -8,7 +8,7 @@ import com.lykke.matching.engine.database.utils.mapOrdersToOrderBookPersistenceD
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.config.Config
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.core.annotation.Order
@@ -22,7 +22,7 @@ class OrdersReconciliationService(private val config: Config,
                                   private val persistedOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<OrderBookPersistEvent>,
                                   private val persistedStopApplicationEventPublisher: SimpleApplicationEventPublisher<StopOrderBookPersistEvent>) : ApplicationRunner {
     private companion object {
-        val LOGGER = Logger.getLogger(OrdersReconciliationService::class.java.name)
+        val LOGGER = LoggerFactory.getLogger(OrdersReconciliationService::class.java.name)
     }
 
     override fun run(args: ApplicationArguments?) {
