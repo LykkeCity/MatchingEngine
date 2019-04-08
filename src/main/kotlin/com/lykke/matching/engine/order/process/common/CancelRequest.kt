@@ -4,7 +4,7 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
-import org.apache.log4j.Logger
+import org.slf4j.Logger
 import java.util.Date
 
 class CancelRequest(val limitOrders: Collection<LimitOrder>,

@@ -13,6 +13,7 @@ import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -25,11 +26,12 @@ import java.math.BigDecimal
 import java.util.*
 
 @Component
-class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
-                                    val assetsHolder: AssetsHolder,
-                                    val applicationSettingsHolder: ApplicationSettingsHolder,
+class SingleLimitOrderContextParser(private val assetsPairsHolder: AssetsPairsHolder,
+                                    private val assetsHolder: AssetsHolder,
+                                    private val applicationSettingsHolder: ApplicationSettingsHolder,
+                                    private val uuidHolder: UUIDHolder,
                                     @Qualifier("singleLimitOrderPreProcessingLogger")
-                                    val logger: ThrottlingLogger) : ContextParser<SingleLimitOrderParsedData> {
+                                    private val logger: ThrottlingLogger) : ContextParser<SingleLimitOrderParsedData> {
 
     override fun parse(messageWrapper: MessageWrapper): SingleLimitOrderParsedData {
 
@@ -109,7 +111,7 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
         }
         val feeInstruction = if (message.hasFee()) LimitOrderFeeInstruction.create(message.fee) else null
         val feeInstructions = NewLimitOrderFeeInstruction.create(message.feesList)
-        return LimitOrder(UUID.randomUUID().toString(),
+        return LimitOrder(uuidHolder.getNextValue(),
                 message.uid,
                 message.assetPairId,
                 message.clientId,

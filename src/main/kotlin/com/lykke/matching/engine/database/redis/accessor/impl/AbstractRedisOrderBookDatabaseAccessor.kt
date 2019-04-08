@@ -3,7 +3,7 @@ package com.lykke.matching.engine.database.redis.accessor.impl
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.utils.logging.MetricsLogger
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.nustaq.serialization.FSTConfiguration
 import redis.clients.jedis.Transaction
 
@@ -13,7 +13,7 @@ abstract class AbstractRedisOrderBookDatabaseAccessor(private val redisConnectio
                                                       private val logPrefix: String = "") {
 
     companion object {
-        private val LOGGER = Logger.getLogger(AbstractRedisOrderBookDatabaseAccessor::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(AbstractRedisOrderBookDatabaseAccessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
         private const val KEY_SEPARATOR = ":"
     }

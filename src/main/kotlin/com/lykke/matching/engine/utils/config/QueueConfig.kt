@@ -6,4 +6,6 @@ data class QueueConfig(val queueSizeHealthCheckInterval: Long,
                        val maxQueueSizeLimit: Int,
                        val recoverQueueSizeLimit: Int,
                        val rabbitMaxQueueSizeLimit: Int,
-                       val rabbitRecoverQueueSizeLimit: Int)
+                       val rabbitRecoverQueueSizeLimit: Int,
+                       val dataMaxQueueSizeLimit: Int,
+                       val dataRecoverQueueSizeLimit: Int)

@@ -3,7 +3,7 @@ package com.lykke.matching.engine.database.utils
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.common.OrderBookSide
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
-import org.apache.log4j.Logger
+import org.slf4j.Logger
 
 fun mapOrdersToOrderBookPersistenceDataList(orders: Collection<LimitOrder>, orderBooksSides: Collection<OrderBookSide>, log: Logger): List<OrderBookPersistenceData> {
     val orderBooks = mutableMapOf<String, MutableMap<Boolean, MutableCollection<LimitOrder>>>()

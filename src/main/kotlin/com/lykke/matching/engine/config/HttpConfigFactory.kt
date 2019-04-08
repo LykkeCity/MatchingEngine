@@ -3,7 +3,8 @@ package com.lykke.matching.engine.config
 import com.google.gson.FieldNamingPolicy.UPPER_CAMEL_CASE
 import com.google.gson.GsonBuilder
 import com.lykke.matching.engine.utils.config.Config
-import org.apache.log4j.Logger
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.core.env.Environment
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -13,7 +14,7 @@ import javax.naming.ConfigurationException
 class HttpConfigFactory {
 
     companion object {
-        private val LOGGER: Logger = Logger.getLogger("AppStarter")
+        private val LOGGER: Logger = LoggerFactory.getLogger("AppStarter")
 
         fun getConfig(environment: Environment): Config {
             val commangLineArgs = environment.getProperty("nonOptionArgs", Array<String>::class.java)

@@ -1,9 +1,9 @@
 package com.lykke.matching.engine.outgoing.rabbit.impl.listeners
 
 import com.lykke.utils.logging.MetricsLogger
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 
-private val LOGGER = Logger.getLogger("RabbitMqPublisher")
+private val LOGGER = LoggerFactory.getLogger("RabbitMqPublisher")
 private val METRICS_LOGGER = MetricsLogger.getLogger()
 
 fun logRmqRecover(name: String) {
