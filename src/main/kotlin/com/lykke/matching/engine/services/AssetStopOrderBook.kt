@@ -2,7 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.services.utils.AbstractAssetOrderBook
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.PriorityBlockingQueue
@@ -10,7 +10,7 @@ import java.util.concurrent.PriorityBlockingQueue
 class AssetStopOrderBook(assetPairId: String): AbstractAssetOrderBook(assetPairId) {
     companion object {
 
-        private val LOGGER = Logger.getLogger(AssetStopOrderBook::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(AssetStopOrderBook::class.java.name)
 
         private val LOWER_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
             var result = o2.lowerLimitPrice!!.compareTo(o1.lowerLimitPrice!!)

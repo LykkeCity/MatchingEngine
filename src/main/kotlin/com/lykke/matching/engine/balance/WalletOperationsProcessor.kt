@@ -4,7 +4,6 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
@@ -18,7 +17,8 @@ import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHol
 import com.lykke.matching.engine.order.transaction.WalletAssetBalance
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.MetricsLogger
-import org.apache.log4j.Logger
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.util.Date
 
@@ -30,7 +30,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
                                 private val logger: Logger?): BalancesGetter {
 
     companion object {
-        private val LOGGER = Logger.getLogger(WalletOperationsProcessor::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(WalletOperationsProcessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 

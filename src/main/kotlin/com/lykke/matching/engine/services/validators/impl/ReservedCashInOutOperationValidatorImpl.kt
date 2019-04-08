@@ -5,7 +5,7 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
 import com.lykke.matching.engine.utils.NumberUtils
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
@@ -14,7 +14,7 @@ import java.math.BigDecimal
 class ReservedCashInOutOperationValidatorImpl @Autowired constructor(private val assetsHolder: AssetsHolder,
                                                                      private val balancesHolder: BalancesHolder) : ReservedCashInOutOperationValidator {
     companion object {
-        private val LOGGER = Logger.getLogger(ReservedCashInOutOperationValidatorImpl::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(ReservedCashInOutOperationValidatorImpl::class.java.name)
     }
 
     override fun performValidation(message: ProtocolMessages.ReservedCashInOutOperation) {

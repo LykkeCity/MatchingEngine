@@ -5,13 +5,13 @@ import com.lykke.matching.engine.balance.WalletOperationsProcessor
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolder
-import org.apache.log4j.Logger
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.concurrent.BlockingQueue
@@ -24,7 +24,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
                      private val applicationSettingsHolder: ApplicationSettingsHolder): BalancesGetter {
 
     companion object {
-        private val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(BalancesHolder::class.java.name)
     }
 
     lateinit var wallets: MutableMap<String, Wallet>
