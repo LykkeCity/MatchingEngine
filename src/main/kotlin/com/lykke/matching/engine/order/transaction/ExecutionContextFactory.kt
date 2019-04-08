@@ -10,7 +10,7 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
-import org.apache.log4j.Logger
+import org.slf4j.Logger
 import org.springframework.stereotype.Component
 import java.util.Date
 

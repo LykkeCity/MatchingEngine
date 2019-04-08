@@ -15,6 +15,7 @@ import com.lykke.matching.engine.order.OrderStatus.InvalidFee
 import com.lykke.matching.engine.order.OrderStatus.InvalidValue
 import com.lykke.matching.engine.order.OrderStatus.InvalidVolume
 import com.lykke.matching.engine.order.OrderStatus.InvalidVolumeAccuracy
+import com.lykke.matching.engine.order.OrderStatus.LeadToNegativeSpread
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
@@ -32,18 +33,18 @@ import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.process.context.MarketOrderExecutionContext
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.util.Date
-import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 @Service
@@ -60,10 +61,11 @@ class MarketOrderService @Autowired constructor(
         private val applicationSettingsHolder: ApplicationSettingsHolder,
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
         private val messageSender: MessageSender,
-        private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : AbstractService {
+        private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
+        private val uuidHolder: UUIDHolder) : AbstractService {
     companion object {
-        private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
-        private val STATS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.stats")
+        private val LOGGER = LoggerFactory.getLogger(MarketOrderService::class.java.name)
+        private val STATS_LOGGER = LoggerFactory.getLogger("${MarketOrderService::class.java.name}.stats")
     }
 
     private var messagesCount: Long = 0
@@ -96,7 +98,7 @@ class MarketOrderService @Autowired constructor(
                 "asset: ${parsedMessage.assetPairId}, volume: ${NumberUtils.roundForPrint(parsedMessage.volume)}, " +
                 "straight: ${parsedMessage.straight}, fee: $feeInstruction, fees: $feeInstructions")
 
-        val order = MarketOrder(UUID.randomUUID().toString(), parsedMessage.uid, parsedMessage.assetPairId, parsedMessage.clientId, BigDecimal.valueOf(parsedMessage.volume), null,
+        val order = MarketOrder(uuidHolder.getNextValue(), parsedMessage.uid, parsedMessage.assetPairId, parsedMessage.clientId, BigDecimal.valueOf(parsedMessage.volume), null,
                 Processing.name, now, Date(parsedMessage.timestamp), now, null, parsedMessage.straight, BigDecimal.valueOf(parsedMessage.reservedLimitVolume),
                 feeInstruction, listOfFee(feeInstruction, feeInstructions))
 
@@ -130,6 +132,7 @@ class MarketOrderService @Autowired constructor(
         when (OrderStatus.valueOf(matchingResult.orderCopy.status)) {
             ReservedVolumeGreaterThanBalance,
             NoLiquidity,
+            LeadToNegativeSpread,
             NotEnoughFunds,
             InvalidFee,
             InvalidVolumeAccuracy,

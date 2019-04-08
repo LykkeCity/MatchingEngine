@@ -3,7 +3,7 @@ package com.lykke.matching.engine.services.utils
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.NumberUtils
-import org.apache.log4j.Logger
+import org.slf4j.Logger
 import java.math.BigDecimal
 import java.util.Date
 

@@ -7,7 +7,7 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.process.common.CancelRequest
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.Date
 
@@ -17,7 +17,7 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
                                    private val applicationSettingsHolder: ApplicationSettingsHolder) : AbstractService {
 
     companion object {
-        private val LOGGER = Logger.getLogger(MultiLimitOrderCancelService::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(MultiLimitOrderCancelService::class.java.name)
     }
 
     override fun processMessage(messageWrapper: MessageWrapper) {

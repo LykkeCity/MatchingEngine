@@ -22,17 +22,17 @@ import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
+import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.process.PreviousLimitOrdersProcessor
 import com.lykke.matching.engine.services.utils.MultiOrderFilter
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.util.Date
-import java.util.UUID
 
 @Service
 class MultiLimitOrderService(private val executionContextFactory: ExecutionContextFactory,
@@ -44,10 +44,11 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                              private val assetsPairsHolder: AssetsPairsHolder,
                              private val balancesHolder: BalancesHolder,
                              private val applicationSettingsHolder: ApplicationSettingsHolder,
-                             private val messageProcessingStatusHolder: MessageProcessingStatusHolder) : AbstractService {
+                             private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                             private val uuidHolder: UUIDHolder) : AbstractService {
 
     companion object {
-        private val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(MultiLimitOrderService::class.java.name)
     }
 
     override fun processMessage(messageWrapper: MessageWrapper) {
@@ -181,7 +182,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
             val feeInstructions = NewLimitOrderFeeInstruction.create(currentOrder.feesList)
             val previousExternalId = if (currentOrder.hasOldUid()) currentOrder.oldUid else null
 
-            val order = LimitOrder(UUID.randomUUID().toString(),
+            val order = LimitOrder(uuidHolder.getNextValue(),
                     currentOrder.uid,
                     message.assetPairId,
                     message.clientId,

@@ -21,7 +21,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.services.BalancesService
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.utils.NumberUtils
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.ApplicationArguments
@@ -52,7 +52,7 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
     }
 
     companion object {
-        private val LOGGER = Logger.getLogger(ReservedVolumesRecalculator::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(ReservedVolumesRecalculator::class.java.name)
     }
 
     fun correctReservedVolumesIfNeed() {

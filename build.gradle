@@ -32,8 +32,8 @@ repositories {
 }
 
 ext {
-    kotlin_utils_version = '0.0.8-SNAPSHOT'
-    log4j_version = '1.2.17'
+    kotlin_utils_version = '0.0.14-SNAPSHOT'
+    me_outgoing_contract_version = '1.0.0-SNAPSHOT'
     protobuf_version = '3.6.0'
     azure_storage_version = '4.0.0'
     gson_version = '2.6.2'
@@ -45,6 +45,7 @@ ext {
     mockito_kotlin_version = '1.5.0'
     jedis_version = '2.9.0'
     big_math_version = '2.0.0'
+    lmax_disruptor_version = '3.4.2'
     springfox_swagger2 = "2.9.2"
     springfox_swagger_ui = "2.9.2"
 }
@@ -52,12 +53,12 @@ ext {
 dependencies {
     // internal libs
     compile "org.bitbucket.lykke:kotlin-utils:$kotlin_utils_version"
+    compile "org.bitbucket.lykke:me-outgoing-contract:$me_outgoing_contract_version"
 
     // external libs
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 
-    compile "log4j:log4j:$log4j_version"
     compile "com.google.protobuf:protobuf-java:$protobuf_version"
     compile "com.microsoft.azure:azure-storage:$azure_storage_version"
     compile "com.google.code.gson:gson:$gson_version"
@@ -67,9 +68,11 @@ dependencies {
     compile "de.ruedigermoeller:fst:$fst_version"
     compile "redis.clients:jedis:$jedis_version"
     compile "ch.obermuhlner:big-math:$big_math_version"
+    compile "com.lmax:disruptor:$lmax_disruptor_version"
 
-    compile('org.springframework.boot:spring-boot-starter')
+
     compile("org.springframework.boot:spring-boot-starter-web")
+    compile("org.springframework.boot:spring-boot-starter-log4j2")
 
     compile "io.springfox:springfox-swagger2:$springfox_swagger2"
     compile "io.springfox:springfox-swagger-ui:$springfox_swagger_ui"
@@ -80,8 +83,13 @@ dependencies {
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
 }
 
+configurations {
+    compile.exclude module: 'spring-boot-starter-logging'
+}
+
 compileKotlin {
     kotlinOptions {
+        freeCompilerArgs = ["-Xno-param-assertions", "-Xno-call-assertions"]
         apiVersion = "1.2"
         jvmTarget = "1.8"
     }
