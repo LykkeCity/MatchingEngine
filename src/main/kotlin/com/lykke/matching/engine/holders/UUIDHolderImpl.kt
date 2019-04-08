@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.holders
 
 import com.lykke.matching.engine.utils.uuid.UUIDGenerator
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -15,7 +15,7 @@ class UUIDHolderImpl(@Value("\${uuid.holder.size.default}")
                      private val uuidGenerator: UUIDGenerator) : UUIDHolder {
 
     companion object {
-        private val LOGGER = Logger.getLogger(UUIDHolderImpl::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(UUIDHolderImpl::class.java.name)
     }
 
     private val uuids = ConcurrentLinkedQueue<String>()

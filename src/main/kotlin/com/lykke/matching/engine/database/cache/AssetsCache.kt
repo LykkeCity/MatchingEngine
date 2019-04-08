@@ -2,7 +2,7 @@ package com.lykke.matching.engine.database.cache
 
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -14,7 +14,7 @@ class AssetsCache @Autowired constructor(
         @Value("\${application.assets.cache.update.interval}") updateInterval: Long? = null) : DataCache() {
 
     companion object {
-        val LOGGER = Logger.getLogger(AssetsCache::class.java)
+        val LOGGER = LoggerFactory.getLogger(AssetsCache::class.java)
     }
 
     private var assetsMap: Map<String, Asset> = HashMap()

@@ -14,7 +14,8 @@ import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
-import org.apache.log4j.Logger
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -30,7 +31,7 @@ open class LoggerConfig {
 
     @Bean(destroyMethod = "")
     open fun appStarterLogger(): Logger {
-        return Logger.getLogger("AppStarter")
+        return LoggerFactory.getLogger("AppStarter")
     }
 
     @Bean
