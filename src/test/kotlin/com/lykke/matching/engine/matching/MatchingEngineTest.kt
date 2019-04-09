@@ -98,8 +98,10 @@ abstract class MatchingEngineTest {
 
     protected fun initExecutionContext() {
 
-        val walletsByOperationWalletIdMap = Mockito.mock(Map::class.java) as Map<String, Set<String>>
-        Mockito.`when`(walletsByOperationWalletIdMap.get(any())).thenAnswer { invocation -> mapOf(invocation.arguments[0] to setOf(invocation.arguments[0])) }
+        val walletsByOperationWalletIdMap = mapOf("Client1" to setOf("Client1", "Client1_1"),
+                "Client2" to setOf("Client2", "Client2_1"),
+                "Client3" to setOf("Client3", "Client3_1"),
+                "Client4" to setOf("Client4", "Client4_1"))
 
         executionContext = executionContextFactory.create("messageId", "requestId",
                 MessageType.LIMIT_ORDER,
