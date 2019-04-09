@@ -19,6 +19,7 @@ import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import java.util.*
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.PriorityBlockingQueue
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (MatchingEngineTest.Config::class)])
@@ -74,20 +75,6 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
                 ),
                 matchingResult.oppositeCashMovements
         )
-    }
-
-    @Test
-    fun test() {
-        val assetOrderBook = AssetOrderBook("BTC")
-
-        for (i in 0..9999) {
-            assetOrderBook.addOrder(buildLimitOrder(price = Random().nextDouble() * 10, volume = -501.0))
-        }
-
-        val start = System.nanoTime()
-        assetOrderBook.getOrderBook(false).toArray()
-        val end = System.nanoTime()
-        println((end - start) / 1000_000.0)
     }
 
     @Test
