@@ -418,6 +418,24 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     }
 
     @Test
+    fun testMatchLimitOrderTradeAcrossWalletsLeadToNegativeSpread() {
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client1_1", "USD", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client2_1", "USD", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 100.0)
+
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.3, volume = 40.0, reservedVolume = 52.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1_1", price = 1.2, volume = 40.0, reservedVolume = 48.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2_1", price = 1.1, volume = 40.0, reservedVolume = 44.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client3", price = 1.0, volume = 40.0, reservedVolume = 4.0))
+
+        val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.0, volume = -100.0)
+        val matchingResult = match(limitOrder, getOrderBook("EURUSD", true))
+        assertLimitOrderMatchingResult(matchingResult, status = OrderStatus.LeadToNegativeSpread, marketBalance = null, remainingVolume = BigDecimal.valueOf(-100.0))
+        assertEquals(4, getOrderBook("EURUSD", true).size)
+    }
+
+    @Test
     fun testMatchWithSeveralLimitOrdersOfSameClient1() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 100.00)
         testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC",   29.99)
