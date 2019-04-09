@@ -8,7 +8,7 @@ import com.lykke.matching.engine.incoming.parsers.data.CashInOutParsedData
 import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
@@ -16,7 +16,7 @@ import java.math.BigDecimal
 class CashInOutOperationInputValidatorImpl constructor(private val applicationSettingsHolder: ApplicationSettingsHolder) : CashInOutOperationInputValidator {
 
     companion object {
-        private val LOGGER = Logger.getLogger(CashInOutOperationInputValidatorImpl::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(CashInOutOperationInputValidatorImpl::class.java.name)
     }
 
     override fun performValidation(cashInOutParsedData: CashInOutParsedData) {

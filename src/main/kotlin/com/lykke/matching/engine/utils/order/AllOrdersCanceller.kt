@@ -6,7 +6,7 @@ import com.lykke.matching.engine.order.process.common.CancelRequest
 import com.lykke.matching.engine.order.process.common.LimitOrdersCancelExecutor
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.ApplicationArguments
@@ -25,7 +25,7 @@ class AllOrdersCanceller @Autowired constructor(private val genericLimitOrderSer
                                                 @Value("#{Config.me.cancelAllOrders}") private val cancelAllOrders: Boolean) : ApplicationRunner {
 
     companion object {
-        private val LOGGER = Logger.getLogger(AllOrdersCanceller::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(AllOrdersCanceller::class.java.name)
     }
 
     override fun run(args: ApplicationArguments?) {

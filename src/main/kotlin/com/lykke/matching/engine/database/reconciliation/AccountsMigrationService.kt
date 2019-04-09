@@ -7,7 +7,7 @@ import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabas
 import com.lykke.matching.engine.exception.MatchingEngineException
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.utils.config.Config
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
@@ -27,7 +27,7 @@ class AccountsMigrationService @Autowired constructor (private val balancesHolde
     }
 
     companion object {
-        private val LOGGER = Logger.getLogger(AccountsMigrationService::class.java.name)
+        private val LOGGER = LoggerFactory.getLogger(AccountsMigrationService::class.java.name)
     }
 
     private val azureAccountsTableName = config.me.db.accountsTableName
