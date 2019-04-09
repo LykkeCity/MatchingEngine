@@ -8,5 +8,6 @@ data class Config(
     @SerializedName("MatchingEngine")
     val me: MatchingEngineConfig,
     val slackNotifications: SlackNotificationConfig,
-    val throttlingLogger: ThrottlingLoggerConfig
+    val throttlingLogger: ThrottlingLoggerConfig,
+    val clientAccountsLibConfig: ClientAccountsConfig
 )
