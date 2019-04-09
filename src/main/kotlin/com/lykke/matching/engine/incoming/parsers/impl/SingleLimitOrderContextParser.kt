@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.incoming.parsers.impl
 
-import com.lykke.client.accounts.ClientAccountsCache
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
@@ -14,13 +13,13 @@ import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.holders.ClientAccountsHolder
 import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.services.ClientAccountsService
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
@@ -32,7 +31,7 @@ class SingleLimitOrderContextParser(private val assetsPairsHolder: AssetsPairsHo
                                     private val assetsHolder: AssetsHolder,
                                     private val applicationSettingsHolder: ApplicationSettingsHolder,
                                     private val uuidHolder: UUIDHolder,
-                                    private val clientAccountsService: ClientAccountsService,
+                                    private val clientAccountsHolder: ClientAccountsHolder,
                                     @Qualifier("singleLimitOrderPreProcessingLogger")
                                     private val logger: ThrottlingLogger) : ContextParser<SingleLimitOrderParsedData> {
 
@@ -56,7 +55,7 @@ class SingleLimitOrderContextParser(private val assetsPairsHolder: AssetsPairsHo
         val assetPair = getAssetPair(order.assetPairId)
 
         builder.messageId(messageId)
-                .clientAllWallets(clientAccountsService.getAllWalletsByOperationWalletId(order.clientId))
+                .clientAllWallets(clientAccountsHolder.getAllWalletsByOperationWalletId(order.clientId))
                 .limitOrder(order)
                 .assetPair(assetPair)
                 .baseAsset(assetPair?.let { getBaseAsset(it) })

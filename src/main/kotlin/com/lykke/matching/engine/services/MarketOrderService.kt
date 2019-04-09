@@ -32,6 +32,7 @@ import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
+import com.lykke.matching.engine.holders.ClientAccountsHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
@@ -62,7 +63,7 @@ class MarketOrderService @Autowired constructor(
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
         private val messageSender: MessageSender,
         private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-        private val clientAccountsService: ClientAccountsService,
+        private val clientAccountsHolder: ClientAccountsHolder,
         private val uuidHolder: UUIDHolder) : AbstractService {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MarketOrderService::class.java.name)
@@ -116,7 +117,7 @@ class MarketOrderService @Autowired constructor(
         val executionContext = executionContextFactory.create(messageWrapper.messageId!!,
                 messageWrapper.id!!,
                 MessageType.MARKET_ORDER,
-                mapOf(order.clientId to clientAccountsService.getAllWalletsByOperationWalletId(order.clientId)),
+                mapOf(order.clientId to clientAccountsHolder.getAllWalletsByOperationWalletId(order.clientId)),
                 messageWrapper.processedMessage,
                 mapOf(Pair(assetPair!!.assetPairId, assetPair)),
                 now,

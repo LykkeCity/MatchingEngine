@@ -336,19 +336,17 @@ open class TestApplicationContext {
                                      genericLimitOrdersProcessor: GenericLimitOrdersProcessor,
                                      stopOrderBookProcessor: StopOrderBookProcessor,
                                      executionDataApplyService: ExecutionDataApplyService,
-                                     clientAccountsService: ClientAccountsService,
                                      previousLimitOrdersProcessor: PreviousLimitOrdersProcessor): SingleLimitOrderService {
         return SingleLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
                 executionDataApplyService,
-                clientAccountsService,
                 previousLimitOrdersProcessor)
     }
 
     @Bean
-    open fun clientAccountsServiceve(clientAccountsCache: ClientAccountsCache): ClientAccountsService {
-        return ClientAccountsServiceImpl(clientAccountsCache)
+    open fun clientAccountsHolder(clientAccountsCache: ClientAccountsCache): ClientAccountsHolder {
+        return ClientAccountsHolder(clientAccountsCache)
     }
 
     @Bean
@@ -361,7 +359,7 @@ open class TestApplicationContext {
                                     assetsPairsHolder: AssetsPairsHolder,
                                     balancesHolder: BalancesHolder,
                                     applicationSettingsHolder: ApplicationSettingsHolder,
-                                    clientAccountsService: ClientAccountsService,
+                                    clientAccountsHolder: ClientAccountsHolder,
                                     messageProcessingStatusHolder: MessageProcessingStatusHolder,
                                     testUUIDHolder: TestUUIDHolder): MultiLimitOrderService {
         return MultiLimitOrderService(executionContextFactory,
@@ -372,7 +370,7 @@ open class TestApplicationContext {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                clientAccountsService,
+                clientAccountsHolder,
                 applicationSettingsHolder,
                 messageProcessingStatusHolder,
                 testUUIDHolder)
@@ -395,7 +393,7 @@ open class TestApplicationContext {
                                 messageSender: MessageSender,
                                 applicationSettingsHolder: ApplicationSettingsHolder,
                                 messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                                clientAccountsService: ClientAccountsService,
+                                clientAccountsHolder: ClientAccountsHolder,
                                 uuidHolder: UUIDHolder): MarketOrderService {
         return MarketOrderService(matchingEngine,
                 executionContextFactory,
@@ -410,7 +408,7 @@ open class TestApplicationContext {
                 messageSequenceNumberHolder,
                 messageSender,
                 messageProcessingStatusHolder,
-                clientAccountsService,
+                clientAccountsHolder,
                 uuidHolder)
     }
 
@@ -598,13 +596,13 @@ open class TestApplicationContext {
     open fun singleLimitOrderContextParser(assetsPairsHolder: AssetsPairsHolder,
                                            assetsHolder: AssetsHolder,
                                            applicationSettingsHolder: ApplicationSettingsHolder,
-                                           clientAccountsService: ClientAccountsService,
+                                           clientAccountsHolder: ClientAccountsHolder,
                                            uuidHolder: UUIDHolder): SingleLimitOrderContextParser {
         return SingleLimitOrderContextParser(assetsPairsHolder,
                 assetsHolder,
                 applicationSettingsHolder,
                 uuidHolder,
-                clientAccountsService,
+                clientAccountsHolder,
                 ThrottlingLogger.getLogger("limitOrder"))
     }
 

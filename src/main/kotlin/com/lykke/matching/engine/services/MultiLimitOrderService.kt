@@ -22,6 +22,7 @@ import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
+import com.lykke.matching.engine.holders.ClientAccountsHolder
 import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
@@ -43,7 +44,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                              private val assetsHolder: AssetsHolder,
                              private val assetsPairsHolder: AssetsPairsHolder,
                              private val balancesHolder: BalancesHolder,
-                             private val clientAccountsService: ClientAccountsService,
+                             private val clientAccountsHolder: ClientAccountsHolder,
                              private val applicationSettingsHolder: ApplicationSettingsHolder,
                              private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
                              private val uuidHolder: UUIDHolder) : AbstractService {
@@ -81,7 +82,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
         val executionContext = executionContextFactory.create(messageWrapper.messageId!!,
                 messageWrapper.id!!,
                 MessageType.MULTI_LIMIT_ORDER,
-                mapOf(multiLimitOrder.clientId to clientAccountsService.getAllWalletsByOperationWalletId(multiLimitOrder.clientId)),
+                mapOf(multiLimitOrder.clientId to clientAccountsHolder.getAllWalletsByOperationWalletId(multiLimitOrder.clientId)),
                 messageWrapper.processedMessage,
                 mapOf(Pair(assetPair.assetPairId, assetPair)),
                 now,

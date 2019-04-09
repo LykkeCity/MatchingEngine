@@ -3,10 +3,10 @@ package com.lykke.matching.engine.order.process.common
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.holders.ClientAccountsHolder
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
-import com.lykke.matching.engine.services.ClientAccountsService
 import com.lykke.matching.engine.utils.plus
 import org.springframework.stereotype.Component
 import java.util.Date
@@ -15,7 +15,7 @@ import java.util.stream.Stream
 
 @Component
 class LimitOrdersCancelExecutorImpl(private val assetsPairsHolder: AssetsPairsHolder,
-                                    private val clientAccountsService: ClientAccountsService,
+                                    private val clientAccountsHolder: ClientAccountsHolder,
                                     private val executionContextFactory: ExecutionContextFactory,
                                     private val limitOrdersCanceller: LimitOrdersCanceller,
                                     private val stopOrderBookProcessor: StopOrderBookProcessor,
@@ -51,13 +51,11 @@ class LimitOrdersCancelExecutorImpl(private val assetsPairsHolder: AssetsPairsHo
                 .collect(Collectors.toSet())
 
         for (walletId in allOperationWalletIds) {
-            result[walletId] = clientAccountsService.getAllWalletsByOperationWalletId(walletId)
+            result[walletId] = clientAccountsHolder.getAllWalletsByOperationWalletId(walletId)
         }
 
         return result
     }
-
-
 
     private fun createAssetPairsByIdMapForOrders(orders: Collection<LimitOrder>): Map<String, AssetPair> {
         return orders.asSequence()

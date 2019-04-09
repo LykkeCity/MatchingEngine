@@ -1,17 +1,16 @@
-package com.lykke.matching.engine.services
+package com.lykke.matching.engine.holders
 
 import com.lykke.client.accounts.ClientAccountsCache
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
-class ClientAccountsServiceImpl(val clientAccountsCache: ClientAccountsCache): ClientAccountsService {
-
+class ClientAccountsHolder(val clientAccountsCache: ClientAccountsCache) {
     private companion object {
-        val LOGGER = LoggerFactory.getLogger(ClientAccountsServiceImpl::class.java)
+        val LOGGER = LoggerFactory.getLogger(ClientAccountsHolder::class.java)
     }
 
-    override fun getAllWalletsByOperationWalletId(walletId: String): Set<String> {
+    fun getAllWalletsByOperationWalletId(walletId: String): Set<String> {
         val clientId = clientAccountsCache.getClientByWalletId(walletId)
 
         if (clientId == null) {

@@ -17,6 +17,7 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.ClientAccountsHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
@@ -173,7 +174,7 @@ abstract class AbstractPerformanceTest {
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
         val limitOrderInputValidator = LimitOrderInputValidatorImpl(applicationSettingsHolder)
         val clientAccountCache = Mockito.mock(ClientAccountsCache::class.java)
-        val clientAccountsService = ClientAccountsServiceImpl(clientAccountCache)
+        val clientAccountsService = ClientAccountsHolder(clientAccountCache)
         singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder,
                 assetsHolder,
                 applicationSettingsHolder,
@@ -237,7 +238,6 @@ abstract class AbstractPerformanceTest {
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
                 executionDataApplyService,
-                clientAccountsService,
                 previousLimitOrdersProcessor)
 
         multiLimitOrderService = MultiLimitOrderService(executionContextFactory,

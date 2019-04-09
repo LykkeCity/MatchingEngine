@@ -7,6 +7,7 @@ import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.ClientAccountsHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.matching.MatchingEngine
@@ -28,7 +29,6 @@ import com.lykke.matching.engine.order.transaction.ExecutionEventsSequenceNumber
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.services.ClientAccountsService
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
@@ -163,10 +163,10 @@ open class TestExecutionContext {
                                        executionContextFactory: ExecutionContextFactory,
                                        limitOrdersCanceller: LimitOrdersCanceller,
                                        stopOrderBookProcessor: StopOrderBookProcessor,
-                                       clientAccountsService: ClientAccountsService,
+                                       clientAccountsHolder: ClientAccountsHolder,
                                        executionDataApplyService: ExecutionDataApplyService): LimitOrdersCancelExecutor {
         return LimitOrdersCancelExecutorImpl(assetsPairsHolder,
-                clientAccountsService,
+                clientAccountsHolder,
                 executionContextFactory,
                 limitOrdersCanceller,
                 stopOrderBookProcessor,
