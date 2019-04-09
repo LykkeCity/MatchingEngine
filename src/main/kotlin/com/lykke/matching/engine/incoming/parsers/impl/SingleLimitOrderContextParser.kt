@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.incoming.parsers.impl
 
+import com.lykke.client.accounts.ClientAccountsCache
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
@@ -30,6 +31,7 @@ class SingleLimitOrderContextParser(private val assetsPairsHolder: AssetsPairsHo
                                     private val assetsHolder: AssetsHolder,
                                     private val applicationSettingsHolder: ApplicationSettingsHolder,
                                     private val uuidHolder: UUIDHolder,
+                                    private val clientAccountsCache: ClientAccountsCache,
                                     @Qualifier("singleLimitOrderPreProcessingLogger")
                                     private val logger: ThrottlingLogger) : ContextParser<SingleLimitOrderParsedData> {
 
@@ -53,6 +55,7 @@ class SingleLimitOrderContextParser(private val assetsPairsHolder: AssetsPairsHo
         val assetPair = getAssetPair(order.assetPairId)
 
         builder.messageId(messageId)
+                .clientAllWallets(getClientAllWallets(order.clientId))
                 .limitOrder(order)
                 .assetPair(assetPair)
                 .baseAsset(assetPair?.let { getBaseAsset(it) })
@@ -101,6 +104,17 @@ class SingleLimitOrderContextParser(private val assetsPairsHolder: AssetsPairsHo
 
     private fun parseLimitOrder(array: ByteArray): ProtocolMessages.LimitOrder {
         return ProtocolMessages.LimitOrder.parseFrom(array)
+    }
+
+    private fun getClientAllWallets(walletId: String): Set<String> {
+        val clientId = clientAccountsCache.getClientByWalletId(walletId)
+
+        if (clientId == null) {
+            logger.warn("Client with wallet: $walletId not found")
+            return setOf(walletId)
+        }
+
+        return clientAccountsCache.getWalletsByClientId(clientId)
     }
 
     private fun createOrder(message: ProtocolMessages.LimitOrder): LimitOrder {

@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.config
 
+import com.lykke.client.accounts.ClientAccountsCache
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.spring.JsonConfig
 import com.lykke.matching.engine.config.spring.QueueConfig
@@ -69,6 +70,7 @@ import com.lykke.matching.engine.utils.monitoring.HealthMonitor
 import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import com.lykke.utils.logging.ThrottlingLogger
+import com.nhaarman.mockito_kotlin.any
 import org.mockito.Mockito
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
@@ -585,12 +587,22 @@ open class TestApplicationContext {
     open fun singleLimitOrderContextParser(assetsPairsHolder: AssetsPairsHolder,
                                            assetsHolder: AssetsHolder,
                                            applicationSettingsHolder: ApplicationSettingsHolder,
+                                           clientAccountsCache: ClientAccountsCache,
                                            uuidHolder: UUIDHolder): SingleLimitOrderContextParser {
         return SingleLimitOrderContextParser(assetsPairsHolder,
                 assetsHolder,
                 applicationSettingsHolder,
                 uuidHolder,
+                clientAccountsCache,
                 ThrottlingLogger.getLogger("limitOrder"))
+    }
+
+    @Bean
+    open fun clientAccountsCache(): ClientAccountsCache {
+        val clientAccountsCacheMock = Mockito.mock(ClientAccountsCache::class.java)
+        Mockito.`when`(clientAccountsCacheMock.getClientByWalletId(any())).thenAnswer { invocation -> invocation.arguments[0] }
+        Mockito.`when`(clientAccountsCacheMock.getWalletsByClientId(any())).thenAnswer { invocation -> setOf(invocation.arguments[0]) }
+        return clientAccountsCacheMock
     }
 
     @Bean

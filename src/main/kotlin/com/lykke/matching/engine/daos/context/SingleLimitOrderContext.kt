@@ -8,6 +8,7 @@ import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.utils.NumberUtils
 
 class SingleLimitOrderContext(val messageId: String,
+                              val clientAllWallets: Set<String>,
                               val limitOrder: LimitOrder,
                               val isCancelOrders: Boolean,
                               val assetPair: AssetPair?,
@@ -20,6 +21,7 @@ class SingleLimitOrderContext(val messageId: String,
 
     private constructor(builder: Builder) : this(
             builder.messageId,
+            builder.clientAllWallets,
             builder.limitOrder,
             builder.isCancelOrders,
             builder.assetPair,
@@ -32,10 +34,11 @@ class SingleLimitOrderContext(val messageId: String,
     override fun toString(): String {
         val order = this.limitOrder
 
-        return  "id: ${limitOrder.externalId}" +
+        return "id: ${limitOrder.externalId}" +
                 ", messageId: $messageId" +
                 ", type: ${order.type}" +
                 ", client: ${order.clientId}" +
+                ", wallets count: ${clientAllWallets.size}" +
                 ", isTrustedClient: $isTrustedClient" +
                 ", assetPair: ${order.assetPairId}" +
                 ", volume: ${NumberUtils.roundForPrint(order.volume)}" +
@@ -54,6 +57,7 @@ class SingleLimitOrderContext(val messageId: String,
     class Builder {
         lateinit var messageId: String
         lateinit var limitOrder: LimitOrder
+        lateinit var clientAllWallets: Set<String>
         var processedMessage: ProcessedMessage? = null
         var assetPair: AssetPair? = null
         var baseAsset: Asset? = null
@@ -63,6 +67,7 @@ class SingleLimitOrderContext(val messageId: String,
         var isCancelOrders: Boolean = false
 
         fun limitOrder(limitOrder: LimitOrder) = apply { this.limitOrder = limitOrder }
+        fun clientAllWallets(clientAllWallets: Set<String>) = apply { this.clientAllWallets = clientAllWallets }
         fun cancelOrders(cancelOrders: Boolean) = apply { this.isCancelOrders = cancelOrders }
         fun messageId(messageId: String) = apply { this.messageId = messageId }
         fun processedMessage(processedMessage: ProcessedMessage?) = apply { this.processedMessage = processedMessage }

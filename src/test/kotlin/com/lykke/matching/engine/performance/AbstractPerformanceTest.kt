@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.performance
 
+import com.lykke.client.accounts.ClientAccountsCache
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
@@ -171,11 +172,15 @@ abstract class AbstractPerformanceTest {
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
         val limitOrderInputValidator = LimitOrderInputValidatorImpl(applicationSettingsHolder)
+        val clientAccountCache = Mockito.mock(ClientAccountsCache::class.java)
+
         singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder,
                 assetsHolder,
                 applicationSettingsHolder,
                 uuidHolder,
+                clientAccountCache,
                 LOGGER)
+
         cashInOutContextParser = CashInOutContextParser(assetsHolder, uuidHolder)
         cashTransferContextParser = CashTransferContextParser(assetsHolder, uuidHolder)
 
