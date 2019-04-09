@@ -20,8 +20,10 @@ import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import org.junit.After
 import org.junit.Assert.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import com.nhaarman.mockito_kotlin.any
 import org.slf4j.LoggerFactory
 import org.junit.Before
+import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -95,8 +97,13 @@ abstract class MatchingEngineTest {
     }
 
     protected fun initExecutionContext() {
+
+        val walletsByOperationWalletIdMap = Mockito.mock(Map::class.java) as Map<String, Set<String>>
+        Mockito.`when`(walletsByOperationWalletIdMap.get(any())).thenAnswer { invocation -> mapOf(invocation.arguments[0] to setOf(invocation.arguments[0])) }
+
         executionContext = executionContextFactory.create("messageId", "requestId",
                 MessageType.LIMIT_ORDER,
+                walletsByOperationWalletIdMap,
                 null,
                 testDictionariesDatabaseAccessor.loadAssetPairs(),
                 now,

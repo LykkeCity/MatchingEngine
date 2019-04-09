@@ -13,6 +13,7 @@ import org.slf4j.Logger
 import java.util.Date
 
 class ExecutionContext(val messageId: String,
+                       val allClientWalletsByOperationWalletId: Map<String, Set<String>>,
                        val requestId: String,
                        val messageType: MessageType,
                        val processedMessage: ProcessedMessage?,

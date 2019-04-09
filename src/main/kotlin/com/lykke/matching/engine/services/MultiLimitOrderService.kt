@@ -43,6 +43,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                              private val assetsHolder: AssetsHolder,
                              private val assetsPairsHolder: AssetsPairsHolder,
                              private val balancesHolder: BalancesHolder,
+                             private val clientAccountsService: ClientAccountsService,
                              private val applicationSettingsHolder: ApplicationSettingsHolder,
                              private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
                              private val uuidHolder: UUIDHolder) : AbstractService {
@@ -80,6 +81,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
         val executionContext = executionContextFactory.create(messageWrapper.messageId!!,
                 messageWrapper.id!!,
                 MessageType.MULTI_LIMIT_ORDER,
+                mapOf(multiLimitOrder.clientId to clientAccountsService.getAllWalletsByOperationWalletId(multiLimitOrder.clientId)),
                 messageWrapper.processedMessage,
                 mapOf(Pair(assetPair.assetPairId, assetPair)),
                 now,

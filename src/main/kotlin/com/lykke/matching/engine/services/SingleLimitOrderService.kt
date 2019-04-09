@@ -21,6 +21,7 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
                               private val genericLimitOrdersProcessor: GenericLimitOrdersProcessor,
                               private val stopOrderBookProcessor: StopOrderBookProcessor,
                               private val executionDataApplyService: ExecutionDataApplyService,
+                              private val clientAccountsService: ClientAccountsService,
                               private val previousLimitOrdersProcessor: PreviousLimitOrdersProcessor) : AbstractService {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(SingleLimitOrderService::class.java.name)
@@ -45,6 +46,7 @@ class SingleLimitOrderService(private val executionContextFactory: ExecutionCont
         val executionContext = executionContextFactory.create(context.messageId,
                 messageWrapper.id!!,
                 MessageType.LIMIT_ORDER,
+                mapOf(order.clientId to context.clientAllWallets),
                 messageWrapper.processedMessage,
                 mapOf(Pair(context.assetPair!!.assetPairId, context.assetPair)),
                 now,

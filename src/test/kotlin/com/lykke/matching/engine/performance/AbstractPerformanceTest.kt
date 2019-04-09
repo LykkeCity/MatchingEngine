@@ -173,12 +173,12 @@ abstract class AbstractPerformanceTest {
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
         val limitOrderInputValidator = LimitOrderInputValidatorImpl(applicationSettingsHolder)
         val clientAccountCache = Mockito.mock(ClientAccountsCache::class.java)
-
+        val clientAccountsService = ClientAccountsServiceImpl(clientAccountCache)
         singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder,
                 assetsHolder,
                 applicationSettingsHolder,
                 uuidHolder,
-                clientAccountCache,
+                clientAccountsService,
                 LOGGER)
 
         cashInOutContextParser = CashInOutContextParser(assetsHolder, uuidHolder)
@@ -237,6 +237,7 @@ abstract class AbstractPerformanceTest {
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
                 executionDataApplyService,
+                clientAccountsService,
                 previousLimitOrdersProcessor)
 
         multiLimitOrderService = MultiLimitOrderService(executionContextFactory,
@@ -247,6 +248,7 @@ abstract class AbstractPerformanceTest {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
+                clientAccountsService,
                 applicationSettingsHolder,
                 messageProcessingStatusHolder,
                 uuidHolder)
@@ -265,7 +267,7 @@ abstract class AbstractPerformanceTest {
                 messageSequenceNumberHolder,
                 notificationSender,
                 messageProcessingStatusHolder,
+                clientAccountsService,
                 uuidHolder)
-
     }
 }

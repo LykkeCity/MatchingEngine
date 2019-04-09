@@ -336,12 +336,19 @@ open class TestApplicationContext {
                                      genericLimitOrdersProcessor: GenericLimitOrdersProcessor,
                                      stopOrderBookProcessor: StopOrderBookProcessor,
                                      executionDataApplyService: ExecutionDataApplyService,
+                                     clientAccountsService: ClientAccountsService,
                                      previousLimitOrdersProcessor: PreviousLimitOrdersProcessor): SingleLimitOrderService {
         return SingleLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
                 executionDataApplyService,
+                clientAccountsService,
                 previousLimitOrdersProcessor)
+    }
+
+    @Bean
+    open fun clientAccountsServiceve(clientAccountsCache: ClientAccountsCache): ClientAccountsService {
+        return ClientAccountsServiceImpl(clientAccountsCache)
     }
 
     @Bean
@@ -354,6 +361,7 @@ open class TestApplicationContext {
                                     assetsPairsHolder: AssetsPairsHolder,
                                     balancesHolder: BalancesHolder,
                                     applicationSettingsHolder: ApplicationSettingsHolder,
+                                    clientAccountsService: ClientAccountsService,
                                     messageProcessingStatusHolder: MessageProcessingStatusHolder,
                                     testUUIDHolder: TestUUIDHolder): MultiLimitOrderService {
         return MultiLimitOrderService(executionContextFactory,
@@ -364,6 +372,7 @@ open class TestApplicationContext {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
+                clientAccountsService,
                 applicationSettingsHolder,
                 messageProcessingStatusHolder,
                 testUUIDHolder)
@@ -386,6 +395,7 @@ open class TestApplicationContext {
                                 messageSender: MessageSender,
                                 applicationSettingsHolder: ApplicationSettingsHolder,
                                 messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                clientAccountsService: ClientAccountsService,
                                 uuidHolder: UUIDHolder): MarketOrderService {
         return MarketOrderService(matchingEngine,
                 executionContextFactory,
@@ -400,6 +410,7 @@ open class TestApplicationContext {
                 messageSequenceNumberHolder,
                 messageSender,
                 messageProcessingStatusHolder,
+                clientAccountsService,
                 uuidHolder)
     }
 
@@ -587,13 +598,13 @@ open class TestApplicationContext {
     open fun singleLimitOrderContextParser(assetsPairsHolder: AssetsPairsHolder,
                                            assetsHolder: AssetsHolder,
                                            applicationSettingsHolder: ApplicationSettingsHolder,
-                                           clientAccountsCache: ClientAccountsCache,
+                                           clientAccountsService: ClientAccountsService,
                                            uuidHolder: UUIDHolder): SingleLimitOrderContextParser {
         return SingleLimitOrderContextParser(assetsPairsHolder,
                 assetsHolder,
                 applicationSettingsHolder,
                 uuidHolder,
-                clientAccountsCache,
+                clientAccountsService,
                 ThrottlingLogger.getLogger("limitOrder"))
     }
 
