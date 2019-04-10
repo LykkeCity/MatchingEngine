@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.client.accounts.ClientAccountsCache
 import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
@@ -25,9 +26,12 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitO
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.getSetting
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.eq
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
@@ -62,6 +66,19 @@ class StopLimitOrderTest : AbstractTest() {
 
             return testBackOfficeDatabaseAccessor
         }
+
+        @Bean
+        open fun clientAccountsCache(): ClientAccountsCache {
+            val clientAccountsCacheMock = Mockito.mock(ClientAccountsCache::class.java)
+            Mockito.`when`(clientAccountsCacheMock.getClientByWalletId(any())).thenAnswer { invocation -> invocation.arguments[0] }
+
+            Mockito.`when`(clientAccountsCacheMock.getWalletsByClientId(eq("Client1"))).thenReturn(setOf("Client1", "Client1_1"))
+            Mockito.`when`(clientAccountsCacheMock.getWalletsByClientId(eq("Client2"))).thenReturn(setOf("Client2", "Client2_1"))
+            Mockito.`when`(clientAccountsCacheMock.getWalletsByClientId(eq("Client3"))).thenReturn(setOf("Client3", "Client3_1"))
+            Mockito.`when`(clientAccountsCacheMock.getWalletsByClientId(eq("Client4"))).thenReturn(setOf("Client4", "Client4_1"))
+            return clientAccountsCacheMock
+        }
+
     }
 
     @Autowired
@@ -354,6 +371,59 @@ class StopLimitOrderTest : AbstractTest() {
 
         assertEquals(OrderType.LIMIT, childLimitOrder.orderType)
         assertEquals(OutgoingOrderStatus.MATCHED, childLimitOrder.status)
+        assertEquals("10500", childLimitOrder.price)
+    }
+
+    @Test
+    fun testBuyStopOrderLeadsToNegativeSpread() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 1.0)
+        testBalanceHolderWrapper.updateBalance("Client3_1", "BTC", 1.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 10500.0)
+        initServices()
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
+                uid = "order1", clientId = "Client3", assetId = "BTCUSD", volume = 1.0,
+                type = LimitOrderType.STOP_LIMIT, upperLimitPrice = 10000.0, upperPrice = 10500.0
+        )))
+        assertStopOrderBookSize("BTCUSD", true, 1)
+        assertBalance("Client3", "USD", reserved = 10500.0)
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", uid = "order2", assetId = "BTCUSD", volume = -0.3, price = 9000.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.2, price = 10000.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client3_1", assetId = "BTCUSD", volume = -0.2, price = 10400.0)))
+
+        clearMessageQueues()
+        limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper("order2"))
+        assertStopOrderBookSize("BTCUSD", true, 0)
+
+        assertBalance("Client3", "USD", 10500.0, 0.0)
+        assertBalance("Client3_1", "BTC", 1.0, 0.2)
+
+        // old contract event assertion
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        val orders = testClientLimitOrderListener.clientLimitOrdersQueue.poll().orders
+        assertEquals(3, orders.size)
+        val childOrder = orders.single {it.order.parentOrderExternalId == "order1"}.order
+        val stopOrder = orders.single { it.order.externalId == "order1" }.order
+        assertEquals(OrderStatus.Executed.name, stopOrder.status)
+        assertEquals(OrderStatus.LeadToNegativeSpread.name, childOrder.status)
+
+        // new contract event assertion
+        assertEquals(1, clientsEventsQueue.size)
+        val executionEvent = clientsEventsQueue.last() as ExecutionEvent
+        assertEquals(3, executionEvent.orders.size)
+
+        val eventStopOrder = executionEvent.orders.single { it.externalId == "order1" }
+        val childLimitOrder = executionEvent.orders.single { it.parentExternalId == "order1" }
+        assertEquals(OrderType.STOP_LIMIT, eventStopOrder.orderType)
+        assertEquals(OutgoingOrderStatus.EXECUTED, eventStopOrder.status)
+        assertEquals(childLimitOrder.externalId, eventStopOrder.childExternalId)
+        assertEquals("10500", eventStopOrder.price)
+
+        assertEquals(OrderType.LIMIT, childLimitOrder.orderType)
+        assertEquals(OutgoingOrderStatus.REJECTED, childLimitOrder.status)
+        assertEquals(OrderRejectReason.LEAD_TO_NEGATIVE_SPREAD, childLimitOrder.rejectReason)
         assertEquals("10500", childLimitOrder.price)
     }
 
