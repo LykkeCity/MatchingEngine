@@ -544,6 +544,80 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     }
 
     @Test
+    fun testMatchSellMarketOrderWithSkippedOrders() {
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client2_1", "USD", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client3_1", "USD", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 100.0)
+
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.3, volume = 40.0, reservedVolume = 52.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client3", price = 1.2, volume = 30.0, reservedVolume = 36.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2_1", price = 1.1, volume = 40.0, reservedVolume = 44.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client3_1", price = 1.0, volume = 40.0, reservedVolume = 40.0))
+
+        val marketOrder = buildMarketOrder(clientId = "Client2", volume = -100.0)
+        val matchingResult = match(marketOrder, getOrderBook("EURUSD", true))
+
+        assertMarketOrderMatchingResult(matchingResult,
+                status = OrderStatus.Matched,
+                marketBalance = BigDecimal.ZERO,
+                marketPrice = BigDecimal.valueOf(1.18),
+                skipSize = 1,
+                cancelledSize = 0,
+                lkkTradesSize = 6,
+                cashMovementsSize = 12,
+                marketOrderTradesSize = 3,
+                completedLimitOrdersSize = 2,
+                limitOrdersReportSize = 3,
+                orderBookSize = 0)
+
+        assertCompletedLimitOrders(matchingResult.completedLimitOrders, false)
+        assertEquals("Client2_1", matchingResult.skipLimitOrders.first().clientId)
+        assertEquals(matchingResult.orderCopy.externalId, marketOrder.externalId)
+        assertNotNull(marketOrder.matchedAt)
+        assertEquals(now, marketOrder.matchedAt!!)
+        assertNotNull(matchingResult.uncompletedLimitOrder)
+    }
+
+    @Test
+    fun testMatchBuyMarketOrderWithSkippedOrders() {
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "EUR", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client2_1", "EUR", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client3_1", "EUR", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 200.0)
+
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client3_1", price = 1.0, volume = -40.0, reservedVolume = 40.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2_1", price = 1.1, volume = -40.0, reservedVolume = 40.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client3", price = 1.2, volume = -30.0, reservedVolume = 30.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.3, volume = -40.0, reservedVolume = 40.0))
+
+        val marketOrder = buildMarketOrder(clientId = "Client2", volume = 100.0)
+        val matchingResult = match(marketOrder, getOrderBook("EURUSD", false))
+
+        assertMarketOrderMatchingResult(matchingResult,
+                status = OrderStatus.Matched,
+                marketBalance = BigDecimal.valueOf(85),
+                marketPrice = BigDecimal.valueOf(1.15),
+                skipSize = 1,
+                cancelledSize = 0,
+                lkkTradesSize = 6,
+                cashMovementsSize = 12,
+                marketOrderTradesSize = 3,
+                completedLimitOrdersSize = 2,
+                limitOrdersReportSize = 3,
+                orderBookSize = 0)
+
+        assertCompletedLimitOrders(matchingResult.completedLimitOrders, false)
+        assertEquals("Client2_1", matchingResult.skipLimitOrders.first().clientId)
+        assertEquals(matchingResult.orderCopy.externalId, marketOrder.externalId)
+        assertNotNull(marketOrder.matchedAt)
+        assertEquals(now, marketOrder.matchedAt!!)
+        assertNotNull(matchingResult.uncompletedLimitOrder)
+    }
+
+    @Test
     fun testMatchMarketOrderSellWithSeveral() {
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 60.0)
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 60.0)
