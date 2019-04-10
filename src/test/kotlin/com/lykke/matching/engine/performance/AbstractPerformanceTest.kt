@@ -174,12 +174,12 @@ abstract class AbstractPerformanceTest {
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
         val limitOrderInputValidator = LimitOrderInputValidatorImpl(applicationSettingsHolder)
         val clientAccountCache = Mockito.mock(ClientAccountsCache::class.java)
-        val clientAccountsService = ClientAccountsHolder(clientAccountCache)
+        val clientAccountsHolder = ClientAccountsHolder(clientAccountCache)
         singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder,
                 assetsHolder,
                 applicationSettingsHolder,
                 uuidHolder,
-                clientAccountsService,
+                clientAccountsHolder,
                 LOGGER)
 
         cashInOutContextParser = CashInOutContextParser(assetsHolder, uuidHolder)
@@ -230,7 +230,7 @@ abstract class AbstractPerformanceTest {
 
         val genericLimitOrdersProcessor = GenericLimitOrdersProcessor(limitOrderProcessor, stopOrderProcessor)
 
-        val stopOrderBookProcessor = StopOrderBookProcessor(limitOrderProcessor, applicationSettingsHolder, uuidHolder)
+        val stopOrderBookProcessor = StopOrderBookProcessor(limitOrderProcessor, applicationSettingsHolder, clientAccountsHolder, uuidHolder)
 
         val previousLimitOrdersProcessor = PreviousLimitOrdersProcessor(genericLimitOrderService, genericStopLimitOrderService, limitOrdersCanceller)
 
@@ -248,7 +248,7 @@ abstract class AbstractPerformanceTest {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                clientAccountsService,
+                clientAccountsHolder,
                 applicationSettingsHolder,
                 messageProcessingStatusHolder,
                 uuidHolder)
@@ -267,7 +267,7 @@ abstract class AbstractPerformanceTest {
                 messageSequenceNumberHolder,
                 notificationSender,
                 messageProcessingStatusHolder,
-                clientAccountsService,
+                clientAccountsHolder,
                 uuidHolder)
     }
 }

@@ -3,6 +3,7 @@ package com.lykke.matching.engine.order.process
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
+import com.lykke.matching.engine.holders.ClientAccountsHolder
 import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.order.process.common.OrderUtils
 import com.lykke.matching.engine.order.transaction.ExecutionContext
@@ -13,12 +14,16 @@ import java.math.BigDecimal
 @Component
 class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcessor,
                              private val applicationSettingsHolder: ApplicationSettingsHolder,
+                             private val clientAccountsHolder: ClientAccountsHolder,
                              private val uuidHolder: UUIDHolder) {
 
     fun checkAndExecuteStopLimitOrders(executionContext: ExecutionContext): List<ProcessedOrder> {
         val processedOrders = mutableListOf<ProcessedOrder>()
         var order = getStopOrderToExecute(executionContext)
         while (order != null) {
+            if (!executionContext.isWalletDataExist(order.clientId)) {
+                executionContext.addWalletsByOperationWallet(order.clientId, clientAccountsHolder.getAllWalletsByOperationWalletId(order.clientId))
+            }
             processedOrders.add(processStopOrder(order, executionContext))
             order = getStopOrderToExecute(executionContext)
         }

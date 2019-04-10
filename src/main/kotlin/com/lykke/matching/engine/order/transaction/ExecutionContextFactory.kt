@@ -30,7 +30,7 @@ class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                assetsById: Map<String, Asset> = getAssetsByIdMap(assetPairsById),
                preProcessorValidationResultsByOrderId: Map<String, OrderValidationResult> = emptyMap()): ExecutionContext {
         return ExecutionContext(messageId,
-                allClientWalletsByOperationWalletId,
+                HashMap(allClientWalletsByOperationWalletId),
                 requestId,
                 messageType,
                 processedMessage,

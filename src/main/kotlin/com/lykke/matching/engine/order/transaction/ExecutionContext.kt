@@ -13,7 +13,7 @@ import org.slf4j.Logger
 import java.util.Date
 
 class ExecutionContext(val messageId: String,
-                       val allClientWalletsByOperationWalletId: Map<String, Set<String>>,
+                       private val allClientWalletsByOperationWalletId: MutableMap<String, Set<String>>,
                        val requestId: String,
                        val messageType: MessageType,
                        val processedMessage: ProcessedMessage?,
@@ -33,6 +33,18 @@ class ExecutionContext(val messageId: String,
     var marketOrderWithTrades: MarketOrderWithTrades? = null
 
     val lkkTrades = mutableListOf<LkkTrade>()
+
+    fun isWalletDataExist(walletId: String): Boolean {
+        return allClientWalletsByOperationWalletId.containsKey(walletId)
+    }
+
+    fun addWalletsByOperationWallet(operationWalletId: String, wallets: Set<String>) {
+        allClientWalletsByOperationWalletId.putIfAbsent(operationWalletId, wallets)
+    }
+
+    fun isSameClient(operationWalletId: String, walletId: String): Boolean {
+        return operationWalletId == walletId || allClientWalletsByOperationWalletId[operationWalletId]?.contains(walletId) == true
+    }
 
     fun addClientLimitOrderWithTrades(limitOrderWithTrades: LimitOrderWithTrades) {
         addToReport(clientLimitOrdersWithTradesByInternalId, limitOrderWithTrades)

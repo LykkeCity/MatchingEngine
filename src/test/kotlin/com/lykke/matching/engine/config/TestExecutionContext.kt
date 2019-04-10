@@ -135,9 +135,11 @@ open class TestExecutionContext {
     @Bean
     open fun stopOrderBookProcessor(limitOrderProcessor: LimitOrderProcessor,
                                     applicationSettingsHolder: ApplicationSettingsHolder,
+                                    clientAccountsHolder: ClientAccountsHolder,
                                     uuidHolder: UUIDHolder): StopOrderBookProcessor {
         return StopOrderBookProcessor(limitOrderProcessor,
                 applicationSettingsHolder,
+                clientAccountsHolder,
                 uuidHolder)
     }
 
