@@ -39,6 +39,8 @@ import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.outgoing.senders.OutgoingEventProcessor
+import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
 import com.lykke.matching.engine.services.CashInOutOperationService
 import com.lykke.matching.engine.services.CashTransferOperationService
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -76,6 +78,7 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
+import org.springframework.core.task.TaskExecutor
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.Optional
 import java.util.concurrent.BlockingQueue
@@ -97,6 +100,15 @@ open class TestApplicationContext {
         threadPoolTaskExecutor.threadNamePrefix = "executor-task"
         threadPoolTaskExecutor.corePoolSize = 2
         threadPoolTaskExecutor.maxPoolSize = 2
+
+        return threadPoolTaskExecutor
+    }
+
+    @Bean
+    open fun rabbitPublishersThreadPool(): TaskExecutor {
+        val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
+        threadPoolTaskExecutor.threadNamePrefix = "rabbit-task"
+        threadPoolTaskExecutor.corePoolSize = Integer.MAX_VALUE
 
         return threadPoolTaskExecutor
     }
@@ -255,14 +267,18 @@ open class TestApplicationContext {
     @Bean
     open fun cashInOutOperationService(balancesHolder: BalancesHolder,
                                        walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
-                                       rabbitCashInOutQueue: BlockingQueue<CashOperation>,
                                        feeProcessor: FeeProcessor,
                                        cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator,
                                        messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                       messageSender: MessageSender,
+                                       outgoingEventProcessor: OutgoingEventProcessor,
                                        persistenceManager: PersistenceManager): CashInOutOperationService {
-        return CashInOutOperationService(balancesHolder, rabbitCashInOutQueue, feeProcessor, walletOperationsProcessorFactory,
-                cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender, persistenceManager)
+        return CashInOutOperationService(balancesHolder,
+                feeProcessor,
+                walletOperationsProcessorFactory,
+                cashInOutOperationBusinessValidator,
+                messageSequenceNumberHolder,
+                outgoingEventProcessor,
+                persistenceManager)
     }
 
     @Bean
@@ -377,10 +393,10 @@ open class TestApplicationContext {
                                 matchingResultHandlingHelper: MatchingResultHandlingHelper,
                                 genericLimitOrderService: GenericLimitOrderService,
                                 assetsPairsHolder: AssetsPairsHolder,
-                                rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
-                                marketOrderValidator: MarketOrderValidator,
+                                marketOrderWithTrades: BlockingQueue<MarketOrderWithTrades>,
                                 messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                 messageSender: MessageSender,
+                                marketOrderValidator: MarketOrderValidator,
                                 applicationSettingsHolder: ApplicationSettingsHolder,
                                 messageProcessingStatusHolder: MessageProcessingStatusHolder,
                                 uuidHolder: UUIDHolder): MarketOrderService {
@@ -390,12 +406,12 @@ open class TestApplicationContext {
                 executionDataApplyService,
                 matchingResultHandlingHelper,
                 genericLimitOrderService,
-                assetsPairsHolder,
-                rabbitSwapQueue,
-                marketOrderValidator,
-                applicationSettingsHolder,
+                marketOrderWithTrades,
                 messageSequenceNumberHolder,
                 messageSender,
+                assetsPairsHolder,
+                marketOrderValidator,
+                applicationSettingsHolder,
                 messageProcessingStatusHolder,
                 uuidHolder)
     }
@@ -557,12 +573,15 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashTransferOperationService(balancesHolder: BalancesHolder, walletOperationsProcessorFactory: WalletOperationsProcessorFactory, notification: BlockingQueue<CashTransferOperation>,
+    open fun cashTransferOperationService(balancesHolder: BalancesHolder,
+                                          walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                                           dbTransferOperationQueue: BlockingQueue<TransferOperation>, feeProcessor: FeeProcessor,
-                                          cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator, messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                          messageSender: MessageSender, persistenceManager: PersistenceManager): CashTransferOperationService {
-        return CashTransferOperationService(balancesHolder, walletOperationsProcessorFactory, notification, dbTransferOperationQueue, feeProcessor,
-                cashTransferOperationBusinessValidator, messageSequenceNumberHolder, messageSender, persistenceManager)
+                                          cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator,
+                                          messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                          outgoingEventProcessor: OutgoingEventProcessor,
+                                          persistenceManager: PersistenceManager): CashTransferOperationService {
+        return CashTransferOperationService(balancesHolder, walletOperationsProcessorFactory, dbTransferOperationQueue, feeProcessor,
+                cashTransferOperationBusinessValidator, messageSequenceNumberHolder, outgoingEventProcessor, persistenceManager)
     }
 
     @Bean
@@ -688,6 +707,11 @@ open class TestApplicationContext {
                 limitOrderCancelInputQueue,
                 limitOrderMassCancelInputQueue,
                 preProcessedMessageQueue)
+    }
+
+    @Bean
+    open fun specializedEventSendersByHandledClass(specializedEventSenders: List<SpecializedEventSender<*>>): Map<Class<*>, List<SpecializedEventSender<*>>> {
+        return specializedEventSenders.groupBy { it.getEventClass() }
     }
 
     @Bean

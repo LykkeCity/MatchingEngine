@@ -123,7 +123,6 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         clearMessageQueues()
 
         limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper(listOf("10", "11", "13")))
-
         assertOrderBookSize("BTCUSD", false, 1)
         assertOrderBookSize("BTCUSD", true, 0)
 

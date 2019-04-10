@@ -3,28 +3,35 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.services.utils.AbstractAssetOrderBook
 import java.math.BigDecimal
-import java.util.Comparator
+import java.util.*
 import java.util.concurrent.PriorityBlockingQueue
 
-class AssetOrderBook(assetId: String): AbstractAssetOrderBook(assetId) {
+open class AssetOrderBook(assetId: String) : AbstractAssetOrderBook(assetId) {
+    companion object {
+        private val SELL_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
+            var result = o1.price.compareTo(o2.price)
+            if (result == 0) {
+                result = o1.createdAt.compareTo(o2.createdAt)
+            }
 
-    private val SELL_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
-        var result = o1.price.compareTo(o2.price)
-        if (result == 0) {
-            result = o1.createdAt.compareTo(o2.createdAt)
+            result
         }
 
-        result
-    }
+        private val BUY_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
+            var result = o2.price.compareTo(o1.price)
+            if (result == 0) {
+                result = o1.createdAt.compareTo(o2.createdAt)
+            }
 
-    private val BUY_COMPARATOR = Comparator<LimitOrder> { o1, o2 ->
-        var result = o2.price.compareTo(o1.price)
-        if (result == 0) {
-            result = o1.createdAt.compareTo(o2.createdAt)
+            result
         }
 
-        result
+        fun sort(isBuySide: Boolean, orders: Array<LimitOrder>): Array<LimitOrder> {
+            Arrays.sort(orders, if (isBuySide) BUY_COMPARATOR else SELL_COMPARATOR)
+            return orders
+        }
     }
+
 
     private var askOrderBook = PriorityBlockingQueue<LimitOrder>(50, SELL_COMPARATOR)
     private var bidOrderBook = PriorityBlockingQueue<LimitOrder>(50, BUY_COMPARATOR)
@@ -54,7 +61,7 @@ class AssetOrderBook(assetId: String): AbstractAssetOrderBook(assetId) {
         }
     }
 
-    override fun copy() : AssetOrderBook {
+    override fun copy(): AssetOrderBook {
         val book = AssetOrderBook(assetPairId)
 
         askOrderBook.forEach {
@@ -67,5 +74,4 @@ class AssetOrderBook(assetId: String): AbstractAssetOrderBook(assetId) {
 
         return book
     }
-
 }
