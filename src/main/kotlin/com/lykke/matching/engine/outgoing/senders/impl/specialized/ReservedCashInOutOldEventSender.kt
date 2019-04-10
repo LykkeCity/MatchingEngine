@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.outgoing.senders.impl.specialized
 
-import com.lykke.matching.engine.daos.OutgoingEventData
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.ReservedCashInOutEventData
 import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
@@ -17,8 +16,7 @@ class ReservedCashInOutOldEventSender(private val reservedCashOperationQueue: Bl
         return ReservedCashInOutEventData::class.java
     }
 
-    override fun sendEvent(event: OutgoingEventData) {
-        event as ReservedCashInOutEventData
+    override fun sendEvent(event: ReservedCashInOutEventData) {
         event.walletOperationsProcessor.sendNotification(event.requestId, MessageType.RESERVED_CASH_IN_OUT_OPERATION.name, event.messageId)
 
         reservedCashOperationQueue.put(ReservedCashOperation(event.requestId,

@@ -44,6 +44,7 @@ import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.outgoing.senders.impl.SpecializedEventSendersHolderImpl
 import com.lykke.matching.engine.outgoing.senders.impl.OutgoingEventProcessorImpl
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.business.impl.LimitOrderBusinessValidatorImpl
@@ -198,7 +199,7 @@ abstract class AbstractPerformanceTest {
         val executionPersistenceService = ExecutionPersistenceService(persistenceManager)
         val outgoingEventProcessor = OutgoingEventProcessorImpl(
                 outgoingEventData,
-                emptyMap(),
+                SpecializedEventSendersHolderImpl(emptyList()),
                 TaskExecutor { task -> thread(name = "rabbitMessageProcessor") { task.run() } })
 
 

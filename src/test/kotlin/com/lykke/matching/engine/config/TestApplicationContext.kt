@@ -37,8 +37,10 @@ import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.outgoing.senders.SpecializedEventSendersHolder
 import com.lykke.matching.engine.outgoing.senders.OutgoingEventProcessor
 import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.SpecializedEventSendersHolderImpl
 import com.lykke.matching.engine.services.CashInOutOperationService
 import com.lykke.matching.engine.services.CashTransferOperationService
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -709,7 +711,7 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun specializedEventSendersByHandledClass(specializedEventSenders: List<SpecializedEventSender<*>>): Map<Class<*>, List<SpecializedEventSender<*>>> {
-        return specializedEventSenders.groupBy { it.getEventClass() }
+    open fun specializedEventSendersHolder(specializedEventSenders: List<SpecializedEventSender<*>>): SpecializedEventSendersHolder {
+        return SpecializedEventSendersHolderImpl(specializedEventSenders)
     }
 }

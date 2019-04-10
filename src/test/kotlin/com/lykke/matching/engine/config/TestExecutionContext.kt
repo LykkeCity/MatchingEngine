@@ -35,6 +35,7 @@ import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.messages.ReservedCashInOutEventData
 import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
+import com.lykke.matching.engine.outgoing.senders.SpecializedEventSendersHolder
 import com.lykke.matching.engine.outgoing.senders.OutgoingEventProcessor
 import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
 import com.lykke.matching.engine.outgoing.senders.impl.specialized.CashInOutEventSender
@@ -98,10 +99,10 @@ open class TestExecutionContext {
 
 
     @Bean
-    open fun outgoingEventProcessor(messageSendersByEventClass: Map<Class<*>, List<SpecializedEventSender<*>>>,
+    open fun outgoingEventProcessor(specializedEventSendersHolder: SpecializedEventSendersHolder,
                                     @Qualifier("rabbitPublishersThreadPool")
                                     rabbitPublishersThreadPool: TaskExecutor): OutgoingEventProcessor {
-        return OutgoingEventProcessorImpl(outgoingEvents, messageSendersByEventClass, rabbitPublishersThreadPool)
+        return OutgoingEventProcessorImpl(outgoingEvents, specializedEventSendersHolder, rabbitPublishersThreadPool)
     }
 
     @Bean
