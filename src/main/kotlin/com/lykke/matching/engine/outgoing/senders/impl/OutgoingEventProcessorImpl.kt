@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.ExecutionData
 import com.lykke.matching.engine.daos.OutgoingEventData
 import com.lykke.matching.engine.outgoing.messages.CashInOutEventData
 import com.lykke.matching.engine.outgoing.messages.CashTransferEventData
+import com.lykke.matching.engine.outgoing.messages.ReservedCashInOutEventData
 import com.lykke.matching.engine.outgoing.senders.OutgoingEventProcessor
 import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
 import com.lykke.utils.logging.ThrottlingLogger
@@ -49,6 +50,10 @@ class OutgoingEventProcessorImpl(private val outgoingEventDataQueue: BlockingQue
 
     override fun submitExecutionEvent(executionEventData: ExecutionData) {
         submitEvent(executionEventData)
+    }
+
+    override fun submitReservedCashInOutEvent(reservedCashInOutEventData: ReservedCashInOutEventData) {
+        submitEvent(reservedCashInOutEventData)
     }
 
     private fun submitEvent(outgoingEventData: OutgoingEventData) {

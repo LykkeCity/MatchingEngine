@@ -303,20 +303,18 @@ open class TestApplicationContext {
     @Bean
     open fun reservedCashInOutOperation(balancesHolder: BalancesHolder,
                                         assetsHolder: AssetsHolder,
-                                        reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                         reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
                                         messageProcessingStatusHolder: MessageProcessingStatusHolder,
                                         uuidHolder: UUIDHolder,
                                         messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                        messageSender: MessageSender): ReservedCashInOutOperationService {
+                                        outgoingEventProcessor: OutgoingEventProcessor): ReservedCashInOutOperationService {
         return ReservedCashInOutOperationService(assetsHolder,
                 balancesHolder,
-                reservedCashOperationQueue,
                 reservedCashInOutOperationValidator,
                 messageProcessingStatusHolder,
                 uuidHolder,
                 messageSequenceNumberHolder,
-                messageSender)
+                outgoingEventProcessor)
     }
 
     @Bean
