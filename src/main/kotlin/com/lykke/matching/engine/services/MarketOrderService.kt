@@ -55,12 +55,12 @@ class MarketOrderService @Autowired constructor(
         private val executionDataApplyService: ExecutionDataApplyService,
         private val matchingResultHandlingHelper: MatchingResultHandlingHelper,
         private val genericLimitOrderService: GenericLimitOrderService,
-        private val assetsPairsHolder: AssetsPairsHolder,
         private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
-        private val marketOrderValidator: MarketOrderValidator,
-        private val applicationSettingsHolder: ApplicationSettingsHolder,
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
         private val messageSender: MessageSender,
+        private val assetsPairsHolder: AssetsPairsHolder,
+        private val marketOrderValidator: MarketOrderValidator,
+        private val applicationSettingsHolder: ApplicationSettingsHolder,
         private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
         private val uuidHolder: UUIDHolder) : AbstractService {
     companion object {
@@ -110,7 +110,6 @@ class MarketOrderService @Autowired constructor(
             writeErrorResponse(messageWrapper, order, e.message)
             return
         }
-
 
         val executionContext = executionContextFactory.create(messageWrapper.messageId!!,
                 messageWrapper.id!!,

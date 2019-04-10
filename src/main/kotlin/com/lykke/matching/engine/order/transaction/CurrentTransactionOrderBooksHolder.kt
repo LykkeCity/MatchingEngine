@@ -6,7 +6,6 @@ import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.matching.UpdatedOrderBookAndOrder
-import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import java.util.Date
@@ -19,7 +18,7 @@ class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: G
     private val orderCopyWrappersByOriginalOrder = HashMap<LimitOrder, CopyWrapper<LimitOrder>>()
 
     val tradeInfoList = mutableListOf<TradeInfo>()
-    val outgoingOrderBooks = mutableListOf<OrderBook>()
+    val outgoingOrderBooks = ArrayList<OrderBookData>()
 
     fun getOrPutOrderCopyWrapper(limitOrder: LimitOrder): CopyWrapper<LimitOrder> {
         return orderCopyWrappersByOriginalOrder.getOrPut(limitOrder) {
@@ -87,22 +86,31 @@ class CurrentTransactionOrderBooksHolder(private val genericLimitOrderService: G
         orderCopyWrappersByOriginalOrder.forEach { it.value.applyToOrigin() }
         assetOrderBookCopiesByAssetPairId.forEach { assetPairId, orderBook ->
             genericLimitOrderService.setOrderBook(assetPairId, orderBook)
-            val orderBookCopy = orderBook.copy()
             if (changedBuySides.contains(assetPairId)) {
-                processChangedOrderBookSide(orderBookCopy, true, date)
+                processChangedOrderBookSide(orderBook, true, date)
             }
             if (changedSellSides.contains(assetPairId)) {
-                processChangedOrderBookSide(orderBookCopy, false, date)
+                processChangedOrderBookSide(orderBook, false, date)
             }
         }
     }
 
-    private fun processChangedOrderBookSide(orderBookCopy: AssetOrderBook, isBuySide: Boolean, date: Date) {
-        val assetPairId = orderBookCopy.assetPairId
-        val price = if (isBuySide) orderBookCopy.getBidPrice() else orderBookCopy.getAskPrice()
+    private fun processChangedOrderBookSide(orderBook: AssetOrderBook,
+                                            isBuySide: Boolean,
+                                            date: Date) {
+        val assetPairId = orderBook.assetPairId
+        val price = if (isBuySide) orderBook.getBidPrice() else orderBook.getAskPrice()
         tradeInfoList.add(TradeInfo(assetPairId, isBuySide, price, date))
-        outgoingOrderBooks.add(OrderBook(assetPairId, isBuySide, date, orderBookCopy.getOrderBook(isBuySide)))
+        val orders = orderBook.getOrderBook(isBuySide).toArray(emptyArray<LimitOrder>())
+
+        outgoingOrderBooks.add(OrderBookData(orders,
+                assetPairId,
+                date,
+                isBuySide))
     }
 
-
+    class OrderBookData(val volumePrices: Array<LimitOrder>,
+                        val assetPair: String,
+                        val date: Date,
+                        val isBuySide: Boolean)
 }

@@ -4,11 +4,9 @@ import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.context.CashTransferContext
-import com.lykke.matching.engine.daos.fee.v2.Fee
 import com.lykke.matching.engine.exception.PersistenceException
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
-import com.lykke.matching.engine.fee.singleFeeTransfer
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
@@ -16,12 +14,10 @@ import com.lykke.matching.engine.messages.MessageStatus.INVALID_FEE
 import com.lykke.matching.engine.messages.MessageStatus.LOW_BALANCE
 import com.lykke.matching.engine.messages.MessageStatus.OK
 import com.lykke.matching.engine.messages.MessageStatus.RUNTIME
-import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
-import com.lykke.matching.engine.outgoing.messages.v2.events.CashTransferEvent
-import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
+import com.lykke.matching.engine.outgoing.messages.CashTransferEventData
+import com.lykke.matching.engine.outgoing.senders.OutgoingEventProcessor
 import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -35,12 +31,11 @@ import java.util.concurrent.BlockingQueue
 
 @Service
 class CashTransferOperationService(private val balancesHolder: BalancesHolder,
-                                   private val notificationQueue: BlockingQueue<CashTransferOperation>,
                                    private val dbTransferOperationQueue: BlockingQueue<TransferOperation>,
                                    private val feeProcessor: FeeProcessor,
                                    private val cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator,
                                    private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                   private val messageSender: MessageSender) : AbstractService {
+                                   private val outgoingEventProcessor: OutgoingEventProcessor) : AbstractService {
     override fun parseMessage(messageWrapper: MessageWrapper) {
         //do nothing
     }
@@ -68,7 +63,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
             return
         }
 
-        val result = try {
+        try {
             processTransferOperation(transferOperation, messageWrapper, cashTransferContext, now)
         } catch (e: FeeException) {
             writeErrorResponse(messageWrapper, cashTransferContext, INVALID_FEE, e.message)
@@ -81,21 +76,6 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
             return
         }
         dbTransferOperationQueue.put(transferOperation)
-        val fee = if(transferOperation.fees == null || transferOperation.fees.isEmpty()) null else transferOperation.fees.first()
-
-        notificationQueue.put(CashTransferOperation(transferOperation.externalId,
-                transferOperation.fromClientId,
-                transferOperation.toClientId,
-                transferOperation.dateTime,
-                NumberUtils.setScaleRoundHalfUp(transferOperation.volume, cashTransferContext.transferOperation.asset!!.accuracy).toPlainString(),
-                transferOperation.overdraftLimit,
-                asset!!.assetId,
-                fee,
-                singleFeeTransfer(fee, result.fees),
-                result.fees,
-                cashTransferContext.messageId))
-
-        messageSender.sendMessage(result.outgoingMessage)
 
         writeResponse(messageWrapper, transferOperation.matchingEngineOperationId, OK)
         LOGGER.info("Cash transfer operation (${transferOperation.externalId}) from client ${transferOperation.fromClientId} to client ${transferOperation.toClientId}," +
@@ -105,7 +85,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
     private fun processTransferOperation(operation: TransferOperation,
                                          messageWrapper: MessageWrapper,
                                          cashTransferContext: CashTransferContext,
-                                         date: Date): OperationResult {
+                                         now: Date) {
         val operations = LinkedList<WalletOperation>()
 
         val assetId = operation.asset!!.assetId
@@ -125,19 +105,13 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         if (!updated) {
             throw PersistenceException("Unable to save balance")
         }
-        val messageId = cashTransferContext.messageId
-        walletProcessor.apply().sendNotification(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name, messageId)
-
-        val outgoingMessage = EventFactory.createCashTransferEvent(sequenceNumber,
-                messageId,
-                operation.externalId,
-                date,
-                MessageType.CASH_TRANSFER_OPERATION,
-                walletProcessor.getClientBalanceUpdates(),
+        walletProcessor.apply()
+        outgoingEventProcessor.submitCashTransferEvent(CashTransferEventData(cashTransferContext.messageId,
+                walletProcessor,
+                fees,
                 operation,
-                fees)
-
-        return OperationResult(outgoingMessage, fees)
+                sequenceNumber,
+                now))
     }
 
     fun writeResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus) {
@@ -164,6 +138,3 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                 " volume: ${NumberUtils.roundForPrint(context.transferOperation.volume)}: $errorMessage")
     }
 }
-
-private class OperationResult(val outgoingMessage: CashTransferEvent,
-                              val fees: List<Fee>)
