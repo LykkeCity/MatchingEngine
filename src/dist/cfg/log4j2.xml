@@ -344,6 +344,24 @@
             <AppenderRef ref="ConsoleLog"/>
         </Logger>
 
+        <Logger name="com.lykke.matching.engine.database.reconciliation.AccountsMigrationService"
+                     level="info" additivity="false">
+            <AppenderRef ref="ServerLog"/>
+            <AppenderRef ref="ConsoleLog"/>
+        </Logger>
+
+        <Logger name="com.lykke.matching.engine.database.reconciliation.OrdersMigrationService"
+                     level="info" additivity="false">
+            <AppenderRef ref="ServerLog"/>
+            <AppenderRef ref="ConsoleLog"/>
+        </Logger>
+
+        <Logger name="com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator"
+                     level="info" additivity="false">
+            <AppenderRef ref="ServerLog"/>
+            <AppenderRef ref="ConsoleLog"/>
+        </Logger>
+
         <AsyncLogger name="com.lykke.matching.engine.services.events.listeners.MessageProcessingSwitchListener"
                      level="info" additivity="false">
             <AppenderRef ref="ServerLog"/>
@@ -537,6 +555,11 @@
 
         # Balance updates
         <AsyncLogger name="com.lykke.matching.engine.holders.BalancesHolder"
+                     level="info" additivity="false">
+            <AppenderRef ref="BalanceUpdatesLog"/>
+        </AsyncLogger>
+
+        <AsyncLogger name="com.lykke.matching.engine.services.BalancesServiceImpl"
                      level="info" additivity="false">
             <AppenderRef ref="BalanceUpdatesLog"/>
         </AsyncLogger>
