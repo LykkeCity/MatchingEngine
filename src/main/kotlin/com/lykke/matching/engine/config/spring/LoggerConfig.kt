@@ -35,6 +35,11 @@ open class LoggerConfig {
     }
 
     @Bean
+    open fun marketOrderPreProcessingLogger(): ThrottlingLogger {
+        return ThrottlingLogger.getLogger("MarketOrderPreProcessingLogger")
+    }
+
+    @Bean
     open fun singleLimitOrderPreProcessingLogger(): ThrottlingLogger {
         return ThrottlingLogger.getLogger("SingleLimitOrderPreProcessing")
     }
