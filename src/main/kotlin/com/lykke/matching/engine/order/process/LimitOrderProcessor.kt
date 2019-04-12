@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.order.process
 
 import com.lykke.matching.engine.balance.BalanceException
+import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.order.OrderTimeInForce
@@ -45,14 +46,15 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         if (preProcessorValidationResult != null && !preProcessorValidationResult.isValid) {
             return preProcessorValidationResult
         }
+        val assetPair = orderContext.executionContext.assetPairsById[orderContext.order.assetPairId]
         // fixme: input validator will be moved from the business thread after multilimit order context release
-        val inputValidationResult = performInputValidation(orderContext)
-        return if (!inputValidationResult.isValid) inputValidationResult else performBusinessValidation(orderContext)
+        val inputValidationResult = performInputValidation(orderContext, assetPair)
+        return if (!inputValidationResult.isValid) inputValidationResult else performBusinessValidation(orderContext, assetPair!!)
     }
 
-    private fun performInputValidation(orderContext: LimitOrderExecutionContext): OrderValidationResult {
+    private fun performInputValidation(orderContext: LimitOrderExecutionContext,
+                                       assetPair: AssetPair?): OrderValidationResult {
         val order = orderContext.order
-        val assetPair = orderContext.executionContext.assetPairsById[order.assetPairId]
         val baseAsset = assetPair?.let { orderContext.executionContext.assetsById[assetPair.baseAssetId] }
         try {
             limitOrderInputValidator.validateLimitOrder(applicationSettingsHolder.isTrustedClient(order.clientId),
@@ -66,13 +68,15 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         return OrderValidationResult(true)
     }
 
-    private fun performBusinessValidation(orderContext: LimitOrderExecutionContext): OrderValidationResult {
+    private fun performBusinessValidation(orderContext: LimitOrderExecutionContext,
+                                          assetPair: AssetPair): OrderValidationResult {
         val order = orderContext.order
         try {
             limitOrderBusinessValidator.performValidation(applicationSettingsHolder.isTrustedClient(order.clientId),
                     order,
                     orderContext.availableLimitAssetBalance!!,
                     orderContext.limitVolume!!,
+                    assetPair,
                     orderContext.executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId),
                     orderContext.executionContext.date)
         } catch (e: OrderValidationException) {
@@ -128,10 +132,7 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
     private fun matchOrder(orderContext: LimitOrderExecutionContext): ProcessedOrder {
         val executionContext = orderContext.executionContext
         val order = orderContext.order
-        val orderBook = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId)
         val matchingResult = matchingEngine.match(order,
-                orderBook.getOrderBook(!order.isBuySide()),
-                executionContext.messageId,
                 orderContext.availableLimitAssetBalance!!,
                 applicationSettingsHolder.limitOrderPriceDeviationThreshold(order.assetPairId),
                 executionContext = executionContext)

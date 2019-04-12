@@ -1,14 +1,16 @@
 package com.lykke.matching.engine.services.validators.impl
 
-import com.lykke.matching.engine.daos.v2.FeeInstruction
-import com.lykke.matching.engine.daos.MarketOrder
+import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
+import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.utils.NumberUtils
@@ -28,13 +30,17 @@ class MarketOrderValidatorImpl
         private val LOGGER = LoggerFactory.getLogger(MarketOrderValidatorImpl::class.java.name)
     }
 
-    override fun performValidation(order: MarketOrder, orderBook: PriorityBlockingQueue<LimitOrder>,
-                                   feeInstruction: FeeInstruction?, feeInstructions: List<NewFeeInstruction>?) {
+    override fun performValidation(order: MarketOrder,
+                                   orderBook: AssetOrderBook,
+                                   feeInstruction: FeeInstruction?,
+                                   feeInstructions: List<NewFeeInstruction>?) {
         isAssetKnown(order)
         isAssetEnabled(order)
-        isVolumeValid(order)
+        val assetPair = getAssetPair(order)
+        isVolumeValid(order, assetPair, orderBook)
+        validateMaxValueForNotStraight(order, assetPair)
         isFeeValid(feeInstruction, feeInstructions, order)
-        isOrderBookValid(order, orderBook)
+        isOrderBookValid(order, orderBook.getOrderBook(!order.isBuySide()))
         isVolumeAccuracyValid(order)
         isPriceAccuracyValid(order)
     }
@@ -54,7 +60,9 @@ class MarketOrderValidatorImpl
         }
     }
 
-    private fun isVolumeValid(order: MarketOrder) {
+    private fun isVolumeValid(order: MarketOrder,
+                              assetPair: AssetPair,
+                              orderBook: AssetOrderBook) {
         if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, order.volume)) {
             val message = "volume can not be equal to zero"
             LOGGER.info(message)
@@ -65,15 +73,25 @@ class MarketOrderValidatorImpl
             LOGGER.info("Too small volume for $order")
             throw OrderValidationException(OrderStatus.TooSmallVolume)
         }
+        validateMaxVolumeForStraight(order, assetPair, orderBook)
+    }
 
-        val assetPair = getAssetPair(order)
-        if (order.isStraight() && assetPair.maxVolume != null && order.getAbsVolume() > assetPair.maxVolume) {
-            LOGGER.info("Too large volume for $order")
-            throw OrderValidationException(OrderStatus.InvalidVolume)
+    private fun validateMaxVolumeForStraight(order: MarketOrder,
+                                             assetPair: AssetPair,
+                                             orderBook: AssetOrderBook) {
+        if (!order.isStraight()) {
+            return
         }
-        if (!order.isStraight() && assetPair.maxValue != null && order.getAbsVolume() > assetPair.maxValue) {
-            LOGGER.info("Too large value for $order")
-            throw OrderValidationException(OrderStatus.InvalidValue)
+        OrderValidationUtils.validateMaxVolume(order, assetPair, orderBook)
+    }
+
+    private fun validateMaxValueForNotStraight(order: MarketOrder, assetPair: AssetPair) {
+        if (order.isStraight()) {
+            return
+        }
+        val maxValue = assetPair.maxValue ?: return
+        if (order.getAbsVolume() > maxValue) {
+            throw OrderValidationException(OrderStatus.InvalidValue, "Too large value (maxValue=$maxValue)")
         }
     }
 
