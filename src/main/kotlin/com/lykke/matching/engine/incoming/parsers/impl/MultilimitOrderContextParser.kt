@@ -148,7 +148,7 @@ class MultilimitOrderContextParser(
             }
 
             if (cancelAllPreviousLimitOrders && cancelMode == OrderCancelMode.NOT_EMPTY_SIDE) {
-                if (currentOrder.volume > 0) {
+                if (isBuyOrder(currentOrder)) {
                     cancelBuySide = true
                 } else {
                     cancelSellSide = true
@@ -167,6 +167,9 @@ class MultilimitOrderContextParser(
                 buyReplacements,
                 sellReplacements)
     }
+
+    fun isBuyOrder(currentOrder: ProtocolMessages.MultiLimitOrder.Order) =
+            currentOrder.volume > 0
 
     private fun getIncomingOrderInfo(incomingOrder: ProtocolMessages.MultiLimitOrder.Order): String {
         return "id: ${incomingOrder.uid}" +
