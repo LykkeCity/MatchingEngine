@@ -3,16 +3,25 @@ package com.lykke.matching.engine.incoming.preprocessor.impl
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.parsers.data.MarketOrderParsedData
-import com.lykke.matching.engine.incoming.parsers.impl.MarkerOrderContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.MarketOrderContextParser
 import com.lykke.matching.engine.incoming.preprocessor.AbstractMessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.daos.context.MarketOrderContext
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.common.entity.PersistenceData
+import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
+import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.input.MarketOrderInputValidator
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
+import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
@@ -21,15 +30,24 @@ import java.util.*
 import java.util.concurrent.BlockingQueue
 
 @Component
-class MarketOrderPreprocessor(marketOrderContextParser: MarkerOrderContextParser,
-                              private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
+class MarketOrderPreprocessor(marketOrderContextParser: MarketOrderContextParser,
                               preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                              private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                              private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
+                              private val messageSender: MessageSender,
+                              private val processedMessagesCache: ProcessedMessagesCache,
+                              private val marketOrderPreprocessorPersistenceManager: PersistenceManager,
+                              private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                               @Qualifier("marketOrderPreProcessingLogger")
                               private val logger: ThrottlingLogger) :
         AbstractMessagePreprocessor<MarketOrderParsedData>(marketOrderContextParser,
                 messageProcessingStatusHolder,
                 preProcessedMessageQueue,
                 logger) {
+
+    private companion object {
+        private val METRICS_LOGGER = MetricsLogger.getLogger()
+    }
 
     @Autowired
     private lateinit var marketOrderInputValidator: MarketOrderInputValidator
@@ -46,10 +64,6 @@ class MarketOrderPreprocessor(marketOrderContextParser: MarkerOrderContextParser
             return false
         }
 
-        if (isDuplicated()) {
-            return false
-        }
-
         return true
     }
 
@@ -62,10 +76,6 @@ class MarketOrderPreprocessor(marketOrderContextParser: MarkerOrderContextParser
         }
 
         return true
-    }
-
-    private fun isDuplicated(): Boolean {
-
     }
 
     private fun writeResponse(messageWrapper: MessageWrapper, order: MarketOrder, status: MessageStatus, reason: String? = null) {
@@ -91,7 +101,43 @@ class MarketOrderPreprocessor(marketOrderContextParser: MarkerOrderContextParser
                            message: String) {
         val marketOrder = context.marketOrder
         marketOrder.updateStatus(status, Date())
+        logger.info("Input validation failed messageId: ${context.messageId}, details: $message")
+
+
         //todo: Should we send RMQ notification ?
+        sendErrorNotification(messageWrapper, context.marketOrder, Date())
+        saveProcessedMessage(messageWrapper, context)
+
         writeErrorResponse(messageWrapper, marketOrder, message)
+    }
+
+    private fun saveProcessedMessage(messageWrapper: MessageWrapper,
+                                     context: MarketOrderContext) {
+
+        val persistSuccess = marketOrderPreprocessorPersistenceManager.persist(PersistenceData(context.processedMessage))
+        if (!persistSuccess) {
+            throw Exception("Persistence error")
+        }
+
+        try {
+            processedMessagesCache.addMessage(context.processedMessage)
+        } catch (e: Exception) {
+            logger.error("Error occurred during processing of invalid market order data, context $context", e)
+            METRICS_LOGGER.logError("Error occurred during invalid data processing, ${messageWrapper.type} ${context.messageId}")
+        }
+    }
+
+    private fun sendErrorNotification(messageWrapper: MessageWrapper,
+                                      order: MarketOrder,
+                                      now: Date) {
+        val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
+        rabbitSwapQueue.put(marketOrderWithTrades)
+        val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
+                messageWrapper.messageId!!,
+                messageWrapper.id!!,
+                now,
+                MessageType.MARKET_ORDER,
+                marketOrderWithTrades)
+        messageSender.sendMessage(outgoingMessage)
     }
 }
