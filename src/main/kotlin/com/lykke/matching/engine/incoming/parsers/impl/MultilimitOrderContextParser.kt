@@ -19,7 +19,6 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
@@ -98,9 +97,7 @@ class MultilimitOrderContextParser(
         val sellReplacements = mutableMapOf<String, LimitOrder>()
         val orders = ArrayList<LimitOrder>()
         message.ordersList.forEach { currentOrder ->
-            if (!isTrustedClient) {
-                logger.debug("Incoming limit order (message id: $messageId): ${getIncomingOrderInfo(currentOrder)}")
-            }
+
             val type = if (currentOrder.hasType()) LimitOrderType.getByExternalId(currentOrder.type) else LimitOrderType.LIMIT
             val status = when (type) {
                 LimitOrderType.LIMIT -> OrderStatus.InOrderBook
@@ -141,6 +138,10 @@ class MultilimitOrderContextParser(
                     childOrderExternalId = null
             )
 
+            if (!isTrustedClient) {
+                logger.debug("Incoming limit order (message id: $messageId): $order")
+            }
+
             orders.add(order)
             previousExternalId?.let {
                 (if (order.isBuySide()) buyReplacements else sellReplacements)[it] = order
@@ -169,32 +170,4 @@ class MultilimitOrderContextParser(
 
     private fun isBuyOrder(currentOrder: ProtocolMessages.MultiLimitOrder.Order) =
             currentOrder.volume > 0
-
-    private fun getIncomingOrderInfo(incomingOrder: ProtocolMessages.MultiLimitOrder.Order): String {
-        return "id: ${incomingOrder.uid}" +
-                (if (incomingOrder.hasType()) ", type: ${incomingOrder.type}" else "") +
-                ", volume: ${NumberUtils.roundForPrint(incomingOrder.volume)}" +
-                (if (incomingOrder.hasPrice()) ", price: ${NumberUtils.roundForPrint(incomingOrder.price)}" else "") +
-                (if (incomingOrder.hasLowerLimitPrice()) ", lowerLimitPrice: ${NumberUtils.roundForPrint(incomingOrder.lowerLimitPrice)}" else "") +
-                (if (incomingOrder.hasLowerPrice()) ", lowerPrice: ${NumberUtils.roundForPrint(incomingOrder.lowerPrice)}" else "") +
-                (if (incomingOrder.hasUpperLimitPrice()) ", upperLimitPrice: ${NumberUtils.roundForPrint(incomingOrder.upperLimitPrice)}" else "") +
-                (if (incomingOrder.hasUpperPrice()) ", upperPrice: ${NumberUtils.roundForPrint(incomingOrder.upperPrice)}" else "") +
-                (if (incomingOrder.hasOldUid()) ", oldUid: ${incomingOrder.oldUid}" else "") +
-                (if (incomingOrder.hasTimeInForce()) ", timeInForce: ${incomingOrder.timeInForce}" else "") +
-                (if (incomingOrder.hasExpiryTime()) ", expiryTime: ${incomingOrder.expiryTime}" else "") +
-                (if (incomingOrder.hasFee()) ", fee: ${getIncomingFeeInfo(incomingOrder.fee)}" else "") +
-                (if (incomingOrder.feesCount > 0) ", fees: ${incomingOrder.feesList.asSequence().map { getIncomingFeeInfo(incomingOrder.fee) }.joinToString(", ")}" else "")
-    }
-
-    private fun getIncomingFeeInfo(incomingFee: ProtocolMessages.LimitOrderFee): String {
-        return "type: ${incomingFee.type}, " +
-                (if (incomingFee.hasMakerSize()) ", makerSize: ${NumberUtils.roundForPrint(incomingFee.makerSize)}" else "") +
-                (if (incomingFee.hasTakerSize()) ", takerSize: ${NumberUtils.roundForPrint(incomingFee.takerSize)}" else "") +
-                (if (incomingFee.hasSourceClientId()) ", sourceClientId: ${incomingFee.sourceClientId}" else "") +
-                (if (incomingFee.hasTargetClientId()) ", targetClientId: ${incomingFee.targetClientId}" else "") +
-                (if (incomingFee.hasMakerSizeType()) ", makerSizeType: ${incomingFee.makerSizeType}" else "") +
-                (if (incomingFee.hasTakerSizeType()) ", takerSizeType: ${incomingFee.takerSizeType}" else "") +
-                (if (incomingFee.hasMakerFeeModificator()) ", makerFeeModificator: ${NumberUtils.roundForPrint(incomingFee.makerFeeModificator)}" else "") +
-                (if (incomingFee.assetIdCount > 0) ", assetIds: ${incomingFee.assetIdList}}" else "")
-    }
 }
