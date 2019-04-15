@@ -7,7 +7,7 @@ import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.utils.NumberUtils
 
-class SingleLimitOrderContext(val messageId: String,
+data class SingleLimitOrderContext(val messageId: String,
                               val limitOrder: LimitOrder,
                               val isCancelOrders: Boolean,
                               val assetPair: AssetPair?,

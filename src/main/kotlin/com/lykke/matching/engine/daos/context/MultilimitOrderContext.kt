@@ -5,7 +5,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.MultiLimitOrder
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 
-class MultilimitOrderContext(val assetPair: AssetPair?,
+data class MultilimitOrderContext(val assetPair: AssetPair?,
                              val baseAsset: Asset?,
                              val quotingAsset: Asset?,
                              val isTrustedClient: Boolean,
