@@ -47,7 +47,7 @@ class MultilimitOrderContextParser(
             ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)
         }
 
-        return MultilimitOrderParsedData(messageWrapper)
+        return MultilimitOrderParsedData(messageWrapper, message.assetPairId)
     }
 
     private fun parseMultiLimitOrder(array: ByteArray): ProtocolMessages.MultiLimitOrder {

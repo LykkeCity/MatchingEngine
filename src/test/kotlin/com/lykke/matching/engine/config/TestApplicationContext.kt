@@ -57,10 +57,12 @@ import com.lykke.matching.engine.services.validators.input.LimitOrderInputValida
 import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
 import com.lykke.matching.engine.services.validators.input.CashTransferOperationInputValidator
 import com.lykke.matching.engine.services.validators.input.LimitOrderCancelOperationInputValidator
+import com.lykke.matching.engine.services.validators.input.OrderInputValidator
 import com.lykke.matching.engine.services.validators.input.impl.CashInOutOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.CashTransferOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderCancelOperationInputValidatorImpl
+import com.lykke.matching.engine.services.validators.input.impl.OrderInputValidatorImpl
 import com.lykke.matching.engine.services.validators.settings.SettingValidator
 import com.lykke.matching.engine.services.validators.settings.impl.DisabledFunctionalitySettingValidator
 import com.lykke.matching.engine.services.validators.settings.impl.MessageProcessingSwitchSettingValidator
@@ -262,6 +264,11 @@ open class TestApplicationContext {
                                        messageSender: MessageSender): CashInOutOperationService {
         return CashInOutOperationService(balancesHolder, rabbitCashInOutQueue, feeProcessor,
                 cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
+    }
+
+    @Bean
+    fun orderValidator(applicationSettingsHolder: ApplicationSettingsHolder): OrderInputValidator {
+        return OrderInputValidatorImpl(applicationSettingsHolder)
     }
 
     @Bean
@@ -680,10 +687,12 @@ open class TestApplicationContext {
     open fun multiltilimitOrderPreprocessor(messageProcessingStatusHolder: MessageProcessingStatusHolder,
                                             limitOrderInputValidator: LimitOrderInputValidator,
                                             multilimitOrderContextParser: MultilimitOrderContextParser,
-                                            preProcessedMessageQueue:  BlockingQueue<MessageWrapper>
-                                            ): MultilimitOrderPreprocessor {
+                                            preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                                            orderInputValidator: OrderInputValidator
+    ): MultilimitOrderPreprocessor {
         return MultilimitOrderPreprocessor(messageProcessingStatusHolder,
                 limitOrderInputValidator,
+                orderInputValidator,
                 multilimitOrderContextParser,
                 preProcessedMessageQueue,
                 ThrottlingLogger.getLogger("multilimitOrder"))

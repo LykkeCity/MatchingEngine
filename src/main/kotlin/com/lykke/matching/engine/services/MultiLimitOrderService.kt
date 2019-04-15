@@ -54,7 +54,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                 LOGGER,
                 mapOf(Pair(context.baseAsset!!.assetId, context.baseAsset),
                 Pair(context.quotingAsset!!.assetId, context.quotingAsset)),
-                context.inputValidationResultByOrderId ?: emptyMap())
+                context.multilimitOrderValidationResult?.inputValidationResultByOrderId ?: emptyMap())
 
         previousLimitOrdersProcessor.cancelAndReplaceOrders(multiLimitOrder.clientId,
                 multiLimitOrder.assetPairId,

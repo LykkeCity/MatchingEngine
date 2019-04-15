@@ -53,6 +53,7 @@ import com.lykke.matching.engine.services.validators.business.impl.LimitOrderBus
 import com.lykke.matching.engine.services.validators.business.impl.StopOrderBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
+import com.lykke.matching.engine.services.validators.input.impl.OrderInputValidatorImpl
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.utils.logging.ThrottlingLogger
 import org.mockito.Mockito
@@ -175,6 +176,7 @@ abstract class AbstractPerformanceTest {
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
         val limitOrderInputValidator = LimitOrderInputValidatorImpl(applicationSettingsHolder)
+        val orderInputValidator = OrderInputValidatorImpl(applicationSettingsHolder)
         singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder,
                 assetsHolder,
                 applicationSettingsHolder,
@@ -188,7 +190,9 @@ abstract class AbstractPerformanceTest {
                 cashTransferContextParser,
                 LimitOrderCancelOperationContextParser(),
                 LimitOrderMassCancelOperationContextParser(),
-                MultilimitOrderPreprocessor(messageProcessingStatusHolder, limitOrderInputValidator, MultilimitOrderContextParser(ThrottlingLogger.getLogger("test"),
+                MultilimitOrderPreprocessor(messageProcessingStatusHolder, limitOrderInputValidator,
+                        orderInputValidator,
+                        MultilimitOrderContextParser(ThrottlingLogger.getLogger("test"),
                         applicationSettingsHolder, assetsPairsHolder, assetsHolder, uuidHolder),
                         LinkedBlockingQueue<MessageWrapper>(), ThrottlingLogger.getLogger("test")))
 

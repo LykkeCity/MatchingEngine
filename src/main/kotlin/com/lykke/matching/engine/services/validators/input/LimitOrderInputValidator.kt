@@ -11,7 +11,7 @@ interface LimitOrderInputValidator {
     fun validateLimitOrder(isTrustedClient: Boolean,
                            order: LimitOrder,
                            assetPair: AssetPair?,
-                           assetPairId: String,
+                           assetPairId: String?,
                            baseAsset: Asset?)
     fun validateStopOrder(limitOrder: LimitOrder,
                               assetPair: AssetPair?,
