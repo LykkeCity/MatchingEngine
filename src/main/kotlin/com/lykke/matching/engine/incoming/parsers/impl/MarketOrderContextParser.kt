@@ -19,7 +19,7 @@ import java.math.BigDecimal
 import java.util.*
 
 @Component
-class MarkerOrderContextParser(private val assetsPairsHolder: AssetsPairsHolder,
+class MarketOrderContextParser(private val assetsPairsHolder: AssetsPairsHolder,
                                private val uuidHolder: UUIDHolder,
                                private val applicationSettingsHolder: ApplicationSettingsHolder): ContextParser<MarketOrderParsedData> {
     override fun parse(messageWrapper: MessageWrapper): MarketOrderParsedData {
@@ -29,15 +29,20 @@ class MarkerOrderContextParser(private val assetsPairsHolder: AssetsPairsHolder,
         messageWrapper.timestamp = protoMessage.timestamp
         messageWrapper.parsedMessage = protoMessage
         messageWrapper.id = protoMessage.uid
-        messageWrapper.processedMessage = ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)
+        val processedMessage = ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)
+        messageWrapper.processedMessage = processedMessage
 
-        messageWrapper.context = getContext(protoMessage)
+        messageWrapper.context = getContext(messageWrapper.messageId!!, protoMessage, processedMessage)
 
         return MarketOrderParsedData(messageWrapper)
     }
 
-    private fun getContext(message: ProtocolMessages.MarketOrder): MarketOrderContext {
-        return MarketOrderContext(assetsPairsHolder.getAssetPairAllowNulls(message.assetPairId), applicationSettingsHolder.marketOrderPriceDeviationThreshold(message.assetPairId), getMarketOrder(message))
+    private fun getContext(messageId: String, message: ProtocolMessages.MarketOrder, processedMessage: ProcessedMessage): MarketOrderContext {
+        return MarketOrderContext(messageId,
+                assetsPairsHolder.getAssetPairAllowNulls(message.assetPairId),
+                applicationSettingsHolder.marketOrderPriceDeviationThreshold(message.assetPairId),
+                processedMessage,
+                getMarketOrder(message))
     }
 
     private fun getMarketOrder(message: ProtocolMessages.MarketOrder): MarketOrder {

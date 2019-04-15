@@ -21,6 +21,7 @@ import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.*
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.impl.MarketOrderPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPreprocessor
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -52,16 +53,17 @@ import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.business.*
 import com.lykke.matching.engine.services.validators.business.impl.*
-import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.ReservedCashInOutOperationValidatorImpl
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
 import com.lykke.matching.engine.services.validators.input.CashTransferOperationInputValidator
 import com.lykke.matching.engine.services.validators.input.LimitOrderCancelOperationInputValidator
+import com.lykke.matching.engine.services.validators.input.MarketOrderInputValidator
 import com.lykke.matching.engine.services.validators.input.impl.CashInOutOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.CashTransferOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderCancelOperationInputValidatorImpl
+import com.lykke.matching.engine.services.validators.input.impl.MarketOrderInputValidatorImpl
 import com.lykke.matching.engine.services.validators.settings.SettingValidator
 import com.lykke.matching.engine.services.validators.settings.impl.DisabledFunctionalitySettingValidator
 import com.lykke.matching.engine.services.validators.settings.impl.MessageProcessingSwitchSettingValidator
@@ -72,6 +74,7 @@ import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import com.lykke.utils.logging.ThrottlingLogger
 import org.mockito.Mockito
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -277,12 +280,6 @@ open class TestApplicationContext {
                 outgoingEventProcessor)
     }
 
-    @Bean
-    open fun marketOrderValidator(assetsPairsHolder: AssetsPairsHolder,
-                                  assetsHolder: AssetsHolder,
-                                  applicationSettingsHolder: ApplicationSettingsHolder): MarketOrderValidator {
-        return MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder)
-    }
 
     @Bean
     open fun assetPairsCache(testDictionariesDatabaseAccessor: DictionariesDatabaseAccessor): AssetPairsCache {
@@ -391,7 +388,7 @@ open class TestApplicationContext {
                                 executionDataApplyService: ExecutionDataApplyService,
                                 matchingResultHandlingHelper: MatchingResultHandlingHelper,
                                 genericLimitOrderService: GenericLimitOrderService,
-                                assetsPairsHolder: AssetsPairsHolder,
+                                marketOrderBusinessValidator: MarketOrderBusinessValidator,
                                 marketOrderWithTrades: BlockingQueue<MarketOrderWithTrades>,
                                 messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                 messageSender: MessageSender,
@@ -407,12 +404,8 @@ open class TestApplicationContext {
                 genericLimitOrderService,
                 marketOrderWithTrades,
                 messageSequenceNumberHolder,
-                messageSender,
-                assetsPairsHolder,
-                marketOrderValidator,
-                applicationSettingsHolder,
-                messageProcessingStatusHolder,
-                uuidHolder)
+                marketOrderBusinessValidator,
+                messageSender)
     }
 
     @Bean
@@ -529,6 +522,18 @@ open class TestApplicationContext {
     }
 
     @Bean
+    open fun marketOrderPreprocessor(marketOrderContextParser: MarketOrderContextParser,
+                                     preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                                     messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                     rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
+                                     messageSender: MessageSender,
+                                     processedMessagesCache: ProcessedMessagesCache,
+                                     marketOrderPreprocessorPersistenceManager: PersistenceManager,
+                                     messageSequenceNumberHolder: MessageSequenceNumberHolder): MarketOrderPreprocessor {
+        return MarketOrderPreprocessor(marketOrderContextParser,pre)
+    }
+
+    @Bean
     open fun cashTransferInitializer(assetsHolder: AssetsHolder, uuidHolder: UUIDHolder): CashTransferContextParser {
         return CashTransferContextParser(assetsHolder, uuidHolder)
     }
@@ -606,6 +611,18 @@ open class TestApplicationContext {
                 applicationSettingsHolder,
                 uuidHolder,
                 ThrottlingLogger.getLogger("limitOrder"))
+    }
+
+    @Bean
+    open fun marketOrderInputValidator(assetsPairsHolder: AssetsPairsHolder,
+                                       assetsHolder: AssetsHolder,
+                                       applicationSettingsHolder: ApplicationSettingsHolder): MarketOrderInputValidator {
+        return MarketOrderInputValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder)
+    }
+
+    @Bean
+    open fun marketOrderBusinessValidator(genericLimitOrderService: GenericLimitOrderService): MarketOrderBusinessValidator {
+        return MarketOrderBusinessValidatorImpl(genericLimitOrderService)
     }
 
     @Bean

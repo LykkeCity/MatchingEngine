@@ -31,6 +31,7 @@ import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.daos.context.MarketOrderContext
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
+import com.lykke.matching.engine.services.validators.business.MarketOrderBusinessValidator
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -47,6 +48,7 @@ class MarketOrderService @Autowired constructor(
         private val genericLimitOrderService: GenericLimitOrderService,
         private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
+        private val marketOrderBusinessValidator: MarketOrderBusinessValidator,
         private val messageSender: MessageSender) : AbstractService {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MarketOrderService::class.java.name)
@@ -68,15 +70,16 @@ class MarketOrderService @Autowired constructor(
         val assetPair = context.assetPair
 
         LOGGER.debug("Got market order messageId: ${messageWrapper.messageId}, " +
-                "id: ${parsedMessage.uid}, client: ${parsedMessage.clientId}, " +
-                "asset: ${parsedMessage.assetPairId}, volume: ${NumberUtils.roundForPrint(parsedMessage.volume)}, " +
-                "straight: ${parsedMessage.straight}, fee: $feeInstruction, fees: $feeInstructions")
+                "id: ${messageWrapper.id}, client: ${order.clientId}, " +
+                "asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)}, " +
+                "straight: ${order.straight}, fee: $order.fee, fees: ${order.fees}")
 
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order), feeInstruction, feeInstructions)
+            marketOrderBusinessValidator.performValidation(order)
         } catch (e: OrderValidationException) {
             order.updateStatus(e.orderStatus, now)
             sendErrorNotification(messageWrapper, order, now)
+            LOGGER.info("Business validation failed for order: $order")
             writeErrorResponse(messageWrapper, order, e.message)
             return
         }
