@@ -267,15 +267,21 @@ open class TestApplicationContext {
     }
 
     @Bean
-    fun orderValidator(applicationSettingsHolder: ApplicationSettingsHolder): OrderInputValidator {
+    fun orderInputValidator(applicationSettingsHolder: ApplicationSettingsHolder): OrderInputValidator {
         return OrderInputValidatorImpl(applicationSettingsHolder)
+    }
+
+    @Bean
+    fun orderBusinessValidator(): OrderBusinessValidator {
+        return OrderBusinessValidatorImpl()
     }
 
     @Bean
     open fun marketOrderValidator(assetsPairsHolder: AssetsPairsHolder,
                                   assetsHolder: AssetsHolder,
-                                  applicationSettingsHolder: ApplicationSettingsHolder): MarketOrderValidator {
-        return MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder)
+                                  applicationSettingsHolder: ApplicationSettingsHolder,
+                                  orderInputValidator: OrderInputValidator): MarketOrderValidator {
+        return MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder, orderInputValidator)
     }
 
     @Bean
@@ -604,19 +610,20 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun limitOrderInputValidator(applicationSettingsHolder: ApplicationSettingsHolder): LimitOrderInputValidator {
-        return LimitOrderInputValidatorImpl(applicationSettingsHolder)
+    open fun limitOrderInputValidator(applicationSettingsHolder: ApplicationSettingsHolder,
+                                      orderInputValidator: OrderInputValidator): LimitOrderInputValidator {
+        return LimitOrderInputValidatorImpl(applicationSettingsHolder, orderInputValidator)
     }
 
 
     @Bean
-    open fun limitOrderBusinessValidator(): LimitOrderBusinessValidator {
-        return LimitOrderBusinessValidatorImpl()
+    open fun limitOrderBusinessValidator(orderBusinessValidator: OrderBusinessValidator): LimitOrderBusinessValidator {
+        return LimitOrderBusinessValidatorImpl(orderBusinessValidator)
     }
 
     @Bean
-    open fun stopOrderBusinessValidatorImpl(): StopOrderBusinessValidatorImpl {
-        return StopOrderBusinessValidatorImpl()
+    open fun stopOrderBusinessValidatorImpl(orderBusinessValidator: OrderBusinessValidator): StopOrderBusinessValidatorImpl {
+        return StopOrderBusinessValidatorImpl(orderBusinessValidator)
     }
 
     @Bean

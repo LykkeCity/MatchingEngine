@@ -4,14 +4,14 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
-import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
+import com.lykke.matching.engine.services.validators.business.OrderBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.Date
 
 @Component
-class LimitOrderBusinessValidatorImpl: LimitOrderBusinessValidator {
+class LimitOrderBusinessValidatorImpl(private val orderBusinessValidatorImpl: OrderBusinessValidator): LimitOrderBusinessValidator {
     override fun performValidation(isTrustedClient: Boolean, order: LimitOrder,
                                    availableBalance: BigDecimal,
                                    limitVolume: BigDecimal,
@@ -19,12 +19,12 @@ class LimitOrderBusinessValidatorImpl: LimitOrderBusinessValidator {
                                    date: Date) {
 
         if (!isTrustedClient) {
-            OrderValidationUtils.validateBalance(availableBalance, limitVolume)
+            orderBusinessValidatorImpl.validateBalance(availableBalance, limitVolume)
         }
 
         validatePreviousOrderNotFound(order)
         validateNotEnoughFounds(order)
-        OrderValidationUtils.validateExpiration(order, date)
+        orderBusinessValidatorImpl.validateExpiration(order, date)
     }
 
     private fun validatePreviousOrderNotFound(order: LimitOrder) {

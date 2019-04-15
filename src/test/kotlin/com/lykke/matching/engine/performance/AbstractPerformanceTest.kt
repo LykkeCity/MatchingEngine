@@ -50,6 +50,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.business.impl.LimitOrderBusinessValidatorImpl
+import com.lykke.matching.engine.services.validators.business.impl.OrderBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.business.impl.StopOrderBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
@@ -175,8 +176,9 @@ abstract class AbstractPerformanceTest {
 
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
-        val limitOrderInputValidator = LimitOrderInputValidatorImpl(applicationSettingsHolder)
         val orderInputValidator = OrderInputValidatorImpl(applicationSettingsHolder)
+        val orderBusinessValidator = OrderBusinessValidatorImpl()
+        val limitOrderInputValidator = LimitOrderInputValidatorImpl(applicationSettingsHolder, orderInputValidator)
         singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder,
                 assetsHolder,
                 applicationSettingsHolder,
@@ -222,13 +224,13 @@ abstract class AbstractPerformanceTest {
         val matchingEngine = MatchingEngine(genericLimitOrderService, feeProcessor, uuidHolder)
 
         val limitOrderProcessor = LimitOrderProcessor(
-                LimitOrderBusinessValidatorImpl(),
+                LimitOrderBusinessValidatorImpl(orderBusinessValidator),
                 applicationSettingsHolder,
                 matchingEngine,
                 matchingResultHandlingHelper)
 
         val stopOrderProcessor = StopLimitOrderProcessor(
-                StopOrderBusinessValidatorImpl(),
+                StopOrderBusinessValidatorImpl(orderBusinessValidator),
                 applicationSettingsHolder,
                 limitOrderProcessor,
                 uuidHolder)
@@ -252,7 +254,7 @@ abstract class AbstractPerformanceTest {
                 previousLimitOrdersProcessor,
                 balancesHolder)
 
-        val marketOrderValidator = MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder)
+        val marketOrderValidator = MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder, orderInputValidator)
         marketOrderService = MarketOrderService(matchingEngine,
                 executionContextFactory,
                 stopOrderBookProcessor,

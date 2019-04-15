@@ -31,9 +31,6 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
     }
 
     override fun processMessage(messageWrapper: MessageWrapper) {
-        if (messageWrapper.parsedMessage == null) {
-            parseMessage(messageWrapper)
-        }
         processMultiOrder(messageWrapper)
     }
 
