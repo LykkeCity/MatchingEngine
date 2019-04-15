@@ -27,5 +27,9 @@ class OrderValidationUtils {
                 throw OrderValidationException(OrderStatus.Cancelled, "expired")
             }
         }
+
+        fun isFatalInvalid(validationException: OrderValidationException): Boolean {
+            return validationException.orderStatus == OrderStatus.UnknownAsset
+        }
     }
 }

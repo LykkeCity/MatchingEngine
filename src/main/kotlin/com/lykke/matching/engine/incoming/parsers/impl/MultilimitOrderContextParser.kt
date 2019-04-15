@@ -70,7 +70,6 @@ class MultilimitOrderContextParser(
         return MultilimitOrderContext(assetPair,
                 baseAsset,
                 quotingAsset,
-                message.clientId,
                 trustedClient,
                 readMultiLimitOrder(messageId, message, trustedClient))
     }
@@ -168,7 +167,7 @@ class MultilimitOrderContextParser(
                 sellReplacements)
     }
 
-    fun isBuyOrder(currentOrder: ProtocolMessages.MultiLimitOrder.Order) =
+    private fun isBuyOrder(currentOrder: ProtocolMessages.MultiLimitOrder.Order) =
             currentOrder.volume > 0
 
     private fun getIncomingOrderInfo(incomingOrder: ProtocolMessages.MultiLimitOrder.Order): String {
@@ -181,8 +180,8 @@ class MultilimitOrderContextParser(
                 (if (incomingOrder.hasUpperLimitPrice()) ", upperLimitPrice: ${NumberUtils.roundForPrint(incomingOrder.upperLimitPrice)}" else "") +
                 (if (incomingOrder.hasUpperPrice()) ", upperPrice: ${NumberUtils.roundForPrint(incomingOrder.upperPrice)}" else "") +
                 (if (incomingOrder.hasOldUid()) ", oldUid: ${incomingOrder.oldUid}" else "") +
-//                (if (incomingOrder.hasTimeInForce()) ", timeInForce: ${incomingOrder.timeInForce}" else "") +
-//                (if (incomingOrder.hasExpiryTime()) ", expiryTime: ${incomingOrder.expiryTime}" else "") +
+                (if (incomingOrder.hasTimeInForce()) ", timeInForce: ${incomingOrder.timeInForce}" else "") +
+                (if (incomingOrder.hasExpiryTime()) ", expiryTime: ${incomingOrder.expiryTime}" else "") +
                 (if (incomingOrder.hasFee()) ", fee: ${getIncomingFeeInfo(incomingOrder.fee)}" else "") +
                 (if (incomingOrder.feesCount > 0) ", fees: ${incomingOrder.feesList.asSequence().map { getIncomingFeeInfo(incomingOrder.fee) }.joinToString(", ")}" else "")
     }

@@ -1,10 +1,8 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.context.MultilimitOrderContext
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -26,8 +24,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                              private val stopOrderBookProcessor: StopOrderBookProcessor,
                              private val executionDataApplyService: ExecutionDataApplyService,
                              private val previousLimitOrdersProcessor: PreviousLimitOrdersProcessor,
-                             private val balancesHolder: BalancesHolder,
-                             private val uuidHolder: UUIDHolder) : AbstractService {
+                             private val balancesHolder: BalancesHolder) : AbstractService {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MultiLimitOrderService::class.java.name)
@@ -44,7 +41,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
         val context = messageWrapper.context as MultilimitOrderContext
 
         val now = Date()
-        val ordersToProcess = getOrdersToProcess(context, context.assetPair!!, now)
+        val ordersToProcess = getOrdersToProcess(context, now)
 
         val multiLimitOrder = context.multiLimitOrder
 
@@ -52,7 +49,7 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
                 messageWrapper.id!!,
                 MessageType.MULTI_LIMIT_ORDER,
                 messageWrapper.processedMessage,
-                mapOf(Pair(context.assetPair.assetPairId, context.assetPair)),
+                mapOf(Pair(context.assetPair!!.assetPairId, context.assetPair)),
                 now,
                 LOGGER,
                 mapOf(Pair(context.baseAsset!!.assetId, context.baseAsset),
@@ -103,19 +100,20 @@ class MultiLimitOrderService(private val executionContextFactory: ExecutionConte
 
     }
 
-    fun getOrdersToProcess(context: MultilimitOrderContext, assetPair: AssetPair, now: Date): List<LimitOrder> {
-        val baseAssetAvailableBalance = balancesHolder.getAvailableBalance(context.clientId, context.assetPair!!.baseAssetId)
-        val quotingAssetAvailableBalance = balancesHolder.getAvailableBalance(context.clientId, assetPair.quotingAssetId)
+    fun getOrdersToProcess(context: MultilimitOrderContext, now: Date): List<LimitOrder> {
+        val multiLimitOrder = context.multiLimitOrder
+        val baseAssetAvailableBalance = balancesHolder.getAvailableBalance(multiLimitOrder.clientId, context.assetPair!!.baseAssetId)
+        val quotingAssetAvailableBalance = balancesHolder.getAvailableBalance(multiLimitOrder.clientId, context.assetPair.quotingAssetId)
 
         val filter = MultiOrderFilter(context.isTrustedClient,
                 baseAssetAvailableBalance,
                 quotingAssetAvailableBalance,
                 context.quotingAsset!!.accuracy,
                 now,
-                context.multiLimitOrder.orders.size,
+                multiLimitOrder.orders.size,
                 LOGGER)
 
-        for (order in context.multiLimitOrder.orders) {
+        for (order in multiLimitOrder.orders) {
             filter.checkAndAdd(order)
         }
 

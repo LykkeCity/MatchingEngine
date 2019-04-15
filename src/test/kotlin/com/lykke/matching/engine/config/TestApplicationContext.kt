@@ -352,15 +352,13 @@ open class TestApplicationContext {
                                     assetsHolder: AssetsHolder,
                                     assetsPairsHolder: AssetsPairsHolder,
                                     balancesHolder: BalancesHolder,
-                                    applicationSettingsHolder: ApplicationSettingsHolder,
-                                    uuidHolder: TestUUIDHolder): MultiLimitOrderService {
+                                    applicationSettingsHolder: ApplicationSettingsHolder): MultiLimitOrderService {
         return MultiLimitOrderService(executionContextFactory,
                 genericLimitOrdersProcessor,
                 stopOrderBookProcessor,
                 executionDataApplyService,
                 previousLimitOrdersProcessor,
-                balancesHolder,
-                uuidHolder)
+                balancesHolder)
     }
 
     @Bean

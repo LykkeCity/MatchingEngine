@@ -345,7 +345,7 @@ companion object {
         val messageWrapper = MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER.type, buildMultiLimitOrder(pair, clientId,
                 orders,
                 cancel,
-                cancelMode).toByteArray(), null, messageId = "test", id = "test")
+                cancelMode).toByteArray(), TestClientHandler(), messageId = "test", id = "test")
         multilimitOrderPreprocessor.preProcess(messageWrapper)
         return messageWrapper
     }

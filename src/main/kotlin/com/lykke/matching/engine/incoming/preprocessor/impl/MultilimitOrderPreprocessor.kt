@@ -8,7 +8,8 @@ import com.lykke.matching.engine.incoming.parsers.data.MultilimitOrderParsedData
 import com.lykke.matching.engine.incoming.preprocessor.AbstractMessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
@@ -29,7 +30,9 @@ class MultilimitOrderPreprocessor(private val messageProcessingStatusHolder: Mes
     override fun preProcessParsedData(parsedData: MultilimitOrderParsedData): Boolean {
         val context = parsedData.messageWrapper.context as MultilimitOrderContext
         if (messageProcessingStatusHolder.isTradeDisabled(context.assetPair)) {
-            writeResponse(parsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+            writeResponse(parsedData.messageWrapper,
+                    context.multiLimitOrder.assetPairId,
+                    MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return false
         }
 
@@ -40,11 +43,19 @@ class MultilimitOrderPreprocessor(private val messageProcessingStatusHolder: Mes
         if (fatallyInvalidValidationResult != null) {
             logger.error("Fatal validation error occurred, ${fatallyInvalidValidationResult.message} " +
                     "Error details: $context")
-            writeResponse(parsedData.messageWrapper, MessageStatusUtils.toMessageStatus(fatallyInvalidValidationResult.status!!), fatallyInvalidValidationResult.message)
+            writeResponse(parsedData.messageWrapper,
+                    context.multiLimitOrder.assetPairId,
+                    MessageStatusUtils.toMessageStatus(fatallyInvalidValidationResult.status!!),
+                    fatallyInvalidValidationResult.message)
             return false
         }
 
         return true
+    }
+
+    fun writeResponse(messageWrapper: MessageWrapper, assetPairId: String, status: MessageStatus, message: String? = null) {
+        messageWrapper.writeMultiLimitOrderResponse(ProtocolMessages.MultiLimitOrderResponse.newBuilder()
+                .setStatus(status.type).setAssetPairId(assetPairId))
     }
 
     private fun getValidationResult(context: MultilimitOrderContext): Map<String, OrderValidationResult> {
@@ -60,15 +71,11 @@ class MultilimitOrderPreprocessor(private val messageProcessingStatusHolder: Mes
                     LimitOrderType.STOP_LIMIT -> limitOrderInputValidator.validateStopOrder(order, context.assetPair, order.assetPairId, context.baseAsset)
                 }
             } catch (e: OrderValidationException) {
-                val fatalInvalid = isFatalInvalid(e)
+                val fatalInvalid = OrderValidationUtils.isFatalInvalid(e)
                 orderValidationResultByOrderId[order.id] = OrderValidationResult(false, fatalInvalid, e.message, e.orderStatus)
             }
         }
 
         return orderValidationResultByOrderId
-    }
-
-    private fun isFatalInvalid(validationException: OrderValidationException): Boolean {
-        return validationException.orderStatus == OrderStatus.UnknownAsset
     }
 }
