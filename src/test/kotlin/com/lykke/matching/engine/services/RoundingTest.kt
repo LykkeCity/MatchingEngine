@@ -340,7 +340,7 @@ class RoundingTest : AbstractTest() {
     fun testNotStraightBuyEURJPY() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "EURJPY", price = 116.356, volume = 1000.0, clientId = "Client3"))
         testBalanceHolderWrapper.updateBalance("Client3", "JPY", 1000.0)
-        testBalanceHolderWrapper.updateBalance("Client4", "EUR", 0.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "EUR", 0.00999999999999999)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURJPY", volume = 1.16, straight = false)))
