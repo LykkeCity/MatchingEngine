@@ -7,8 +7,8 @@ import java.util.Date
 
 interface AbstractGenericLimitOrderService<T : AbstractAssetOrderBook> {
     fun getOrderBook(assetPairId: String): T
-    fun cancelLimitOrders(orders: Collection<LimitOrder>, date: Date)
     fun setOrderBook(assetPairId: String, assetOrderBook: T)
     fun removeOrdersFromMapsAndSetStatus(orders: Collection<LimitOrder>, status: OrderStatus? = null, date: Date? = null)
     fun addOrders(orders: Collection<LimitOrder>)
+    fun getTotalSize(): Int
 }

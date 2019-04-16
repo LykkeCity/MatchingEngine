@@ -73,7 +73,8 @@ companion object {
                 builder.addFees(buildFee(it))
             }
             return MessageWrapper("Test", MessageType.MARKET_ORDER.type, builder
-                    .build().toByteArray(), null)
+                    .build().toByteArray(), TestClientHandler()
+            )
         }
 
         fun buildFee(fee: FeeInstruction): ProtocolMessages.Fee {
@@ -189,7 +190,7 @@ companion object {
             return MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER.type, buildMultiLimitOrder(pair, clientId,
                     orders,
                     cancel,
-                    cancelMode).toByteArray(), null, messageId = "test", id = "test")
+                    cancelMode).toByteArray(), TestClientHandler(), messageId = "test", id = "test")
         }
 
         private fun buildMultiLimitOrder(assetPairId: String,

@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.messages
 
-enum class MessageStatus(val type: Int){
+enum class MessageStatus(val type: Int) {
     OK(0),
     LOW_BALANCE(401),
     ALREADY_PROCESSED(402),
@@ -28,5 +28,6 @@ enum class MessageStatus(val type: Int){
     INVALID_VOLUME(434),
     TOO_HIGH_PRICE_DEVIATION(435),
     INVALID_ORDER_VALUE(436),
-    NEGATIVE_OVERDRAFT_LIMIT(433)
+    NEGATIVE_OVERDRAFT_LIMIT(433),
+    ORDER_BOOK_MAX_SIZE_REACHED(438)
 }

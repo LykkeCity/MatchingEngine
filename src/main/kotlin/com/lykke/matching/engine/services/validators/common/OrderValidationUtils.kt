@@ -27,5 +27,12 @@ class OrderValidationUtils {
                 throw OrderValidationException(OrderStatus.Cancelled, "expired")
             }
         }
+
+        fun validateOrderBookTotalSize(currentOrderBookTotalSize: Int, orderBookMaxTotalSize: Int?) {
+            if (orderBookMaxTotalSize != null && currentOrderBookTotalSize >= orderBookMaxTotalSize) {
+                throw OrderValidationException(OrderStatus.OrderBookMaxSizeReached,
+                        "Order book max total size reached (current: $currentOrderBookTotalSize, max: $orderBookMaxTotalSize)")
+            }
+        }
     }
 }

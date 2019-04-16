@@ -18,7 +18,6 @@ import java.util.LinkedList
 import java.util.Optional
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.PriorityBlockingQueue
 
 @Component
 class GenericLimitOrderService @Autowired constructor(private val orderBookDatabaseAccessorHolder: OrdersDatabaseAccessorsHolder,
@@ -35,7 +34,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
         update()
     }
 
-    fun update() {
+    final fun update() {
         limitOrdersMap.values.forEach {
             expiryOrdersQueue.removeIfOrderHasExpiryTime(it)
         }
@@ -75,10 +74,6 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
         limitOrdersQueues[assetPairId] = assetOrderBook
     }
 
-    fun setOrderBook(assetPair: String, isBuy: Boolean, book: PriorityBlockingQueue<LimitOrder>) {
-        limitOrdersQueues.getOrPut(assetPair) { AssetOrderBook(assetPair) }.setOrderBook(isBuy, book)
-    }
-
     fun getOrder(uid: String) = limitOrdersMap[uid]
 
     fun searchOrders(clientId: String, assetPair: String?, isBuy: Boolean?): List<LimitOrder> {
@@ -107,17 +102,6 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     private fun removeFromClientMap(uid: String): Boolean {
         val order: LimitOrder = clientLimitOrdersMap.values.firstOrNull { it.any { it.externalId == uid } }?.firstOrNull { it.externalId == uid } ?: return false
         return clientLimitOrdersMap[order.clientId]?.remove(order) ?: false
-    }
-
-    override fun cancelLimitOrders(orders: Collection<LimitOrder>, date: Date) {
-        orders.forEach { order ->
-            val ord = limitOrdersMap.remove(order.externalId)
-            expiryOrdersQueue.removeIfOrderHasExpiryTime(order)
-            clientLimitOrdersMap[order.clientId]?.remove(order)
-            if (ord != null) {
-                ord.updateStatus(Cancelled, date)
-            }
-        }
     }
 
     override fun removeOrdersFromMapsAndSetStatus(orders: Collection<LimitOrder>, status: OrderStatus?, date: Date?) {
@@ -152,4 +136,8 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     }
 
     fun createCurrentTransactionOrderBooksHolder() = CurrentTransactionOrderBooksHolder(this)
+
+    override fun getTotalSize(): Int {
+        return limitOrdersMap.size
+    }
 }

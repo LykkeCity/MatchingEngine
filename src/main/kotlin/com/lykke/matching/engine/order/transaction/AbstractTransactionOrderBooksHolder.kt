@@ -73,4 +73,10 @@ abstract class AbstractTransactionOrderBooksHolder<AssetOrderBook : AbstractAsse
     protected fun addChangedSide(order: LimitOrder) {
         (if (order.isBuySide()) changedBuySides else changedSellSides).add(order.assetPairId)
     }
+
+    fun getOrderBookTotalSize(): Int {
+        return genericLimitOrderService.getTotalSize() +
+                newOrdersByExternalId.size -
+                (completedOrders.size + cancelledOrders.size + replacedOrders.size)
+    }
 }

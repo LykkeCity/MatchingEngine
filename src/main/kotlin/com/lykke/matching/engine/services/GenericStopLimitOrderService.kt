@@ -24,7 +24,7 @@ class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder
         update()
     }
 
-    fun update() {
+    final fun update() {
         stopLimitOrdersMap.values.forEach {
             expiryOrdersQueue.removeIfOrderHasExpiryTime(it)
         }
@@ -64,17 +64,6 @@ class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder
         return result
     }
 
-    override fun cancelLimitOrders(orders: Collection<LimitOrder>, date: Date) {
-        orders.forEach { order ->
-            val ord = stopLimitOrdersMap.remove(order.externalId)
-            expiryOrdersQueue.removeIfOrderHasExpiryTime(order)
-            clientStopLimitOrdersMap[order.clientId]?.remove(order)
-            if (ord != null) {
-                ord.updateStatus(OrderStatus.Cancelled, date)
-            }
-        }
-    }
-
     override fun removeOrdersFromMapsAndSetStatus(orders: Collection<LimitOrder>, status: OrderStatus?, date: Date?) {
         orders.forEach { order ->
             val removedOrder = stopLimitOrdersMap.remove(order.externalId)
@@ -96,4 +85,7 @@ class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder
 
     fun createCurrentTransactionOrderBooksHolder() = CurrentTransactionStopOrderBooksHolder(this)
 
+    override fun getTotalSize(): Int {
+        return stopLimitOrdersMap.size
+    }
 }

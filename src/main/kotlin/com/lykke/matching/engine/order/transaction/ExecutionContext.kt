@@ -68,6 +68,10 @@ class ExecutionContext(val messageId: String,
     fun getClientsLimitOrdersWithTrades() = clientLimitOrdersWithTradesByInternalId.values
     fun getTrustedClientsLimitOrdersWithTrades() = trustedClientLimitOrdersWithTradesByInternalId.values
 
+    fun getOrderBookTotalSize(): Int {
+        return orderBooksHolder.getOrderBookTotalSize() + stopOrderBooksHolder.getOrderBookTotalSize()
+    }
+
     fun debug(message: String) {
         logger.debug(getLogMessage(message))
     }

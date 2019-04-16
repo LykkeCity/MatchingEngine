@@ -8,5 +8,6 @@ interface StopOrderBusinessValidator {
     fun performValidation(availableBalance: BigDecimal,
                           limitVolume: BigDecimal,
                           order: LimitOrder,
-                          orderProcessingTime: Date)
+                          orderProcessingTime: Date,
+                          currentOrderBookTotalSize: Int)
 }
