@@ -2,6 +2,7 @@ package com.lykke.matching.engine.performance
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.daos.LkkTrade
+import com.lykke.matching.engine.daos.OutgoingEventData
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
@@ -30,7 +31,6 @@ import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.ExecutionDataApplyService
-import com.lykke.matching.engine.order.ExecutionEventSender
 import com.lykke.matching.engine.order.ExecutionPersistenceService
 import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.process.GenericLimitOrdersProcessor
@@ -48,6 +48,7 @@ import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.outgoing.senders.impl.OutgoingEventProcessorImpl
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.business.impl.LimitOrderBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.business.impl.OrderBusinessValidatorImpl
@@ -59,8 +60,11 @@ import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.utils.logging.ThrottlingLogger
 import org.mockito.Mockito
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.core.task.TaskExecutor
 import java.util.Optional
+import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
+import kotlin.concurrent.thread
 
 abstract class AbstractPerformanceTest {
 
@@ -116,7 +120,7 @@ abstract class AbstractPerformanceTest {
 
     val balanceUpdateQueue = LinkedBlockingQueue<BalanceUpdate>()
 
-    val clientLimitOrdersQueue  = LinkedBlockingQueue<LimitOrdersReport>()
+    val clientLimitOrdersQueue = LinkedBlockingQueue<LimitOrdersReport>()
 
     val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
 
@@ -124,11 +128,15 @@ abstract class AbstractPerformanceTest {
 
     val rabbitOrderBookQueue = LinkedBlockingQueue<OrderBook>()
 
-    val rabbitSwapQueue  = LinkedBlockingQueue<MarketOrderWithTrades>()
+    val rabbitSwapQueue = LinkedBlockingQueue<MarketOrderWithTrades>()
 
-    val trustedClientsLimitOrdersQueue  = LinkedBlockingQueue<LimitOrdersReport>()
+    val trustedClientsLimitOrdersQueue = LinkedBlockingQueue<LimitOrdersReport>()
 
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
+
+    val outgoingEventData = LinkedBlockingQueue<OutgoingEventData>()
+
+    val messageSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
 
     private fun clearMessageQueues() {
         rabbitEventsQueue.clear()
@@ -175,7 +183,6 @@ abstract class AbstractPerformanceTest {
         feeProcessor = FeeProcessor(assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())
-        val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
         val orderInputValidator = OrderInputValidatorImpl(applicationSettingsHolder)
         val orderBusinessValidator = OrderBusinessValidatorImpl()
         val limitOrderInputValidator = LimitOrderInputValidatorImpl(applicationSettingsHolder, orderInputValidator)
@@ -202,17 +209,15 @@ abstract class AbstractPerformanceTest {
 
         val executionEventsSequenceNumbersGenerator = ExecutionEventsSequenceNumbersGenerator(messageSequenceNumberHolder)
         val executionPersistenceService = ExecutionPersistenceService(persistenceManager)
-        val executionEventSender = ExecutionEventSender(notificationSender,
-                clientLimitOrdersQueue,
-                trustedClientsLimitOrdersQueue,
-                rabbitSwapQueue,
-                lkkTradesQueue,
-                genericLimitOrderService,
-                orderBookQueue,
-                rabbitOrderBookQueue)
+        val outgoingEventProcessor = OutgoingEventProcessorImpl(
+                outgoingEventData,
+                emptyMap(),
+                TaskExecutor { task -> thread(name = "rabbitMessageProcessor") { task.run() } })
+
+
         val executionDataApplyService = ExecutionDataApplyService(executionEventsSequenceNumbersGenerator,
                 executionPersistenceService,
-                executionEventSender)
+                outgoingEventProcessor)
 
         val executionContextFactory = ExecutionContextFactory(balancesHolder,
                 genericLimitOrderService,
@@ -261,14 +266,25 @@ abstract class AbstractPerformanceTest {
                 executionDataApplyService,
                 matchingResultHandlingHelper,
                 genericLimitOrderService,
-                assetsPairsHolder,
                 rabbitSwapQueue,
+                messageSequenceNumberHolder,
+                messageSender,
+                assetsPairsHolder,
                 marketOrderValidator,
                 applicationSettingsHolder,
-                messageSequenceNumberHolder,
-                notificationSender,
                 messageProcessingStatusHolder,
                 uuidHolder)
 
+        startEventProcessorThread(outgoingEventData, "OutgoingEventData")
+        startEventProcessorThread(rabbitEventsQueue, "ExecutionEventProcessor")
+        startEventProcessorThread(rabbitTrustedClientsEventsQueue, "TrustedExecutionEventProcessor")
+    }
+
+    private fun startEventProcessorThread(queue: BlockingQueue<*>, name: String) {
+        thread(name = name) {
+            while (true) {
+                queue.take()
+            }
+        }
     }
 }
