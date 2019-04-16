@@ -150,4 +150,25 @@ class DisabledFunctionalityRulesHolderTest {
         //then
         assertTrue(disabledFunctionalityRulesHolder.isTradeDisabled(assetsPairsHolder.getAssetPair("BTCJPY")))
     }
+
+    @Test
+    fun assetPairAddedRemovedThenAgainAdded() {
+        //given
+        disabledFunctionalityRulesService.create(DisabledFunctionalityRuleDto(null, "JPY", null, OperationType.TRADE.name, true, "test", "test"))
+
+        //when
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCJPY", "BTC", "JPY", 6))
+        assetPairsCache.update()
+        assertTrue(disabledFunctionalityRulesHolder.isTradeDisabled(assetsPairsHolder.getAssetPair("BTCJPY")))
+
+        testDictionariesDatabaseAccessor.clear()
+        assetPairsCache.update()
+        assertFalse(disabledFunctionalityRulesHolder.isTradeDisabled(assetsPairsHolder.getAssetPair("BTCJPY")))
+
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCJPY", "BTC", "JPY", 6))
+        assetPairsCache.update()
+
+        //then
+        assertTrue(disabledFunctionalityRulesHolder.isTradeDisabled(assetsPairsHolder.getAssetPair("BTCJPY")))
+    }
 }

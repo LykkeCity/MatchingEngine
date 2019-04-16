@@ -2,4 +2,4 @@ package com.lykke.matching.engine.services.events
 
 import com.lykke.matching.engine.daos.AssetPair
 
-class NewAssetPairsEvent(val assetPairs: Collection<AssetPair>)
+class RemovedAssetPairsEvent(val assetPairs: Collection<AssetPair>)
