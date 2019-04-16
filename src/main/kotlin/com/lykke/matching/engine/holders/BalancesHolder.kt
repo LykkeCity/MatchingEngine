@@ -10,10 +10,6 @@ import java.math.BigDecimal
 @Component
 class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAccessorsHolder): BalancesGetter {
 
-    companion object {
-        private val LOGGER = LoggerFactory.getLogger(BalancesHolder::class.java.name)
-    }
-
     lateinit var wallets: MutableMap<String, Wallet>
     var initialClientsCount = 0
     var initialBalancesCount = 0
