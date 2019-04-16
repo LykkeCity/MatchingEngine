@@ -163,7 +163,6 @@ class DisabledFunctionalityRulesHolderTest {
 
         testDictionariesDatabaseAccessor.clear()
         assetPairsCache.update()
-        assertFalse(disabledFunctionalityRulesHolder.isTradeDisabled(assetsPairsHolder.getAssetPair("BTCJPY")))
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCJPY", "BTC", "JPY", 6))
         assetPairsCache.update()
