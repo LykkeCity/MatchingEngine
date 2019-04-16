@@ -110,7 +110,7 @@ class LimitOrder(id: String,
         return "id: $externalId" +
                 if(previousExternalId != null) ", previousExternalId: $previousExternalId" else "" +
                 if(parentOrderExternalId != null) ", parentOrderExternalId: $previousExternalId" else "" +
-                if(childOrderExternalId != null) ", childOrderExternalId: $previousExternalId" else "" +
+                if(childOrderExternalId != null) ", childOrderExternalId: $childOrderExternalId" else "" +
 
                 ", type: $type" +
                 ", client: $clientId" +
@@ -133,7 +133,7 @@ class LimitOrder(id: String,
 
                 ", fee: $fee" +
                 ", fees: $fees" +
-                (if (timeInForce != null) ", timeInForce=$timeInForce" else "") +
-                (if (expiryTime != null) ", expiryTime=$expiryTime" else "")
+                (if (timeInForce != null) ", timeInForce: $timeInForce" else "") +
+                (if (expiryTime != null) ", expiryTime: $expiryTime" else "")
     }
 }

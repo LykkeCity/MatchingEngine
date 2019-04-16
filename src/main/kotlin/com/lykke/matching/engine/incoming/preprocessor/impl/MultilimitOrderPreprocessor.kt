@@ -41,11 +41,23 @@ class MultilimitOrderPreprocessor(private val messageProcessingStatusHolder: Mes
             return false
         }
 
-         context.multilimitOrderValidationResult = getValidationResult(parsedData)
+        context.multilimitOrderValidationResult = getValidationResult(parsedData)
+        return processValidationResult(parsedData)
+    }
+
+    fun writeResponse(messageWrapper: MessageWrapper, assetPairId: String, status: MessageStatus, message: String? = null) {
+        messageWrapper.writeMultiLimitOrderResponse(ProtocolMessages.MultiLimitOrderResponse.newBuilder()
+                .setStatus(status.type)
+                .setAssetPairId(assetPairId))
+    }
+
+    private fun processValidationResult(parsedData: MultilimitOrderParsedData): Boolean {
+        val context = parsedData.messageWrapper.context as MultilimitOrderContext
 
         val multilimitOrderValidationResult = context.multilimitOrderValidationResult
         val fatallyInvalidValidationResult = Stream.concat(Stream.of(multilimitOrderValidationResult!!.globalValidationResult),
-                multilimitOrderValidationResult.inputValidationResultByOrderId?.values?.stream() ?: Stream.empty<OrderValidationResult>())
+                multilimitOrderValidationResult.inputValidationResultByOrderId?.values?.stream()
+                        ?: Stream.empty<OrderValidationResult>())
                 .filter { it.isFatalInvalid }
                 .findFirst()
 
@@ -59,13 +71,18 @@ class MultilimitOrderPreprocessor(private val messageProcessingStatusHolder: Mes
             return false
         }
 
-        return true
-    }
+        //if global non fatal validation occurs - all orders should has this validation error
+        if (!multilimitOrderValidationResult.globalValidationResult.isValid) {
+            val validationResultByOrderId = HashMap<String, OrderValidationResult>()
 
-    fun writeResponse(messageWrapper: MessageWrapper, assetPairId: String, status: MessageStatus, message: String? = null) {
-        messageWrapper.writeMultiLimitOrderResponse(ProtocolMessages.MultiLimitOrderResponse.newBuilder()
-                .setStatus(status.type)
-                .setAssetPairId(assetPairId))
+            context.multiLimitOrder.orders.forEach {
+                validationResultByOrderId[it.id] = multilimitOrderValidationResult.globalValidationResult
+            }
+
+            context.multilimitOrderValidationResult = MultilimitOrderValidationResult(multilimitOrderValidationResult.globalValidationResult, validationResultByOrderId)
+        }
+
+        return true
     }
 
     private fun getValidationResult(parsedData: MultilimitOrderParsedData): MultilimitOrderValidationResult {
@@ -74,8 +91,7 @@ class MultilimitOrderPreprocessor(private val messageProcessingStatusHolder: Mes
 
         try {
             orderInputValidator.validateAsset(context.assetPair, parsedData.inputAssetPairId)
-        }
-        catch(e: OrderValidationException) {
+        } catch (e: OrderValidationException) {
             val fatalInvalid = OrderValidationUtils.isFatalInvalid(e)
             return MultilimitOrderValidationResult(OrderValidationResult(false, fatalInvalid, e.message, e.orderStatus))
         }
