@@ -564,6 +564,11 @@
             <AppenderRef ref="BalanceUpdatesLog"/>
         </AsyncLogger>
 
+        <AsyncLogger name="com.lykke.matching.engine.outgoing.senders.impl.specialized.CashInOutOldEventSender"
+                     level="info" additivity="false">
+            <AppenderRef ref="BalanceUpdatesLog"/>
+        </AsyncLogger>
+
         # Errors logger
         <AsyncLogger name="com.lykke.utils.logging.MetricsLogger"
                      level="debug" additivity="false">

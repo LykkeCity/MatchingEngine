@@ -5,16 +5,13 @@ import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.utils.logging.MetricsLogger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.util.concurrent.BlockingQueue
 
 @Service
 class BalancesServiceImpl(private val balancesHolder: BalancesHolder,
-                          private val persistenceManager: PersistenceManager,
-                          private val balanceUpdateQueue: BlockingQueue<BalanceUpdate>): BalancesService {
+                          private val persistenceManager: PersistenceManager): BalancesService {
     private companion object {
         val LOGGER = LoggerFactory.getLogger(BalancesServiceImpl::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
@@ -40,12 +37,5 @@ class BalancesServiceImpl(private val balancesHolder: BalancesHolder,
 
         balancesHolder.setWallets(wallets)
         return true
-    }
-
-    override fun sendBalanceUpdate(balanceUpdate: BalanceUpdate) {
-        if (balanceUpdate.balances.isNotEmpty()) {
-            LOGGER.info(balanceUpdate.toString())
-            balanceUpdateQueue.put(balanceUpdate)
-        }
     }
 }

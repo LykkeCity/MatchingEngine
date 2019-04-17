@@ -41,6 +41,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.senders.OutgoingEventProcessor
 import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.OldFormatBalancesSender
 import com.lykke.matching.engine.services.CashInOutOperationService
 import com.lykke.matching.engine.services.CashTransferOperationService
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -149,12 +150,12 @@ open class TestApplicationContext {
                                          balancesHolder: BalancesHolder,
                                          balancesService: BalancesService, applicationSettingsHolder: ApplicationSettingsHolder,
                                          messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                         messageSender: MessageSender): ReservedVolumesRecalculator {
-
+                                         messageSender: MessageSender,
+                                         oldFormatBalancesSender: OldFormatBalancesSender): ReservedVolumesRecalculator {
         return ReservedVolumesRecalculator(testOrderDatabaseAccessorHolder, stopOrdersDatabaseAccessorsHolder,
                 testReservedVolumesDatabaseAccessor, assetHolder,
                 assetsPairsHolder, balancesHolder, applicationSettingsHolder,
-                false, messageSequenceNumberHolder, messageSender, balancesService)
+                false, messageSequenceNumberHolder, messageSender, balancesService, oldFormatBalancesSender)
     }
 
     @Bean
@@ -311,9 +312,10 @@ open class TestApplicationContext {
                                         reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
                                         messageProcessingStatusHolder: MessageProcessingStatusHolder,
                                         persistenceManager: PersistenceManager,
-                                        uuidHolder: UUIDHolder): ReservedCashInOutOperationService {
+                                        uuidHolder: UUIDHolder,
+                                        oldFormatBalancesSender: OldFormatBalancesSender): ReservedCashInOutOperationService {
         return ReservedCashInOutOperationService(assetsHolder, walletOperationsProcessorFactory, reservedCashOperationQueue,
-                reservedCashInOutOperationValidator, messageProcessingStatusHolder, persistenceManager, uuidHolder)
+                reservedCashInOutOperationValidator, messageProcessingStatusHolder, persistenceManager, uuidHolder, oldFormatBalancesSender)
     }
 
     @Bean
@@ -729,8 +731,7 @@ open class TestApplicationContext {
 
     @Bean
     open fun balancesService(balancesHolder: BalancesHolder,
-                             persistenceManager: PersistenceManager,
-                             balanceUpdateQueue: BlockingQueue<BalanceUpdate>): BalancesService {
-        return BalancesServiceImpl(balancesHolder, persistenceManager, balanceUpdateQueue)
+                             persistenceManager: PersistenceManager): BalancesService {
+        return BalancesServiceImpl(balancesHolder, persistenceManager)
     }
 }

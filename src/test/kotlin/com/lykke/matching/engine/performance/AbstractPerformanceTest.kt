@@ -26,7 +26,6 @@ import com.lykke.matching.engine.holders.TestUUIDHolder
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
 import com.lykke.matching.engine.matching.MatchingEngine
-import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExecutionPersistenceService
 import com.lykke.matching.engine.order.ExpiryOrdersQueue
@@ -168,7 +167,7 @@ abstract class AbstractPerformanceTest {
                 ordersDatabaseAccessorsHolder,
                 stopOrdersDatabaseAccessorsHolder)
         balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder)
-        balancesService = BalancesServiceImpl(balancesHolder, persistenceManager, balanceUpdateQueue)
+        balancesService = BalancesServiceImpl(balancesHolder, persistenceManager)
 
         testBalanceHolderWrapper = TestBalanceHolderWrapper(balancesService, balancesHolder)
         assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)

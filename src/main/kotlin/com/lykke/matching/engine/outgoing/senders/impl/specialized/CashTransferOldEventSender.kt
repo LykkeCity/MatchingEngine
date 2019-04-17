@@ -6,7 +6,9 @@ import com.lykke.matching.engine.fee.singleFeeTransfer
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.CashTransferEventData
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
+import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.OldFormatBalancesSender
 import com.lykke.matching.engine.utils.NumberUtils
 import org.springframework.stereotype.Component
 import org.springframework.util.CollectionUtils
@@ -14,7 +16,8 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 @Deprecated("Old format of outgoing message is deprecated")
-class CashTransferOldEventSender(private val notificationQueue: BlockingQueue<CashTransferOperation>) : SpecializedEventSender<CashTransferEventData> {
+class CashTransferOldEventSender(private val notificationQueue: BlockingQueue<CashTransferOperation>,
+                                 private val oldFormatBalancesSender: OldFormatBalancesSender) : SpecializedEventSender<CashTransferEventData> {
     override fun getEventClass(): Class<CashTransferEventData> {
         return CashTransferEventData::class.java
     }
@@ -23,7 +26,9 @@ class CashTransferOldEventSender(private val notificationQueue: BlockingQueue<Ca
         val cashTransferEventData = event as CashTransferEventData
         val transferOperation = cashTransferEventData.transferOperation
 
-        sendBalanceUpdateEvent(cashTransferEventData, transferOperation)
+        sendBalanceUpdateEvent(externalId = transferOperation.externalId,
+                messageId =  cashTransferEventData.messageId,
+                clientBalanceUpdates = cashTransferEventData.clientBalanceUpdates)
         sendCashTransferOperationEvent(transferOperation, cashTransferEventData)
     }
 
@@ -42,11 +47,12 @@ class CashTransferOldEventSender(private val notificationQueue: BlockingQueue<Ca
                 messageId = cashTransferEventData.messageId))
     }
 
-    private fun sendBalanceUpdateEvent(cashTransferEventData: CashTransferEventData, transferOperation: TransferOperation) {
-        cashTransferEventData
-                .walletProcessor
-                .sendNotification(id = transferOperation.externalId,
-                        type = MessageType.CASH_TRANSFER_OPERATION.name,
-                        messageId = cashTransferEventData.messageId)
+    private fun sendBalanceUpdateEvent(externalId: String,
+                                       messageId: String,
+                                       clientBalanceUpdates: List<ClientBalanceUpdate>) {
+        oldFormatBalancesSender.sendBalanceUpdate(externalId,
+                MessageType.CASH_TRANSFER_OPERATION,
+                messageId,
+                clientBalanceUpdates)
     }
 }

@@ -33,9 +33,6 @@ class BalancesServiceTest {
     @Autowired
     private lateinit var testBalancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder
 
-    @Autowired
-    private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
-
     @Test
     fun testInsertOrUpdateWallets() {
         balancesService.insertOrUpdateWallets(listOf(Wallet("test", listOf(AssetBalance("test", "BTC", BigDecimal.valueOf(10))))), null)
@@ -43,19 +40,5 @@ class BalancesServiceTest {
 
         assertEquals(BigDecimal.valueOf(10), balancesHolder.getBalance("test", "BTC"))
         assertEquals(BigDecimal.valueOf(10), testBalancesDatabaseAccessorsHolder.primaryAccessor.loadWallets()["test"]?.balances!!["BTC"]?.balance)
-    }
-
-    @Test
-    fun testSendBalanceUpdate() {
-        balancesService.sendBalanceUpdate(BalanceUpdate("test", "", Date(),
-                listOf(ClientBalanceUpdate("test",
-                        "BTC",
-                        BigDecimal.valueOf(10),
-                        BigDecimal.valueOf(15),
-                        BigDecimal.valueOf(0),
-                        BigDecimal.valueOf(1))),
-                "testMessageId"))
-
-        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
     }
 }

@@ -111,12 +111,6 @@ class WalletOperationsProcessor(private val balancesService: BalancesService,
         return currentTransactionBalancesHolder.persistenceData()
     }
 
-    fun sendNotification(id: String, type: String, messageId: String) {
-        if (clientBalanceUpdatesByClientIdAndAssetId.isNotEmpty()) {
-            balancesService.sendBalanceUpdate(BalanceUpdate(id, type, Date(), clientBalanceUpdatesByClientIdAndAssetId.values.toList(), messageId))
-        }
-    }
-
     fun getClientBalanceUpdates(): List<ClientBalanceUpdate> {
         return clientBalanceUpdatesByClientIdAndAssetId.values.toList()
     }

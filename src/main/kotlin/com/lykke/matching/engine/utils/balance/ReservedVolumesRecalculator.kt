@@ -14,10 +14,10 @@ import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.senders.impl.OldFormatBalancesSender
 import com.lykke.matching.engine.services.BalancesService
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.utils.NumberUtils
@@ -46,7 +46,8 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
                                                          @Value("#{Config.me.correctReservedVolumes}") private val correctReservedVolumes: Boolean,
                                                          private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                                          private val messageSender: MessageSender,
-                                                         private val balancesService: BalancesService) : ApplicationRunner {
+                                                         private val balancesService: BalancesService,
+                                                         private val oldFormatBalancesSender: OldFormatBalancesSender) : ApplicationRunner {
     override fun run(args: ApplicationArguments?) {
         correctReservedVolumesIfNeed()
     }
@@ -190,9 +191,11 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
             }
 
             reservedVolumesDatabaseAccessor.addCorrectionsInfo(corrections)
-            balancesService.sendBalanceUpdate(BalanceUpdate(operationId, MessageType.LIMIT_ORDER.name, now, balanceUpdates, operationId))
+            oldFormatBalancesSender.sendBalanceUpdate(id = operationId,
+                    messageId = operationId,
+                    clientBalanceUpdates =  balanceUpdates,
+                    type = MessageType.LIMIT_ORDER)
             cashInOutEvents.forEach { messageSender.sendMessage(it) }
-
         }
         LOGGER.info("Reserved volume recalculation finished")
     }

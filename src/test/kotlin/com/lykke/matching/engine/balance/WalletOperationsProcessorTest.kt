@@ -8,8 +8,9 @@ import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.common.entity.PersistenceData
-import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
+import com.lykke.matching.engine.outgoing.senders.impl.OldFormatBalancesSender
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.boot.test.context.SpringBootTest
@@ -48,6 +49,9 @@ class WalletOperationsProcessorTest : AbstractTest() {
     @Autowired
     private lateinit var walletOperationsProcessorFactory: WalletOperationsProcessorFactory
 
+    @Autowired
+    private lateinit var oldFormatBalancesSender: OldFormatBalancesSender
+
     @Test
     fun testPreProcessWalletOperations() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
@@ -77,7 +81,10 @@ class WalletOperationsProcessorTest : AbstractTest() {
             )
         }
         assertTrue(persistenceManager.persist(PersistenceData( walletOperationsProcessor.persistenceData(), null, null, null, null)))
-        walletOperationsProcessor.apply().sendNotification("id", "type", "test")
+        walletOperationsProcessor.apply()
+
+        oldFormatBalancesSender.sendBalanceUpdate("id", MessageType.CASH_IN_OUT_OPERATION, "test",
+                walletOperationsProcessor.getClientBalanceUpdates())
 
         assertBalance("Client1", "BTC", 0.5, 0.0)
         assertBalance("Client2", "ETH", 3.0, 0.3)
@@ -87,7 +94,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
         val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate
         assertEquals(2, balanceUpdate.balances.size)
         assertEquals("id", balanceUpdate.id)
-        assertEquals("type", balanceUpdate.type)
+        assertEquals(MessageType.CASH_IN_OUT_OPERATION.name, balanceUpdate.type)
 
         val clientBalanceUpdate1 = balanceUpdate.balances.first { it.id == "Client1" }
         assertNotNull(clientBalanceUpdate1)
@@ -118,7 +125,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
                 ), true)
 
         assertTrue(persistenceManager.persist(PersistenceData(walletOperationsProcessor.persistenceData(), null, null, null, null)))
-        walletOperationsProcessor.apply().sendNotification("id", "type","test")
+        walletOperationsProcessor.apply()
 
         assertBalance("Client1", "BTC", 0.0, -0.1)
     }

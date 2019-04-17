@@ -13,6 +13,7 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
+import com.lykke.matching.engine.outgoing.senders.impl.OldFormatBalancesSender
 import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -32,7 +33,8 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                                                                 private val reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
                                                                 private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
                                                                 private val persistenceManager: PersistenceManager,
-                                                                private val uuidHolder: UUIDHolder) : AbstractService {
+                                                                private val uuidHolder: UUIDHolder,
+                                                                private val oldFormatBalancesSender: OldFormatBalancesSender) : AbstractService {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(ReservedCashInOutOperationService::class.java.name)
@@ -88,7 +90,12 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
             LOGGER.info("Reserved cash in/out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.reservedVolume)}: unable to save balance")
             return
         }
-        walletProcessor.apply().sendNotification(message.id, MessageType.RESERVED_CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
+
+        walletProcessor.apply()
+        oldFormatBalancesSender.sendBalanceUpdate(message.id,
+                MessageType.RESERVED_CASH_IN_OUT_OPERATION,
+                messageWrapper.messageId!!,
+                walletProcessor.getClientBalanceUpdates())
 
         reservedCashOperationQueue.put(ReservedCashOperation(message.id,
                 operation.clientId,

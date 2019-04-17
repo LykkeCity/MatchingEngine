@@ -101,7 +101,7 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
                 sequenceNumber,
                 now,
                 cashInOutOperation.dateTime,
-                walletProcessor,
+                walletProcessor.getClientBalanceUpdates(),
                 walletOperation,
                 asset,
                 fees))

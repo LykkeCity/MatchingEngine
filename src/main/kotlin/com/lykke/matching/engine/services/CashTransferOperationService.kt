@@ -116,7 +116,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         }
         walletProcessor.apply()
         outgoingEventProcessor.submitCashTransferEvent(CashTransferEventData(cashTransferContext.messageId,
-                walletProcessor,
+                walletProcessor.getClientBalanceUpdates(),
                 fees,
                 operation,
                 sequenceNumber,

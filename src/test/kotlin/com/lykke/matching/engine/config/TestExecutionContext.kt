@@ -26,6 +26,7 @@ import com.lykke.matching.engine.order.process.common.LimitOrdersCancellerImpl
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.transaction.ExecutionEventsSequenceNumbersGenerator
+import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.CashInOutEventData
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.CashTransferEventData
@@ -35,6 +36,7 @@ import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.senders.OutgoingEventProcessor
 import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.OldFormatBalancesSender
 import com.lykke.matching.engine.outgoing.senders.impl.specialized.CashInOutEventSender
 import com.lykke.matching.engine.outgoing.senders.impl.specialized.CashInOutOldEventSender
 import com.lykke.matching.engine.outgoing.senders.impl.OutgoingEventProcessorImpl
@@ -101,8 +103,9 @@ open class TestExecutionContext {
     }
 
     @Bean
-    open fun cashTransferOldSender(notificationQueue: BlockingQueue<CashTransferOperation>): SpecializedEventSender<CashTransferEventData> {
-        return CashTransferOldEventSender(notificationQueue)
+    open fun cashTransferOldSender(notificationQueue: BlockingQueue<CashTransferOperation>,
+                                   oldFormatBalancesSender: OldFormatBalancesSender): SpecializedEventSender<CashTransferEventData> {
+        return CashTransferOldEventSender(notificationQueue, oldFormatBalancesSender)
     }
 
     @Bean
@@ -122,11 +125,13 @@ open class TestExecutionContext {
     @Bean
     open fun specializedOldExecutionEventSender(clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                                 trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                                rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>): SpecializedEventSender<ExecutionData> {
+                                                rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
+                                                oldFormatBalancesSender: OldFormatBalancesSender): SpecializedEventSender<ExecutionData> {
         return OldFormatExecutionEventSender(
                 clientLimitOrdersQueue,
                 trustedClientsLimitOrdersQueue,
-                rabbitSwapQueue)
+                rabbitSwapQueue,
+                oldFormatBalancesSender)
     }
 
     @Bean
@@ -135,8 +140,9 @@ open class TestExecutionContext {
     }
 
     @Bean
-    open fun specializedCashInOutOldEventSender(rabbitCashInOutQueue: BlockingQueue<CashOperation>): SpecializedEventSender<CashInOutEventData> {
-        return CashInOutOldEventSender(rabbitCashInOutQueue)
+    open fun specializedCashInOutOldEventSender(rabbitCashInOutQueue: BlockingQueue<CashOperation>,
+                                                balanceUpdateQueue: BlockingQueue<BalanceUpdate>): CashInOutOldEventSender {
+        return CashInOutOldEventSender(rabbitCashInOutQueue, balanceUpdateQueue)
     }
 
     @Bean
