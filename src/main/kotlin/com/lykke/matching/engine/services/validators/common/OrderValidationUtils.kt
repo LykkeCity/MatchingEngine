@@ -44,5 +44,12 @@ class OrderValidationUtils {
             val maxValue = assetPair.maxValue ?: return null
             return MaxOrderVolumeInfo(maxValue, midPrice)
         }
+
+        fun validateOrderBookTotalSize(currentOrderBookTotalSize: Int, orderBookMaxTotalSize: Int?) {
+            if (orderBookMaxTotalSize != null && currentOrderBookTotalSize >= orderBookMaxTotalSize) {
+                throw OrderValidationException(OrderStatus.OrderBookMaxSizeReached,
+                        "Order book max total size reached (current: $currentOrderBookTotalSize, max: $orderBookMaxTotalSize)")
+            }
+        }
     }
 }
