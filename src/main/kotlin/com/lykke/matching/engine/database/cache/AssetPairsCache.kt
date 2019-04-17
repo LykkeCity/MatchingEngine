@@ -82,7 +82,7 @@ class AssetPairsCache @Autowired constructor(
 
     private fun getNewAssetPairs(newAssetPairs: Collection<AssetPair>): Collection<AssetPair> {
         return newAssetPairs.filter { assetPair ->
-            knownAssetPairs.contains(assetPair.assetPairId)
+            !knownAssetPairs.contains(assetPair.assetPairId)
         }
     }
 
