@@ -43,6 +43,5 @@ data class MatchingEngineConfig(
         val disableBlobHistory: Boolean?,
         val disableBestPriceHistory: Boolean?,
         val disableCandlesHistory: Boolean?,
-        val disableHourCandlesHistory: Boolean?,
-        val orderBookMaxTotalSize: Int?
+        val disableHourCandlesHistory: Boolean?
 )

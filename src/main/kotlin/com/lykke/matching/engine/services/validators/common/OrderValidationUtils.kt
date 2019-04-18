@@ -5,11 +5,15 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.Order
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
+import com.lykke.utils.logging.MetricsLogger
 import java.math.BigDecimal
 import java.util.Date
 
 class OrderValidationUtils {
     companion object {
+
+        private val METRICS_LOGGER = MetricsLogger.getLogger()
+
         fun checkMinVolume(order: Order, assetPair: AssetPair): Boolean {
             val volume = order.getAbsVolume()
             val minVolume = if (order.isStraight()) assetPair.minVolume else assetPair.minInvertedVolume
@@ -30,8 +34,9 @@ class OrderValidationUtils {
 
         fun validateOrderBookTotalSize(currentOrderBookTotalSize: Int, orderBookMaxTotalSize: Int?) {
             if (orderBookMaxTotalSize != null && currentOrderBookTotalSize >= orderBookMaxTotalSize) {
-                throw OrderValidationException(OrderStatus.OrderBookMaxSizeReached,
-                        "Order book max total size reached (current: $currentOrderBookTotalSize, max: $orderBookMaxTotalSize)")
+                val errorMessage = "Order book max total size reached (current: $currentOrderBookTotalSize, max: $orderBookMaxTotalSize)"
+                METRICS_LOGGER.logWarning(errorMessage)
+                throw OrderValidationException(OrderStatus.OrderBookMaxSizeReached, errorMessage)
             }
         }
     }
