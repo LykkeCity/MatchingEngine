@@ -107,7 +107,7 @@ class OrderBookMaxSizeTest : AbstractTest() {
         val response = clientHandler.responses.single()
         assertTrue(response is ProtocolMessages.NewResponse)
         response as ProtocolMessages.NewResponse
-        assertEquals(MessageStatus.ORDER_BOOK_MAX_SIZE_REACHED.type, response.status)
+        assertEquals(MessageStatus.RUNTIME.type, response.status)
     }
 
     @Test
@@ -133,7 +133,7 @@ class OrderBookMaxSizeTest : AbstractTest() {
         val response = clientHandler.responses.single()
         assertTrue(response is ProtocolMessages.NewResponse)
         response as ProtocolMessages.NewResponse
-        assertEquals(MessageStatus.ORDER_BOOK_MAX_SIZE_REACHED.type, response.status)
+        assertEquals(MessageStatus.RUNTIME.type, response.status)
     }
 
     @Test
@@ -160,8 +160,8 @@ class OrderBookMaxSizeTest : AbstractTest() {
         assertTrue(response is ProtocolMessages.MultiLimitOrderResponse)
         response as ProtocolMessages.MultiLimitOrderResponse
         assertEquals(MessageStatus.OK.type, response.status)
-        assertNotEquals(MessageStatus.ORDER_BOOK_MAX_SIZE_REACHED.type, response.statusesList.single { it.id == "order1" }.status)
-        assertEquals(MessageStatus.ORDER_BOOK_MAX_SIZE_REACHED.type, response.statusesList.single { it.id == "order2" }.status)
+        assertNotEquals(MessageStatus.RUNTIME.type, response.statusesList.single { it.id == "order1" }.status)
+        assertEquals(MessageStatus.RUNTIME.type, response.statusesList.single { it.id == "order2" }.status)
     }
 
     @Test
@@ -183,6 +183,6 @@ class OrderBookMaxSizeTest : AbstractTest() {
         val response = clientHandler.responses.single()
         assertTrue(response is ProtocolMessages.MarketOrderResponse)
         response as ProtocolMessages.MarketOrderResponse
-        assertNotEquals(MessageStatus.ORDER_BOOK_MAX_SIZE_REACHED.type, response.status)
+        assertNotEquals(MessageStatus.RUNTIME.type, response.status)
     }
 }
