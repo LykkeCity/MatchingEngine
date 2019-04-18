@@ -108,9 +108,9 @@ class MarketOrderService @Autowired constructor(
                     feeInstruction,
                     feeInstructions)
         } catch (e: OrderValidationException) {
-            if (e.message.isNotEmpty()) {
-                LOGGER.info("Invalid market order (${order.externalId}, messageId: ${messageWrapper.messageId}): ${e.message}")
-            }
+            val errorMessage = "Invalid market order (${order.externalId}, messageId: ${messageWrapper.messageId}): ${e.orderStatus}" +
+                    (if (e.message.isNotEmpty()) ", ${e.message}" else "")
+            LOGGER.error(errorMessage)
             order.updateStatus(e.orderStatus, now)
             sendErrorNotification(messageWrapper, order, now)
             writeErrorResponse(messageWrapper, order, e.message)
@@ -166,7 +166,7 @@ class MarketOrderService @Autowired constructor(
                     matchingResultHandlingHelper.processWalletOperations(marketOrderExecutionContext)
                     true
                 } catch (e: BalanceException) {
-                    order.updateStatus(OrderStatus.NotEnoughFunds, now)
+                    order.updateStatus(NotEnoughFunds, now)
                     marketOrderExecutionContext.executionContext.marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
                     LOGGER.error("$order: Unable to process wallet operations after matching: ${e.message}")
                     false
