@@ -7,6 +7,7 @@ import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
+import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.services.DisabledFunctionalityRulesService
 import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
 import com.lykke.matching.engine.web.dto.DisabledFunctionalityRuleDto
@@ -39,6 +40,12 @@ class DisabledFunctionalityRulesHolderTest {
 
     @Autowired
     private lateinit var assetsHolder: AssetsHolder
+
+    @Autowired
+    private lateinit var  assetPairsCache: AssetPairsCache
+
+    @Autowired
+    private lateinit var testDictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor
 
     @TestConfiguration
     open class Config {
@@ -129,5 +136,38 @@ class DisabledFunctionalityRulesHolderTest {
 
         //then
         assertTrue(disabledFunctionalityRulesHolder.isCashInDisabled(assetsHolder.getAsset("BTC")))
+    }
+
+    @Test
+    fun newAssetPairAdded() {
+        //given
+        disabledFunctionalityRulesService.create(DisabledFunctionalityRuleDto(null, "JPY", null, OperationType.TRADE.name, true, "test", "test"))
+
+        //when
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCJPY", "BTC", "JPY", 6))
+        assetPairsCache.update()
+
+        //then
+        assertTrue(disabledFunctionalityRulesHolder.isTradeDisabled(assetsPairsHolder.getAssetPair("BTCJPY")))
+    }
+
+    @Test
+    fun assetPairAddedRemovedThenAgainAdded() {
+        //given
+        disabledFunctionalityRulesService.create(DisabledFunctionalityRuleDto(null, "JPY", null, OperationType.TRADE.name, true, "test", "test"))
+
+        //when
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCJPY", "BTC", "JPY", 6))
+        assetPairsCache.update()
+        assertTrue(disabledFunctionalityRulesHolder.isTradeDisabled(assetsPairsHolder.getAssetPair("BTCJPY")))
+
+        testDictionariesDatabaseAccessor.clear()
+        assetPairsCache.update()
+
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCJPY", "BTC", "JPY", 6))
+        assetPairsCache.update()
+
+        //then
+        assertTrue(disabledFunctionalityRulesHolder.isTradeDisabled(assetsPairsHolder.getAssetPair("BTCJPY")))
     }
 }
