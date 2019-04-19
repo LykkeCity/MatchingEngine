@@ -334,12 +334,14 @@ companion object {
         return parsedData.messageWrapper
     }
 
-    fun buildLimitOrderMassCancelWrapper(clientId: String,
+    fun buildLimitOrderMassCancelWrapper(clientId: String? = null,
                                          assetPairId: String? = null,
                                          isBuy: Boolean? = null): MessageWrapper {
         val builder = ProtocolMessages.LimitOrderMassCancel.newBuilder()
                 .setUid(UUID.randomUUID().toString())
-                .setClientId(clientId)
+        clientId?.let {
+            builder.setClientId(it)
+        }
         assetPairId?.let {
             builder.setAssetPairId(it)
         }
