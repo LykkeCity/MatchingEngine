@@ -5,7 +5,7 @@ import com.lykke.matching.engine.messages.MessageType
 
 class LimitOrderMassCancelOperationContext(val uid: String,
                                            val messageId: String,
-                                           val clientId: String,
+                                           val clientId: String?,
                                            val processedMessage: ProcessedMessage,
                                            val messageType: MessageType,
                                            val assetPairId: String?,
