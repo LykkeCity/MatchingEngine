@@ -287,8 +287,9 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun assetPairsCache(testDictionariesDatabaseAccessor: DictionariesDatabaseAccessor): AssetPairsCache {
-        return AssetPairsCache(testDictionariesDatabaseAccessor)
+    open fun assetPairsCache(testDictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
+                             applicationEventPublisher: ApplicationEventPublisher): AssetPairsCache {
+        return AssetPairsCache(testDictionariesDatabaseAccessor, applicationEventPublisher)
     }
 
     @Bean
