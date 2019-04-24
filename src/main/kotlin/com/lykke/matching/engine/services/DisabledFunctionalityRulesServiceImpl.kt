@@ -75,7 +75,7 @@ class DisabledFunctionalityRulesServiceImpl : DisabledFunctionalityRulesService 
         }
     }
 
-    override fun history(id: String): List<DisabledFunctionalityRuleDto> {
+    override fun getHistoryRecords(id: String): List<DisabledFunctionalityRuleDto> {
         val historyRecords = try {
             applicationSettingsService.getHistoryRecords(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES.settingGroupName, id)
         } catch (e: SettingNotFoundException) {
@@ -84,12 +84,16 @@ class DisabledFunctionalityRulesServiceImpl : DisabledFunctionalityRulesService 
 
         return historyRecords
                 .map {
-                    toDisabledFunctionalityRuleDto(gson.fromJson(it.value, DisabledFunctionalityRule::class.java),
-                            it.name,
-                            it.timestamp,
-                            it.enabled,
-                            it.comment,
-                            it.user)
+                    toDisabledFunctionalityRuleDto(it)
+                }
+                .sortedByDescending { it.timestamp }
+    }
+
+    override fun getAllLastHistoryRecords(): List<DisabledFunctionalityRuleDto> {
+        return applicationSettingsService
+                .getAllLastHistoryRecords(AvailableSettingGroup.DISABLED_FUNCTIONALITY_RULES.settingGroupName)
+                .map {
+                    toDisabledFunctionalityRuleDto(it)
                 }
                 .sortedByDescending { it.timestamp }
     }
@@ -100,5 +104,14 @@ class DisabledFunctionalityRulesServiceImpl : DisabledFunctionalityRulesService 
         } catch(e: SettingNotFoundException) {
             throw DisabledFunctionalityRuleNotFoundException(e.settingName)
         }
+    }
+
+    private fun toDisabledFunctionalityRuleDto(it: SettingDto): DisabledFunctionalityRuleDto {
+        return toDisabledFunctionalityRuleDto(gson.fromJson(it.value, DisabledFunctionalityRule::class.java),
+                it.name,
+                it.timestamp,
+                it.enabled,
+                it.comment,
+                it.user)
     }
 }

@@ -100,8 +100,7 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
         )))
 
         multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("BTCUSD", "TrustedClient", listOf(
-                IncomingLimitOrder(-1.0, 8500.0)
-        )))
+                IncomingLimitOrder(-1.0, 8500.0), "m3")))
 
         assertOrderBookSize("BTCUSD", false, 3)
         assertOrderBookSize("BTCUSD", true, 1)
@@ -243,5 +242,213 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
         assertEquals(2, event.orders.size)
         assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "m1" }.status)
         assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "m2" }.status)
+    }
+
+    @Test
+    fun testCancelBuyOrdersByAssetPair() {
+        setOrders()
+
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper(assetPairId = "BTCUSD", isBuy = true))
+
+        assertOrderBookSize("BTCUSD", false, 3)
+        assertOrderBookSize("BTCUSD", true, 0)
+        assertOrderBookSize("EURUSD", false, 1)
+        assertOrderBookSize("EURUSD", true, 2)
+        assertStopOrderBookSize("BTCUSD", true, 0)
+        assertStopOrderBookSize("BTCUSD", false, 0)
+
+        assertEquals(1, testOrderBookListener.getCount())
+        assertEquals(1, testRabbitOrderBookListener.getCount())
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(MessageType.LIMIT_ORDER_MASS_CANCEL.name, event.header.eventType)
+        assertEquals(2, event.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "3" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "5" }.status)
+        assertEquals(1, event.balanceUpdates?.size)
+        assertEventBalanceUpdate("Client1", "USD", "100", "100", "91", "11", event.balanceUpdates!!)
+
+
+        assertEquals(0, trustedClientsEventsQueue.size)
+    }
+
+    @Test
+    fun testCancelSellOrdersByAssetPair() {
+        setOrders()
+
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper(assetPairId = "BTCUSD", isBuy = false))
+
+        assertOrderBookSize("BTCUSD", false, 0)
+        assertOrderBookSize("BTCUSD", true, 1)
+        assertOrderBookSize("EURUSD", false, 1)
+        assertOrderBookSize("EURUSD", true, 2)
+        assertStopOrderBookSize("BTCUSD", true, 1)
+        assertStopOrderBookSize("BTCUSD", false, 0)
+
+        assertEquals(1, testOrderBookListener.getCount())
+        assertEquals(1, testRabbitOrderBookListener.getCount())
+
+        assertEquals(1, clientsEventsQueue.size)
+        var event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(MessageType.LIMIT_ORDER_MASS_CANCEL.name, event.header.eventType)
+        assertEquals(2, event.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "1" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "2" }.status)
+        assertEquals(1, event.balanceUpdates?.size)
+        assertEventBalanceUpdate("Client1", "BTC", "1", "1", "0.6", "0", event.balanceUpdates!!)
+
+        assertEquals(1, trustedClientsEventsQueue.size)
+        event = trustedClientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(MessageType.LIMIT_ORDER_MASS_CANCEL.name, event.header.eventType)
+        assertEquals(0, event.balanceUpdates?.size)
+        assertEquals(1, event.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "m3" }.status)
+    }
+
+    @Test
+    fun testCancelOrdersByAssetPair() {
+        setOrders()
+
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper(assetPairId = "BTCUSD"))
+
+        assertOrderBookSize("BTCUSD", false, 0)
+        assertOrderBookSize("BTCUSD", true, 0)
+        assertOrderBookSize("EURUSD", false, 1)
+        assertOrderBookSize("EURUSD", true, 2)
+        assertStopOrderBookSize("BTCUSD", true, 0)
+        assertStopOrderBookSize("BTCUSD", false, 0)
+
+        assertEquals(2, testOrderBookListener.getCount())
+        assertEquals(2, testRabbitOrderBookListener.getCount())
+
+        assertEquals(1, clientsEventsQueue.size)
+        var event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(MessageType.LIMIT_ORDER_MASS_CANCEL.name, event.header.eventType)
+        assertEquals(4, event.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "1" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "2" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "3" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "5" }.status)
+        assertEquals(2, event.balanceUpdates?.size)
+        assertEventBalanceUpdate("Client1", "BTC", "1", "1", "0.6", "0", event.balanceUpdates!!)
+        assertEventBalanceUpdate("Client1", "USD", "100", "100", "91", "11", event.balanceUpdates!!)
+
+
+        assertEquals(1, trustedClientsEventsQueue.size)
+        event = trustedClientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(MessageType.LIMIT_ORDER_MASS_CANCEL.name, event.header.eventType)
+        assertEquals(0, event.balanceUpdates?.size)
+        assertEquals(1, event.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "m3" }.status)
+    }
+
+    @Test
+    fun testCancelAllBuyOrders() {
+        setOrders()
+
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper(isBuy = true))
+
+        assertOrderBookSize("BTCUSD", false, 3)
+        assertOrderBookSize("BTCUSD", true, 0)
+        assertOrderBookSize("EURUSD", false, 1)
+        assertOrderBookSize("EURUSD", true, 0)
+        assertStopOrderBookSize("BTCUSD", true, 0)
+        assertStopOrderBookSize("BTCUSD", false, 0)
+
+        assertEquals(2, testOrderBookListener.getCount())
+        assertEquals(2, testRabbitOrderBookListener.getCount())
+
+        assertEquals(1, clientsEventsQueue.size)
+        var event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(MessageType.LIMIT_ORDER_MASS_CANCEL.name, event.header.eventType)
+        assertEquals(3, event.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "3" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "4" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "5" }.status)
+        assertEquals(1, event.balanceUpdates?.size)
+        assertEventBalanceUpdate("Client1", "USD", "100", "100", "91", "0", event.balanceUpdates!!)
+
+
+        assertEquals(1, trustedClientsEventsQueue.size)
+        event = trustedClientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(MessageType.LIMIT_ORDER_MASS_CANCEL.name, event.header.eventType)
+        assertEquals(0, event.balanceUpdates?.size)
+        assertEquals(1, event.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "m2" }.status)
+    }
+
+    @Test
+    fun testCancelAllSellOrders() {
+        setOrders()
+
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper(isBuy = false))
+
+        assertOrderBookSize("BTCUSD", false, 0)
+        assertOrderBookSize("BTCUSD", true, 1)
+        assertOrderBookSize("EURUSD", false, 0)
+        assertOrderBookSize("EURUSD", true, 2)
+        assertStopOrderBookSize("BTCUSD", true, 1)
+        assertStopOrderBookSize("BTCUSD", false, 0)
+
+        assertEquals(2, testOrderBookListener.getCount())
+        assertEquals(2, testRabbitOrderBookListener.getCount())
+
+        assertEquals(1, clientsEventsQueue.size)
+        var event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(MessageType.LIMIT_ORDER_MASS_CANCEL.name, event.header.eventType)
+        assertEquals(2, event.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "1" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "2" }.status)
+        assertEquals(1, event.balanceUpdates?.size)
+        assertEventBalanceUpdate("Client1", "BTC", "1", "1", "0.6", "0", event.balanceUpdates!!)
+
+        assertEquals(1, trustedClientsEventsQueue.size)
+        event = trustedClientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(MessageType.LIMIT_ORDER_MASS_CANCEL.name, event.header.eventType)
+        assertEquals(0, event.balanceUpdates?.size)
+        assertEquals(2, event.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "m1" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "m3" }.status)
+    }
+
+    @Test
+    fun testCancelAllOrders() {
+        setOrders()
+
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper())
+
+        assertOrderBookSize("BTCUSD", false, 0)
+        assertOrderBookSize("BTCUSD", true, 0)
+        assertOrderBookSize("EURUSD", false, 0)
+        assertOrderBookSize("EURUSD", true, 0)
+        assertStopOrderBookSize("BTCUSD", true, 0)
+        assertStopOrderBookSize("BTCUSD", false, 0)
+
+        assertEquals(4, testOrderBookListener.getCount())
+        assertEquals(4, testRabbitOrderBookListener.getCount())
+
+        assertEquals(1, clientsEventsQueue.size)
+        var event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(MessageType.LIMIT_ORDER_MASS_CANCEL.name, event.header.eventType)
+        assertEquals(5, event.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "1" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "2" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "3" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "4" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "5" }.status)
+        assertEquals(2, event.balanceUpdates?.size)
+        assertEventBalanceUpdate("Client1", "BTC", "1", "1", "0.6", "0", event.balanceUpdates!!)
+        assertEventBalanceUpdate("Client1", "USD", "100", "100", "91", "0", event.balanceUpdates!!)
+
+
+        assertEquals(1, trustedClientsEventsQueue.size)
+        event = trustedClientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(MessageType.LIMIT_ORDER_MASS_CANCEL.name, event.header.eventType)
+        assertEquals(0, event.balanceUpdates?.size)
+        assertEquals(3, event.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "m1" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "m2" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "m3" }.status)
     }
 }
