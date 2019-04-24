@@ -100,7 +100,7 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
         )))
 
         multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("BTCUSD", "TrustedClient", listOf(
-                IncomingLimitOrder(-1.0, 8500.0), "m3")))
+                IncomingLimitOrder(-1.0, 8500.0, "m3"))))
 
         assertOrderBookSize("BTCUSD", false, 3)
         assertOrderBookSize("BTCUSD", true, 1)
