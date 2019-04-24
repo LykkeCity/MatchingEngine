@@ -49,7 +49,6 @@ import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.MultiLimitOrderService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.business.*
 import com.lykke.matching.engine.services.validators.business.impl.*
@@ -392,7 +391,6 @@ open class TestApplicationContext {
                                 marketOrderWithTrades: BlockingQueue<MarketOrderWithTrades>,
                                 messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                 messageSender: MessageSender,
-                                marketOrderValidator: MarketOrderValidator,
                                 applicationSettingsHolder: ApplicationSettingsHolder,
                                 messageProcessingStatusHolder: MessageProcessingStatusHolder,
                                 uuidHolder: UUIDHolder): MarketOrderService {
@@ -530,12 +528,29 @@ open class TestApplicationContext {
                                      processedMessagesCache: ProcessedMessagesCache,
                                      marketOrderPreprocessorPersistenceManager: PersistenceManager,
                                      messageSequenceNumberHolder: MessageSequenceNumberHolder): MarketOrderPreprocessor {
-        return MarketOrderPreprocessor(marketOrderContextParser,pre)
+        return MarketOrderPreprocessor(marketOrderContextParser,
+                preProcessedMessageQueue,
+                messageProcessingStatusHolder,
+                rabbitSwapQueue,
+                messageSender,
+                processedMessagesCache,
+                marketOrderPreprocessorPersistenceManager,
+                messageSequenceNumberHolder,
+                ThrottlingLogger.getLogger("test"))
     }
 
     @Bean
     open fun cashTransferInitializer(assetsHolder: AssetsHolder, uuidHolder: UUIDHolder): CashTransferContextParser {
         return CashTransferContextParser(assetsHolder, uuidHolder)
+    }
+
+    @Bean
+    open fun marketOrderContextParser(assetsPairsHolder: AssetsPairsHolder,
+                                      uuidHolder: UUIDHolder,
+                                      applicationSettingsHolder: ApplicationSettingsHolder): MarketOrderContextParser {
+        return MarketOrderContextParser(assetsPairsHolder,
+                uuidHolder,
+                applicationSettingsHolder)
     }
 
     @Bean

@@ -9,7 +9,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.validator.input.MarketOrderInputValidatorTest
-import com.lykke.matching.engine.services.validators.MarketOrderValidator
+import com.lykke.matching.engine.services.validators.business.MarketOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,7 +28,7 @@ import kotlin.test.assertEquals
 class MarketOrderBusinessValidatorTest {
 
     @Autowired
-    private lateinit var marketOrderValidator: MarketOrderValidator
+    private lateinit var marketOrderBusinessValidator: MarketOrderBusinessValidator
 
     @Test(expected = OrderValidationException::class)
     fun invalidOrderBook() {
@@ -38,8 +38,7 @@ class MarketOrderBusinessValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(order, AssetOrderBook(MarketOrderInputValidatorTest.ASSET_PAIR_ID).getOrderBook(order.isBuySide()),
-                    NewFeeInstruction.create(getFeeInstruction()), null)
+            marketOrderBusinessValidator.performValidation(order)
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.NoLiquidity, e.orderStatus)
             throw e
@@ -79,12 +78,6 @@ class MarketOrderBusinessValidatorTest {
     private fun getFeeInstruction(): ProtocolMessages.Fee {
         return ProtocolMessages.Fee.newBuilder()
                 .setType(FeeType.NO_FEE.externalId)
-                .build()
-    }
-
-    private fun getInvalidFee(): ProtocolMessages.Fee {
-        return ProtocolMessages.Fee.newBuilder()
-                .setType(FeeType.EXTERNAL_FEE.externalId)
                 .build()
     }
 }

@@ -78,7 +78,7 @@ class MarketOrderInputValidatorTest {
     }
 
     @Autowired
-    private lateinit var marketOrderValidator: MarketOrderInputValidator
+    private lateinit var marketOrderInputValidator: MarketOrderInputValidator
 
     @Autowired
     private lateinit var testDictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor
@@ -95,7 +95,7 @@ class MarketOrderInputValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(getOrderContext(order))
+            marketOrderInputValidator.performValidation(getOrderContext(order))
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.UnknownAsset, e.orderStatus)
             throw e
@@ -112,7 +112,7 @@ class MarketOrderInputValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(getOrderContext(order))
+            marketOrderInputValidator.performValidation(getOrderContext(order))
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.DisabledAsset, e.orderStatus)
             throw e
@@ -128,7 +128,7 @@ class MarketOrderInputValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(getOrderContext(order))
+            marketOrderInputValidator.performValidation(getOrderContext(order))
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.TooSmallVolume, e.orderStatus)
             throw e
@@ -143,7 +143,7 @@ class MarketOrderInputValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(getOrderContext(order))
+            marketOrderInputValidator.performValidation(getOrderContext(order))
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.InvalidFee, e.orderStatus)
             throw e
@@ -160,7 +160,7 @@ class MarketOrderInputValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(getOrderContext(order))
+            marketOrderInputValidator.performValidation(getOrderContext(order))
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.InvalidVolumeAccuracy, e.orderStatus)
             throw e
@@ -176,7 +176,7 @@ class MarketOrderInputValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(getOrderContext(order))
+            marketOrderInputValidator.performValidation(getOrderContext(order))
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.InvalidPriceAccuracy, e.orderStatus)
             throw e
@@ -190,14 +190,15 @@ class MarketOrderInputValidatorTest {
         val order = toMarketOrder(marketOrderBuilder.build())
 
         //when
-        marketOrderValidator.performValidation(getOrderContext(order))
+        marketOrderInputValidator.performValidation(getOrderContext(order))
     }
 
     private fun getOrderContext(order: MarketOrder): MarketOrderContext {
         return MarketOrderContext("testMessageId",
                 assetsPairsHolder.getAssetPair(order.assetPairId),
                 BigDecimal.valueOf(1000),
-                ProcessedMessage(MessageType.MARKET_ORDER.type, Date().time, "test"), order)
+                ProcessedMessage(MessageType.MARKET_ORDER.type, Date().time, "test"),
+                order)
     }
 
     private fun toMarketOrder(message: ProtocolMessages.MarketOrder): MarketOrder {
