@@ -24,6 +24,7 @@ import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.TestUUIDHolder
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.MarketOrderContextParser
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.ExecutionDataApplyService
@@ -190,7 +191,8 @@ abstract class AbstractPerformanceTest {
                 cashInOutContextParser,
                 cashTransferContextParser,
                 LimitOrderCancelOperationContextParser(),
-                LimitOrderMassCancelOperationContextParser())
+                LimitOrderMassCancelOperationContextParser(),
+                MarketOrderContextParser(assetsPairsHolder, uuidHolder, applicationSettingsHolder))
 
         genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, expiryOrdersQueue)
 

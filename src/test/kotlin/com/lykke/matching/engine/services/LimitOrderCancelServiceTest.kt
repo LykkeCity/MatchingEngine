@@ -46,9 +46,6 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         }
     }
 
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
-
     @Before
     fun setUp() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "5", price = 100.0))

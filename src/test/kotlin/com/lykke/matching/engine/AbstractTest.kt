@@ -18,6 +18,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdat
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.junit.After
@@ -143,6 +144,9 @@ abstract class AbstractTest {
 
     @Autowired
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
+
+    @Autowired
+    protected lateinit var messageBuilder: MessageBuilder
 
     protected open fun initServices() {
         testWalletDatabaseAccessor = balancesDatabaseAccessorsHolder.primaryAccessor as TestWalletDatabaseAccessor

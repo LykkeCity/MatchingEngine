@@ -44,9 +44,6 @@ class CashInOutOperationServiceTest : AbstractTest() {
     private lateinit var testReservedCashOperationListener: TestReservedCashOperationListener
 
     @Autowired
-    private lateinit var messageBuilder: MessageBuilder
-
-    @Autowired
     protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
 
     @TestConfiguration

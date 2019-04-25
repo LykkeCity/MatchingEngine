@@ -586,9 +586,10 @@ open class TestApplicationContext {
                             cashInOutContextParser: CashInOutContextParser,
                             singleLimitOrderContextParser: SingleLimitOrderContextParser,
                             limitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOperationParsedData>,
-                            limitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCancelOperationParsedData>): MessageBuilder {
+                            limitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCancelOperationParsedData>,
+                            marketOrderContextParser: MarketOrderContextParser): MessageBuilder {
         return MessageBuilder(singleLimitOrderContextParser, cashInOutContextParser, cashTransferContextParser,
-                limitOrderCancelOperationContextParser, limitOrderMassCancelOperationContextParser)
+                limitOrderCancelOperationContextParser, limitOrderMassCancelOperationContextParser, marketOrderContextParser)
     }
 
     @Bean

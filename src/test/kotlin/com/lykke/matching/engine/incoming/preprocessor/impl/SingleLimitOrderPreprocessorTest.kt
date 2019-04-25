@@ -24,9 +24,6 @@ class SingleLimitOrderPreprocessorTest: AbstractTest() {
     @Autowired
     private lateinit var singleLimitOrderPreprocessor: SingleLimitOrderPreprocessor
 
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
-
     @Test
     fun testOrderWithUnknownAssetPair() {
         val messageWrapper = messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "UnknownAssetPair"))

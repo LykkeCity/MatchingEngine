@@ -139,7 +139,7 @@ class MarketOrderInputValidatorTest {
     fun testInvalidFee() {
         //given
         val marketOrderBuilder = getDefaultMarketOrderBuilder()
-        val order = toMarketOrder(marketOrderBuilder.build())
+        val order = toMarketOrder(marketOrderBuilder.build(), getInvalidFee())
 
         //when
         try {
@@ -195,17 +195,17 @@ class MarketOrderInputValidatorTest {
 
     private fun getOrderContext(order: MarketOrder): MarketOrderContext {
         return MarketOrderContext("testMessageId",
-                assetsPairsHolder.getAssetPair(order.assetPairId),
+                assetsPairsHolder.getAssetPairAllowNulls(order.assetPairId),
                 BigDecimal.valueOf(1000),
                 ProcessedMessage(MessageType.MARKET_ORDER.type, Date().time, "test"),
                 order)
     }
 
-    private fun toMarketOrder(message: ProtocolMessages.MarketOrder): MarketOrder {
+    private fun toMarketOrder(message: ProtocolMessages.MarketOrder, fee: ProtocolMessages.Fee? = null): MarketOrder {
         val now = Date()
         return MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, BigDecimal.valueOf(message.volume), null,
                 OrderStatus.Processing.name, now, Date(message.timestamp), now, null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume),
-                NewFeeInstruction.create(message.fee), listOf(NewFeeInstruction.create(message.fee)))
+                NewFeeInstruction.create(fee ?: message.fee), emptyList())
     }
 
     private fun getOrderBook(isBuy: Boolean): PriorityBlockingQueue<LimitOrder> {

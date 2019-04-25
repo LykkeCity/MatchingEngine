@@ -60,9 +60,6 @@ class ClientMultiLimitOrderTest : AbstractTest() {
     }
 
     @Autowired
-    private lateinit var messageBuilder: MessageBuilder
-
-    @Autowired
     private lateinit var testSettingDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @Before

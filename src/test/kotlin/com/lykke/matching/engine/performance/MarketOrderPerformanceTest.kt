@@ -53,7 +53,7 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
         primaryOrdersDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client1"))
         initServices()
 
-        counter.executeAction { marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder())) }
+        counter.executeAction { marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder())) }
 
         return counter.getAverageTime()
     }
@@ -65,7 +65,7 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
         primaryOrdersDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client2"))
         initServices()
 
-        counter.executeAction {marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -1000.0)))}
+        counter.executeAction {marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -1000.0)))}
         return counter.getAverageTime()
     }
 
@@ -77,7 +77,7 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
 
         initServices()
 
-        counter.executeAction { marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -1500.0))) }
+        counter.executeAction { marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -1500.0))) }
 
         return counter.getAverageTime()
     }
@@ -90,7 +90,7 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 1500.0)
         testBalanceHolderWrapper.updateBalance("Client3", "EUR", 2000.0)
 
-        counter.executeAction { marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -2000.0))) }
+        counter.executeAction { marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -2000.0))) }
         return counter.getAverageTime()
     }
 
@@ -100,7 +100,7 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
         primaryOrdersDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client3"))
         initServices()
 
-        counter.executeAction { marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0))) }
+        counter.executeAction { marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0))) }
         return counter.getAverageTime()
     }
 
@@ -113,9 +113,9 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
                 5, BigDecimal.valueOf(0.1), BigDecimal.valueOf(0.2)))
         initServices()
 
-        counter.executeAction { marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(volume = 0.09))) }
-        counter.executeAction { marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(volume = -0.19, straight = false))) }
-        counter.executeAction { marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(volume = 0.2, straight = false))) }
+        counter.executeAction { marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(volume = 0.09))) }
+        counter.executeAction { marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(volume = -0.19, straight = false))) }
+        counter.executeAction { marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(volume = 0.2, straight = false))) }
 
         return counter.getAverageTime()
     }
@@ -130,7 +130,7 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "EUR", 1000.0)
 
 
-        counter.executeAction {marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))}
+        counter.executeAction {marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))}
         return counter.getAverageTime()
     }
 
@@ -145,7 +145,7 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "EUR", 0.1)
         testBalanceHolderWrapper.updateBalance("Client4", "JPY", 100.0)
 
-        counter.executeAction {marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURJPY", volume = 10.0, straight = false)))}
+        counter.executeAction {marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURJPY", volume = 10.0, straight = false)))}
 
         return counter.getAverageTime()
     }
@@ -157,8 +157,8 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
         initServices()
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 1500.0)
 
-        counter.executeAction { marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0))) }
-        counter.executeAction { marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0))) }
+        counter.executeAction { marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0))) }
+        counter.executeAction { marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0))) }
         return counter.getAverageTime()
     }
 
@@ -173,7 +173,7 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 150.0)
         testBalanceHolderWrapper.updateBalance("Client4", "EUR", 1000.0)
 
-        counter.executeAction {marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))}
+        counter.executeAction {marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))}
         return counter.getAverageTime()
     }
 
@@ -191,7 +191,7 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
         testBalanceHolderWrapper.updateBalance("Client1", "SLR", 100000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 31.95294)
 
-        counter.executeAction { marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "SLRBTC", volume = 25000.0, straight = true))) }
+        counter.executeAction { marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "SLRBTC", volume = 25000.0, straight = true))) }
 
         return counter.getAverageTime()
     }
@@ -204,7 +204,7 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
         testBalanceHolderWrapper.updateBalance("Client3", "EUR", 500.0)
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 750.0)
 
-        counter.executeAction { marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -750.0, straight = false))) }
+        counter.executeAction { marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -750.0, straight = false))) }
         return counter.getAverageTime()
     }
 
@@ -218,7 +218,7 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
         testBalanceHolderWrapper.updateBalance("Client3", "EUR", 3000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 2000.0)
 
-        counter.executeAction { marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1490.0, straight = false))) }
+        counter.executeAction { marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1490.0, straight = false))) }
         return counter.getAverageTime()
     }
 }

@@ -58,9 +58,6 @@ class AllOrdersCancellerTest: AbstractTest() {
     }
 
     @Autowired
-    private lateinit var messageBuilder: MessageBuilder
-
-    @Autowired
     private lateinit var allOrdersCanceller: AllOrdersCanceller
 
     @Autowired
