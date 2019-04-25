@@ -18,7 +18,6 @@ import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class)])
@@ -55,14 +54,38 @@ class MarketOrderPreprocessorTest: AbstractTest() {
         marketOrder = event.orders.single { it.orderType == OrderType.MARKET }
         assertEquals(com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus.REJECTED, marketOrder.status)
         assertEquals(OrderRejectReason.TOO_SMALL_VOLUME, marketOrder.rejectReason)
+    }
 
-        marketOrderPreprocessor.preProcess(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(volume = 0.2, straight = false)))
-        assertEquals(1, rabbitSwapListener.getCount())
-        marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
-        assertTrue(OrderStatus.TooSmallVolume.name != marketOrderReport.order.status)
+    @Test
+    fun testNotStraightOrderMaxValue() {
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
+                maxValue = BigDecimal.valueOf(10000)))
+        assetPairsCache.update()
 
-        event = clientsEventsQueue.poll() as ExecutionEvent
-        marketOrder = event.orders.single { it.orderType == OrderType.MARKET }
-        assertTrue(OrderRejectReason.TOO_SMALL_VOLUME != marketOrder.rejectReason)
+        marketOrderPreprocessor.preProcess(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client1", assetId = "BTCUSD", volume = 10001.0, straight = false)))
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, event.orders.size)
+        val eventOrder = event.orders.single()
+        assertEquals(com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus.REJECTED, eventOrder.status)
+        assertEquals(OrderRejectReason.INVALID_VALUE, eventOrder.rejectReason)
+    }
+
+    @Test
+    fun testStraightOrderMaxVolume() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
+                maxVolume = BigDecimal.valueOf(1.0)))
+        assetPairsCache.update()
+
+        marketOrderPreprocessor.preProcess(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client1", assetId = "BTCUSD", volume = -1.1)))
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, event.orders.size)
+        val eventOrder = event.orders.single()
+        assertEquals(com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus.REJECTED, eventOrder.status)
+        assertEquals(OrderRejectReason.INVALID_VOLUME, eventOrder.rejectReason)
     }
 }

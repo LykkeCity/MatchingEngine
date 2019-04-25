@@ -47,18 +47,28 @@ class MarketOrderContextParser(private val assetsPairsHolder: AssetsPairsHolder,
                 assetPair,
                 getBaseAsset(marketOrder, assetPair)?.let { assetsHolder.getAssetAllowNulls(it) },
                 getQuotingAsset(marketOrder, assetPair)?.let { assetsHolder.getAssetAllowNulls(it) },
+                getFeeInstruction(message),
+                getFeeInstructions(message),
                 applicationSettingsHolder.marketOrderPriceDeviationThreshold(message.assetPairId),
                 processedMessage,
                 marketOrder)
     }
 
     private fun getMarketOrder(message: ProtocolMessages.MarketOrder): MarketOrder {
-        val feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
-        val feeInstructions = NewFeeInstruction.create(message.feesList)
+        val feeInstruction = getFeeInstruction(message)
+        val feeInstructions = getFeeInstructions(message)
 
         return MarketOrder(uuidHolder.getNextValue(), message.uid, message.assetPairId, message.clientId, BigDecimal.valueOf(message.volume), null,
                 OrderStatus.Processing.name, null, Date(message.timestamp), null, null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume),
                 feeInstruction, listOfFee(feeInstruction, feeInstructions))
+    }
+
+    private fun getFeeInstruction(message: ProtocolMessages.MarketOrder): FeeInstruction? {
+        return if (message.hasFee()) FeeInstruction.create(message.fee) else null
+    }
+
+    private fun getFeeInstructions(message: ProtocolMessages.MarketOrder): List<NewFeeInstruction> {
+        return NewFeeInstruction.create(message.feesList)
     }
 
     private fun getBaseAsset(order: MarketOrder, assetPair: AssetPair?): String? {

@@ -167,22 +167,6 @@ class MarketOrderInputValidatorTest: AbstractTest() {
         }
     }
 
-    @Test(expected = OrderValidationException::class)
-    fun testInvalidPriceAccuracy() {
-        //given
-        val marketOrderBuilder = getDefaultMarketOrderBuilder()
-        val order = toMarketOrder(marketOrderBuilder.build())
-        order.price = BigDecimal.valueOf(1.1111)
-
-        //when
-        try {
-            marketOrderInputValidator.performValidation(getOrderContext(order))
-        } catch (e: OrderValidationException) {
-            assertEquals(OrderStatus.InvalidPriceAccuracy, e.orderStatus)
-            throw e
-        }
-    }
-
     @Test
     fun testValidData() {
         //given
@@ -202,18 +186,6 @@ class MarketOrderInputValidatorTest: AbstractTest() {
         return MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, BigDecimal.valueOf(message.volume), null,
                 OrderStatus.Processing.name, now, Date(message.timestamp), now, null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume),
                 NewFeeInstruction.create(fee ?: message.fee), emptyList())
-    }
-
-    private fun getOrderBook(isBuy: Boolean): PriorityBlockingQueue<LimitOrder> {
-        val assetOrderBook = AssetOrderBook(ASSET_PAIR_ID)
-        val now = Date()
-        assetOrderBook.addOrder(LimitOrder("test", "test",
-                ASSET_PAIR_ID, CLIENT_NAME, BigDecimal.valueOf(1.0), BigDecimal.valueOf(1.0),
-                OrderStatus.InOrderBook.name, now, now, now, BigDecimal.valueOf(1.0), now, BigDecimal.valueOf(1.0),
-                null, null, null, null, null, null, null, null,
-                null, null, null, null))
-
-        return assetOrderBook.getOrderBook(isBuy)
     }
 
     private fun getDefaultMarketOrderBuilder(): ProtocolMessages.MarketOrder.Builder {

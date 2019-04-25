@@ -4,6 +4,8 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.context.MarketOrderContext
+import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
+import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.order.OrderStatus
@@ -18,17 +20,18 @@ import java.math.BigDecimal
 class MarketOrderInputValidatorImpl(private val applicationSettingsHolder: ApplicationSettingsHolder): MarketOrderInputValidator {
     override fun performValidation(marketOrderContext: MarketOrderContext) {
         val order = marketOrderContext.marketOrder
+
         val assetPair= marketOrderContext.assetPair
         isAssetKnown(order, assetPair)
         isAssetEnabled(order, assetPair!!)
         isVolumeValid(order, assetPair)
-        isFeeValid(order)
+        isFeeValid(marketOrderContext.fee, marketOrderContext.fees, order)
         isVolumeAccuracyValid(order, marketOrderContext.baseAsset!!)
         isPriceAccuracyValid(order, assetPair)
     }
 
-    private fun isFeeValid(order: MarketOrder) {
-        if (!checkFee(order.fee, order.fees)) {
+    private fun isFeeValid(feeInstruction: FeeInstruction?, feeInstructions: List<NewFeeInstruction>?, order: MarketOrder) {
+        if (!checkFee(feeInstruction, feeInstructions)) {
             throw OrderValidationException(OrderStatus.InvalidFee,
                     "Invalid fee (order id: ${order.id}, order externalId: ${order.externalId})")
         }

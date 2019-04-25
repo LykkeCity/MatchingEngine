@@ -737,39 +737,6 @@ class MarketOrderServiceTest : AbstractTest() {
     }
 
     @Test
-    fun testNotStraightOrderMaxValue() {
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
-                maxValue = BigDecimal.valueOf(10000)))
-        assetPairsCache.update()
-
-        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "BTCUSD", volume = 10001.0, straight = false)))
-
-        assertEquals(1, clientsEventsQueue.size)
-        val event = clientsEventsQueue.poll() as ExecutionEvent
-        assertEquals(1, event.orders.size)
-        val eventOrder = event.orders.single()
-        assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
-        assertEquals(OrderRejectReason.INVALID_VALUE, eventOrder.rejectReason)
-    }
-
-    @Test
-    fun testStraightOrderMaxVolume() {
-        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
-                maxVolume = BigDecimal.valueOf(1.0)))
-        assetPairsCache.update()
-
-        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "BTCUSD", volume = -1.1)))
-
-        assertEquals(1, clientsEventsQueue.size)
-        val event = clientsEventsQueue.poll() as ExecutionEvent
-        assertEquals(1, event.orders.size)
-        val eventOrder = event.orders.single()
-        assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
-        assertEquals(OrderRejectReason.INVALID_VOLUME, eventOrder.rejectReason)
-    }
-
-    @Test
     fun testNotStraightOrderMaxVolume() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 11000.0)
