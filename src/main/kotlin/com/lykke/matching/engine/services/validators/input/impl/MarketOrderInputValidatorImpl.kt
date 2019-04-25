@@ -1,11 +1,11 @@
 package com.lykke.matching.engine.services.validators.input.impl
 
+import com.lykke.matching.engine.daos.Asset
+import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.context.MarketOrderContext
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
@@ -15,18 +15,16 @@ import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
-class MarketOrderInputValidatorImpl(private val assetsPairsHolder: AssetsPairsHolder,
-                                    private val assetsHolder: AssetsHolder,
-                                    private val applicationSettingsHolder: ApplicationSettingsHolder): MarketOrderInputValidator {
+class MarketOrderInputValidatorImpl(private val applicationSettingsHolder: ApplicationSettingsHolder): MarketOrderInputValidator {
     override fun performValidation(marketOrderContext: MarketOrderContext) {
         val order = marketOrderContext.marketOrder
-
-        isAssetKnown(order)
-        isAssetEnabled(order)
-        isVolumeValid(order)
+        val assetPair= marketOrderContext.assetPair
+        isAssetKnown(order, assetPair)
+        isAssetEnabled(order, assetPair!!)
+        isVolumeValid(order, assetPair)
         isFeeValid(order)
-        isVolumeAccuracyValid(order)
-        isPriceAccuracyValid(order)
+        isVolumeAccuracyValid(order, marketOrderContext.baseAsset!!)
+        isPriceAccuracyValid(order, assetPair)
     }
 
     private fun isFeeValid(order: MarketOrder) {
@@ -36,16 +34,15 @@ class MarketOrderInputValidatorImpl(private val assetsPairsHolder: AssetsPairsHo
         }
     }
 
-    private fun isVolumeValid(order: MarketOrder) {
+    private fun isVolumeValid(order: MarketOrder, assetPair: AssetPair) {
         if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, order.volume)) {
             throw OrderValidationException(OrderStatus.InvalidVolume, "Volume can not be equal to zero")
         }
 
-        if (!OrderValidationUtils.checkMinVolume(order, assetsPairsHolder.getAssetPair(order.assetPairId))) {
+        if (!OrderValidationUtils.checkMinVolume(order, assetPair)) {
             throw OrderValidationException(OrderStatus.TooSmallVolume, "Too small volume for $order")
         }
 
-        val assetPair = getAssetPair(order)
         if (order.isStraight() && assetPair.maxVolume != null && order.getAbsVolume() > assetPair.maxVolume) {
             throw OrderValidationException(OrderStatus.InvalidVolume, "Too large volume for $order")
         }
@@ -54,24 +51,21 @@ class MarketOrderInputValidatorImpl(private val assetsPairsHolder: AssetsPairsHo
         }
     }
 
-    private fun isAssetEnabled(order: MarketOrder) {
-        val assetPair = getAssetPair(order)
+    private fun isAssetEnabled(order: MarketOrder, assetPair: AssetPair) {
         if (applicationSettingsHolder.isAssetDisabled(assetPair.baseAssetId)
                 || applicationSettingsHolder.isAssetDisabled(assetPair.quotingAssetId)) {
             throw OrderValidationException(OrderStatus.DisabledAsset, "Disabled asset $order")
         }
     }
 
-    private fun isAssetKnown(order: MarketOrder) {
-        try {
-            getAssetPair(order)
-        } catch (e: Exception) {
+    private fun isAssetKnown(order: MarketOrder, assetPair: AssetPair?) {
+        if (assetPair == null) {
             throw OrderValidationException(OrderStatus.UnknownAsset,  "Unknown asset: ${order.assetPairId}")
         }
     }
 
-    private fun isVolumeAccuracyValid(order: MarketOrder) {
-        val baseAssetVolumeAccuracy = assetsHolder.getAsset(getBaseAsset(order)).accuracy
+    private fun isVolumeAccuracyValid(order: MarketOrder, baseAsset: Asset) {
+        val baseAssetVolumeAccuracy = baseAsset.accuracy
         val volumeAccuracyValid = NumberUtils.isScaleSmallerOrEqual(order.volume, baseAssetVolumeAccuracy)
 
         if (!volumeAccuracyValid) {
@@ -80,20 +74,13 @@ class MarketOrderInputValidatorImpl(private val assetsPairsHolder: AssetsPairsHo
         }
     }
 
-    private fun isPriceAccuracyValid(order: MarketOrder) {
+    private fun isPriceAccuracyValid(order: MarketOrder, assetPair: AssetPair) {
         val price = order.price ?: return
 
-        val priceAccuracyValid = NumberUtils.isScaleSmallerOrEqual(price, getAssetPair(order).accuracy)
+        val priceAccuracyValid = NumberUtils.isScaleSmallerOrEqual(price, assetPair.accuracy)
 
         if (!priceAccuracyValid) {
             throw OrderValidationException(OrderStatus.InvalidPriceAccuracy, "Invalid order accuracy, ${order.assetPairId}, price: ${order.price}")
         }
     }
-
-    private fun getBaseAsset(order: MarketOrder): String {
-        val assetPair = getAssetPair(order)
-        return if (order.isStraight()) assetPair.baseAssetId else assetPair.quotingAssetId
-    }
-
-    private fun getAssetPair(order: MarketOrder) = assetsPairsHolder.getAssetPair(order.assetPairId)
 }

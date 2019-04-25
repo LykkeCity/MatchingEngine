@@ -130,6 +130,7 @@ class MarketOrderPreprocessor(marketOrderContextParser: MarketOrderContextParser
     private fun sendErrorNotification(messageWrapper: MessageWrapper,
                                       order: MarketOrder,
                                       now: Date) {
+        order.register(Date())
         val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
         rabbitSwapQueue.put(marketOrderWithTrades)
         val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),

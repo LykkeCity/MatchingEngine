@@ -200,42 +200,7 @@ class MarketOrderServiceTest : AbstractTest() {
         assertEquals(OrderRejectReason.NOT_ENOUGH_FUNDS, marketOrder.rejectReason)
     }
 
-    @Test
-    fun testSmallVolume() {
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, BigDecimal.valueOf(0.1), BigDecimal.valueOf(0.2)))
-        initServices()
 
-        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(volume = 0.09)))
-        assertEquals(1, rabbitSwapListener.getCount())
-        var marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
-        assertEquals(TooSmallVolume.name, marketOrderReport.order.status)
-
-        var event = clientsEventsQueue.poll() as ExecutionEvent
-        var marketOrder = event.orders.single { it.orderType == OrderType.MARKET }
-        assertEquals(OutgoingOrderStatus.REJECTED, marketOrder.status)
-        assertEquals(OrderRejectReason.TOO_SMALL_VOLUME, marketOrder.rejectReason)
-
-        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(volume = -0.19, straight = false)))
-        assertEquals(1, rabbitSwapListener.getCount())
-        marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
-        assertEquals(TooSmallVolume.name, marketOrderReport.order.status)
-
-        event = clientsEventsQueue.poll() as ExecutionEvent
-        marketOrder = event.orders.single { it.orderType == OrderType.MARKET }
-        assertEquals(OutgoingOrderStatus.REJECTED, marketOrder.status)
-        assertEquals(OrderRejectReason.TOO_SMALL_VOLUME, marketOrder.rejectReason)
-
-        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(volume = 0.2, straight = false)))
-        assertEquals(1, rabbitSwapListener.getCount())
-        marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
-        assertTrue(TooSmallVolume.name != marketOrderReport.order.status)
-
-        event = clientsEventsQueue.poll() as ExecutionEvent
-        marketOrder = event.orders.single { it.orderType == OrderType.MARKET }
-        assertTrue(OrderRejectReason.TOO_SMALL_VOLUME != marketOrder.rejectReason)
-    }
 
     @Test
     fun testMatchOneToOne() {

@@ -192,7 +192,7 @@ abstract class AbstractPerformanceTest {
                 cashTransferContextParser,
                 LimitOrderCancelOperationContextParser(),
                 LimitOrderMassCancelOperationContextParser(),
-                MarketOrderContextParser(assetsPairsHolder, uuidHolder, applicationSettingsHolder))
+                MarketOrderContextParser(assetsPairsHolder, assetsHolder, uuidHolder, applicationSettingsHolder))
 
         genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, expiryOrdersQueue)
 

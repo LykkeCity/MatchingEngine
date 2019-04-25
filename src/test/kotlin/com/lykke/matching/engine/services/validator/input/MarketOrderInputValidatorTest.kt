@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services.validator.input
 
+import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
@@ -13,9 +14,8 @@ import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
-import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.AssetOrderBook
@@ -39,7 +39,7 @@ import kotlin.test.assertEquals
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (MarketOrderInputValidatorTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class MarketOrderInputValidatorTest {
+class MarketOrderInputValidatorTest: AbstractTest() {
     companion object {
         val CLIENT_NAME = "Client"
         val OPERATION_ID = "test"
@@ -81,7 +81,7 @@ class MarketOrderInputValidatorTest {
     private lateinit var marketOrderInputValidator: MarketOrderInputValidator
 
     @Autowired
-    private lateinit var testDictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor
+    private lateinit var assetsHolder: AssetsHolder
 
     @Autowired
     private lateinit var assetsPairsHolder: AssetsPairsHolder
@@ -194,11 +194,7 @@ class MarketOrderInputValidatorTest {
     }
 
     private fun getOrderContext(order: MarketOrder): MarketOrderContext {
-        return MarketOrderContext("testMessageId",
-                assetsPairsHolder.getAssetPairAllowNulls(order.assetPairId),
-                BigDecimal.valueOf(1000),
-                ProcessedMessage(MessageType.MARKET_ORDER.type, Date().time, "test"),
-                order)
+        return messageBuilder.buildMarketOrderWrapper(order).context as MarketOrderContext
     }
 
     private fun toMarketOrder(message: ProtocolMessages.MarketOrder, fee: ProtocolMessages.Fee? = null): MarketOrder {

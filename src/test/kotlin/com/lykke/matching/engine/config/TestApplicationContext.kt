@@ -73,7 +73,6 @@ import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import com.lykke.utils.logging.ThrottlingLogger
 import org.mockito.Mockito
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -546,9 +545,11 @@ open class TestApplicationContext {
 
     @Bean
     open fun marketOrderContextParser(assetsPairsHolder: AssetsPairsHolder,
+                                      assetsHolder: AssetsHolder,
                                       uuidHolder: UUIDHolder,
                                       applicationSettingsHolder: ApplicationSettingsHolder): MarketOrderContextParser {
         return MarketOrderContextParser(assetsPairsHolder,
+                assetsHolder,
                 uuidHolder,
                 applicationSettingsHolder)
     }
@@ -633,7 +634,7 @@ open class TestApplicationContext {
     open fun marketOrderInputValidator(assetsPairsHolder: AssetsPairsHolder,
                                        assetsHolder: AssetsHolder,
                                        applicationSettingsHolder: ApplicationSettingsHolder): MarketOrderInputValidator {
-        return MarketOrderInputValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder)
+        return MarketOrderInputValidatorImpl(applicationSettingsHolder)
     }
 
     @Bean

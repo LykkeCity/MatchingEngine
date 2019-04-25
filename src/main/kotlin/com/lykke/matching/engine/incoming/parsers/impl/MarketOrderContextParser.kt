@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.incoming.parsers.impl
 
+import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.daos.v2.FeeInstruction
@@ -14,14 +15,16 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.daos.context.MarketOrderContext
+import com.lykke.matching.engine.holders.AssetsHolder
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.*
 
 @Component
 class MarketOrderContextParser(private val assetsPairsHolder: AssetsPairsHolder,
+                               private val assetsHolder: AssetsHolder,
                                private val uuidHolder: UUIDHolder,
-                               private val applicationSettingsHolder: ApplicationSettingsHolder): ContextParser<MarketOrderParsedData> {
+                               private val applicationSettingsHolder: ApplicationSettingsHolder) : ContextParser<MarketOrderParsedData> {
     override fun parse(messageWrapper: MessageWrapper): MarketOrderParsedData {
         val protoMessage = parse(messageWrapper.byteArray)
 
@@ -38,20 +41,32 @@ class MarketOrderContextParser(private val assetsPairsHolder: AssetsPairsHolder,
     }
 
     private fun getContext(messageId: String, message: ProtocolMessages.MarketOrder, processedMessage: ProcessedMessage): MarketOrderContext {
+        val assetPair = assetsPairsHolder.getAssetPairAllowNulls(message.assetPairId)
+        val marketOrder = getMarketOrder(message)
         return MarketOrderContext(messageId,
-                assetsPairsHolder.getAssetPairAllowNulls(message.assetPairId),
+                assetPair,
+                getBaseAsset(marketOrder, assetPair)?.let { assetsHolder.getAssetAllowNulls(it) },
+                getQuotingAsset(marketOrder, assetPair)?.let { assetsHolder.getAssetAllowNulls(it) },
                 applicationSettingsHolder.marketOrderPriceDeviationThreshold(message.assetPairId),
                 processedMessage,
-                getMarketOrder(message))
+                marketOrder)
     }
 
     private fun getMarketOrder(message: ProtocolMessages.MarketOrder): MarketOrder {
         val feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
         val feeInstructions = NewFeeInstruction.create(message.feesList)
 
-        return  MarketOrder(uuidHolder.getNextValue(), message.uid, message.assetPairId, message.clientId, BigDecimal.valueOf(message.volume), null,
+        return MarketOrder(uuidHolder.getNextValue(), message.uid, message.assetPairId, message.clientId, BigDecimal.valueOf(message.volume), null,
                 OrderStatus.Processing.name, null, Date(message.timestamp), null, null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume),
                 feeInstruction, listOfFee(feeInstruction, feeInstructions))
+    }
+
+    private fun getBaseAsset(order: MarketOrder, assetPair: AssetPair?): String? {
+        return if (order.isStraight()) assetPair?.baseAssetId else assetPair?.quotingAssetId
+    }
+
+    private fun getQuotingAsset(order: MarketOrder, assetPair: AssetPair?): String? {
+        return if (order.isStraight()) assetPair?.quotingAssetId else assetPair?.baseAssetId
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.MarketOrder {
