@@ -35,6 +35,7 @@ class MessageStatusUtils {
                 OrderStatus.InvalidVolumeAccuracy -> MessageStatus.INVALID_VOLUME_ACCURACY
                 OrderStatus.InvalidVolume -> MessageStatus.INVALID_VOLUME
                 OrderStatus.InvalidValue -> MessageStatus.INVALID_ORDER_VALUE
+                OrderStatus.OrderBookMaxSizeReached -> MessageStatus.RUNTIME
                 OrderStatus.TooHighPriceDeviation -> MessageStatus.TOO_HIGH_PRICE_DEVIATION
             }
         }

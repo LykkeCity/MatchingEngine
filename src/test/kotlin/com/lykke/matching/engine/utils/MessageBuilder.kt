@@ -74,7 +74,8 @@ companion object {
                 builder.addFees(buildFee(it))
             }
             return MessageWrapper("Test", MessageType.MARKET_ORDER.type, builder
-                    .build().toByteArray(), null)
+                    .build().toByteArray(), TestClientHandler()
+            )
         }
 
         fun buildFee(fee: FeeInstruction): ProtocolMessages.Fee {

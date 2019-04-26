@@ -38,8 +38,10 @@ import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.outgoing.senders.SpecializedEventSendersHolder
 import com.lykke.matching.engine.outgoing.senders.OutgoingEventProcessor
 import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.SpecializedEventSendersHolderImpl
 import com.lykke.matching.engine.services.CashInOutOperationService
 import com.lykke.matching.engine.services.CashTransferOperationService
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -318,16 +320,18 @@ open class TestApplicationContext {
     @Bean
     open fun reservedCashInOutOperation(balancesHolder: BalancesHolder,
                                         assetsHolder: AssetsHolder,
-                                        reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                         reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
                                         messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                                        uuidHolder: UUIDHolder): ReservedCashInOutOperationService {
+                                        uuidHolder: UUIDHolder,
+                                        messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                        outgoingEventProcessor: OutgoingEventProcessor): ReservedCashInOutOperationService {
         return ReservedCashInOutOperationService(assetsHolder,
                 balancesHolder,
-                reservedCashOperationQueue,
                 reservedCashInOutOperationValidator,
                 messageProcessingStatusHolder,
-                uuidHolder)
+                uuidHolder,
+                messageSequenceNumberHolder,
+                outgoingEventProcessor)
     }
 
     @Bean
@@ -631,10 +635,14 @@ open class TestApplicationContext {
         return LimitOrderInputValidatorImpl(applicationSettingsHolder, orderInputValidator)
     }
 
-
     @Bean
     open fun limitOrderBusinessValidator(orderBusinessValidator: OrderBusinessValidator): LimitOrderBusinessValidator {
         return LimitOrderBusinessValidatorImpl(orderBusinessValidator)
+    }
+
+    @Bean
+    fun orderBookMaxTotalSizeHolder(): OrderBookMaxTotalSizeHolder {
+        return OrderBookMaxTotalSizeHolderImpl(null)
     }
 
     @Bean
@@ -741,7 +749,7 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun specializedEventSendersByHandledClass(specializedEventSenders: List<SpecializedEventSender<*>>): Map<Class<*>, List<SpecializedEventSender<*>>> {
-        return specializedEventSenders.groupBy { it.getEventClass() }
+    open fun specializedEventSendersHolder(specializedEventSenders: List<SpecializedEventSender<*>>): SpecializedEventSendersHolder {
+        return SpecializedEventSendersHolderImpl(specializedEventSenders)
     }
 }
