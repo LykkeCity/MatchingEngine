@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.outgoing.senders.impl.specialized
 
-import com.lykke.matching.engine.daos.OutgoingEventData
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.CashInOutEventData
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
@@ -14,17 +13,16 @@ class CashInOutEventSender(private val messageSender: MessageSender) : Specializ
         return CashInOutEventData::class.java
     }
 
-    override fun sendEvent(event: OutgoingEventData) {
-        val cashInOutEventData = event as CashInOutEventData
-        val outgoingMessage = EventFactory.createCashInOutEvent(volume =  cashInOutEventData.walletOperation.amount,
-                sequenceNumber = cashInOutEventData.sequenceNumber,
-                messageId = cashInOutEventData.messageId,
-                requestId = cashInOutEventData.externalId,
-                date = cashInOutEventData.now,
+    override fun sendEvent(event: CashInOutEventData) {
+        val outgoingMessage = EventFactory.createCashInOutEvent(volume = event.walletOperation.amount,
+                sequenceNumber = event.sequenceNumber,
+                messageId = event.messageId,
+                requestId = event.externalId,
+                date = event.now,
                 messageType = MessageType.CASH_IN_OUT_OPERATION,
-                clientBalanceUpdates = cashInOutEventData.walletProcessor.getClientBalanceUpdates(),
-                cashInOperation = cashInOutEventData.walletOperation,
-                internalFees = cashInOutEventData.internalFees)
+                clientBalanceUpdates = event.walletProcessor.getClientBalanceUpdates(),
+                cashInOperation = event.walletOperation,
+                internalFees = event.internalFees)
 
         messageSender.sendMessage(outgoingMessage)
     }

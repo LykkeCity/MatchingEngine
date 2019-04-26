@@ -14,7 +14,6 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
-import junit.framework.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
@@ -24,6 +23,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import kotlin.test.assertEquals
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (CashTransferOperationBusinessValidatorTest.Config::class)])
@@ -84,7 +84,7 @@ class CashTransferOperationBusinessValidatorTest {
         try {
             cashTransferOperationBusinessValidator.performValidation(getContext(cashTransferOperationBuilder.build()))
         } catch (e: ValidationException) {
-            Assert.assertEquals(ValidationException.Validation.LOW_BALANCE, e.validationType)
+            assertEquals(ValidationException.Validation.LOW_BALANCE, e.validationType)
             throw e
         }
     }
@@ -110,7 +110,7 @@ class CashTransferOperationBusinessValidatorTest {
         try {
             cashTransferOperationBusinessValidator.performValidation(getContext(cashTransferOperationBuilder.build()))
         } catch (e: ValidationException) {
-            Assert.assertEquals(ValidationException.Validation.LOW_BALANCE, e.validationType)
+            assertEquals(ValidationException.Validation.LOW_BALANCE, e.validationType)
             throw e
         }
     }
