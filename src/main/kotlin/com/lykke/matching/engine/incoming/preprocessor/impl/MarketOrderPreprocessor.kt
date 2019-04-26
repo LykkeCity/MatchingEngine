@@ -106,25 +106,19 @@ class MarketOrderPreprocessor(marketOrderContextParser: MarketOrderContextParser
 
         //todo: Should we send RMQ notification ?
         sendErrorNotification(messageWrapper, context.marketOrder, Date())
-        saveProcessedMessage(messageWrapper, context)
+        saveProcessedMessage(context)
 
         writeErrorResponse(messageWrapper, marketOrder, message)
     }
 
-    private fun saveProcessedMessage(messageWrapper: MessageWrapper,
-                                     context: MarketOrderContext) {
+    private fun saveProcessedMessage(context: MarketOrderContext) {
 
         val persistSuccess = marketOrderPreprocessorPersistenceManager.persist(PersistenceData(context.processedMessage))
         if (!persistSuccess) {
             throw Exception("Persistence error")
         }
 
-        try {
-            processedMessagesCache.addMessage(context.processedMessage)
-        } catch (e: Exception) {
-            logger.error("Error occurred during processing of invalid market order data, context $context", e)
-            METRICS_LOGGER.logError("Error occurred during invalid data processing, ${messageWrapper.type} ${context.messageId}")
-        }
+        processedMessagesCache.addMessage(context.processedMessage)
     }
 
     private fun sendErrorNotification(messageWrapper: MessageWrapper,

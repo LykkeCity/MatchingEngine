@@ -49,7 +49,8 @@ class MarketOrderContextParser(private val assetsPairsHolder: AssetsPairsHolder,
                 getQuotingAsset(marketOrder, assetPair)?.let { assetsHolder.getAssetAllowNulls(it) },
                 getFeeInstruction(message),
                 getFeeInstructions(message),
-                applicationSettingsHolder.marketOrderPriceDeviationThreshold(message.assetPairId),
+                assetPair?.marketOrderPriceDeviationThreshold
+                        ?: applicationSettingsHolder.marketOrderPriceDeviationThreshold(message.assetPairId),
                 processedMessage,
                 marketOrder)
     }

@@ -97,7 +97,7 @@ class MarketOrderService @Autowired constructor(
         val matchingResult = matchingEngine.match(order,
                 getOrderBook(order),
                 messageWrapper.messageId!!,
-                priceDeviationThreshold = assetPair.marketOrderPriceDeviationThreshold ?: context.marketPriceDeviationThreshold,
+                priceDeviationThreshold = context.marketPriceDeviationThreshold,
                 executionContext = executionContext)
         marketOrderExecutionContext.matchingResult = matchingResult
 
