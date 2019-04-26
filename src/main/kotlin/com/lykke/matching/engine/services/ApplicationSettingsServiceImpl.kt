@@ -23,7 +23,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
                                      private val applicationEventPublisher: ApplicationEventPublisher) : ApplicationSettingsService {
 
     private companion object {
-        val COMMENT_FORMAT = "[%s] %s"
+        private const val COMMENT_FORMAT = "[%s] %s"
     }
 
     private enum class SettingOperation {

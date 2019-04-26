@@ -160,27 +160,6 @@ companion object {
                         reservedVolume?.toBigDecimal(),
                         fee = fee, fees = fees)
 
-        @Deprecated("Use buildMultiLimitOrderWrapper(5)")
-        fun buildMultiLimitOrderWrapper(pair: String,
-                                        clientId: String,
-                                        volumes: List<VolumePrice>,
-                                        ordersFee: List<LimitOrderFeeInstruction> = emptyList(),
-                                        ordersFees: List<List<NewLimitOrderFeeInstruction>> = emptyList(),
-                                        ordersUid: List<String> = emptyList(),
-                                        cancel: Boolean = false,
-                                        cancelMode: OrderCancelMode? = null
-        ): MessageWrapper {
-            val orders = volumes.mapIndexed { i, volume ->
-                IncomingLimitOrder(volume.volume.toDouble(),
-                        volume.price.toDouble(),
-                        if (i < ordersUid.size) ordersUid[i] else UUID.randomUUID().toString(),
-                        if (i < ordersFee.size) ordersFee[i] else null,
-                        if (i < ordersFees.size) ordersFees[i] else emptyList(),
-                        null)
-            }
-            return buildMultiLimitOrderWrapper(pair, clientId, orders, cancel, cancelMode)
-        }
-
         fun buildMultiLimitOrderWrapper(pair: String,
                                         clientId: String,
                                         orders: List<IncomingLimitOrder>,

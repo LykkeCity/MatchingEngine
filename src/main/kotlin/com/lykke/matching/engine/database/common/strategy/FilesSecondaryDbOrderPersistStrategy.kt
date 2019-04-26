@@ -10,11 +10,11 @@ class FilesSecondaryDbOrderPersistStrategy(private val persistedOrdersApplicatio
     override fun persistOrders(orderBooksData: OrderBooksPersistenceData?,
                       stopOrderBooksData: OrderBooksPersistenceData?) {
         if (orderBooksData?.isEmpty() == false) {
-            persistedOrdersApplicationEventPublisher.publishEvent(OrderBookPersistEvent(orderBooksData!!.orderBooks))
+            persistedOrdersApplicationEventPublisher.publishEvent(OrderBookPersistEvent(orderBooksData.orderBooks))
         }
 
         if (stopOrderBooksData?.isEmpty() == false) {
-            persistedStopApplicationEventPublisher.publishEvent(StopOrderBookPersistEvent(stopOrderBooksData!!.orderBooks))
+            persistedStopApplicationEventPublisher.publishEvent(StopOrderBookPersistEvent(stopOrderBooksData.orderBooks))
         }
     }
 }

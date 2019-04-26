@@ -2,7 +2,6 @@ package com.lykke.matching.engine.outgoing.senders.impl.specialized
 
 import com.lykke.matching.engine.daos.ExecutionData
 import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.OutgoingEventData
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
@@ -25,14 +24,12 @@ class ExecutionEventSender(private val messageSender: MessageSender,
         return ExecutionData::class.java
     }
 
-    override fun sendEvent(event: OutgoingEventData) {
-        val executionData = event as ExecutionData
+    override fun sendEvent(event: ExecutionData) {
+        sendNonRabbitEvents(event.executionContext)
+        sendOrderBooksEvents(event.executionContext)
 
-        sendNonRabbitEvents(executionData.executionContext)
-        sendOrderBooksEvents(executionData.executionContext)
-
-        sendTrustedClientsExecutionEventIfNeeded(executionData)
-        sendClientsExecutionEventIfNeeded(executionData)
+        sendTrustedClientsExecutionEventIfNeeded(event)
+        sendClientsExecutionEventIfNeeded(event)
     }
 
     private fun sendClientsExecutionEventIfNeeded(executionData: ExecutionData) {
@@ -41,13 +38,13 @@ class ExecutionEventSender(private val messageSender: MessageSender,
         val clientsLimitOrdersWithTrades = executionContext.getClientsLimitOrdersWithTrades().toList()
         if (isThereClientEvent(clientsLimitOrdersWithTrades, executionContext.marketOrderWithTrades)) {
             messageSender.sendMessage(EventFactory.createExecutionEvent(sequenceNumber = executionData.sequenceNumbers.clientsSequenceNumber!!,
-                    messageId =  executionContext.messageId,
+                    messageId = executionContext.messageId,
                     requestId = executionContext.requestId,
                     date = executionContext.date,
                     messageType = executionContext.messageType,
-                    clientBalanceUpdates =  executionContext.walletOperationsProcessor.getClientBalanceUpdates(),
-                    limitOrdersWithTrades =  clientsLimitOrdersWithTrades,
-                    marketOrderWithTrades =  executionContext.marketOrderWithTrades))
+                    clientBalanceUpdates = executionContext.walletOperationsProcessor.getClientBalanceUpdates(),
+                    limitOrdersWithTrades = clientsLimitOrdersWithTrades,
+                    marketOrderWithTrades = executionContext.marketOrderWithTrades))
         }
     }
 
@@ -56,12 +53,12 @@ class ExecutionEventSender(private val messageSender: MessageSender,
 
         val trustedClientsLimitOrdersWithTrades = executionContext.getTrustedClientsLimitOrdersWithTrades().toList()
         if (isThereTrustedClientEvent(trustedClientsLimitOrdersWithTrades)) {
-            messageSender.sendTrustedClientsMessage(EventFactory.createTrustedClientsExecutionEvent(sequenceNumber =  executionData.sequenceNumbers.trustedClientsSequenceNumber!!,
+            messageSender.sendTrustedClientsMessage(EventFactory.createTrustedClientsExecutionEvent(sequenceNumber = executionData.sequenceNumbers.trustedClientsSequenceNumber!!,
                     messageId = executionContext.messageId,
                     requestId = executionContext.requestId,
                     date = executionContext.date,
                     messageType = executionContext.messageType,
-                    limitOrdersWithTrades =  trustedClientsLimitOrdersWithTrades))
+                    limitOrdersWithTrades = trustedClientsLimitOrdersWithTrades))
         }
     }
 

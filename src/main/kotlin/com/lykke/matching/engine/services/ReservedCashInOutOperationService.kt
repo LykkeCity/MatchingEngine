@@ -1,16 +1,17 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.balance.BalanceException
+import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.messages.MessageStatus
-import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
+import com.lykke.matching.engine.outgoing.messages.ReservedCashInOutEventData
+import com.lykke.matching.engine.outgoing.senders.OutgoingEventProcessor
 import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -21,15 +22,15 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.util.Date
-import java.util.concurrent.BlockingQueue
 
 @Service
-class ReservedCashInOutOperationService @Autowired constructor (private val assetsHolder: AssetsHolder,
-                                                                private val balancesHolder: BalancesHolder,
-                                                                private val reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
-                                                                private val reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
-                                                                private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                                                                private val uuidHolder: UUIDHolder) : AbstractService {
+class ReservedCashInOutOperationService @Autowired constructor(private val assetsHolder: AssetsHolder,
+                                                               private val balancesHolder: BalancesHolder,
+                                                               private val reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
+                                                               private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                                               private val uuidHolder: UUIDHolder,
+                                                               private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                                               private val outgoingEventProcessor: OutgoingEventProcessor) : AbstractService {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(ReservedCashInOutOperationService::class.java.name)
@@ -62,18 +63,17 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
             return
         }
 
-        val accuracy = asset.accuracy
-
         val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
         try {
-            walletProcessor.preProcess(listOf(operation))
+            walletProcessor.preProcess(listOf(operation), allowTrustedClientReservedBalanceOperation = true)
         } catch (e: BalanceException) {
             LOGGER.info("Reserved cash in/out operation (${message.id}) failed due to invalid balance: ${e.message}")
             writeErrorResponse(messageWrapper, matchingEngineOperationId, MessageStatus.LOW_BALANCE, e.message)
             return
         }
 
-        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage, null, null, null)
+        val sequenceNumber = messageSequenceNumberHolder.getNewValue()
+        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage, null, null, sequenceNumber)
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {
@@ -81,14 +81,17 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
             LOGGER.info("Reserved cash in/out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.reservedVolume)}: unable to save balance")
             return
         }
-        walletProcessor.apply().sendNotification(message.id, MessageType.RESERVED_CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
 
-        reservedCashOperationQueue.put(ReservedCashOperation(message.id,
-                operation.clientId,
+        walletProcessor.apply()
+
+        outgoingEventProcessor.submitReservedCashInOutEvent(ReservedCashInOutEventData(sequenceNumber,
+                messageWrapper.messageId!!,
+                message.id,
                 now,
-                NumberUtils.setScaleRoundHalfUp(operation.reservedAmount, accuracy).toPlainString(),
-                operation.assetId,
-                messageWrapper.messageId!!))
+                walletProcessor.getClientBalanceUpdates(),
+                operation,
+                walletProcessor,
+                asset.accuracy))
 
         writeResponse(messageWrapper, matchingEngineOperationId, MessageStatus.OK)
 
@@ -116,7 +119,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
     }
 
 
-    override fun writeResponse(messageWrapper: MessageWrapper,  status: MessageStatus) {
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(status.type)
         )
@@ -133,7 +136,6 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
     private fun isCashIn(amount: Double): Boolean {
         return amount > 0
     }
-
 
     private fun getMessage(messageWrapper: MessageWrapper): ProtocolMessages.ReservedCashInOutOperation {
         if (messageWrapper.parsedMessage == null) {
