@@ -457,7 +457,6 @@ class FeeProcessorTest {
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 1.12)
 
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
         operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-10.12)))
         operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(10.12)))
         val receiptOperation = operations[1]

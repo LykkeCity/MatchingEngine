@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.outgoing.senders.impl.specialized
 
-import com.lykke.matching.engine.daos.OutgoingEventData
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.CashOperation
@@ -8,7 +7,6 @@ import com.lykke.matching.engine.outgoing.messages.CashInOutEventData
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
 import com.lykke.matching.engine.outgoing.senders.impl.OldFormatBalancesSender
-import com.lykke.matching.engine.services.BalancesServiceImpl
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.juli.logging.LogFactory
 import org.springframework.stereotype.Component
@@ -29,22 +27,20 @@ class CashInOutOldEventSender(private val rabbitCashInOutQueue: BlockingQueue<Ca
         return CashInOutEventData::class.java
     }
 
-    override fun sendEvent(event: OutgoingEventData) {
-        val cashInOutEventData = event as CashInOutEventData
-
-        sendBalanceUpdate(cashInOutEventData.externalId,
+    override fun sendEvent(event: CashInOutEventData) {
+        sendBalanceUpdate(event.externalId,
                 MessageType.CASH_IN_OUT_OPERATION,
-                cashInOutEventData.messageId,
-                cashInOutEventData.clientBalanceUpdates)
+                event.messageId,
+                event.clientBalanceUpdates)
 
         rabbitCashInOutQueue.put(CashOperation(
-                id = cashInOutEventData.externalId,
-                clientId = cashInOutEventData.walletOperation.clientId,
-                dateTime = cashInOutEventData.timestamp,
-                volume = NumberUtils.setScaleRoundHalfUp(cashInOutEventData.walletOperation.amount, cashInOutEventData.asset.accuracy).toPlainString(),
-                asset = cashInOutEventData.asset.assetId,
-                messageId = cashInOutEventData.messageId,
-                fees = cashInOutEventData.internalFees
+                id = event.externalId,
+                clientId = event.walletOperation.clientId,
+                dateTime = event.timestamp,
+                volume = NumberUtils.setScaleRoundHalfUp(event.walletOperation.amount, event.asset.accuracy).toPlainString(),
+                asset = event.asset.assetId,
+                messageId = event.messageId,
+                fees = event.internalFees
         ))
     }
 

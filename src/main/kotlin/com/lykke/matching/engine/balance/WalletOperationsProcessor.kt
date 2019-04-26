@@ -31,13 +31,15 @@ class WalletOperationsProcessor(private val balancesService: BalancesService,
 
     private val clientBalanceUpdatesByClientIdAndAssetId = HashMap<String, ClientBalanceUpdate>()
 
-    fun preProcess(operations: Collection<WalletOperation>, forceApply: Boolean = false): WalletOperationsProcessor {
+    fun preProcess(operations: Collection<WalletOperation>,
+                   allowInvalidBalance: Boolean = false,
+                   allowTrustedClientReservedBalanceOperation: Boolean = false): WalletOperationsProcessor {
         if (operations.isEmpty()) {
             return this
         }
         val changedAssetBalances = HashMap<String, ChangedAssetBalance>()
         operations.forEach { operation ->
-            if (isTrustedClientReservedBalanceOperation(operation)) {
+            if (!allowTrustedClientReservedBalanceOperation && isTrustedClientReservedBalanceOperation(operation)) {
                 return@forEach
             }
             val changedAssetBalance = changedAssetBalances.getOrPut(generateKey(operation)) {
@@ -46,7 +48,8 @@ class WalletOperationsProcessor(private val balancesService: BalancesService,
 
             val asset = assetsHolder.getAsset(operation.assetId)
             changedAssetBalance.balance = NumberUtils.setScaleRoundHalfUp(changedAssetBalance.balance + operation.amount, asset.accuracy)
-            changedAssetBalance.reserved = if (!applicationSettingsHolder.isTrustedClient(operation.clientId))
+
+            changedAssetBalance.reserved = if (allowTrustedClientReservedBalanceOperation || !applicationSettingsHolder.isTrustedClient(operation.clientId))
                 NumberUtils.setScaleRoundHalfUp(changedAssetBalance.reserved + operation.reservedAmount, asset.accuracy)
             else
                 changedAssetBalance.reserved
@@ -63,7 +66,7 @@ class WalletOperationsProcessor(private val balancesService: BalancesService,
         try {
             changedAssetBalances.values.forEach { validateBalanceChange(it) }
         } catch (e: BalanceException) {
-            if (!forceApply) {
+            if (!allowInvalidBalance) {
                 throw e
             }
             val message = "Force applying of invalid balance: ${e.message}"

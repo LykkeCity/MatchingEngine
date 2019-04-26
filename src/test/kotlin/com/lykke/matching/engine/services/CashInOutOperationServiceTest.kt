@@ -5,21 +5,26 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.notification.TestReservedCashOperationListener
 import com.lykke.matching.engine.outgoing.messages.CashOperation
+import com.lykke.matching.engine.outgoing.messages.v2.enums.MessageType as OutgoingMessageType
 import com.lykke.matching.engine.outgoing.messages.v2.events.CashInEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.CashOutEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.ReservedBalanceUpdateEvent
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstruction
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstructions
 import com.lykke.matching.engine.utils.assertEquals
+import com.lykke.matching.engine.utils.getSetting
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
@@ -51,6 +56,9 @@ class CashInOutOperationServiceTest : AbstractTest() {
 
     @Autowired
     private lateinit var balancesService: BalancesService
+
+    @Autowired
+    private lateinit var testSettingDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @TestConfiguration
     open class Config {
@@ -116,6 +124,16 @@ class CashInOutOperationServiceTest : AbstractTest() {
         assertEquals("Client3", operation.clientId)
         assertEquals("50.00", operation.reservedVolume)
         assertEquals("Asset1", operation.asset)
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ReservedBalanceUpdateEvent
+
+        assertEquals("Client3", event.reservedBalanceUpdate.walletId)
+        assertEquals("Asset1", event.reservedBalanceUpdate.assetId)
+        assertEquals("50", event.reservedBalanceUpdate.volume)
+
+        assertEquals(1, event.balanceUpdates.size)
+        assertEventBalanceUpdate("Client3", "Asset1", "100", "100", "50", "100", event.balanceUpdates)
     }
 
     @Test
@@ -180,6 +198,37 @@ class CashInOutOperationServiceTest : AbstractTest() {
         assertEquals("Client3", operation.clientId)
         assertEquals("-49.00", operation.reservedVolume)
         assertEquals("Asset1", operation.asset)
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ReservedBalanceUpdateEvent
+
+        assertEquals(5, event.header.messageType.id)
+        assertEquals("Client3", event.reservedBalanceUpdate.walletId)
+        assertEquals("Asset1", event.reservedBalanceUpdate.assetId)
+        assertEquals("-49", event.reservedBalanceUpdate.volume)
+
+        assertEquals(1, event.balanceUpdates.size)
+        assertEventBalanceUpdate("Client3", "Asset1", "100", "100", "50", "1", event.balanceUpdates)
+    }
+
+    @Test
+    fun testReservedCashOutForTrustedClient() {
+        testSettingDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client3"))
+        applicationSettingsCache.update()
+
+        reservedCashInOutOperationService.processMessage(buildReservedCashInOutWrapper("Client3", "Asset1", -49.0))
+        assertBalance("Client3", "Asset1", 100.0, 1.0)
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ReservedBalanceUpdateEvent
+
+        assertEquals(5, event.header.messageType.id)
+        assertEquals("Client3", event.reservedBalanceUpdate.walletId)
+        assertEquals("Asset1", event.reservedBalanceUpdate.assetId)
+        assertEquals("-49", event.reservedBalanceUpdate.volume)
+
+        assertEquals(1, event.balanceUpdates.size)
+        assertEventBalanceUpdate("Client3", "Asset1", "100", "100", "50", "1", event.balanceUpdates)
     }
 
     @Test
@@ -212,10 +261,12 @@ class CashInOutOperationServiceTest : AbstractTest() {
         assertEquals("-24.00", operation.reservedVolume)
         assertEquals("Asset1", operation.asset)
 
+        clearMessageQueues()
         val messageWrapper1 = buildReservedCashInOutWrapper("Client3", "Asset1", -30.0)
         reservedCashInOutOperationService.processMessage(messageWrapper1)
         reservedBalance = testWalletDatabaseAccessor.getReservedBalance("Client3", "Asset1")
         assertEquals(BigDecimal.valueOf(26.0), reservedBalance)
+        assertEquals(0, clientsEventsQueue.size)
     }
 
     @Test

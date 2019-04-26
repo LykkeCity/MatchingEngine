@@ -12,6 +12,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.CashOutEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.CashTransferEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.messages.v2.events.ReservedBalanceUpdateEvent
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import java.math.BigDecimal
@@ -101,13 +102,13 @@ class EventFactory {
         }
 
         private fun createCashInEvent(sequenceNumber: Long,
-                              messageId: String,
-                              requestId: String,
-                              date: Date,
-                              messageType: MessageType,
-                              clientBalanceUpdates: List<ClientBalanceUpdate>,
-                              cashInOperation: WalletOperation,
-                              internalFees: List<Fee>): CashInEvent {
+                                      messageId: String,
+                                      requestId: String,
+                                      date: Date,
+                                      messageType: MessageType,
+                                      clientBalanceUpdates: List<ClientBalanceUpdate>,
+                                      cashInOperation: WalletOperation,
+                                      internalFees: List<Fee>): CashInEvent {
             return createEvent {
                 CashInEventBuilder()
                         .setHeaderData(sequenceNumber, messageId, requestId, date, messageType)
@@ -117,13 +118,13 @@ class EventFactory {
         }
 
         private fun createCashOutEvent(sequenceNumber: Long,
-                               messageId: String,
-                               requestId: String,
-                               date: Date,
-                               messageType: MessageType,
-                               clientBalanceUpdates: List<ClientBalanceUpdate>,
-                               cashOutOperation: WalletOperation,
-                               internalFees: List<Fee>): CashOutEvent {
+                                       messageId: String,
+                                       requestId: String,
+                                       date: Date,
+                                       messageType: MessageType,
+                                       clientBalanceUpdates: List<ClientBalanceUpdate>,
+                                       cashOutOperation: WalletOperation,
+                                       internalFees: List<Fee>): CashOutEvent {
             return createEvent {
                 CashOutEventBuilder()
                         .setHeaderData(sequenceNumber, messageId, requestId, date, messageType)
@@ -144,6 +145,21 @@ class EventFactory {
                 CashTransferEventBuilder()
                         .setHeaderData(sequenceNumber, messageId, requestId, date, messageType)
                         .setEventData(CashTransferData(clientBalanceUpdates, transferOperation, internalFees))
+                        .build()
+            }
+        }
+
+        fun createReservedBalanceUpdateEvent(sequenceNumber: Long,
+                                             messageId: String,
+                                             requestId: String,
+                                             date: Date,
+                                             messageType: MessageType,
+                                             clientBalanceUpdates: List<ClientBalanceUpdate>,
+                                             reservedBalanceUpdateOperation: WalletOperation): ReservedBalanceUpdateEvent {
+            return createEvent {
+                ReservedBalanceUpdateEventBuilder()
+                        .setHeaderData(sequenceNumber, messageId, requestId, date, messageType)
+                        .setEventData(ReservedBalanceUpdateData(clientBalanceUpdates, reservedBalanceUpdateOperation))
                         .build()
             }
         }

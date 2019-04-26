@@ -34,6 +34,9 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.outgoing.messages.ReservedCashInOutEventData
+import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
+import com.lykke.matching.engine.outgoing.senders.SpecializedEventSendersHolder
 import com.lykke.matching.engine.outgoing.senders.OutgoingEventProcessor
 import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
 import com.lykke.matching.engine.outgoing.senders.impl.OldFormatBalancesSender
@@ -44,6 +47,8 @@ import com.lykke.matching.engine.outgoing.senders.impl.specialized.CashTransferO
 import com.lykke.matching.engine.outgoing.senders.impl.specialized.CashTransferEventSender
 import com.lykke.matching.engine.outgoing.senders.impl.specialized.ExecutionEventSender
 import com.lykke.matching.engine.outgoing.senders.impl.specialized.OldFormatExecutionEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.specialized.ReservedCashInOutEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.specialized.ReservedCashInOutOldEventSender
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
@@ -96,10 +101,10 @@ open class TestExecutionContext {
 
 
     @Bean
-    open fun outgoingEventProcessor(messageSendersByEventClass: Map<Class<*>, List<SpecializedEventSender<*>>>,
+    open fun outgoingEventProcessor(specializedEventSendersHolder: SpecializedEventSendersHolder,
                                     @Qualifier("rabbitPublishersThreadPool")
                                     rabbitPublishersThreadPool: TaskExecutor): OutgoingEventProcessor {
-        return OutgoingEventProcessorImpl(outgoingEvents, messageSendersByEventClass, rabbitPublishersThreadPool)
+        return OutgoingEventProcessorImpl(outgoingEvents, specializedEventSendersHolder, rabbitPublishersThreadPool)
     }
 
     @Bean
@@ -137,6 +142,17 @@ open class TestExecutionContext {
     @Bean
     open fun specializedCashInOutEventSender(messageSender: MessageSender): SpecializedEventSender<CashInOutEventData> {
         return CashInOutEventSender(messageSender)
+    }
+
+    @Bean
+    open fun specializedReservedCashInOutEventSender(messageSender: MessageSender): SpecializedEventSender<ReservedCashInOutEventData> {
+        return ReservedCashInOutEventSender(messageSender)
+    }
+
+    @Bean
+    open fun specializedReservedCashInOutOldEventSender(reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>)
+            : SpecializedEventSender<ReservedCashInOutEventData> {
+        return ReservedCashInOutOldEventSender(reservedCashOperationQueue)
     }
 
     @Bean
