@@ -269,7 +269,7 @@ class MessageBuilder(private var singleLimitOrderContextParser: SingleLimitOrder
             builder.addFees(buildFee(it))
         }
         return marketOrderContextParser.parse(MessageWrapper("Test", MessageType.MARKET_ORDER.type, builder
-                .build().toByteArray(), null)).messageWrapper
+                .build().toByteArray(), TestClientHandler())).messageWrapper
     }
 
     fun buildTransferWrapper(fromClientId: String,
