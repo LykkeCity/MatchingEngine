@@ -12,6 +12,7 @@ class MessageRouter(
         private val cashTransferInputQueue: BlockingQueue<MessageWrapper>,
         private val limitOrderCancelInputQueue: BlockingQueue<MessageWrapper>,
         private val limitOrderMassCancelInputQueue: BlockingQueue<MessageWrapper>,
+        private val multilimitOrderInputQueue: BlockingQueue<MessageWrapper>,
         val preProcessedMessageQueue: BlockingQueue<MessageWrapper>
 ) {
     fun process(wrapper: MessageWrapper) {
@@ -21,6 +22,7 @@ class MessageRouter(
             MessageType.LIMIT_ORDER.type -> limitOrderInputQueue.put(wrapper)
             MessageType.LIMIT_ORDER_CANCEL.type -> limitOrderCancelInputQueue.put(wrapper)
             MessageType.LIMIT_ORDER_MASS_CANCEL.type -> limitOrderMassCancelInputQueue.put(wrapper)
+            MessageType.MULTI_LIMIT_ORDER.type -> multilimitOrderInputQueue.put(wrapper)
 
             else -> preProcessedMessageQueue.put(wrapper)
         }

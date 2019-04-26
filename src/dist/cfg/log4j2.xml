@@ -466,6 +466,11 @@
         </AsyncLogger>
 
         # Multi Limit Order
+        <Logger name="MultiLimitOrderPreProcessing"
+                     level="debug" additivity="false">
+            <AppenderRef ref="MultiLimitLog"/>
+        </Logger>
+
         <AsyncLogger name="com.lykke.matching.engine.services.validators.impl.MultiLimitOrderValidatorImpl"
                      level="debug" additivity="false">
             <AppenderRef ref="MultiLimitLog"/>

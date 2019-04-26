@@ -35,6 +35,11 @@ open class LoggerConfig {
     }
 
     @Bean
+    open fun multiLimitOrderPreProcessingLogger(): ThrottlingLogger {
+        return ThrottlingLogger.getLogger("MultiLimitOrderPreProcessing")
+    }
+
+    @Bean
     open fun singleLimitOrderPreProcessingLogger(): ThrottlingLogger {
         return ThrottlingLogger.getLogger("SingleLimitOrderPreProcessing")
     }

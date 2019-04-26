@@ -18,7 +18,6 @@ import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -140,7 +139,7 @@ class OrderBookMaxSizeTest : AbstractTest() {
     fun testMultiLimitOrder() {
         setMaxSizeOrderBook()
 
-        val messageWrapper = buildMultiLimitOrderWrapper(
+        val messageWrapper = messageBuilder.buildMultiLimitOrderWrapper(
                 "EURUSD", "Client1", listOf(IncomingLimitOrder(-200.0, 3.0, "order1"),
                 IncomingLimitOrder(-200.0, 3.1, uid = "order2")))
         multiLimitOrderService.processMessage(messageWrapper)

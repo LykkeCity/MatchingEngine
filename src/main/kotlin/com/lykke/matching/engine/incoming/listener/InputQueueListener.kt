@@ -6,6 +6,7 @@ import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import java.util.concurrent.BlockingQueue
 import javax.annotation.PostConstruct
+import javax.annotation.PreDestroy
 
 class InputQueueListener(private val inputQueue: BlockingQueue<MessageWrapper>,
                          private val preProcessor: MessagePreprocessor,
@@ -20,14 +21,34 @@ class InputQueueListener(private val inputQueue: BlockingQueue<MessageWrapper>,
     @PostConstruct
     fun init() = start()
 
+    @PreDestroy
+    fun shutdown() {
+        this.interrupt()
+    }
+
     override fun run() {
         while (true) {
             try {
-                preProcessor.preProcess(inputQueue.take())
+                if(!process()) {
+                    return
+                }
             } catch (e: Exception) {
                 logger.error(ERROR_MESSAGE, e)
                 METRICS_LOGGER.logError(ERROR_MESSAGE, e)
             }
         }
+    }
+
+
+    private fun process(): Boolean {
+        try {
+            val messageWrapper = inputQueue.take()
+            preProcessor.preProcess(messageWrapper)
+        } catch(e: InterruptedException) {
+            this.interrupt()
+            return false
+        }
+
+        return true
     }
 }

@@ -65,7 +65,6 @@ class LimitOrderInputValidatorTest {
         }
     }
 
-
     @Before
     fun init() {
         testDictionariesDatabaseAccessor.addAssetPair(MIN_VOLUME_ASSET_PAIR)

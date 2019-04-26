@@ -11,7 +11,6 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
 import org.junit.Test
@@ -77,7 +76,7 @@ class NegativePriceTest : AbstractTest() {
 
         initServices()
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("EURUSD",
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("EURUSD",
                 "Client",
                 listOf(
                         IncomingLimitOrder(1.0, 1.0, uid = "order1"),
