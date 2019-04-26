@@ -64,7 +64,6 @@ class MessageBuilder(private var singleLimitOrderContextParser: SingleLimitOrder
         fun buildFee(fee: FeeInstruction): ProtocolMessages.Fee {
             val builder = ProtocolMessages.Fee.newBuilder().setType(fee.type.externalId)
             fee.size?.let {
-            fee.size?.let {
                 builder.size = it.toDouble()
             }
             fee.sourceClientId?.let {
