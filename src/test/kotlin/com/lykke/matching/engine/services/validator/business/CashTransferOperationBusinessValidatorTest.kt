@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services.validator.business
 
+import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
@@ -11,7 +12,7 @@ import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
+import com.lykke.matching.engine.services.BalancesService
 import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import org.junit.Test
@@ -54,8 +55,9 @@ class CashTransferOperationBusinessValidatorTest {
 
         @Bean
         @Primary
-        open fun testBalanceHolderWrapper(balanceUpdateHandlerTest: BalanceUpdateHandlerTest, balancesHolder: BalancesHolder): TestBalanceHolderWrapper {
-            val testBalanceHolderWrapper = TestBalanceHolderWrapper(balanceUpdateHandlerTest, balancesHolder)
+        open fun testBalanceHolderWrapper(balancesService: BalancesService,
+                                          balancesHolder: BalancesHolder): TestBalanceHolderWrapper {
+            val testBalanceHolderWrapper = TestBalanceHolderWrapper(balancesService, balancesHolder)
             testBalanceHolderWrapper.updateBalance(CLIENT_NAME1, ASSET_ID, 100.0)
             testBalanceHolderWrapper.updateReservedBalance(CLIENT_NAME1, ASSET_ID, 50.0)
             return testBalanceHolderWrapper

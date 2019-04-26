@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.performance
 
+import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.OutgoingEventData
@@ -26,7 +27,6 @@ import com.lykke.matching.engine.holders.TestUUIDHolder
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
 import com.lykke.matching.engine.matching.MatchingEngine
-import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.ExecutionDataApplyService
 import com.lykke.matching.engine.order.ExecutionPersistenceService
 import com.lykke.matching.engine.order.ExpiryOrdersQueue
@@ -37,6 +37,7 @@ import com.lykke.matching.engine.order.process.StopLimitOrderProcessor
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.process.common.LimitOrdersCancellerImpl
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
+import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolderFactory
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.transaction.ExecutionEventsSequenceNumbersGenerator
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
@@ -81,6 +82,7 @@ abstract class AbstractPerformanceTest {
 
     protected lateinit var assetsHolder: AssetsHolder
     protected lateinit var balancesHolder: BalancesHolder
+    protected lateinit var balancesService: BalancesService
     protected lateinit var assetsPairsHolder: AssetsPairsHolder
     protected lateinit var assetCache: AssetsCache
     protected lateinit var balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder
@@ -130,6 +132,11 @@ abstract class AbstractPerformanceTest {
 
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
+    val currentTransactionBalancesHolderFactory = CurrentTransactionBalancesHolderFactory(balancesHolder)
+
+    val walletOperationsProcessorFactory = WalletOperationsProcessorFactory(currentTransactionBalancesHolderFactory,
+            applicationSettingsHolder, assetsHolder)
+
     val outgoingEventData = LinkedBlockingQueue<OutgoingEventData>()
 
     val messageSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
@@ -161,13 +168,10 @@ abstract class AbstractPerformanceTest {
         persistenceManager = TestPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor,
                 ordersDatabaseAccessorsHolder,
                 stopOrdersDatabaseAccessorsHolder)
-        balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder,
-                persistenceManager,
-                assetsHolder,
-                balanceUpdateQueue,
-                applicationSettingsHolder)
+        balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder)
+        balancesService = BalancesServiceImpl(balancesHolder, persistenceManager)
 
-        testBalanceHolderWrapper = TestBalanceHolderWrapper(BalanceUpdateHandlerTest(balanceUpdateQueue), balancesHolder)
+        testBalanceHolderWrapper = TestBalanceHolderWrapper(balancesService, balancesHolder)
         assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor, ApplicationEventPublisher {})
         assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
 
@@ -208,7 +212,7 @@ abstract class AbstractPerformanceTest {
                 executionPersistenceService,
                 outgoingEventProcessor)
 
-        val executionContextFactory = ExecutionContextFactory(balancesHolder,
+        val executionContextFactory = ExecutionContextFactory(walletOperationsProcessorFactory,
                 genericLimitOrderService,
                 genericStopLimitOrderService,
                 assetsHolder)

@@ -360,8 +360,7 @@ class MarketOrderServiceTest : AbstractTest() {
         assertEquals(OrderRejectReason.NOT_ENOUGH_FUNDS, eventMarketOrder.rejectReason)
         assertEquals(0, eventMarketOrder.trades?.size)
 
-        balancesHolder.updateBalance(
-                ProcessedMessage(MessageType.CASH_IN_OUT_OPERATION.type, System.currentTimeMillis(), "test"), 0, "Client4", "EUR", BigDecimal.valueOf(1000.0))
+        testBalanceHolderWrapper.updateBalance("Client4", "EUR", 1000.0)
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
 
         assertEquals(1, rabbitSwapListener.getCount())

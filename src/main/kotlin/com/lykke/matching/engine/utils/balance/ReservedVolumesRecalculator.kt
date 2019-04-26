@@ -14,9 +14,10 @@ import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
+import com.lykke.matching.engine.outgoing.senders.impl.OldFormatBalancesSender
+import com.lykke.matching.engine.services.BalancesService
 import com.lykke.matching.engine.outgoing.messages.v2.events.ReservedBalanceUpdateEvent
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.utils.NumberUtils
@@ -44,18 +45,15 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
                                                          private val applicationSettingsHolder: ApplicationSettingsHolder,
                                                          @Value("#{Config.me.correctReservedVolumes}") private val correctReservedVolumes: Boolean,
                                                          private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                                         private val messageSender: MessageSender) : ApplicationRunner {
+                                                         private val messageSender: MessageSender,
+                                                         private val balancesService: BalancesService,
+                                                         private val oldFormatBalancesSender: OldFormatBalancesSender) : ApplicationRunner {
     override fun run(args: ApplicationArguments?) {
         correctReservedVolumesIfNeed()
     }
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(ReservedVolumesRecalculator::class.java.name)
-
-        fun teeLog(message: String) {
-            println(message)
-            LOGGER.info(message)
-        }
     }
 
     fun correctReservedVolumesIfNeed() {
@@ -63,7 +61,7 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
             return
         }
 
-        teeLog("Starting order books analyze")
+        LOGGER.info("Starting order books analyze")
         recalculate()
     }
 
@@ -104,7 +102,7 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
                     balance.orderIds.add(order.externalId)
                 } catch (e: Exception) {
                     val errorMessage = "Unable to handle order (id: ${order.externalId}): ${e.message}"
-                    teeLog(errorMessage)
+                    LOGGER.info(errorMessage)
                 }
             }
         }
@@ -133,7 +131,7 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
                     if (!NumberUtils.equalsIgnoreScale(oldBalance, newBalance.volume)) {
                         val correction = ReservedVolumeCorrection(id, assetBalance.asset, newBalance.orderIds.joinToString(","), oldBalance, newBalance.volume)
                         corrections.add(correction)
-                        teeLog("1 $id, ${assetBalance.asset} : Old $oldBalance New $newBalance")
+                        LOGGER.info("1 $id, ${assetBalance.asset} : Old $oldBalance New $newBalance")
                         wallet.setReservedBalance(assetBalance.asset, newBalance.volume)
                         updatedWallets.add(wallet)
                         val balanceUpdate = ClientBalanceUpdate(id,
@@ -148,7 +146,7 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
                     val orderIds = newBalance?.orderIds?.joinToString(",")
                     val correction = ReservedVolumeCorrection(id, assetBalance.asset, orderIds, oldBalance, newBalance?.volume ?: BigDecimal.ZERO)
                     corrections.add(correction)
-                    teeLog("2 $id, ${assetBalance.asset} : Old $oldBalance New ${newBalance ?: 0.0}")
+                    LOGGER.info("2 $id, ${assetBalance.asset} : Old $oldBalance New ${newBalance ?: 0.0}")
                     wallet.setReservedBalance(assetBalance.asset, BigDecimal.ZERO)
                     updatedWallets.add(wallet)
                     val balanceUpdate = ClientBalanceUpdate(id,
@@ -183,14 +181,21 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
                         listOf(clientBalanceUpdate),
                         walletOperation))
             }
+            val balancesPersisted = balancesService.insertOrUpdateWallets(updatedWallets, sequenceNumber)
 
-            balancesHolder.insertOrUpdateWallets(updatedWallets, sequenceNumber)
+            if (!balancesPersisted) {
+                LOGGER.error("Can not persist balances during reserved balance recalculation, updated wallets size: ${updatedWallets.size}")
+                return
+            }
+
             reservedVolumesDatabaseAccessor.addCorrectionsInfo(corrections)
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(operationId, MessageType.LIMIT_ORDER.name, now, balanceUpdates, operationId))
+            oldFormatBalancesSender.sendBalanceUpdate(id = operationId,
+                    messageId = operationId,
+                    clientBalanceUpdates =  balanceUpdates,
+                    type = MessageType.LIMIT_ORDER)
             reservedBalanceUpdateEvents.forEach { messageSender.sendMessage(it) }
-
         }
-        teeLog("Reserved volume recalculation finished")
+        LOGGER.info("Reserved volume recalculation finished")
     }
 
 }

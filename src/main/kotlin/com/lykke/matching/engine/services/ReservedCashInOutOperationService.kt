@@ -2,8 +2,10 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.UUIDHolder
@@ -24,13 +26,14 @@ import java.math.BigDecimal
 import java.util.Date
 
 @Service
-class ReservedCashInOutOperationService @Autowired constructor(private val assetsHolder: AssetsHolder,
-                                                               private val balancesHolder: BalancesHolder,
-                                                               private val reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
-                                                               private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-                                                               private val uuidHolder: UUIDHolder,
-                                                               private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                                               private val outgoingEventProcessor: OutgoingEventProcessor) : AbstractService {
+class ReservedCashInOutOperationService @Autowired constructor (private val assetsHolder: AssetsHolder,
+                                                                private val walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
+                                                                private val reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator,
+                                                                private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
+                                                                private val persistenceManager: PersistenceManager,
+                                                                private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                                                private val uuidHolder: UUIDHolder,
+                                                                private val outgoingEventProcessor: OutgoingEventProcessor) : AbstractService {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(ReservedCashInOutOperationService::class.java.name)
@@ -63,7 +66,9 @@ class ReservedCashInOutOperationService @Autowired constructor(private val asset
             return
         }
 
-        val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
+        val accuracy = asset.accuracy
+
+        val walletProcessor = walletOperationsProcessorFactory.create(LOGGER)
         try {
             walletProcessor.preProcess(listOf(operation), allowTrustedClientReservedBalanceOperation = true)
         } catch (e: BalanceException) {
@@ -73,7 +78,11 @@ class ReservedCashInOutOperationService @Autowired constructor(private val asset
         }
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
-        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage, null, null, sequenceNumber)
+        val updated = persistenceManager.persist(PersistenceData(walletProcessor.persistenceData(),
+                messageWrapper.processedMessage,
+                null,
+                null,
+                sequenceNumber))
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {
