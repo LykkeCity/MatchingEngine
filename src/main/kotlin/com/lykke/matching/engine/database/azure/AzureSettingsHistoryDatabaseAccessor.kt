@@ -38,6 +38,18 @@ class AzureSettingsHistoryDatabaseAccessor(connectionString: String, configTable
         }
     }
 
+    override fun getAll(settingGroupName: String): List<SettingHistoryRecord> {
+        try {
+            val partitionFilter = TableQuery.generateFilterCondition(PARTITION_KEY, TableQuery.QueryComparisons.EQUAL, settingGroupName)
+
+            val query = TableQuery.from(AzureAppSettingHistory::class.java)
+                    .where(partitionFilter)
+            return historyTable.execute(query).map { toSettingHistoryRecord(it) }
+        } catch (e: Exception) {
+            throw RuntimeException("Not able to get from db all history records for: $settingGroupName")
+        }
+    }
+
     private fun toSettingHistoryRecord(azureAppSettingHistory: AzureAppSettingHistory): SettingHistoryRecord {
         return azureAppSettingHistory.let {
             SettingHistoryRecord(it.partitionKey,

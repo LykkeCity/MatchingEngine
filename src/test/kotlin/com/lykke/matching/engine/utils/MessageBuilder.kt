@@ -144,27 +144,6 @@ class MessageBuilder(private var singleLimitOrderContextParser: SingleLimitOrder
                         reservedVolume?.toBigDecimal(),
                         fee = fee, fees = fees)
 
-        @Deprecated("Use buildMultiLimitOrderWrapper(5)")
-        fun buildMultiLimitOrderWrapper(pair: String,
-                                        clientId: String,
-                                        volumes: List<VolumePrice>,
-                                        ordersFee: List<LimitOrderFeeInstruction> = emptyList(),
-                                        ordersFees: List<List<NewLimitOrderFeeInstruction>> = emptyList(),
-                                        ordersUid: List<String> = emptyList(),
-                                        cancel: Boolean = false,
-                                        cancelMode: OrderCancelMode? = null
-        ): MessageWrapper {
-            val orders = volumes.mapIndexed { i, volume ->
-                IncomingLimitOrder(volume.volume.toDouble(),
-                        volume.price.toDouble(),
-                        if (i < ordersUid.size) ordersUid[i] else UUID.randomUUID().toString(),
-                        if (i < ordersFee.size) ordersFee[i] else null,
-                        if (i < ordersFees.size) ordersFees[i] else emptyList(),
-                        null)
-            }
-            return buildMultiLimitOrderWrapper(pair, clientId, orders, cancel, cancelMode)
-        }
-
         fun buildMultiLimitOrderWrapper(pair: String,
                                         clientId: String,
                                         orders: List<IncomingLimitOrder>,
@@ -333,12 +312,14 @@ class MessageBuilder(private var singleLimitOrderContextParser: SingleLimitOrder
         return parsedData.messageWrapper
     }
 
-    fun buildLimitOrderMassCancelWrapper(clientId: String,
+    fun buildLimitOrderMassCancelWrapper(clientId: String? = null,
                                          assetPairId: String? = null,
                                          isBuy: Boolean? = null): MessageWrapper {
         val builder = ProtocolMessages.LimitOrderMassCancel.newBuilder()
                 .setUid(UUID.randomUUID().toString())
-                .setClientId(clientId)
+        clientId?.let {
+            builder.setClientId(it)
+        }
         assetPairId?.let {
             builder.setAssetPairId(it)
         }
