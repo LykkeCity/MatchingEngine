@@ -9,7 +9,6 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,8 +22,6 @@ import java.math.BigDecimal
 import kotlin.test.assertNotNull
 import com.lykke.matching.engine.utils.assertEquals
 import kotlin.test.assertEquals
-
-
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (RoundingTest.Config::class)])
@@ -67,7 +64,7 @@ class RoundingTest: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 1500.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = 1.0)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = 1.0)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -95,7 +92,7 @@ class RoundingTest: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "EUR", 1500.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1.0)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1.0)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -123,7 +120,7 @@ class RoundingTest: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "EUR", 1500.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = 1.0, straight = false)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = 1.0, straight = false)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -151,7 +148,7 @@ class RoundingTest: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 1500.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1.0, straight = false)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1.0, straight = false)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -179,7 +176,7 @@ class RoundingTest: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "CHF", 1.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCCHF", volume = 	-0.38, straight = false)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCCHF", volume = 	-0.38, straight = false)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -207,7 +204,7 @@ class RoundingTest: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 1500.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = 1.0)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = 1.0)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -235,7 +232,7 @@ class RoundingTest: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 1500.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = -1.0)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = -1.0)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -263,7 +260,7 @@ class RoundingTest: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 1500.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = 1.0, straight = false)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = 1.0, straight = false)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -291,7 +288,7 @@ class RoundingTest: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 1500.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = -1.0, straight = false)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = -1.0, straight = false)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -321,7 +318,7 @@ class RoundingTest: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "LKK", 50800.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCLKK", volume = -50800.0, straight = false)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCLKK", volume = -50800.0, straight = false)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -340,7 +337,7 @@ class RoundingTest: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "EUR", 0.00999999999999999)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURJPY", volume = 1.16, straight = false)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURJPY", volume = 1.16, straight = false)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -354,7 +351,7 @@ class RoundingTest: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 1.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCEUR", volume = -0.0001)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCEUR", volume = -0.0001)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -382,7 +379,7 @@ class RoundingTest: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 1.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCEUR", volume = -0.00043722)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCEUR", volume = -0.00043722)))
 
         val limitOrder = testOrderDatabaseAccessor.getOrders("BTCEUR", true).singleOrNull()
         assertNotNull(limitOrder)

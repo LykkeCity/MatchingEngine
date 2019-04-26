@@ -62,6 +62,11 @@ open class DatabaseAccessorConfig {
     open fun cashTransferPreprocessorPersistenceManager(cashTransferOperationsPreprocessorRedisConnection: Optional<RedisConnection>): PersistenceManager {
         return persistenceManagerFactory.get(cashTransferOperationsPreprocessorRedisConnection)
     }
+
+    @Bean
+    open fun marketOrderPreprocessorPersistenceManager(marketOrderOrderPreprocessorRedisConnection: Optional<RedisConnection>): PersistenceManager {
+        return persistenceManagerFactory.get(marketOrderOrderPreprocessorRedisConnection)
+    }
     //</editor-fold>
 
 

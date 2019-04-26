@@ -47,9 +47,6 @@ class NegativePriceTest : AbstractTest() {
         }
     }
 
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
-
     @Before
     fun setUp() {
         testBalanceHolderWrapper.updateBalance("Client", "USD", 1.0)

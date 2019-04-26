@@ -36,9 +36,6 @@ import kotlin.test.assertNull
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MinVolumeOrderCancellerTest : AbstractTest() {
 
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
-
     @TestConfiguration
     open class Config {
 

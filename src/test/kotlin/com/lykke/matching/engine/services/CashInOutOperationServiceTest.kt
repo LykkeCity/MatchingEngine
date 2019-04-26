@@ -20,7 +20,6 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.MessageType as Outgo
 import com.lykke.matching.engine.outgoing.messages.v2.events.CashInEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.CashOutEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.ReservedBalanceUpdateEvent
-import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstruction
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstructions
 import com.lykke.matching.engine.utils.assertEquals
@@ -47,9 +46,6 @@ class CashInOutOperationServiceTest : AbstractTest() {
 
     @Autowired
     private lateinit var testReservedCashOperationListener: TestReservedCashOperationListener
-
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
 
     @Autowired
     private lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService

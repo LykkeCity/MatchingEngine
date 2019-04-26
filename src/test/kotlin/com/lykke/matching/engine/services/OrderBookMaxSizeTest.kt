@@ -14,15 +14,12 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.socket.TestClientHandler
-import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -50,9 +47,6 @@ class OrderBookMaxSizeTest : AbstractTest() {
             return OrderBookMaxTotalSizeHolderImpl(MAX_SIZE)
         }
     }
-
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
 
     @Before
     fun setUp() {
@@ -168,7 +162,7 @@ class OrderBookMaxSizeTest : AbstractTest() {
     fun testMarketOrder() {
         setMaxSizeOrderBook()
 
-        val messageWrapper = buildMarketOrderWrapper(
+        val messageWrapper = messageBuilder.buildMarketOrderWrapper(
                 buildMarketOrder(clientId = "Client1", assetId = "BTCUSD", volume = 0.1)
         )
         marketOrderService.processMessage(messageWrapper)

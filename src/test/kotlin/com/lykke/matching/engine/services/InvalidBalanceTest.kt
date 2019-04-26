@@ -15,10 +15,8 @@ import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
-import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import org.junit.Before
 import org.junit.Test
@@ -42,9 +40,6 @@ class InvalidBalanceTest : AbstractTest() {
     @Autowired
     private
     lateinit var testSettingDatabaseAccessor: TestSettingsDatabaseAccessor
-
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
 
     @TestConfiguration
     open class Config {
@@ -134,7 +129,7 @@ class InvalidBalanceTest : AbstractTest() {
 
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "ETHUSD", volume = 0.00001)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "ETHUSD", volume = 0.00001)))
 
         assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
         assertEquals(1, testClientLimitOrderListener.getCount())

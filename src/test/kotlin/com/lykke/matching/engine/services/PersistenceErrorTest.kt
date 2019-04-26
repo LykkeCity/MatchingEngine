@@ -9,10 +9,8 @@ import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.getSetting
@@ -20,7 +18,6 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -58,9 +55,6 @@ class PersistenceErrorTest : AbstractTest() {
     }
 
     private val clientIds = listOf("Client1", "Client2", "Client3", "TrustedClient")
-
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
 
     @Before
     fun setUp() {
@@ -169,13 +163,13 @@ class PersistenceErrorTest : AbstractTest() {
 
     @Test
     fun testMarketOrder() {
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(
                 clientId = "Client2", assetId = "EURUSD", volume = -0.9
         )))
         assertMarketOrderResult()
 
         // Uncompleted limit order has min volume
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(
                 clientId = "Client2", assetId = "EURUSD", volume = -0.96
         )))
         assertMarketOrderResult()

@@ -63,9 +63,6 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
         }
     }
 
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
-
     @Before
     fun setUp() {
 

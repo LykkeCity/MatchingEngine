@@ -26,7 +26,6 @@ import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFeeInstruction
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.getSetting
@@ -72,9 +71,6 @@ class LimitOrderServiceTest : AbstractTest() {
             return testSettingsDatabaseAccessor
         }
     }
-
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
 
     @Autowired
     private lateinit var expiryOrdersQueue: ExpiryOrdersQueue
@@ -751,7 +747,7 @@ class LimitOrderServiceTest : AbstractTest() {
         assertEquals(BigDecimal.valueOf(2000.0), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
         assertEquals(BigDecimal.valueOf(1347.72), testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
 
-        marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -10.0)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -10.0)))
 
         assertEquals(1, testClientLimitOrderListener.getCount())
         result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
@@ -1022,7 +1018,7 @@ class LimitOrderServiceTest : AbstractTest() {
 
         initServices()
 
-        marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(volume = 10.0)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(volume = 10.0)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         var marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -1044,7 +1040,7 @@ class LimitOrderServiceTest : AbstractTest() {
 
         clearMessageQueues()
 
-        marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(volume = 10.0)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(volume = 10.0)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -1423,7 +1419,7 @@ class LimitOrderServiceTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 5000.0, volume = 0.01, clientId = "Client1")))
 
         clearMessageQueues()
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "BTCUSD", volume = 50.01, straight = false)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "BTCUSD", volume = 50.01, straight = false)))
         val result = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
 
         assertEquals(2, result.trades.size)
@@ -1455,7 +1451,7 @@ class LimitOrderServiceTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 5000.0, volume = -0.01, clientId = "Client1")))
 
         clearMessageQueues()
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "BTCUSD", volume = -50.01, straight = false)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "BTCUSD", volume = -50.01, straight = false)))
 
         val result = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
         assertEquals(0, result.trades.size)
@@ -1518,13 +1514,13 @@ class LimitOrderServiceTest : AbstractTest() {
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "order1", clientId = client, assetId = "BTCUSD", volume = -0.00947867, price = 10550.0)))
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(
                 clientId = "Client2", assetId = "BTCUSD", volume = -100.0, straight = false
         )))
 
         assertNotNull(testOrderDatabaseAccessor.getOrders("BTCUSD", false).firstOrNull { it.externalId == "order1" })
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(
                 clientId = "Client2", assetId = "BTCUSD", volume = -100.0, straight = false
         )))
         assertBalance(client, "BTC", reserved = 0.0)

@@ -13,6 +13,7 @@ import com.lykke.matching.engine.incoming.parsers.data.LimitOrderMassCancelOpera
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.MarketOrderContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -28,8 +29,9 @@ class MessageBuilder(private var singleLimitOrderContextParser: SingleLimitOrder
                      private val cashInOutContextParser: CashInOutContextParser,
                      private val cashTransferContextParser: CashTransferContextParser,
                      private val limitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOperationParsedData>,
-                     private val limitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCancelOperationParsedData>) {
-companion object {
+                     private val limitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCancelOperationParsedData>,
+                     private val marketOrderContextParser: MarketOrderContextParser) {
+    companion object {
         fun buildLimitOrder(uid: String = UUID.randomUUID().toString(),
                             assetId: String = "EURUSD",
                             clientId: String = "Client1",
@@ -58,24 +60,6 @@ companion object {
                         null,
                         null)
 
-        fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
-            val builder = ProtocolMessages.MarketOrder.newBuilder()
-                    .setUid(UUID.randomUUID().toString())
-                    .setTimestamp(order.createdAt.time)
-                    .setClientId(order.clientId)
-                    .setAssetPairId(order.assetPairId)
-                    .setVolume(order.volume.toDouble())
-                    .setStraight(order.straight)
-            order.fee?.let {
-                builder.setFee(buildFee(it))
-            }
-            order.fees?.forEach {
-                builder.addFees(buildFee(it))
-            }
-            return MessageWrapper("Test", MessageType.MARKET_ORDER.type, builder
-                    .build().toByteArray(), TestClientHandler()
-            )
-        }
 
         fun buildFee(fee: FeeInstruction): ProtocolMessages.Fee {
             val builder = ProtocolMessages.Fee.newBuilder().setType(fee.type.externalId)
@@ -204,9 +188,6 @@ companion object {
             return multiOrderBuilder.build()
         }
 
-
-
-
         fun buildMultiLimitOrderCancelWrapper(clientId: String, assetPairId: String, isBuy: Boolean): MessageWrapper = MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER_CANCEL.type, ProtocolMessages.MultiLimitOrderCancel.newBuilder()
                 .setUid(UUID.randomUUID().toString())
                 .setTimestamp(Date().time)
@@ -271,6 +252,24 @@ companion object {
                     sourceClientId, targetClientId, assetIds,
                     if (makerFeeModificator != null) BigDecimal.valueOf(makerFeeModificator) else null))
         }
+    }
+
+    fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
+        val builder = ProtocolMessages.MarketOrder.newBuilder()
+                .setUid(UUID.randomUUID().toString())
+                .setTimestamp(order.createdAt.time)
+                .setClientId(order.clientId)
+                .setAssetPairId(order.assetPairId)
+                .setVolume(order.volume.toDouble())
+                .setStraight(order.straight)
+        order.fee?.let {
+            builder.setFee(buildFee(it))
+        }
+        order.fees?.forEach {
+            builder.addFees(buildFee(it))
+        }
+        return marketOrderContextParser.parse(MessageWrapper("Test", MessageType.MARKET_ORDER.type, builder
+                .build().toByteArray(), TestClientHandler())).messageWrapper
     }
 
     fun buildTransferWrapper(fromClientId: String,

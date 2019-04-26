@@ -512,6 +512,11 @@
             <AppenderRef ref="MarketOrderLog"/>
         </AsyncLogger>
 
+        <AsyncLogger name="MarketOrderPreProcessingLogger"
+                     level="debug" additivity="false">
+            <AppenderRef ref="MarketOrderLog"/>
+        </AsyncLogger>
+
         <AsyncLogger name="com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl"
                      level="debug" additivity="false">
             <AppenderRef ref="MarketOrderLog"/>

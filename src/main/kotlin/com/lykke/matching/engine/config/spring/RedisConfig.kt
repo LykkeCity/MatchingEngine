@@ -67,6 +67,11 @@ open class RedisConfig {
     open fun cashTransferOperationsPreprocessorRedisConnection(): RedisConnection? {
         return redisConnectionFactory.getConnection("cashTransferOperationsPreprocessorRedisConnection")
     }
+
+    @Bean
+    fun marketOrderOrderPreprocessorRedisConnection(): RedisConnection? {
+        return redisConnectionFactory.getConnection("marketOrderPreprocessorRedisConnection")
+    }
     //</editor-fold>
 
     //<editor-fold desc="Redis database accessors">
