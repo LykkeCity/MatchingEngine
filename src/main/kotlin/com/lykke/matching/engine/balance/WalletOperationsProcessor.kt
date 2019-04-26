@@ -6,20 +6,16 @@ import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolder
 import com.lykke.matching.engine.order.transaction.WalletAssetBalance
-import com.lykke.matching.engine.services.BalancesService
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
-import java.util.Date
 
-class WalletOperationsProcessor(private val balancesService: BalancesService,
-                                private val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
+class WalletOperationsProcessor(private val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
                                 private val applicationSettingsHolder: ApplicationSettingsHolder,
                                 private val assetsHolder: AssetsHolder,
                                 private val logger: Logger?) : BalancesGetter {
@@ -55,14 +51,14 @@ class WalletOperationsProcessor(private val balancesService: BalancesService,
                 changedAssetBalance.reserved
         }
 
-        validateChangedAssetBalances(changedAssetBalances, forceApply)
+        validateChangedAssetBalances(changedAssetBalances, allowInvalidBalance)
 
 
         changedAssetBalances.forEach { processChangedAssetBalance(it.value) }
         return this
     }
 
-    private fun validateChangedAssetBalances(changedAssetBalances: HashMap<String, ChangedAssetBalance>, forceApply: Boolean) {
+    private fun validateChangedAssetBalances(changedAssetBalances: HashMap<String, ChangedAssetBalance>, allowInvalidBalance: Boolean) {
         try {
             changedAssetBalances.values.forEach { validateBalanceChange(it) }
         } catch (e: BalanceException) {

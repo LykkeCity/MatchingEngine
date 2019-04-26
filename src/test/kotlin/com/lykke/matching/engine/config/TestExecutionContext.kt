@@ -150,9 +150,10 @@ open class TestExecutionContext {
     }
 
     @Bean
-    open fun specializedReservedCashInOutOldEventSender(reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>)
+    open fun specializedReservedCashInOutOldEventSender(reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
+                                                        oldFormatBalancesSender: OldFormatBalancesSender)
             : SpecializedEventSender<ReservedCashInOutEventData> {
-        return ReservedCashInOutOldEventSender(reservedCashOperationQueue)
+        return ReservedCashInOutOldEventSender(reservedCashOperationQueue, oldFormatBalancesSender)
     }
 
     @Bean

@@ -729,9 +729,8 @@ open class TestApplicationContext {
     @Bean
     open fun walletOperationsProcessorFactory(currentTransactionBalancesHolderFactory: CurrentTransactionBalancesHolderFactory,
                                               applicationSettingsHolder: ApplicationSettingsHolder,
-                                              assetsHolder: AssetsHolder,
-                                              balancesService: BalancesService): WalletOperationsProcessorFactory {
-        return WalletOperationsProcessorFactory(currentTransactionBalancesHolderFactory, applicationSettingsHolder, assetsHolder, balancesService)
+                                              assetsHolder: AssetsHolder): WalletOperationsProcessorFactory {
+        return WalletOperationsProcessorFactory(currentTransactionBalancesHolderFactory, applicationSettingsHolder, assetsHolder)
     }
 
     @Bean

@@ -134,7 +134,7 @@ abstract class AbstractPerformanceTest {
     val currentTransactionBalancesHolderFactory = CurrentTransactionBalancesHolderFactory(balancesHolder)
 
     val walletOperationsProcessorFactory = WalletOperationsProcessorFactory(currentTransactionBalancesHolderFactory,
-            applicationSettingsHolder, assetsHolder, balancesService)
+            applicationSettingsHolder, assetsHolder)
 
     val outgoingEventData = LinkedBlockingQueue<OutgoingEventData>()
 
