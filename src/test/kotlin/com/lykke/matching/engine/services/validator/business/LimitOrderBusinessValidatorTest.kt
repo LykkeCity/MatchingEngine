@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services.validator.business
 
+import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
@@ -10,6 +11,7 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.validators.business.impl.LimitOrderBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.math.BigDecimal
@@ -18,7 +20,15 @@ import java.util.*
 class LimitOrderBusinessValidatorTest {
 
     private companion object {
-        private const val ASSET_PAIR_ID = "BTCUSD"
+        private val ASSET_PAIR = AssetPair("AssetPair",
+                "Asset1",
+                "Asset2",
+                2)
+        private val MAX_VALUE_ASSET_PAIR = AssetPair("AssetPair",
+                "Asset1",
+                "Asset2",
+                2,
+                maxValue = BigDecimal.valueOf(5.0))
     }
 
     @Test(expected = OrderValidationException::class)
@@ -32,6 +42,7 @@ class LimitOrderBusinessValidatorTest {
                     getLimitOrder(status = OrderStatus.NotFoundPrevious.name, fee = getValidFee()),
                     BigDecimal.valueOf(12.0),
                     BigDecimal.valueOf(11.0),
+                    ASSET_PAIR,
                     getValidOrderBook(),
                     Date(),
                     0)
@@ -53,6 +64,7 @@ class LimitOrderBusinessValidatorTest {
                     getLimitOrder(status = OrderStatus.NotEnoughFunds.name, fee = getValidFee()),
                     BigDecimal.valueOf(12.0),
                     BigDecimal.valueOf(11.0),
+                    ASSET_PAIR,
                     getValidOrderBook(),
                     Date(),
                     0)
@@ -74,6 +86,7 @@ class LimitOrderBusinessValidatorTest {
                     getLimitOrder(fee = getValidFee()),
                     BigDecimal.valueOf(12.0),
                     BigDecimal.valueOf(11.0),
+                    ASSET_PAIR,
                     getValidOrderBook(),
                     Date(),
                     10)
@@ -94,14 +107,39 @@ class LimitOrderBusinessValidatorTest {
                 getLimitOrder(fee = getValidFee()),
                 BigDecimal.valueOf(12.0),
                 BigDecimal.valueOf(11.0),
+                ASSET_PAIR,
                 getValidOrderBook(),
                 Date(),
                 0)
     }
 
-    private fun getLimitOrder(fee: LimitOrderFeeInstruction?,
+    @Test(expected = OrderValidationException::class)
+    fun testMaxVolume() {
+        val validator = LimitOrderBusinessValidatorImpl(OrderBookMaxTotalSizeHolderImpl(null))
+
+        // orderBook with midPrice=2.0
+        val orderBook = getValidOrderBook()
+        orderBook.addOrder(buildLimitOrder(volume = -1.0, price = 3.0))
+        orderBook.addOrder(buildLimitOrder(volume = 1.0, price = 1.0))
+
+        try {
+            validator.performValidation(false,
+                    getLimitOrder(volume = BigDecimal.valueOf(-2.6), price = BigDecimal.valueOf(1.0)),
+                    BigDecimal.ONE,
+                    BigDecimal.ONE,
+                    MAX_VALUE_ASSET_PAIR,
+                    orderBook,
+                    Date(),
+                    0)
+        } catch (e: OrderValidationException) {
+            assertEquals(OrderStatus.InvalidVolume, e.orderStatus)
+            throw e
+        }
+    }
+
+    private fun getLimitOrder(fee: LimitOrderFeeInstruction? = null,
                               fees: List<NewLimitOrderFeeInstruction>? = null,
-                              assetPair: String = ASSET_PAIR_ID,
+                              assetPair: String = ASSET_PAIR.assetPairId,
                               price: BigDecimal = BigDecimal.valueOf(1.0),
                               volume: BigDecimal = BigDecimal.valueOf(1.0),
                               status: String = OrderStatus.InOrderBook.name): LimitOrder {
@@ -113,11 +151,11 @@ class LimitOrderBusinessValidatorTest {
                 childOrderExternalId = null)
     }
 
-    fun getValidFee(): LimitOrderFeeInstruction {
+    private fun getValidFee(): LimitOrderFeeInstruction {
         return LimitOrderFeeInstruction(FeeType.NO_FEE, null, null, null, null, null, null)
     }
 
     private fun getValidOrderBook(): AssetOrderBook {
-        return AssetOrderBook(ASSET_PAIR_ID)
+        return AssetOrderBook(ASSET_PAIR.assetPairId)
     }
 }

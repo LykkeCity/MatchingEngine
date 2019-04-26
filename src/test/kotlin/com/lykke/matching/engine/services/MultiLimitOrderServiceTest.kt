@@ -1331,12 +1331,16 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     fun testOrderMaxVolume() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
-                maxVolume = BigDecimal.valueOf(1.0)))
+                maxValue = BigDecimal.valueOf(5000.0)))
         assetPairsCache.update()
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(IncomingLimitOrder(-1.1, 10000.0))))
+        // orderBook with midPrice = 5000.0
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = -1.0, price = 5500.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = 1.0, price = 4500.0))
 
-        assertOrderBookSize("BTCUSD", false, 0)
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(IncomingLimitOrder(-1.1, 4000.0))))
+
+        assertOrderBookSize("BTCUSD", false, 1)
     }
 
     @Test

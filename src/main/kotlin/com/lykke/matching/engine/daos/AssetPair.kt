@@ -9,7 +9,6 @@ class AssetPair(
         val accuracy: Int,
         val minVolume: BigDecimal? = null,
         val minInvertedVolume: BigDecimal? = null,
-        val maxVolume: BigDecimal? = null,
         val maxValue: BigDecimal? = null,
         val marketOrderPriceDeviationThreshold: BigDecimal? = null
 ) {
@@ -21,7 +20,6 @@ class AssetPair(
                 "accuracy=$accuracy, " +
                 "minVolume=$minVolume, " +
                 "minInvertedVolume=$minInvertedVolume, " +
-                "maxVolume=$maxVolume, " +
                 "maxValue=$maxValue, " +
                 "marketOrderPriceDeviationThreshold=$marketOrderPriceDeviationThreshold"
     }

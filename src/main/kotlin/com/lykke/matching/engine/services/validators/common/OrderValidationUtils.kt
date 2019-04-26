@@ -3,7 +3,9 @@ package com.lykke.matching.engine.services.validators.common
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.Order
+import com.lykke.matching.engine.daos.order.MaxOrderVolumeInfo
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.utils.logging.MetricsLogger
 import java.math.BigDecimal
@@ -38,6 +40,21 @@ class OrderValidationUtils {
                 METRICS_LOGGER.logWarning(errorMessage)
                 throw OrderValidationException(OrderStatus.OrderBookMaxSizeReached, errorMessage)
             }
+        }
+
+        fun validateMaxVolume(order: Order,
+                                      assetPair: AssetPair,
+                                      orderBook: AssetOrderBook) {
+            val maxVolumeInfo = calculateMaxVolume(assetPair, orderBook) ?: return
+            if (order.getAbsVolume() > maxVolumeInfo.maxVolume) {
+                throw OrderValidationException(OrderStatus.InvalidVolume, "volume is too large ($maxVolumeInfo)")
+            }
+        }
+
+        fun calculateMaxVolume(assetPair: AssetPair, orderBook: AssetOrderBook): MaxOrderVolumeInfo? {
+            val midPrice = orderBook.getMidPrice() ?: return null
+            val maxValue = assetPair.maxValue ?: return null
+            return MaxOrderVolumeInfo(maxValue, midPrice)
         }
     }
 }

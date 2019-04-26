@@ -25,7 +25,6 @@ import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import java.util.*
-import java.util.concurrent.PriorityBlockingQueue
 import kotlin.test.assertEquals
 
 @RunWith(SpringRunner::class)
@@ -34,11 +33,11 @@ import kotlin.test.assertEquals
 class MarketOrderValidatorTest {
 
     companion object {
-        val CLIENT_NAME = "Client"
-        val OPERATION_ID = "test"
-        val ASSET_PAIR_ID = "EURUSD"
-        val BASE_ASSET_ID = "EUR"
-        val QUOTING_ASSET_ID = "USD"
+        private const val CLIENT_NAME = "Client"
+        private const val OPERATION_ID = "test"
+        private const val ASSET_PAIR_ID = "EURUSD"
+        private const val BASE_ASSET_ID = "EUR"
+        private const val QUOTING_ASSET_ID = "USD"
     }
 
     @TestConfiguration
@@ -85,7 +84,7 @@ class MarketOrderValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()), NewFeeInstruction.create(getFeeInstruction()), null)
+            marketOrderValidator.performValidation(order, getOrderBook(), NewFeeInstruction.create(getFeeInstruction()), null)
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.UnknownAsset, e.orderStatus)
             throw e
@@ -102,7 +101,7 @@ class MarketOrderValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()), NewFeeInstruction.create(getFeeInstruction()), null)
+            marketOrderValidator.performValidation(order, getOrderBook(), NewFeeInstruction.create(getFeeInstruction()), null)
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.DisabledAsset, e.orderStatus)
             throw e
@@ -118,7 +117,7 @@ class MarketOrderValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(order,  getOrderBook(order.isBuySide()), NewFeeInstruction.create(getFeeInstruction()), null)
+            marketOrderValidator.performValidation(order,  getOrderBook(), NewFeeInstruction.create(getFeeInstruction()), null)
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.TooSmallVolume, e.orderStatus)
             throw e
@@ -133,7 +132,7 @@ class MarketOrderValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()),
+            marketOrderValidator.performValidation(order, getOrderBook(),
                     NewFeeInstruction.create(getInvalidFee()), null)
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.InvalidFee, e.orderStatus)
@@ -149,7 +148,7 @@ class MarketOrderValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(order,  AssetOrderBook(ASSET_PAIR_ID).getOrderBook(order.isBuySide()),
+            marketOrderValidator.performValidation(order,  AssetOrderBook(ASSET_PAIR_ID),
                     NewFeeInstruction.create(getFeeInstruction()), null)
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.NoLiquidity, e.orderStatus)
@@ -166,7 +165,7 @@ class MarketOrderValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()), NewFeeInstruction.create(getFeeInstruction()), null)
+            marketOrderValidator.performValidation(order, getOrderBook(), NewFeeInstruction.create(getFeeInstruction()), null)
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.InvalidVolumeAccuracy, e.orderStatus)
             throw e
@@ -182,7 +181,7 @@ class MarketOrderValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()), NewFeeInstruction.create(getFeeInstruction()), null)
+            marketOrderValidator.performValidation(order, getOrderBook(), NewFeeInstruction.create(getFeeInstruction()), null)
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.InvalidPriceAccuracy, e.orderStatus)
             throw e
@@ -196,7 +195,7 @@ class MarketOrderValidatorTest {
         val order = toMarketOrder(marketOrderBuilder.build())
 
         //when
-        marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()), NewFeeInstruction.create(getFeeInstruction()), null)
+        marketOrderValidator.performValidation(order, getOrderBook(), NewFeeInstruction.create(getFeeInstruction()), null)
     }
 
     private fun toMarketOrder(message: ProtocolMessages.MarketOrder): MarketOrder {
@@ -206,7 +205,7 @@ class MarketOrderValidatorTest {
                 NewFeeInstruction.create(message.fee), listOf(NewFeeInstruction.create(message.fee)))
     }
 
-    private fun getOrderBook(isBuy: Boolean): PriorityBlockingQueue<LimitOrder> {
+    private fun getOrderBook(): AssetOrderBook {
         val assetOrderBook = AssetOrderBook(ASSET_PAIR_ID)
         val now = Date()
         assetOrderBook.addOrder(LimitOrder("test", "test",
@@ -215,7 +214,13 @@ class MarketOrderValidatorTest {
                 null, null, null, null, null, null, null, null,
                 null, null, null, null))
 
-        return assetOrderBook.getOrderBook(isBuy)
+        assetOrderBook.addOrder(LimitOrder("test", "test",
+                ASSET_PAIR_ID, CLIENT_NAME, BigDecimal.valueOf(-1.0), BigDecimal.valueOf(2.0),
+                OrderStatus.InOrderBook.name, now, now, now, BigDecimal.valueOf(1.0), now, BigDecimal.valueOf(1.0),
+                null, null, null, null, null, null, null, null,
+                null, null, null, null))
+
+        return assetOrderBook
      }
 
     private fun getDefaultMarketOrderBuilder(): ProtocolMessages.MarketOrder.Builder {

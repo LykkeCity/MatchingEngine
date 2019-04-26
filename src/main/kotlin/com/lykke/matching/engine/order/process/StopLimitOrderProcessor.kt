@@ -62,6 +62,8 @@ class StopLimitOrderProcessor(private val limitOrderInputValidator: LimitOrderIn
                         orderContext.limitVolume,
                         orderContext.order,
                         orderContext.executionContext.date,
+                        orderContext.executionContext.assetPairsById[orderContext.order.assetPairId]!!,
+                        orderContext.executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(orderContext.order.assetPairId),
                         orderContext.executionContext.getOrderBookTotalSize())
             } catch (e: OrderValidationException) {
                 return OrderValidationResult(false, false, e.message, e.orderStatus)

@@ -34,7 +34,6 @@ class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDataba
                         asset.accuracy,
                         asset.minVolume?.toBigDecimal(),
                         asset.minInvertedVolume?.toBigDecimal(),
-                        asset.maxVolume?.toBigDecimal(),
                         asset.maxValue?.toBigDecimal(),
                         asset.marketOrderPriceDeviationThreshold?.toBigDecimal())
             }
@@ -57,7 +56,6 @@ class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDataba
                         assetPair.accuracy,
                         assetPair.minVolume?.toBigDecimal(),
                         assetPair.minInvertedVolume?.toBigDecimal(),
-                        assetPair.maxVolume?.toBigDecimal(),
                         assetPair.maxValue?.toBigDecimal(),
                         assetPair.marketOrderPriceDeviationThreshold?.toBigDecimal())
             }
