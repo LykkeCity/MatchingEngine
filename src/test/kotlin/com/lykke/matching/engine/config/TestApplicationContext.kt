@@ -652,15 +652,19 @@ open class TestApplicationContext {
         return LimitOrderInputValidatorImpl(applicationSettingsHolder)
     }
 
-
     @Bean
-    open fun limitOrderBusinessValidator(): LimitOrderBusinessValidator {
-        return LimitOrderBusinessValidatorImpl()
+    fun orderBookMaxTotalSizeHolder(): OrderBookMaxTotalSizeHolder {
+        return OrderBookMaxTotalSizeHolderImpl(null)
     }
 
     @Bean
-    open fun stopOrderBusinessValidatorImpl(): StopOrderBusinessValidatorImpl {
-        return StopOrderBusinessValidatorImpl()
+    open fun limitOrderBusinessValidator(orderBookMaxTotalSizeHolder: OrderBookMaxTotalSizeHolder): LimitOrderBusinessValidator {
+        return LimitOrderBusinessValidatorImpl(orderBookMaxTotalSizeHolder)
+    }
+
+    @Bean
+    open fun stopOrderBusinessValidatorImpl(orderBookMaxTotalSizeHolder: OrderBookMaxTotalSizeHolder): StopOrderBusinessValidatorImpl {
+        return StopOrderBusinessValidatorImpl(orderBookMaxTotalSizeHolder)
     }
 
     @Bean

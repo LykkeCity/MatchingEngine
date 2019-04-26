@@ -64,6 +64,7 @@ class MessageBuilder(private var singleLimitOrderContextParser: SingleLimitOrder
         fun buildFee(fee: FeeInstruction): ProtocolMessages.Fee {
             val builder = ProtocolMessages.Fee.newBuilder().setType(fee.type.externalId)
             fee.size?.let {
+            fee.size?.let {
                 builder.size = it.toDouble()
             }
             fee.sourceClientId?.let {
@@ -153,7 +154,7 @@ class MessageBuilder(private var singleLimitOrderContextParser: SingleLimitOrder
             return MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER.type, buildMultiLimitOrder(pair, clientId,
                     orders,
                     cancel,
-                    cancelMode).toByteArray(), null, messageId = "test", id = "test")
+                    cancelMode).toByteArray(), TestClientHandler(), messageId = "test", id = "test")
         }
 
         private fun buildMultiLimitOrder(assetPairId: String,

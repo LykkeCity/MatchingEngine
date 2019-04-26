@@ -34,7 +34,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
         update()
     }
 
-    fun update() {
+    final fun update() {
         limitOrdersMap.values.forEach {
             expiryOrdersQueue.removeIfOrderHasExpiryTime(it)
         }
@@ -98,17 +98,6 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
         return clientLimitOrdersMap[order.clientId]?.remove(order) ?: false
     }
 
-    override fun cancelLimitOrders(orders: Collection<LimitOrder>, date: Date) {
-        orders.forEach { order ->
-            val ord = limitOrdersMap.remove(order.externalId)
-            expiryOrdersQueue.removeIfOrderHasExpiryTime(order)
-            clientLimitOrdersMap[order.clientId]?.remove(order)
-            if (ord != null) {
-                ord.updateStatus(Cancelled, date)
-            }
-        }
-    }
-
     override fun removeOrdersFromMapsAndSetStatus(orders: Collection<LimitOrder>, status: OrderStatus?, date: Date?) {
         orders.forEach { order ->
             val removedOrder = limitOrdersMap.remove(order.externalId)
@@ -141,4 +130,8 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     }
 
     fun createCurrentTransactionOrderBooksHolder() = CurrentTransactionOrderBooksHolder(this)
+
+    override fun getTotalSize(): Int {
+        return limitOrdersMap.size
+    }
 }

@@ -19,6 +19,7 @@ import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.holders.OrderBookMaxTotalSizeHolderImpl
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.TestUUIDHolder
@@ -219,13 +220,13 @@ abstract class AbstractPerformanceTest {
         val matchingEngine = MatchingEngine(genericLimitOrderService, feeProcessor, uuidHolder)
 
         val limitOrderProcessor = LimitOrderProcessor(limitOrderInputValidator,
-                LimitOrderBusinessValidatorImpl(),
+                LimitOrderBusinessValidatorImpl(OrderBookMaxTotalSizeHolderImpl(null)),
                 applicationSettingsHolder,
                 matchingEngine,
                 matchingResultHandlingHelper)
 
         val stopOrderProcessor = StopLimitOrderProcessor(limitOrderInputValidator,
-                StopOrderBusinessValidatorImpl(),
+                StopOrderBusinessValidatorImpl(OrderBookMaxTotalSizeHolderImpl(null)),
                 applicationSettingsHolder,
                 limitOrderProcessor,
                 uuidHolder)

@@ -8,4 +8,5 @@ data class QueueConfig(val queueSizeHealthCheckInterval: Long,
                        val rabbitMaxQueueSizeLimit: Int,
                        val rabbitRecoverQueueSizeLimit: Int,
                        val dataMaxQueueSizeLimit: Int,
-                       val dataRecoverQueueSizeLimit: Int)
+                       val dataRecoverQueueSizeLimit: Int,
+                       val orderBookMaxTotalSize: Int?)
