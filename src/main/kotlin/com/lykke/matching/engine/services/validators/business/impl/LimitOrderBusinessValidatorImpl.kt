@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services.validators.business.impl
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.holders.OrderBookMaxTotalSizeHolder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
@@ -12,14 +13,18 @@ import java.math.BigDecimal
 import java.util.Date
 
 @Component
-class LimitOrderBusinessValidatorImpl: LimitOrderBusinessValidator {
+class LimitOrderBusinessValidatorImpl(private val orderBookMaxTotalSizeHolder: OrderBookMaxTotalSizeHolder)
+    : LimitOrderBusinessValidator {
+
     override fun performValidation(isTrustedClient: Boolean,
                                    order: LimitOrder,
                                    availableBalance: BigDecimal,
                                    limitVolume: BigDecimal,
                                    assetPair: AssetPair,
                                    orderBook: AssetOrderBook,
-                                   date: Date) {
+                                   date: Date,
+                                   currentOrderBookTotalSize: Int) {
+        OrderValidationUtils.validateOrderBookTotalSize(currentOrderBookTotalSize, orderBookMaxTotalSizeHolder.get())
 
         if (!isTrustedClient) {
             OrderValidationUtils.validateBalance(availableBalance, limitVolume)

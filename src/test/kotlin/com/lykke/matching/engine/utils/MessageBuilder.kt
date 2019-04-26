@@ -73,7 +73,8 @@ companion object {
                 builder.addFees(buildFee(it))
             }
             return MessageWrapper("Test", MessageType.MARKET_ORDER.type, builder
-                    .build().toByteArray(), null)
+                    .build().toByteArray(), TestClientHandler()
+            )
         }
 
         fun buildFee(fee: FeeInstruction): ProtocolMessages.Fee {
@@ -159,27 +160,6 @@ companion object {
                         reservedVolume?.toBigDecimal(),
                         fee = fee, fees = fees)
 
-        @Deprecated("Use buildMultiLimitOrderWrapper(5)")
-        fun buildMultiLimitOrderWrapper(pair: String,
-                                        clientId: String,
-                                        volumes: List<VolumePrice>,
-                                        ordersFee: List<LimitOrderFeeInstruction> = emptyList(),
-                                        ordersFees: List<List<NewLimitOrderFeeInstruction>> = emptyList(),
-                                        ordersUid: List<String> = emptyList(),
-                                        cancel: Boolean = false,
-                                        cancelMode: OrderCancelMode? = null
-        ): MessageWrapper {
-            val orders = volumes.mapIndexed { i, volume ->
-                IncomingLimitOrder(volume.volume.toDouble(),
-                        volume.price.toDouble(),
-                        if (i < ordersUid.size) ordersUid[i] else UUID.randomUUID().toString(),
-                        if (i < ordersFee.size) ordersFee[i] else null,
-                        if (i < ordersFees.size) ordersFees[i] else emptyList(),
-                        null)
-            }
-            return buildMultiLimitOrderWrapper(pair, clientId, orders, cancel, cancelMode)
-        }
-
         fun buildMultiLimitOrderWrapper(pair: String,
                                         clientId: String,
                                         orders: List<IncomingLimitOrder>,
@@ -189,7 +169,7 @@ companion object {
             return MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER.type, buildMultiLimitOrder(pair, clientId,
                     orders,
                     cancel,
-                    cancelMode).toByteArray(), null, messageId = "test", id = "test")
+                    cancelMode).toByteArray(), TestClientHandler(), messageId = "test", id = "test")
         }
 
         private fun buildMultiLimitOrder(assetPairId: String,

@@ -8,7 +8,6 @@ import java.util.Date
 abstract class AbstractGenericLimitOrderService<T : AbstractAssetOrderBook> {
 
     abstract fun getOrderBook(assetPairId: String): T
-    abstract fun cancelLimitOrders(orders: Collection<LimitOrder>, date: Date)
     abstract fun setOrderBook(assetPairId: String, assetOrderBook: T)
     abstract fun removeOrdersFromMapsAndSetStatus(orders: Collection<LimitOrder>, status: OrderStatus? = null, date: Date? = null)
     abstract fun addOrders(orders: Collection<LimitOrder>)
@@ -45,4 +44,5 @@ abstract class AbstractGenericLimitOrderService<T : AbstractAssetOrderBook> {
 
     protected abstract fun getLimitOrdersByClientIdMap(): Map<String, Collection<LimitOrder>>
     protected abstract fun getOrderBooksByAssetPairIdMap(): Map<String, T>
+    abstract fun getTotalSize(): Int
 }

@@ -3,6 +3,7 @@ package com.lykke.matching.engine.services.validator.business
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.holders.OrderBookMaxTotalSizeHolderImpl
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.validators.business.impl.StopOrderBusinessValidatorImpl
@@ -23,7 +24,7 @@ class StopOrderBusinessValidatorTest {
                 maxValue = BigDecimal.valueOf(5.0))
     }
 
-    private val validator = StopOrderBusinessValidatorImpl()
+    private val validator = StopOrderBusinessValidatorImpl(OrderBookMaxTotalSizeHolderImpl(null))
 
     @Test(expected = OrderValidationException::class)
     fun testMaxVolume() {
@@ -40,7 +41,8 @@ class StopOrderBusinessValidatorTest {
                     stopOrder,
                     Date(),
                     MAX_VALUE_ASSET_PAIR,
-                    orderBook)
+                    orderBook,
+                    0)
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.InvalidVolume, e.orderStatus)
             throw e

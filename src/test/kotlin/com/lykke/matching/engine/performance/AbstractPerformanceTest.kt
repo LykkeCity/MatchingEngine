@@ -19,6 +19,7 @@ import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.holders.OrderBookMaxTotalSizeHolderImpl
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.TestUUIDHolder
@@ -44,6 +45,7 @@ import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.outgoing.senders.impl.SpecializedEventSendersHolderImpl
 import com.lykke.matching.engine.outgoing.senders.impl.OutgoingEventProcessorImpl
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.business.impl.LimitOrderBusinessValidatorImpl
@@ -198,7 +200,7 @@ abstract class AbstractPerformanceTest {
         val executionPersistenceService = ExecutionPersistenceService(persistenceManager)
         val outgoingEventProcessor = OutgoingEventProcessorImpl(
                 outgoingEventData,
-                emptyMap(),
+                SpecializedEventSendersHolderImpl(emptyList()),
                 TaskExecutor { task -> thread(name = "rabbitMessageProcessor") { task.run() } })
 
 
@@ -216,13 +218,13 @@ abstract class AbstractPerformanceTest {
         val matchingEngine = MatchingEngine(genericLimitOrderService, feeProcessor, uuidHolder)
 
         val limitOrderProcessor = LimitOrderProcessor(limitOrderInputValidator,
-                LimitOrderBusinessValidatorImpl(),
+                LimitOrderBusinessValidatorImpl(OrderBookMaxTotalSizeHolderImpl(null)),
                 applicationSettingsHolder,
                 matchingEngine,
                 matchingResultHandlingHelper)
 
         val stopOrderProcessor = StopLimitOrderProcessor(limitOrderInputValidator,
-                StopOrderBusinessValidatorImpl(),
+                StopOrderBusinessValidatorImpl(OrderBookMaxTotalSizeHolderImpl(null)),
                 applicationSettingsHolder,
                 limitOrderProcessor,
                 uuidHolder)

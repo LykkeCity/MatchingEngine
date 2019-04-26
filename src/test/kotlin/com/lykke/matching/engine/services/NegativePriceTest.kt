@@ -4,7 +4,7 @@ import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.VolumePrice
+import com.lykke.matching.engine.daos.IncomingLimitOrder
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.order.OrderStatus
@@ -23,7 +23,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
-import java.math.BigDecimal
 import kotlin.test.assertEquals
 
 @RunWith(SpringRunner::class)
@@ -47,9 +46,6 @@ class NegativePriceTest : AbstractTest() {
             return testBackOfficeDatabaseAccessor
         }
     }
-
-    @Autowired
-    private lateinit var testConfigDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @Autowired
     private lateinit var messageBuilder: MessageBuilder
@@ -84,12 +80,9 @@ class NegativePriceTest : AbstractTest() {
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("EURUSD",
                 "Client",
                 listOf(
-                        VolumePrice(BigDecimal.valueOf(1.0), BigDecimal.valueOf(1.0)),
-                        VolumePrice(BigDecimal.valueOf(1.0), BigDecimal.valueOf(-1.0))
-                ),
-                emptyList(),
-                emptyList(),
-                listOf("order1", "order2")))
+                        IncomingLimitOrder(1.0, 1.0, uid = "order1"),
+                        IncomingLimitOrder(1.0, -1.0, uid = "order2")
+                )))
 
         assertEquals(1, testTrustedClientsLimitOrderListener.getCount())
         val result = testTrustedClientsLimitOrderListener.getQueue().poll() as LimitOrdersReport

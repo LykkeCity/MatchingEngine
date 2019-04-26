@@ -12,5 +12,6 @@ interface StopOrderBusinessValidator {
                           order: LimitOrder,
                           orderProcessingTime: Date,
                           assetPair: AssetPair,
-                          orderBook: AssetOrderBook)
+                          orderBook: AssetOrderBook,
+                          currentOrderBookTotalSize: Int)
 }
