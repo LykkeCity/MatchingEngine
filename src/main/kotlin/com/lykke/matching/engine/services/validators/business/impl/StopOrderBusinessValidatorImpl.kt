@@ -10,8 +10,8 @@ import java.math.BigDecimal
 import java.util.Date
 
 @Component
-class StopOrderBusinessValidatorImpl(private val orderBookMaxTotalSizeHolder: OrderBookMaxTotalSizeHolder,
-                                     private val orderBusinessValidator: OrderBusinessValidator)
+class StopOrderBusinessValidatorImpl(private val orderBusinessValidator: OrderBusinessValidator,
+                                     private val orderBookMaxTotalSizeHolder: OrderBookMaxTotalSizeHolder)
     : StopOrderBusinessValidator {
     override fun performValidation(availableBalance: BigDecimal,
                                    limitVolume: BigDecimal,

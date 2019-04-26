@@ -636,8 +636,9 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun limitOrderBusinessValidator(orderBusinessValidator: OrderBusinessValidator): LimitOrderBusinessValidator {
-        return LimitOrderBusinessValidatorImpl(orderBusinessValidator)
+    open fun limitOrderBusinessValidator(orderBusinessValidator: OrderBusinessValidator,
+                                         orderBookMaxTotalSizeHolder: OrderBookMaxTotalSizeHolder): LimitOrderBusinessValidator {
+        return LimitOrderBusinessValidatorImpl(orderBusinessValidator, orderBookMaxTotalSizeHolder)
     }
 
     @Bean
@@ -646,8 +647,9 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun stopOrderBusinessValidatorImpl(orderBusinessValidator: OrderBusinessValidator): StopOrderBusinessValidatorImpl {
-        return StopOrderBusinessValidatorImpl(orderBusinessValidator)
+    open fun stopOrderBusinessValidatorImpl(orderBusinessValidator: OrderBusinessValidator,
+                                            orderBookMaxTotalSizeHolder: OrderBookMaxTotalSizeHolder): StopOrderBusinessValidatorImpl {
+        return StopOrderBusinessValidatorImpl(orderBusinessValidator, orderBookMaxTotalSizeHolder)
     }
 
     @Bean

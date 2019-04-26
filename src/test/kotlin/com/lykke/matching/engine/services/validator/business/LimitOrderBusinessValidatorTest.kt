@@ -8,6 +8,7 @@ import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.holders.OrderBookMaxTotalSizeHolderImpl
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.AssetOrderBook
+import com.lykke.matching.engine.services.validators.business.OrderBusinessValidator
 import com.lykke.matching.engine.services.validators.business.impl.LimitOrderBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.business.impl.OrderBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
@@ -67,7 +68,8 @@ class LimitOrderBusinessValidatorTest {
     @Test(expected = OrderValidationException::class)
     fun testOrderBookMaxTotalSize() {
         //given
-        val limitOrderBusinessValidatorImpl = LimitOrderBusinessValidatorImpl(OrderBookMaxTotalSizeHolderImpl(10))
+        val limitOrderBusinessValidatorImpl = LimitOrderBusinessValidatorImpl(OrderBusinessValidatorImpl(),
+                OrderBookMaxTotalSizeHolderImpl(10))
 
         try {
             //when
