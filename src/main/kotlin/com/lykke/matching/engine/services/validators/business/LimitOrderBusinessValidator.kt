@@ -11,5 +11,6 @@ interface LimitOrderBusinessValidator {
                           availableBalance: BigDecimal,
                           limitVolume: BigDecimal,
                           orderBook: AssetOrderBook,
-                          date: Date)
+                          date: Date,
+                          currentOrderBookTotalSize: Int)
 }

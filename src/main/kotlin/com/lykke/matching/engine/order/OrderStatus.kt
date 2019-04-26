@@ -40,4 +40,5 @@ enum class OrderStatus {
     ,InvalidVolume
     ,InvalidValue
     ,TooHighPriceDeviation
+    ,OrderBookMaxSizeReached
 }
