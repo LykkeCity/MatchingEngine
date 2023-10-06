@@ -8,7 +8,9 @@ import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.holders.OrderBookMaxTotalSizeHolderImpl
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.AssetOrderBook
+import com.lykke.matching.engine.services.validators.business.OrderBusinessValidator
 import com.lykke.matching.engine.services.validators.business.impl.LimitOrderBusinessValidatorImpl
+import com.lykke.matching.engine.services.validators.business.impl.OrderBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -24,7 +26,7 @@ class LimitOrderBusinessValidatorTest {
     @Test(expected = OrderValidationException::class)
     fun testPreviousOrderNotFount() {
         //given
-        val limitOrderBusinessValidatorImpl = LimitOrderBusinessValidatorImpl(OrderBookMaxTotalSizeHolderImpl(null))
+        val limitOrderBusinessValidatorImpl = LimitOrderBusinessValidatorImpl(OrderBusinessValidatorImpl(), OrderBookMaxTotalSizeHolderImpl(null))
 
         try {
             //when
@@ -45,7 +47,7 @@ class LimitOrderBusinessValidatorTest {
     @Test(expected = OrderValidationException::class)
     fun testNotEnoughFounds() {
         //given
-        val limitOrderBusinessValidatorImpl = LimitOrderBusinessValidatorImpl(OrderBookMaxTotalSizeHolderImpl(null))
+        val limitOrderBusinessValidatorImpl = LimitOrderBusinessValidatorImpl(OrderBusinessValidatorImpl(), OrderBookMaxTotalSizeHolderImpl(null))
 
         try {
             //when
@@ -66,7 +68,8 @@ class LimitOrderBusinessValidatorTest {
     @Test(expected = OrderValidationException::class)
     fun testOrderBookMaxTotalSize() {
         //given
-        val limitOrderBusinessValidatorImpl = LimitOrderBusinessValidatorImpl(OrderBookMaxTotalSizeHolderImpl(10))
+        val limitOrderBusinessValidatorImpl = LimitOrderBusinessValidatorImpl(OrderBusinessValidatorImpl(),
+                OrderBookMaxTotalSizeHolderImpl(10))
 
         try {
             //when
@@ -87,7 +90,7 @@ class LimitOrderBusinessValidatorTest {
     @Test
     fun testValidOrder() {
         //given
-        val limitOrderBusinessValidatorImpl = LimitOrderBusinessValidatorImpl(OrderBookMaxTotalSizeHolderImpl(null))
+        val limitOrderBusinessValidatorImpl = LimitOrderBusinessValidatorImpl(OrderBusinessValidatorImpl(), OrderBookMaxTotalSizeHolderImpl(null))
 
         //when
         limitOrderBusinessValidatorImpl.performValidation(true,

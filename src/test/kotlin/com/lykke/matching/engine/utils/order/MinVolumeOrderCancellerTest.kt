@@ -11,7 +11,6 @@ import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import org.junit.Before
 import org.junit.Test
@@ -100,7 +99,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "validVolume", clientId = "Client1", assetId = "BTCUSD", price = 10001.0, volume = 0.01)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 10001.0, volume = 0.001)))
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(clientId = "TrustedClient", pair = "BTCUSD",
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper(clientId = "TrustedClient", pair = "BTCUSD",
                 orders = listOf(IncomingLimitOrder(0.00102, 10002.0), IncomingLimitOrder(-0.00001, 11000.0))))
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "ClientForPartiallyMatching", assetId = "BTCUSD", price = 10002.0, volume = -0.001)))
@@ -112,7 +111,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "order1", clientId = "Client2", assetId = "EURUSD", price = 1.3, volume = -4.09)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "order2", clientId = "Client2", assetId = "EURUSD", price = 1.1, volume = 4.09)))
 
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(clientId = "TrustedClient", pair = "EURUSD",
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper(clientId = "TrustedClient", pair = "EURUSD",
                 orders = listOf(IncomingLimitOrder(30.0, 1.1), IncomingLimitOrder(-30.0, 1.4))))
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "ClientForPartiallyMatching", assetId = "EURUSD", price = 1.2, volume = 6.0)))
@@ -194,7 +193,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
     @Test
     fun testCancelOrdersWithRemovedAssetPair() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "order1", clientId = "Client1", assetId = "BTCEUR", price = 10000.0, volume = -1.0)))
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCEUR", "TrustedClient",
+        multiLimitOrderService.processMessage(messageBuilder.buildMultiLimitOrderWrapper("BTCEUR", "TrustedClient",
                 listOf(IncomingLimitOrder(-1.0, price = 10000.0, uid = "order2"))))
 
         assertEquals(BigDecimal.ZERO, balancesHolder.getReservedBalance("TrustedClient", "BTC"))

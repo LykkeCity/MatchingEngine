@@ -8,7 +8,7 @@ import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextPa
 import com.lykke.matching.engine.incoming.preprocessor.AbstractMessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
@@ -64,13 +64,9 @@ class SingleLimitOrderPreprocessor(singleLimitOrderContextParser: SingleLimitOrd
                 LimitOrderType.STOP_LIMIT -> limitOrderInputValidator.validateStopOrder(singleLimitOrderParsedData)
             }
         } catch (e: OrderValidationException) {
-            return OrderValidationResult(false, isFatalInvalid(e), e.message, e.orderStatus)
+            return OrderValidationResult(false, OrderValidationUtils.isFatalInvalid(e), e.message, e.orderStatus)
         }
 
         return OrderValidationResult(true)
-    }
-
-    private fun isFatalInvalid(validationException: OrderValidationException): Boolean {
-        return validationException.orderStatus == OrderStatus.UnknownAsset
     }
 }

@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
+import com.lykke.matching.engine.utils.NumberUtils
 import org.nustaq.serialization.annotations.Version
 import java.io.Serializable
 import java.math.BigDecimal
@@ -103,5 +104,36 @@ class LimitOrder(id: String,
 
     fun isExpired(date: Date): Boolean {
         return hasExpiryTime() && !expiryTime!!.after(date)
+    }
+
+    override fun toString(): String {
+        return "id: $externalId" +
+                if(previousExternalId != null) ", previousExternalId: $previousExternalId" else "" +
+                if(parentOrderExternalId != null) ", parentOrderExternalId: $previousExternalId" else "" +
+                if(childOrderExternalId != null) ", childOrderExternalId: $childOrderExternalId" else "" +
+
+                ", type: $type" +
+                ", client: $clientId" +
+                ", assetPair: $assetPairId" +
+                ", status: $status" +
+
+                ", volume: ${NumberUtils.roundForPrint(volume)}" +
+                (if (reservedLimitVolume != null) ", reservedLimitVolume: $reservedLimitVolume" else "") +
+                ", remainingVolume: $remainingVolume" +
+                ", price: ${NumberUtils.roundForPrint(price)}" +
+                (if (lowerLimitPrice != null) ", lowerLimitPrice: ${NumberUtils.roundForPrint(lowerLimitPrice)}" else "") +
+                (if (lowerPrice != null) ", lowerPrice: ${NumberUtils.roundForPrint(lowerPrice)}" else "") +
+                (if (upperLimitPrice != null) ", upperLimitPrice: ${NumberUtils.roundForPrint(upperLimitPrice)}" else "") +
+                (if (upperPrice != null) ", upperPrice: ${NumberUtils.roundForPrint(upperPrice)}" else "") +
+
+                ", createdAt: $createdAt" +
+                (if (statusDate != null) ", statusDate: $statusDate" else "") +
+                (if (registered != null) ", registered: $registered" else "") +
+                (if (lastMatchTime != null) ", lastMatchTime: $lastMatchTime" else "") +
+
+                ", fee: $fee" +
+                ", fees: $fees" +
+                (if (timeInForce != null) ", timeInForce: $timeInForce" else "") +
+                (if (expiryTime != null) ", expiryTime: $expiryTime" else "")
     }
 }

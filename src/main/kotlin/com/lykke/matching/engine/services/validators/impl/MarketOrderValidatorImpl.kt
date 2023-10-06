@@ -10,7 +10,7 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
-import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
+import com.lykke.matching.engine.services.validators.input.OrderInputValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -22,7 +22,8 @@ import java.util.concurrent.PriorityBlockingQueue
 class MarketOrderValidatorImpl
 @Autowired constructor(private val assetsPairsHolder: AssetsPairsHolder,
                        private val assetsHolder: AssetsHolder,
-                       private val applicationSettingsHolder: ApplicationSettingsHolder) : MarketOrderValidator {
+                       private val applicationSettingsHolder: ApplicationSettingsHolder,
+                       private val orderInputValidator: OrderInputValidator) : MarketOrderValidator {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MarketOrderValidatorImpl::class.java.name)
@@ -61,7 +62,7 @@ class MarketOrderValidatorImpl
             throw OrderValidationException(OrderStatus.InvalidVolume, message)
         }
 
-        if (!OrderValidationUtils.checkMinVolume(order, assetsPairsHolder.getAssetPair(order.assetPairId))) {
+        if (!orderInputValidator.checkMinVolume(order, assetsPairsHolder.getAssetPair(order.assetPairId))) {
             LOGGER.info("Too small volume for $order")
             throw OrderValidationException(OrderStatus.TooSmallVolume)
         }

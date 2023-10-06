@@ -5,9 +5,8 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
-import com.lykke.matching.engine.utils.NumberUtils
 
-class SingleLimitOrderContext(val messageId: String,
+data class SingleLimitOrderContext(val messageId: String,
                               val limitOrder: LimitOrder,
                               val isCancelOrders: Boolean,
                               val assetPair: AssetPair?,
@@ -30,25 +29,10 @@ class SingleLimitOrderContext(val messageId: String,
             builder.processedMessage)
 
     override fun toString(): String {
-        val order = this.limitOrder
-
-        return  "id: ${limitOrder.externalId}" +
-                ", messageId: $messageId" +
-                ", type: ${order.type}" +
-                ", client: ${order.clientId}" +
+        return  ", messageId: $messageId" +
                 ", isTrustedClient: $isTrustedClient" +
-                ", assetPair: ${order.assetPairId}" +
-                ", volume: ${NumberUtils.roundForPrint(order.volume)}" +
-                ", price: ${NumberUtils.roundForPrint(order.price)}" +
-                (if (order.lowerLimitPrice != null) ", lowerLimitPrice: ${NumberUtils.roundForPrint(order.lowerLimitPrice)}" else "") +
-                (if (order.lowerPrice != null) ", lowerPrice: ${NumberUtils.roundForPrint(order.lowerPrice)}" else "") +
-                (if (order.upperLimitPrice != null) ", upperLimitPrice: ${NumberUtils.roundForPrint(order.upperLimitPrice)}" else "") +
-                (if (order.upperPrice != null) ", upperPrice: ${NumberUtils.roundForPrint(order.upperPrice)}" else "") +
                 ", cancel: $isCancelOrders" +
-                ", fee: ${order.fee}" +
-                ", fees: ${order.fees}" +
-                (if (order.timeInForce != null) ", timeInForce=${order.timeInForce}" else "") +
-                (if (order.expiryTime != null) ", expiryTime=${order.expiryTime}" else "")
+                ", limitOrder: $limitOrder"
     }
 
     class Builder {
