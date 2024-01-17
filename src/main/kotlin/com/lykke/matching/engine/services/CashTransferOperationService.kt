@@ -1,9 +1,12 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
+import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.context.CashTransferContext
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.exception.PersistenceException
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
@@ -31,11 +34,13 @@ import java.util.concurrent.BlockingQueue
 
 @Service
 class CashTransferOperationService(private val balancesHolder: BalancesHolder,
+                                   private val walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                                    private val dbTransferOperationQueue: BlockingQueue<TransferOperation>,
                                    private val feeProcessor: FeeProcessor,
                                    private val cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator,
                                    private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                   private val outgoingEventProcessor: OutgoingEventProcessor) : AbstractService {
+                                   private val outgoingEventProcessor: OutgoingEventProcessor,
+                                   private val persistenceManager: PersistenceManager) : AbstractService {
     override fun parseMessage(messageWrapper: MessageWrapper) {
         //do nothing
     }
@@ -95,11 +100,15 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         val fees = feeProcessor.processFee(operation.fees, receiptOperation, operations, balancesGetter = balancesHolder)
 
-        val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
-                .preProcess(operations, true)
+        val walletProcessor = walletOperationsProcessorFactory.create(LOGGER)
+        walletProcessor.preProcess(operations, true)
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
-        val updated = walletProcessor.persistBalances(cashTransferContext.processedMessage, null, null, sequenceNumber)
+        val updated = persistenceManager.persist(PersistenceData(walletProcessor.persistenceData(),
+                cashTransferContext.processedMessage,
+                null,
+                null,
+                sequenceNumber))
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {
@@ -107,7 +116,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         }
         walletProcessor.apply()
         outgoingEventProcessor.submitCashTransferEvent(CashTransferEventData(cashTransferContext.messageId,
-                walletProcessor,
+                walletProcessor.getClientBalanceUpdates(),
                 fees,
                 operation,
                 sequenceNumber,

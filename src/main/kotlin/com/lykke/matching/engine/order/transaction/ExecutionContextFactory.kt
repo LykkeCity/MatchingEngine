@@ -1,10 +1,11 @@
 package com.lykke.matching.engine.order.transaction
 
+import com.lykke.matching.engine.balance.WalletOperationsProcessor
+import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
@@ -14,7 +15,7 @@ import org.springframework.stereotype.Component
 import java.util.Date
 
 @Component
-class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
+class ExecutionContextFactory(private val walletOperationsProcessorFactory: WalletOperationsProcessorFactory,
                               private val genericLimitOrderService: GenericLimitOrderService,
                               private val genericStopLimitOrderService: GenericStopLimitOrderService,
                               private val assetsHolder: AssetsHolder) {
@@ -35,7 +36,7 @@ class ExecutionContextFactory(private val balancesHolder: BalancesHolder,
                 assetPairsById,
                 assetsById,
                 preProcessorValidationResultsByOrderId,
-                balancesHolder.createWalletProcessor(logger),
+                walletOperationsProcessorFactory.create(logger),
                 genericLimitOrderService.createCurrentTransactionOrderBooksHolder(),
                 genericStopLimitOrderService.createCurrentTransactionOrderBooksHolder(),
                 date,

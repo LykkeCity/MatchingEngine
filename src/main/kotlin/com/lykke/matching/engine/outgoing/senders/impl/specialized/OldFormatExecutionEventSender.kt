@@ -5,6 +5,7 @@ import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.senders.SpecializedEventSender
+import com.lykke.matching.engine.outgoing.senders.impl.OldFormatBalancesSender
 import com.lykke.matching.engine.utils.event.isThereClientEvent
 import com.lykke.matching.engine.utils.event.isThereTrustedClientEvent
 import org.springframework.stereotype.Component
@@ -14,7 +15,8 @@ import java.util.concurrent.BlockingQueue
 @Component
 class OldFormatExecutionEventSender(private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                     private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                    private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>) : SpecializedEventSender<ExecutionData> {
+                                    private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
+                                    private val oldFormatBalancesSender: OldFormatBalancesSender) : SpecializedEventSender<ExecutionData> {
 
     override fun getEventClass(): Class<ExecutionData> {
         return ExecutionData::class.java
@@ -28,11 +30,10 @@ class OldFormatExecutionEventSender(private val clientLimitOrdersQueue: Blocking
     }
 
     private fun sendBalanceUpdateEvent(executionContext: ExecutionContext) {
-        executionContext
-                .walletOperationsProcessor
-                .sendNotification(id = executionContext.requestId,
-                        type = executionContext.messageType.name,
-                        messageId = executionContext.messageId)
+        oldFormatBalancesSender.sendBalanceUpdate(executionContext.requestId,
+                executionContext.messageType,
+                executionContext.messageId,
+                executionContext.walletOperationsProcessor.getClientBalanceUpdates())
     }
 
     private fun sendTrustedClientsExecutionEventIfNeeded(executionContext: ExecutionContext) {

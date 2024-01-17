@@ -3,15 +3,9 @@ package com.lykke.matching.engine.balance
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
-import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.BalancesData
-import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
-import com.lykke.matching.engine.database.common.entity.PersistenceData
-import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.order.transaction.CurrentTransactionBalancesHolder
 import com.lykke.matching.engine.order.transaction.WalletAssetBalance
@@ -20,21 +14,18 @@ import com.lykke.utils.logging.MetricsLogger
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
-import java.util.Date
 
-class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
-                                private val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
+class WalletOperationsProcessor(private val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
                                 private val applicationSettingsHolder: ApplicationSettingsHolder,
-                                private val persistenceManager: PersistenceManager,
                                 private val assetsHolder: AssetsHolder,
-                                private val logger: Logger?): BalancesGetter {
+                                private val logger: Logger?) : BalancesGetter {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(WalletOperationsProcessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-   private val clientBalanceUpdatesByClientIdAndAssetId = HashMap<String, ClientBalanceUpdate>()
+    private val clientBalanceUpdatesByClientIdAndAssetId = HashMap<String, ClientBalanceUpdate>()
 
     fun preProcess(operations: Collection<WalletOperation>,
                    allowInvalidBalance: Boolean = false,
@@ -60,6 +51,14 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
                 changedAssetBalance.reserved
         }
 
+        validateChangedAssetBalances(changedAssetBalances, allowInvalidBalance)
+
+
+        changedAssetBalances.forEach { processChangedAssetBalance(it.value) }
+        return this
+    }
+
+    private fun validateChangedAssetBalances(changedAssetBalances: HashMap<String, ChangedAssetBalance>, allowInvalidBalance: Boolean) {
         try {
             changedAssetBalances.values.forEach { validateBalanceChange(it) }
         } catch (e: BalanceException) {
@@ -70,9 +69,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
             (logger ?: LOGGER).error(message)
             METRICS_LOGGER.logError(message, e)
         }
-
-        changedAssetBalances.forEach { processChangedAssetBalance(it.value) }
-        return this
     }
 
     private fun processChangedAssetBalance(changedAssetBalance: ChangedAssetBalance) {
@@ -112,23 +108,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
 
     fun persistenceData(): BalancesData {
         return currentTransactionBalancesHolder.persistenceData()
-    }
-
-    fun persistBalances(processedMessage: ProcessedMessage?,
-                        orderBooksData: OrderBooksPersistenceData?,
-                        stopOrderBooksData: OrderBooksPersistenceData?,
-                        messageSequenceNumber: Long?): Boolean {
-        return persistenceManager.persist(PersistenceData(persistenceData(),
-                processedMessage,
-                orderBooksData,
-                stopOrderBooksData,
-                messageSequenceNumber))
-    }
-
-    fun sendNotification(id: String, type: String, messageId: String) {
-        if (clientBalanceUpdatesByClientIdAndAssetId.isNotEmpty()) {
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), clientBalanceUpdatesByClientIdAndAssetId.values.toList(), messageId))
-        }
     }
 
     fun getClientBalanceUpdates(): List<ClientBalanceUpdate> {

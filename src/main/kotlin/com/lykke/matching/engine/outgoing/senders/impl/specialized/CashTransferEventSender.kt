@@ -19,7 +19,7 @@ class CashTransferEventSender(val messageSender: MessageSender) : SpecializedEve
                 event.transferOperation.externalId,
                 event.now,
                 MessageType.CASH_TRANSFER_OPERATION,
-                event.walletProcessor.getClientBalanceUpdates(),
+                event.clientBalanceUpdates,
                 event.transferOperation,
                 event.fees)
 

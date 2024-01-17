@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.outgoing.messages
 
-import com.lykke.matching.engine.balance.WalletOperationsProcessor
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.OutgoingEventData
 import com.lykke.matching.engine.daos.WalletOperation
@@ -12,7 +11,7 @@ class CashInOutEventData(val messageId: String,
                          val sequenceNumber: Long,
                          val now: Date,
                          val timestamp: Date,
-                         val walletProcessor: WalletOperationsProcessor,
+                         val clientBalanceUpdates: List<ClientBalanceUpdate>,
                          val walletOperation: WalletOperation,
                          val asset: Asset,
                          val internalFees: List<Fee>

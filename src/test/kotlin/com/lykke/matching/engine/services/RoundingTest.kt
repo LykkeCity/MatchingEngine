@@ -5,6 +5,7 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -22,14 +23,13 @@ import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import kotlin.test.assertNotNull
 import com.lykke.matching.engine.utils.assertEquals
+import org.springframework.beans.factory.annotation.Autowired
 import kotlin.test.assertEquals
-
-
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (RoundingTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class RoundingTest: AbstractTest() {
+class RoundingTest : AbstractTest() {
 
     @TestConfiguration
     open class Config {
@@ -48,6 +48,9 @@ class RoundingTest: AbstractTest() {
             return testBackOfficeDatabaseAccessor
         }
     }
+
+    @Autowired
+    private lateinit var assetsCache: AssetsCache
 
     @Before
     fun setUp() {
@@ -110,7 +113,7 @@ class RoundingTest: AbstractTest() {
         assertEquals("USD", marketOrderReport.trades.first().limitAsset)
         assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
 
-        assertEquals(BigDecimal.valueOf( 1.0), testWalletDatabaseAccessor.getBalance("Client3", "EUR"))
+        assertEquals(BigDecimal.valueOf(1.0), testWalletDatabaseAccessor.getBalance("Client3", "EUR"))
         assertEquals(BigDecimal.valueOf(998.89), testWalletDatabaseAccessor.getBalance("Client3", "USD"))
         assertEquals(BigDecimal.valueOf(1499.0), testWalletDatabaseAccessor.getBalance("Client4", "EUR"))
         assertEquals(BigDecimal.valueOf(1.11), testWalletDatabaseAccessor.getBalance("Client4", "USD"))
@@ -179,7 +182,7 @@ class RoundingTest: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "CHF", 1.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCCHF", volume = 	-0.38, straight = false)))
+        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCCHF", volume = -0.38, straight = false)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades

@@ -224,10 +224,11 @@ class InvalidBalanceTest : AbstractTest() {
                 IncomingLimitOrder(-0.05, 1010.0, "2"),
                 IncomingLimitOrder(-0.1, 1100.0, "3")
         )))
-        testBalanceHolderWrapper.updateReservedBalance("Client1", "ETH", reservedBalance = 0.09)
+
         testSettingDatabaseAccessor.clear()
         applicationSettingsCache.update()
         applicationSettingsHolder.update()
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "ETH", 0.09)
 
         clearMessageQueues()
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "4", clientId = "Client2", assetId = "ETHUSD", volume = 0.25, price = 1100.0)))

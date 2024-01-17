@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.fee
 
 import com.lykke.matching.engine.balance.BalancesGetter
+import com.lykke.matching.engine.balance.WalletOperationsProcessorFactory
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
@@ -44,10 +45,10 @@ class FeeProcessorTest {
     private lateinit var feeProcessor: FeeProcessor
 
     @Autowired
-    lateinit var balancesHolder: BalancesHolder
+    lateinit var walletOperationsProcessorFactory: WalletOperationsProcessorFactory
 
     @Autowired
-    lateinit var  testBalanceHolderWrapper: TestBalanceHolderWrapper
+    lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
     @Autowired
     lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
@@ -59,8 +60,18 @@ class FeeProcessorTest {
         open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
             val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
             testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 4))
 
             return testBackOfficeDatabaseAccessor
+        }
+
+        @Bean
+        @Primary
+        fun testDictionaryDatabaseAccessor(): TestDictionariesDatabaseAccessor {
+            val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
+            testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+            return testDictionariesDatabaseAccessor
         }
     }
 
@@ -73,9 +84,6 @@ class FeeProcessorTest {
     @Test
     fun testNoPercentageFee() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 10.0)
-
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
 
         val operations = LinkedList<WalletOperation>()
         operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-10.0)))
@@ -145,9 +153,6 @@ class FeeProcessorTest {
     fun testNoAbsoluteFee() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 0.09)
 
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
-
         val operations = LinkedList<WalletOperation>()
         operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-0.5)))
         operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(0.5)))
@@ -171,9 +176,6 @@ class FeeProcessorTest {
 
     @Test
     fun testAbsoluteFeeCashout() {
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
-
         val operations = LinkedList<WalletOperation>()
         operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-0.5)))
         val receiptOperation = operations[0]
@@ -190,9 +192,6 @@ class FeeProcessorTest {
 
     @Test
     fun testPercentFeeCashout() {
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
-
         val operations = LinkedList<WalletOperation>()
         operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-0.5)))
         val receiptOperation = operations[0]
@@ -209,19 +208,18 @@ class FeeProcessorTest {
 
     @Test
     fun testAnotherAssetFee() {
-        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 0.6543)
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 4))
+        testBalanceHolderWrapper.updateBalance("Client2", "CHF", 0.6543)
 
         val operations = LinkedList<WalletOperation>()
         operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-0.5)))
         operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(0.5)))
         val receiptOperation = operations[1]
 
-        val feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.6543, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3", assetIds = listOf("EUR"))
+        val feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.6543, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3", assetIds = listOf("CHF"))
         val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations, balancesGetter = createBalancesGetter())
         assertEquals(1, fees.size)
         assertEquals(BigDecimal.valueOf(0.6543), fees.first().transfer!!.volume)
-        assertEquals("EUR", fees.first().transfer!!.asset)
+        assertEquals("CHF", fees.first().transfer!!.asset)
         assertEquals(4, operations.size)
     }
 
@@ -603,7 +601,7 @@ class FeeProcessorTest {
     }
 
     private fun createBalancesGetter(): BalancesGetter {
-        return balancesHolder.createWalletProcessor(null)
+        return walletOperationsProcessorFactory.create(null)
     }
 }
 

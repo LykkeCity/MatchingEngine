@@ -7,8 +7,10 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
+import com.lykke.matching.engine.database.common.entity.PersistenceData
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
+import com.lykke.matching.engine.outgoing.senders.impl.OldFormatBalancesSender
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.boot.test.context.SpringBootTest
@@ -45,7 +47,10 @@ class WalletOperationsProcessorTest : AbstractTest() {
     }
 
     @Autowired
-    private lateinit var settingsDatabaseAccessor: TestSettingsDatabaseAccessor
+    private lateinit var walletOperationsProcessorFactory: WalletOperationsProcessorFactory
+
+    @Autowired
+    private lateinit var oldFormatBalancesSender: OldFormatBalancesSender
 
     @Test
     fun testPreProcessWalletOperations() {
@@ -53,7 +58,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
         testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC", 0.1)
         initServices()
 
-        val walletOperationsProcessor = balancesHolder.createWalletProcessor(null)
+        val walletOperationsProcessor = walletOperationsProcessorFactory.create(null)
 
         walletOperationsProcessor.preProcess(
                 listOf(
@@ -75,8 +80,11 @@ class WalletOperationsProcessorTest : AbstractTest() {
                     )
             )
         }
-        assertTrue(walletOperationsProcessor.persistBalances(null, null, null, null))
-        walletOperationsProcessor.apply().sendNotification("id", "type", "test")
+        assertTrue(persistenceManager.persist(PersistenceData( walletOperationsProcessor.persistenceData(), null, null, null, null)))
+        walletOperationsProcessor.apply()
+
+        oldFormatBalancesSender.sendBalanceUpdate("id", MessageType.CASH_IN_OUT_OPERATION, "test",
+                walletOperationsProcessor.getClientBalanceUpdates())
 
         assertBalance("Client1", "BTC", 0.5, 0.0)
         assertBalance("Client2", "ETH", 3.0, 0.3)
@@ -86,7 +94,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
         val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate
         assertEquals(2, balanceUpdate.balances.size)
         assertEquals("id", balanceUpdate.id)
-        assertEquals("type", balanceUpdate.type)
+        assertEquals(MessageType.CASH_IN_OUT_OPERATION.name, balanceUpdate.type)
 
         val clientBalanceUpdate1 = balanceUpdate.balances.first { it.id == "Client1" }
         assertNotNull(clientBalanceUpdate1)
@@ -109,15 +117,15 @@ class WalletOperationsProcessorTest : AbstractTest() {
     fun testForceProcessInvalidWalletOperations() {
         initServices()
 
-        val walletOperationsProcessor = balancesHolder.createWalletProcessor(null)
+        val walletOperationsProcessor = walletOperationsProcessorFactory.create(null)
 
         walletOperationsProcessor.preProcess(
                 listOf(
                         WalletOperation("Client1", "BTC", BigDecimal.ZERO, BigDecimal.valueOf(-0.1))
                 ), true)
 
-        assertTrue(walletOperationsProcessor.persistBalances(null, null, null, null))
-        walletOperationsProcessor.apply().sendNotification("id", "type", "test")
+        assertTrue(persistenceManager.persist(PersistenceData(walletOperationsProcessor.persistenceData(), null, null, null, null)))
+        walletOperationsProcessor.apply()
 
         assertBalance("Client1", "BTC", 0.0, -0.1)
     }
@@ -151,7 +159,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
 
         testBalanceHolderWrapper.updateBalance("TrustedClient1", "BTC", 1.0)
         testBalanceHolderWrapper.updateBalance("TrustedClient2", "EUR", 1.0)
-        val walletOperationsProcessor = balancesHolder.createWalletProcessor(null)
+        val walletOperationsProcessor = walletOperationsProcessorFactory.create(null)
 
         walletOperationsProcessor.preProcess(listOf(
                 WalletOperation("TrustedClient1", "BTC", BigDecimal.ZERO, BigDecimal.valueOf(0.1)),
@@ -175,7 +183,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
 
     @Test
     fun testNotChangedBalance() {
-        val walletOperationsProcessor = balancesHolder.createWalletProcessor(null)
+        val walletOperationsProcessor = walletOperationsProcessorFactory.create(null)
 
         walletOperationsProcessor.preProcess(listOf(
                 WalletOperation("Client1", "BTC", BigDecimal.valueOf(0.1), BigDecimal.valueOf(0.1)),

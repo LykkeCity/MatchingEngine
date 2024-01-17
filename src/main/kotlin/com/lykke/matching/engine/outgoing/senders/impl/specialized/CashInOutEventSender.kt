@@ -20,7 +20,7 @@ class CashInOutEventSender(private val messageSender: MessageSender) : Specializ
                 requestId = event.externalId,
                 date = event.now,
                 messageType = MessageType.CASH_IN_OUT_OPERATION,
-                clientBalanceUpdates = event.walletProcessor.getClientBalanceUpdates(),
+                clientBalanceUpdates = event.clientBalanceUpdates,
                 cashInOperation = event.walletOperation,
                 internalFees = event.internalFees)
 
