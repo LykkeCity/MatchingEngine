@@ -1,7 +1,9 @@
 package com.lykke.matching.engine.services.validators.business.impl
 
+import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.holders.OrderBookMaxTotalSizeHolder
+import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.validators.business.StopOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import org.springframework.stereotype.Component
@@ -15,9 +17,12 @@ class StopOrderBusinessValidatorImpl(private val orderBookMaxTotalSizeHolder: Or
                                    limitVolume: BigDecimal,
                                    order: LimitOrder,
                                    orderProcessingTime: Date,
+                                   assetPair: AssetPair,
+                                   orderBook: AssetOrderBook,
                                    currentOrderBookTotalSize: Int) {
         OrderValidationUtils.validateOrderBookTotalSize(currentOrderBookTotalSize, orderBookMaxTotalSizeHolder.get())
         OrderValidationUtils.validateBalance(availableBalance, limitVolume)
         OrderValidationUtils.validateExpiration(order, orderProcessingTime)
+        OrderValidationUtils.validateMaxVolume(order, assetPair, orderBook)
     }
 }

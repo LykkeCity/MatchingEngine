@@ -103,8 +103,14 @@ class MarketOrderService @Autowired constructor(
                 feeInstruction, listOfFee(feeInstruction, feeInstructions))
 
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order), feeInstruction, feeInstructions)
+            marketOrderValidator.performValidation(order,
+                    genericLimitOrderService.getOrderBook(order.assetPairId),
+                    feeInstruction,
+                    feeInstructions)
         } catch (e: OrderValidationException) {
+            val errorMessage = "Invalid market order (${order.externalId}, messageId: ${messageWrapper.messageId}): ${e.orderStatus}" +
+                    (if (e.message.isNotEmpty()) ", ${e.message}" else "")
+            LOGGER.error(errorMessage)
             order.updateStatus(e.orderStatus, now)
             sendErrorNotification(messageWrapper, order, now)
             writeErrorResponse(messageWrapper, order, e.message)
@@ -122,8 +128,6 @@ class MarketOrderService @Autowired constructor(
         val marketOrderExecutionContext = MarketOrderExecutionContext(order, executionContext)
 
         val matchingResult = matchingEngine.match(order,
-                getOrderBook(order),
-                messageWrapper.messageId!!,
                 priceDeviationThreshold = assetPair.marketOrderPriceDeviationThreshold ?: applicationSettingsHolder.marketOrderPriceDeviationThreshold(assetPair.assetPairId),
                 executionContext = executionContext)
         marketOrderExecutionContext.matchingResult = matchingResult
@@ -162,7 +166,7 @@ class MarketOrderService @Autowired constructor(
                     matchingResultHandlingHelper.processWalletOperations(marketOrderExecutionContext)
                     true
                 } catch (e: BalanceException) {
-                    order.updateStatus(OrderStatus.NotEnoughFunds, now)
+                    order.updateStatus(NotEnoughFunds, now)
                     marketOrderExecutionContext.executionContext.marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
                     LOGGER.error("$order: Unable to process wallet operations after matching: ${e.message}")
                     false
@@ -214,10 +218,6 @@ class MarketOrderService @Autowired constructor(
             totalTime = 0.0
         }
     }
-
-    private fun getOrderBook(order: MarketOrder) =
-            genericLimitOrderService.getOrderBook(order.assetPairId).getOrderBook(!order.isBuySide())
-
 
     private fun parse(array: ByteArray): ProtocolMessages.MarketOrder {
         return ProtocolMessages.MarketOrder.parseFrom(array)
