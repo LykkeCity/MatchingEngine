@@ -2,9 +2,6 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.*
-import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
-import com.lykke.matching.engine.fee.listOfFee
-import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -19,31 +16,25 @@ import com.lykke.matching.engine.order.OrderStatus.LeadToNegativeSpread
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
-import com.lykke.matching.engine.order.OrderStatus.Processing
 import com.lykke.matching.engine.order.OrderStatus.ReservedVolumeGreaterThanBalance
 import com.lykke.matching.engine.order.OrderStatus.TooHighPriceDeviation
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
-import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
-import com.lykke.matching.engine.daos.v2.FeeInstruction
-import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
-import com.lykke.matching.engine.holders.ApplicationSettingsHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
-import com.lykke.matching.engine.holders.UUIDHolder
 import com.lykke.matching.engine.order.process.StopOrderBookProcessor
 import com.lykke.matching.engine.order.process.common.MatchingResultHandlingHelper
 import com.lykke.matching.engine.order.process.context.MarketOrderExecutionContext
 import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import com.lykke.matching.engine.order.ExecutionDataApplyService
+import com.lykke.matching.engine.daos.context.MarketOrderContext
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
+import com.lykke.matching.engine.services.validators.business.MarketOrderBusinessValidator
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import java.math.BigDecimal
 import java.util.Date
 import java.util.concurrent.BlockingQueue
 
@@ -57,12 +48,8 @@ class MarketOrderService @Autowired constructor(
         private val genericLimitOrderService: GenericLimitOrderService,
         private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-        private val messageSender: MessageSender,
-        private val assetsPairsHolder: AssetsPairsHolder,
-        private val marketOrderValidator: MarketOrderValidator,
-        private val applicationSettingsHolder: ApplicationSettingsHolder,
-        private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-        private val uuidHolder: UUIDHolder) : AbstractService {
+        private val marketOrderBusinessValidator: MarketOrderBusinessValidator,
+        private val messageSender: MessageSender) : AbstractService {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MarketOrderService::class.java.name)
         private val STATS_LOGGER = LoggerFactory.getLogger("${MarketOrderService::class.java.name}.stats")
@@ -74,39 +61,25 @@ class MarketOrderService @Autowired constructor(
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val startTime = System.nanoTime()
-        if (messageWrapper.parsedMessage == null) {
-            parseMessage(messageWrapper)
-        }
-
-        val parsedMessage = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
-
-        val assetPair = assetsPairsHolder.getAssetPairAllowNulls(parsedMessage.assetPairId)
-
         val now = Date()
-        val feeInstruction: FeeInstruction?
-        val feeInstructions: List<NewFeeInstruction>?
 
-        if (messageProcessingStatusHolder.isTradeDisabled(assetPair)) {
-            writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
-            return
-        }
+        val context = messageWrapper.context as MarketOrderContext
+        val order = context.marketOrder
+        order.register(now)
 
-        feeInstruction = if (parsedMessage.hasFee()) FeeInstruction.create(parsedMessage.fee) else null
-        feeInstructions = NewFeeInstruction.create(parsedMessage.feesList)
+        val assetPair = context.assetPair
+
         LOGGER.debug("Got market order messageId: ${messageWrapper.messageId}, " +
-                "id: ${parsedMessage.uid}, client: ${parsedMessage.clientId}, " +
-                "asset: ${parsedMessage.assetPairId}, volume: ${NumberUtils.roundForPrint(parsedMessage.volume)}, " +
-                "straight: ${parsedMessage.straight}, fee: $feeInstruction, fees: $feeInstructions")
-
-        val order = MarketOrder(uuidHolder.getNextValue(), parsedMessage.uid, parsedMessage.assetPairId, parsedMessage.clientId, BigDecimal.valueOf(parsedMessage.volume), null,
-                Processing.name, now, Date(parsedMessage.timestamp), now, null, parsedMessage.straight, BigDecimal.valueOf(parsedMessage.reservedLimitVolume),
-                feeInstruction, listOfFee(feeInstruction, feeInstructions))
+                "id: ${messageWrapper.id}, client: ${order.clientId}, " +
+                "asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)}, " +
+                "straight: ${order.straight}, fee: $order.fee, fees: ${order.fees}")
 
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order), feeInstruction, feeInstructions)
+            marketOrderBusinessValidator.performValidation(order)
         } catch (e: OrderValidationException) {
             order.updateStatus(e.orderStatus, now)
             sendErrorNotification(messageWrapper, order, now)
+            LOGGER.info("Business validation failed for order: $order")
             writeErrorResponse(messageWrapper, order, e.message)
             return
         }
@@ -124,7 +97,7 @@ class MarketOrderService @Autowired constructor(
         val matchingResult = matchingEngine.match(order,
                 getOrderBook(order),
                 messageWrapper.messageId!!,
-                priceDeviationThreshold = assetPair.marketOrderPriceDeviationThreshold ?: applicationSettingsHolder.marketOrderPriceDeviationThreshold(assetPair.assetPairId),
+                priceDeviationThreshold = context.marketPriceDeviationThreshold,
                 executionContext = executionContext)
         marketOrderExecutionContext.matchingResult = matchingResult
 
@@ -218,11 +191,6 @@ class MarketOrderService @Autowired constructor(
     private fun getOrderBook(order: MarketOrder) =
             genericLimitOrderService.getOrderBook(order.assetPairId).getOrderBook(!order.isBuySide())
 
-
-    private fun parse(array: ByteArray): ProtocolMessages.MarketOrder {
-        return ProtocolMessages.MarketOrder.parseFrom(array)
-    }
-
     private fun writePersistenceErrorResponse(messageWrapper: MessageWrapper, order: MarketOrder) {
         val message = "Unable to save result data"
         LOGGER.error("$order: $message")
@@ -262,12 +230,7 @@ class MarketOrderService @Autowired constructor(
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
-        val message = parse(messageWrapper.byteArray)
-        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid
-        messageWrapper.timestamp = message.timestamp
-        messageWrapper.parsedMessage = message
-        messageWrapper.id = message.uid
-        messageWrapper.processedMessage = ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)
+        //do nothing
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

@@ -14,7 +14,6 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderType
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -83,7 +82,7 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 0.020009)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = -0.02)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = -0.02)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -124,7 +123,7 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 0.14441494999999982)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 88.23, straight = false)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 88.23, straight = false)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -165,7 +164,7 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 0.033407)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 20.0, straight = false)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 20.0, straight = false)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -209,7 +208,7 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 0.00092519)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.54, straight = false)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.54, straight = false)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -253,7 +252,7 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 0.02001)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = 20.0, straight = false)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = 20.0, straight = false)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -294,7 +293,7 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 500.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.0000272, straight = true)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.0000272, straight = true)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -314,7 +313,7 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 0.01)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "SLRBTC1", volume = 127.87, straight = true)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "SLRBTC1", volume = 127.87, straight = true)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -350,7 +349,7 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 0.01)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "SLRBTC1", volume = -0.01, straight = false)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "SLRBTC1", volume = -0.01, straight = false)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -386,7 +385,7 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 0.02001)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = -0.0000272, straight = true)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = -0.0000272, straight = true)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -405,7 +404,7 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 0.02001)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1LKK", volume = 0.01, straight = false)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1LKK", volume = 0.01, straight = false)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -424,7 +423,7 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "LKK", 500.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1LKK", volume = -0.01, straight = false)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1LKK", volume = -0.01, straight = false)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -443,7 +442,7 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client3", "BTC1", 10.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.04997355, straight = true)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.04997355, straight = true)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -473,7 +472,7 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 10.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = -0.04997355, straight = true)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = -0.04997355, straight = true)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -503,7 +502,7 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client3", "BTC1", 10.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.0499727, straight = true)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.0499727, straight = true)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
@@ -533,7 +532,7 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 10.0)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = -0.0499727, straight = true)))
+        marketOrderService.processMessage(messageBuilder.buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = -0.0499727, straight = true)))
 
         assertEquals(1, rabbitSwapListener.getCount())
         val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades

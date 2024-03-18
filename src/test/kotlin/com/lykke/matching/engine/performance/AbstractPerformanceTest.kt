@@ -25,6 +25,7 @@ import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.TestUUIDHolder
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.MarketOrderContextParser
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.ExecutionDataApplyService
@@ -49,8 +50,8 @@ import com.lykke.matching.engine.outgoing.senders.impl.SpecializedEventSendersHo
 import com.lykke.matching.engine.outgoing.senders.impl.OutgoingEventProcessorImpl
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.business.impl.LimitOrderBusinessValidatorImpl
+import com.lykke.matching.engine.services.validators.business.impl.MarketOrderBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.business.impl.StopOrderBusinessValidatorImpl
-import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.utils.logging.ThrottlingLogger
@@ -192,7 +193,8 @@ abstract class AbstractPerformanceTest {
                 cashInOutContextParser,
                 cashTransferContextParser,
                 LimitOrderCancelOperationContextParser(),
-                LimitOrderMassCancelOperationContextParser())
+                LimitOrderMassCancelOperationContextParser(),
+                MarketOrderContextParser(assetsPairsHolder, assetsHolder, uuidHolder, applicationSettingsHolder))
 
         genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, expiryOrdersQueue)
 
@@ -253,7 +255,7 @@ abstract class AbstractPerformanceTest {
                 messageProcessingStatusHolder,
                 uuidHolder)
 
-        val marketOrderValidator = MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsHolder)
+        val marketOrderValidator = MarketOrderBusinessValidatorImpl(genericLimitOrderService)
         marketOrderService = MarketOrderService(matchingEngine,
                 executionContextFactory,
                 stopOrderBookProcessor,
@@ -262,12 +264,8 @@ abstract class AbstractPerformanceTest {
                 genericLimitOrderService,
                 rabbitSwapQueue,
                 messageSequenceNumberHolder,
-                messageSender,
-                assetsPairsHolder,
                 marketOrderValidator,
-                applicationSettingsHolder,
-                messageProcessingStatusHolder,
-                uuidHolder)
+                messageSender)
 
         startEventProcessorThread(outgoingEventData, "OutgoingEventData")
         startEventProcessorThread(rabbitEventsQueue, "ExecutionEventProcessor")

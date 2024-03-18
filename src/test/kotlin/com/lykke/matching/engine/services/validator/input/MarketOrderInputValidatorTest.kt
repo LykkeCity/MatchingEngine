@@ -1,18 +1,26 @@
-package com.lykke.matching.engine.services.validator
+package com.lykke.matching.engine.services.validator.input
 
+import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
-import com.lykke.matching.engine.daos.*
+import com.lykke.matching.engine.daos.Asset
+import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.daos.FeeType
+import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.MarketOrder
+import com.lykke.matching.engine.daos.context.MarketOrderContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
+import com.lykke.matching.engine.holders.AssetsHolder
+import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.AssetOrderBook
-import com.lykke.matching.engine.services.validators.MarketOrderValidator
+import com.lykke.matching.engine.services.validators.impl.OrderValidationException
+import com.lykke.matching.engine.services.validators.input.MarketOrderInputValidator
 import com.lykke.matching.engine.utils.getSetting
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -29,10 +37,9 @@ import java.util.concurrent.PriorityBlockingQueue
 import kotlin.test.assertEquals
 
 @RunWith(SpringRunner::class)
-@SpringBootTest(classes = [(TestApplicationContext::class), (MarketOrderValidatorTest.Config::class)])
+@SpringBootTest(classes = [(TestApplicationContext::class), (MarketOrderInputValidatorTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class MarketOrderValidatorTest {
-
+class MarketOrderInputValidatorTest: AbstractTest() {
     companion object {
         val CLIENT_NAME = "Client"
         val OPERATION_ID = "test"
@@ -57,7 +64,7 @@ class MarketOrderValidatorTest {
         @Bean
         open fun testDictionariesDatabaseAccessor(): TestDictionariesDatabaseAccessor {
             val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-            testDictionariesDatabaseAccessor.addAssetPair(AssetPair( ASSET_PAIR_ID, BASE_ASSET_ID, QUOTING_ASSET_ID, 2, BigDecimal.valueOf(0.9)))
+            testDictionariesDatabaseAccessor.addAssetPair(AssetPair(ASSET_PAIR_ID, BASE_ASSET_ID, QUOTING_ASSET_ID, 2, BigDecimal.valueOf(0.9)))
             return testDictionariesDatabaseAccessor
         }
 
@@ -71,10 +78,13 @@ class MarketOrderValidatorTest {
     }
 
     @Autowired
-    private lateinit var marketOrderValidator: MarketOrderValidator
+    private lateinit var marketOrderInputValidator: MarketOrderInputValidator
 
     @Autowired
-    private lateinit var testDictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor
+    private lateinit var assetsHolder: AssetsHolder
+
+    @Autowired
+    private lateinit var assetsPairsHolder: AssetsPairsHolder
 
     @Test(expected = OrderValidationException::class)
     fun testUnknownAsset() {
@@ -85,7 +95,7 @@ class MarketOrderValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()), NewFeeInstruction.create(getFeeInstruction()), null)
+            marketOrderInputValidator.performValidation(getOrderContext(order))
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.UnknownAsset, e.orderStatus)
             throw e
@@ -98,11 +108,11 @@ class MarketOrderValidatorTest {
         val marketOrderBuilder = getDefaultMarketOrderBuilder()
         marketOrderBuilder.assetPairId = "BTCUSD"
         val order = toMarketOrder(marketOrderBuilder.build())
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair( "BTCUSD", "BTC", "USD", 2))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 2))
 
         //when
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()), NewFeeInstruction.create(getFeeInstruction()), null)
+            marketOrderInputValidator.performValidation(getOrderContext(order))
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.DisabledAsset, e.orderStatus)
             throw e
@@ -118,7 +128,7 @@ class MarketOrderValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(order,  getOrderBook(order.isBuySide()), NewFeeInstruction.create(getFeeInstruction()), null)
+            marketOrderInputValidator.performValidation(getOrderContext(order))
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.TooSmallVolume, e.orderStatus)
             throw e
@@ -129,33 +139,17 @@ class MarketOrderValidatorTest {
     fun testInvalidFee() {
         //given
         val marketOrderBuilder = getDefaultMarketOrderBuilder()
-        val order = toMarketOrder(marketOrderBuilder.build())
+        val order = toMarketOrder(marketOrderBuilder.build(), getInvalidFee())
 
         //when
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()),
-                    NewFeeInstruction.create(getInvalidFee()), null)
+            marketOrderInputValidator.performValidation(getOrderContext(order))
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.InvalidFee, e.orderStatus)
             throw e
         }
     }
 
-    @Test(expected = OrderValidationException::class)
-    fun invalidOrderBook() {
-        //given
-        val marketOrderBuilder = getDefaultMarketOrderBuilder()
-        val order = toMarketOrder(marketOrderBuilder.build())
-
-        //when
-        try {
-            marketOrderValidator.performValidation(order,  AssetOrderBook(ASSET_PAIR_ID).getOrderBook(order.isBuySide()),
-                    NewFeeInstruction.create(getFeeInstruction()), null)
-        } catch (e: OrderValidationException) {
-            assertEquals(OrderStatus.NoLiquidity, e.orderStatus)
-            throw e
-        }
-    }
 
     @Test(expected = OrderValidationException::class)
     fun testInvalidVolumeAccuracy() {
@@ -166,25 +160,9 @@ class MarketOrderValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()), NewFeeInstruction.create(getFeeInstruction()), null)
+            marketOrderInputValidator.performValidation(getOrderContext(order))
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.InvalidVolumeAccuracy, e.orderStatus)
-            throw e
-        }
-    }
-
-    @Test(expected = OrderValidationException::class)
-    fun testInvalidPriceAccuracy() {
-        //given
-        val marketOrderBuilder = getDefaultMarketOrderBuilder()
-        val order = toMarketOrder(marketOrderBuilder.build())
-        order.price = BigDecimal.valueOf(1.1111)
-
-        //when
-        try {
-            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()), NewFeeInstruction.create(getFeeInstruction()), null)
-        } catch (e: OrderValidationException) {
-            assertEquals(OrderStatus.InvalidPriceAccuracy, e.orderStatus)
             throw e
         }
     }
@@ -196,27 +174,19 @@ class MarketOrderValidatorTest {
         val order = toMarketOrder(marketOrderBuilder.build())
 
         //when
-        marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()), NewFeeInstruction.create(getFeeInstruction()), null)
+        marketOrderInputValidator.performValidation(getOrderContext(order))
     }
 
-    private fun toMarketOrder(message: ProtocolMessages.MarketOrder): MarketOrder {
+    private fun getOrderContext(order: MarketOrder): MarketOrderContext {
+        return messageBuilder.buildMarketOrderWrapper(order).context as MarketOrderContext
+    }
+
+    private fun toMarketOrder(message: ProtocolMessages.MarketOrder, fee: ProtocolMessages.Fee? = null): MarketOrder {
         val now = Date()
         return MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, BigDecimal.valueOf(message.volume), null,
                 OrderStatus.Processing.name, now, Date(message.timestamp), now, null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume),
-                NewFeeInstruction.create(message.fee), listOf(NewFeeInstruction.create(message.fee)))
+                NewFeeInstruction.create(fee ?: message.fee), emptyList())
     }
-
-    private fun getOrderBook(isBuy: Boolean): PriorityBlockingQueue<LimitOrder> {
-        val assetOrderBook = AssetOrderBook(ASSET_PAIR_ID)
-        val now = Date()
-        assetOrderBook.addOrder(LimitOrder("test", "test",
-                ASSET_PAIR_ID, CLIENT_NAME, BigDecimal.valueOf(1.0), BigDecimal.valueOf(1.0),
-                OrderStatus.InOrderBook.name, now, now, now, BigDecimal.valueOf(1.0), now, BigDecimal.valueOf(1.0),
-                null, null, null, null, null, null, null, null,
-                null, null, null, null))
-
-        return assetOrderBook.getOrderBook(isBuy)
-     }
 
     private fun getDefaultMarketOrderBuilder(): ProtocolMessages.MarketOrder.Builder {
         return ProtocolMessages.MarketOrder.newBuilder()
@@ -230,13 +200,13 @@ class MarketOrderValidatorTest {
     }
 
     private fun getFeeInstruction(): ProtocolMessages.Fee {
-        return  ProtocolMessages.Fee.newBuilder()
+        return ProtocolMessages.Fee.newBuilder()
                 .setType(FeeType.NO_FEE.externalId)
                 .build()
     }
 
     private fun getInvalidFee(): ProtocolMessages.Fee {
-        return  ProtocolMessages.Fee.newBuilder()
+        return ProtocolMessages.Fee.newBuilder()
                 .setType(FeeType.EXTERNAL_FEE.externalId)
                 .build()
     }

@@ -56,9 +56,6 @@ class LimitOrderServiceDustTest : AbstractTest() {
         }
     }
 
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
-
     @Before
     fun setUp() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1000.0)
